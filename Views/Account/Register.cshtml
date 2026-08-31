@@ -1,0 +1,136 @@
+@model TrackerKerja.ViewModels.RegisterViewModel
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daftar — Work Tracker Pro</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .glass { background: rgba(255,255,255,0.88); backdrop-filter: blur(20px); }
+        .input-field { transition: all 0.2s; }
+        .input-field:focus { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.15); }
+        .floating-shape { animation: float 6s ease-in-out infinite; }
+        @@keyframes float {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-15px); }
+        }
+        .btn-register { transition: all 0.3s; }
+        .btn-register:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(16,185,129,0.35); }
+    </style>
+</head>
+<body class="min-h-full bg-gradient-to-br from-emerald-900 via-teal-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
+
+    <!-- Decorative shapes -->
+    <div class="floating-shape absolute top-10 right-20 w-72 h-72 rounded-full bg-emerald-500/10 blur-3xl"></div>
+    <div class="floating-shape absolute bottom-10 left-20 w-64 h-64 rounded-full bg-teal-500/10 blur-3xl"></div>
+
+    <!-- Register Card -->
+    <div class="glass border border-white/20 rounded-3xl shadow-2xl w-full max-w-lg p-8 relative z-10 my-8">
+        <!-- Logo -->
+        <div class="text-center mb-7">
+            <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center mx-auto mb-3 shadow-xl shadow-emerald-500/30">
+                <i class="fas fa-user-plus text-white text-xl"></i>
+            </div>
+            <h1 class="text-2xl font-black text-slate-800">Buat Akun Baru</h1>
+            <p class="text-slate-500 text-sm mt-1">Bergabung dengan Work Tracker Pro</p>
+        </div>
+
+        <!-- Errors -->
+        @if (!ViewData.ModelState.IsValid)
+        {
+            <div class="mb-5 p-4 bg-red-50 border border-red-200 rounded-2xl text-red-700 text-sm">
+                @Html.ValidationSummary(true, null, new { @class = "list-disc pl-4" })
+            </div>
+        }
+
+        <form method="post" asp-action="Register" asp-controller="Account">
+            @Html.AntiForgeryToken()
+
+            <!-- Full Name -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">
+                    <i class="fas fa-user text-emerald-500 mr-1.5"></i>Nama Lengkap <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="FullName" value="@Model.FullName" required placeholder="Nama lengkap Anda"
+                       class="input-field w-full px-4 py-3 rounded-xl border border-emerald-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800">
+            </div>
+
+            <!-- Email -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">
+                    <i class="fas fa-envelope text-emerald-500 mr-1.5"></i>Email <span class="text-red-500">*</span>
+                </label>
+                <input type="email" name="Email" value="@Model.Email" required placeholder="nama@email.com"
+                       class="input-field w-full px-4 py-3 rounded-xl border border-emerald-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800">
+            </div>
+
+            <!-- Job Title -->
+            <div class="mb-4">
+                <label class="block text-sm font-semibold text-slate-700 mb-2">
+                    <i class="fas fa-briefcase text-emerald-500 mr-1.5"></i>Jabatan / Posisi <span class="text-red-500">*</span>
+                </label>
+                <input type="text" name="JobTitle" value="@Model.JobTitle" required placeholder="Contoh: Backend Developer"
+                       class="input-field w-full px-4 py-3 rounded-xl border border-emerald-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800">
+            </div>
+
+            <!-- Password Row -->
+            <div class="grid grid-cols-2 gap-4 mb-6">
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        <i class="fas fa-lock text-emerald-500 mr-1.5"></i>Password <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="Password" id="pwd" required placeholder="Min. 6 karakter"
+                               class="input-field w-full px-4 py-3 pr-10 rounded-xl border border-emerald-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800">
+                        <button type="button" onclick="togglePwd('pwd','eye1')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500">
+                            <i class="fas fa-eye text-sm" id="eye1"></i>
+                        </button>
+                    </div>
+                </div>
+                <div>
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        <i class="fas fa-lock text-emerald-500 mr-1.5"></i>Konfirmasi <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="ConfirmPassword" id="pwd2" required placeholder="Ulangi password"
+                               class="input-field w-full px-4 py-3 pr-10 rounded-xl border border-emerald-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800">
+                        <button type="button" onclick="togglePwd('pwd2','eye2')"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-emerald-500">
+                            <i class="fas fa-eye text-sm" id="eye2"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Submit -->
+            <button type="submit"
+                    class="btn-register w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3.5 rounded-xl text-base">
+                <i class="fas fa-user-plus mr-2"></i>Buat Akun
+            </button>
+        </form>
+
+        <p class="text-center text-slate-500 text-sm mt-5">
+            Sudah punya akun?
+            <a href="/Account/Login" class="text-emerald-600 font-semibold hover:text-emerald-800 transition-colors">Masuk di sini</a>
+        </p>
+    </div>
+
+    <script>
+        function togglePwd(fieldId, iconId) {
+            const f = document.getElementById(fieldId);
+            const i = document.getElementById(iconId);
+            f.type = f.type === 'password' ? 'text' : 'password';
+            i.className = f.type === 'password' ? 'fas fa-eye text-sm' : 'fas fa-eye-slash text-sm';
+        }
+    </script>
+</body>
+</html>

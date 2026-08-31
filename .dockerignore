@@ -1,0 +1,16 @@
+**/.git
+**/.vs
+**/.vscode
+**/bin
+**/obj
+**/publish
+**/scratch
+**/*.zip
+**/*.user
+**/*.db
+**/*.db-shm
+**/*.db-wal
+**/db_data
+**/uploads
+**/TestResults
+**/.system_generated

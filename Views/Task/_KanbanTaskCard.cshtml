@@ -1,0 +1,165 @@
+@model TrackerKerja.Models.WorkTask
+@inject Microsoft.AspNetCore.Identity.UserManager<TrackerKerja.Models.AppUser> UserManager
+@using TrackerKerja.Services
+@{
+    var currentUser = await UserManager.GetUserAsync(User);
+    var isAdmin = User.IsInRole("Admin");
+    bool canEdit = TaskPermissionHelper.CanEditTask(currentUser, isAdmin, Model);
+
+    var isOverdue = Model.DueDate.HasValue && Model.DueDate.Value < DateTime.Now && Model.Status != TrackerKerja.Models.TaskStatus.Done;
+    var priorityBadge = Model.Priority switch
+    {
+        TrackerKerja.Models.TaskPriority.Critical => "bg-red-100 text-red-700 border-red-200",
+        TrackerKerja.Models.TaskPriority.High => "bg-amber-100 text-amber-700 border-amber-200",
+        TrackerKerja.Models.TaskPriority.Low => "bg-emerald-100 text-emerald-700 border-emerald-200",
+        _ => "bg-blue-100 text-blue-700 border-blue-200"
+    };
+}
+
+<div class="kanban-card bg-white rounded-2xl p-4 border border-slate-200 shadow-2xs hover:shadow-md hover:border-indigo-300 transition-all select-none group @(!canEdit ? "opacity-90" : "")"
+     draggable="@(canEdit ? "true" : "false")"
+     ondragstart="@(canEdit ? "handleDragStart(event)" : "return false;")"
+     ondragend="@(canEdit ? "handleDragEnd(event)" : "")"
+     data-task-id="@Model.Id"
+     data-status="@Model.Status"
+     title="@(!canEdit ? "Tugas milik orang lain (Hanya dapat diubah oleh PIC, SA, TW, atau Admin)" : "")">
+
+    <!-- Card Header: Badges & Actions -->
+    <div class="flex items-center justify-between gap-2 mb-2">
+        <div class="flex items-center gap-1.5 flex-wrap">
+            <span class="font-mono font-bold text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-1.5 py-0.5 rounded">
+                @Model.TaskCode
+            </span>
+            <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg border @priorityBadge">
+                @Model.Priority
+            </span>
+            @if (Model.Project != null)
+            {
+                <span class="text-[10px] font-semibold px-2 py-0.5 rounded-lg bg-slate-50 text-slate-700 border border-slate-200 truncate max-w-[110px]" title="@Model.Project.Name">
+                    @Model.Project.Name
+                </span>
+            }
+        </div>
+
+        @if (canEdit)
+        {
+            <a href="/Task/Edit/@Model.Id" class="text-slate-400 hover:text-indigo-600 p-1 transition-colors" title="Edit Tugas">
+                <i class="fas fa-pen text-xs"></i>
+            </a>
+        }
+        else
+        {
+            <span class="text-slate-300 p-1 cursor-not-allowed" title="Akses Terbatas: Hanya PIC, System Analyst, Tech Writer, atau Administrator">
+                <i class="fas fa-lock text-[10px]"></i>
+            </span>
+        }
+    </div>
+
+    <!-- Milestone (SDLC Waterfall) Pill -->
+    @{
+        var msKanban = Model.Milestone ?? "Implementation";
+        var msBadgeK = msKanban switch {
+            "Requirement Analysis" => "bg-blue-50 text-blue-700 border-blue-200",
+            "System Design" => "bg-purple-50 text-purple-700 border-purple-200",
+            "Implementation" => "bg-indigo-50 text-indigo-700 border-indigo-200",
+            "Testing & QA" => "bg-amber-50 text-amber-700 border-amber-200",
+            "Deployment" => "bg-emerald-50 text-emerald-700 border-emerald-200",
+            "Maintenance" => "bg-slate-100 text-slate-700 border-slate-200",
+            _ => "bg-indigo-50 text-indigo-700 border-indigo-200"
+        };
+        var msIconK = msKanban switch {
+            "Requirement Analysis" => "fa-clipboard-list text-blue-500",
+            "System Design" => "fa-drafting-compass text-purple-500",
+            "Implementation" => "fa-code text-indigo-500",
+            "Testing & QA" => "fa-vial text-amber-500",
+            "Deployment" => "fa-rocket text-emerald-500",
+            "Maintenance" => "fa-tools text-slate-500",
+            _ => "fa-layer-group text-indigo-500"
+        };
+    }
+    <div class="mb-1.5 flex items-center">
+        <span class="text-[9px] font-bold px-2 py-0.5 rounded-md border @msBadgeK inline-flex items-center gap-1">
+            <i class="fas @msIconK text-[8px]"></i> @msKanban
+        </span>
+    </div>
+
+    <!-- Parent / Child Indicator Pill -->
+    @if (Model.HasParent)
+    {
+        <div class="mb-1.5">
+            <span class="text-[9px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1" title="Sub-task dari @Model.ParentCode">
+                <i class="fas fa-level-up-alt rotate-90 text-[8px]"></i> Induk: <strong class="font-mono">@Model.ParentCode</strong>
+            </span>
+        </div>
+    }
+    else if (Model.IsParent)
+    {
+        <div class="mb-1.5">
+            <span class="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md inline-flex items-center gap-1">
+                <i class="fas fa-check-double text-emerald-500"></i> Tugas Induk (@Model.ChildTasks.Count Sub-Task Selesai)
+            </span>
+        </div>
+    }
+
+    <!-- Title -->
+    <h4 class="font-bold text-slate-800 text-xs leading-snug mb-2 group-hover:text-indigo-600 transition-colors line-clamp-2">
+        @Model.Title
+    </h4>
+
+    <!-- Obstacle / Solution Badges if present -->
+    @if (!string.IsNullOrEmpty(Model.Obstacle) || !string.IsNullOrEmpty(Model.Solution))
+    {
+        <div class="flex items-center gap-1.5 mb-2.5 flex-wrap">
+            @if (!string.IsNullOrEmpty(Model.Obstacle))
+            {
+                <span class="text-[9px] font-bold bg-amber-50 text-amber-700 border border-amber-200 px-1.5 py-0.5 rounded-md flex items-center gap-1" title="Kendala: @Model.Obstacle">
+                    <i class="fas fa-exclamation-circle text-amber-500"></i> Ada Kendala
+                </span>
+            }
+            @if (!string.IsNullOrEmpty(Model.Solution))
+            {
+                <span class="text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 px-1.5 py-0.5 rounded-md flex items-center gap-1" title="Solusi: @Model.Solution">
+                    <i class="fas fa-lightbulb text-emerald-500"></i> Ada Solusi
+                </span>
+            }
+        </div>
+    }
+
+    <!-- Progress Bar -->
+    <div class="mb-3">
+        <div class="flex items-center justify-between text-[10px] font-semibold text-slate-500 mb-1">
+            <span>Progress</span>
+            <span class="font-mono font-bold text-indigo-600 card-progress-text">@(Model.Progress)%</span>
+        </div>
+        <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+            <div class="card-progress-bar h-full bg-gradient-to-r from-indigo-500 to-purple-600 transition-all duration-300 rounded-full"
+                 style="width: @(Model.Progress)%"></div>
+        </div>
+    </div>
+
+    <!-- Card Footer: Due Date & Assignee -->
+    <div class="flex items-center justify-between pt-2.5 border-t border-slate-100 text-xs">
+        <!-- Due Date -->
+        <div class="flex items-center gap-1 text-[11px] font-medium @(isOverdue ? "text-red-600 font-bold" : "text-slate-400")">
+            <i class="fas @(isOverdue ? "fa-exclamation-triangle text-red-500" : "fa-calendar-alt text-slate-400") text-[10px]"></i>
+            <span>@(Model.DueDate.HasValue ? Model.DueDate.Value.ToString("dd MMM") : "—")</span>
+        </div>
+
+        <!-- PIC Assignee -->
+        <div class="flex items-center gap-1.5" title="Ditugaskan ke: @(Model.AssignedToUser?.FullName ?? "Belum Ditugaskan")">
+            @if (!string.IsNullOrEmpty(Model.AssignedToUser?.ProfilePictureUrl))
+            {
+                <img src="@Model.AssignedToUser.ProfilePictureUrl" class="w-5 h-5 rounded-full object-cover shadow-2xs border border-white" />
+            }
+            else
+            {
+                <div class="w-5 h-5 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-[9px]">
+                    @(string.IsNullOrEmpty(Model.AssignedToUser?.FullName) ? "?" : Model.AssignedToUser.FullName.Substring(0, 1))
+                </div>
+            }
+            <span class="text-[11px] font-semibold text-slate-600 truncate max-w-[80px]">
+                @(string.IsNullOrEmpty(Model.AssignedToUser?.FullName) ? "Unassigned" : Model.AssignedToUser.FullName.Split(' ')[0])
+            </span>
+        </div>
+    </div>
+</div>

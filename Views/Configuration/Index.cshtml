@@ -1,0 +1,443 @@
+@{
+    ViewData["Title"] = "Konfigurasi Sistem & Database";
+    var baseUrl = ViewBag.GlobalBaseUrl as string ?? "http://localhost:5000";
+    var tableStats = ViewBag.TableStats as Dictionary<string, int> ?? new Dictionary<string, int>();
+}
+
+<!-- Page Header -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <div>
+        <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md">
+                <i class="fas fa-cogs text-sm"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Konfigurasi Sistem & Database</h1>
+                <p class="text-xs text-slate-500 font-medium">Setting Global URL Base, pemeliharaan kapasitas SQLite, dan dokumentasi REST API</p>
+            </div>
+        </div>
+    </div>
+    <div class="flex items-center gap-2.5 flex-wrap">
+        <a href="/swagger" target="_blank"
+           class="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3.5 py-2.5 rounded-2xl border border-indigo-200 shadow-xs transition-all"
+           title="Buka Swagger API Documentation">
+            <i class="fas fa-file-code text-indigo-500"></i>
+            <span>Swagger API Doc</span>
+        </a>
+        <a href="/AuditTrail"
+           class="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold px-3.5 py-2.5 rounded-2xl border border-amber-200 shadow-xs transition-all"
+           title="Lihat Log Audit Trail">
+            <i class="fas fa-shield-alt text-amber-500"></i>
+            <span>Audit Trail</span>
+        </a>
+    </div>
+</div>
+
+<!-- Alerts for Success & Error TempData -->
+@if (TempData["Success"] != null)
+{
+    <div class="p-4 mb-6 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-800 flex items-start gap-3 shadow-xs animate-slideIn">
+        <i class="fas fa-check-circle text-emerald-500 text-lg mt-0.5"></i>
+        <div class="flex-1">
+            <h4 class="font-bold text-xs">Operasi Berhasil</h4>
+            <p class="text-xs mt-0.5">@TempData["Success"]</p>
+        </div>
+    </div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="p-4 mb-6 rounded-2xl bg-rose-50 border border-rose-200 text-rose-800 flex items-start gap-3 shadow-xs animate-slideIn">
+        <i class="fas fa-exclamation-triangle text-rose-500 text-lg mt-0.5"></i>
+        <div class="flex-1">
+            <h4 class="font-bold text-xs">Terjadi Kesalahan</h4>
+            <p class="text-xs mt-0.5">@TempData["Error"]</p>
+        </div>
+    </div>
+}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+    <!-- LEFT COLUMN: Global Base URL & API Doc (2 Cols) -->
+    <div class="lg:col-span-2 space-y-6">
+
+        <!-- 1. GLOBAL BASE URL SETTING -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base font-bold">
+                        <i class="fas fa-globe"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800">Global Base URL Setting</h3>
+                        <p class="text-xs text-slate-400">URL dasar aplikasi untuk integrasi REST API, Swagger, dan Webhook</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Aktif
+                </span>
+            </div>
+
+            <form method="post" asp-action="UpdateBaseUrl" asp-controller="Configuration" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label for="baseUrlInput" class="block text-xs font-bold text-slate-700 mb-1.5">
+                        Global Application Base URL
+                    </label>
+                    <div class="relative">
+                        <i class="fas fa-link absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="url" id="baseUrlInput" name="baseUrl" value="@baseUrl" required
+                               placeholder="http://localhost:5000 atau https://domain-anda.com"
+                               class="w-full pl-9 pr-24 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <button type="button" onclick="detectCurrentHost()"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-[11px] font-bold transition-all cursor-pointer">
+                            Auto Detect
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1.5">
+                        Terakhir diperbarui: <span class="font-semibold text-slate-600">@(((DateTime)ViewBag.BaseUrlUpdatedAt).ToString("dd MMM yyyy HH:mm:ss"))</span>
+                    </p>
+                </div>
+
+                <div class="flex items-center justify-between pt-2">
+                    <div class="text-xs text-slate-500">
+                        <span>Preview API Endpoint: </span>
+                        <code class="text-indigo-600 font-mono font-bold bg-indigo-50 px-1.5 py-0.5 rounded" id="preview-api-url">@baseUrl/api/tasks</code>
+                    </div>
+                    <button type="submit"
+                            class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-indigo-200 transition-all cursor-pointer">
+                        <i class="fas fa-save"></i>
+                        <span>Simpan URL Base</span>
+                    </button>
+                </div>
+            </form>
+
+            <!-- Code Integration Snippets -->
+            <div class="mt-6 pt-5 border-t border-slate-100">
+                <h4 class="text-xs font-bold text-slate-700 mb-2.5 flex items-center gap-2">
+                    <i class="fas fa-code text-indigo-500"></i>
+                    Contoh Integrasi API Menggunakan Base URL Ini
+                </h4>
+                <div class="bg-slate-900 rounded-2xl p-4 text-xs font-mono text-slate-200 overflow-x-auto relative">
+                    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px] text-slate-400">
+                        <span>cURL / HTTP Request</span>
+                        <button onclick="copyCodeSnippet()" class="hover:text-white transition-colors text-slate-400 cursor-pointer" title="Salin Snippet">
+                            <i class="fas fa-copy mr-1"></i>Salin
+                        </button>
+                    </div>
+                    <pre id="code-snippet" class="text-[11px] leading-relaxed text-indigo-300">curl -X GET "@baseUrl/api/tasks?pageSize=10" \
+  -H "Accept: application/json"</pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. API DOC & SWAGGER OVERVIEW -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base font-bold">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800">Dokumentasi REST API & Swagger</h3>
+                        <p class="text-xs text-slate-400">Spesifikasi OpenAPI 3.0 interaktif untuk seluruh modul sistem</p>
+                    </div>
+                </div>
+                <a href="/swagger" target="_blank"
+                   class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all">
+                    <span>Buka Swagger</span>
+                    <i class="fas fa-external-link-alt text-[10px]"></i>
+                </a>
+            </div>
+
+            <!-- Swagger Modules Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Tasks</span>
+                    <span class="text-xs font-mono font-bold text-indigo-600">/api/tasks</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD & Summary</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Projects</span>
+                    <span class="text-xs font-mono font-bold text-amber-600">/api/projects</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD & Proyeksi</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Notes</span>
+                    <span class="text-xs font-mono font-bold text-violet-600">/api/notes</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD & Pin Toggle</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Timesheets</span>
+                    <span class="text-xs font-mono font-bold text-emerald-600">/api/timesheets</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Live Timer & Logs</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Members</span>
+                    <span class="text-xs font-mono font-bold text-teal-600">/api/members</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Manajemen Tim</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Reports</span>
+                    <span class="text-xs font-mono font-bold text-blue-600">/api/reports</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Gantt & Dashboard</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Audit</span>
+                    <span class="text-xs font-mono font-bold text-rose-600">/api/audit-trail</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Logs & Pembersihan</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Configuration</span>
+                    <span class="text-xs font-mono font-bold text-indigo-600">/api/configuration</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">DB Shrink & Settings</span>
+                </div>
+            </div>
+
+            <!-- OpenAPI JSON Endpoint link -->
+            <div class="flex items-center justify-between p-3 bg-indigo-50/60 rounded-2xl border border-indigo-100 text-xs">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-file-code text-indigo-500"></i>
+                    <span class="font-semibold text-slate-700">Raw OpenAPI JSON Specification:</span>
+                </div>
+                <a href="/swagger/v1/swagger.json" target="_blank" class="font-mono font-bold text-indigo-600 hover:text-indigo-800">
+                    /swagger/v1/swagger.json &rarr;
+                </a>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- RIGHT COLUMN: Database Capacity & Maintenance (1 Col) -->
+    <div class="space-y-6">
+
+        <!-- 3. DATABASE CAPACITY INFO -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
+            <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
+                <div class="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center text-base font-bold">
+                    <i class="fas fa-database"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-slate-800">Kapasitas Database</h3>
+                    <p class="text-xs text-slate-400">Informasi storage file SQLite & tabel</p>
+                </div>
+            </div>
+
+            <!-- Storage Metrics Cards -->
+            <div class="space-y-3 mb-5">
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Ukuran File Database</span>
+                        <span class="text-lg font-black text-slate-800">@ViewBag.FileSizeFormatted</span>
+                    </div>
+                    <span class="text-xs font-mono font-semibold text-slate-500 bg-white px-2 py-1 rounded-lg border border-slate-200">
+                        @ViewBag.DatabaseFileName
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Ruang Kosong</span>
+                        <span class="text-xs font-black text-amber-600">@ViewBag.ReclaimableFormatted</span>
+                        <span class="text-[10px] text-slate-400 block">(@ViewBag.FreelistCount halaman)</span>
+                    </div>
+                    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Lampiran File</span>
+                        <span class="text-xs font-black text-indigo-600">@ViewBag.AttachmentsSizeFormatted</span>
+                        <span class="text-[10px] text-slate-400 block">folder uploads</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Record Statistics -->
+            <div>
+                <h4 class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
+                    <span>Jumlah Baris per Tabel</span>
+                    <span class="text-[10px] text-slate-400 font-medium">Auto Count</span>
+                </h4>
+                <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1 text-xs">
+                    @foreach (var stat in tableStats)
+                    {
+                        <div class="flex items-center justify-between py-1 px-2.5 rounded-lg bg-slate-50/70 hover:bg-slate-100 transition-colors">
+                            <span class="text-slate-600">@stat.Key</span>
+                            <span class="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px]">@stat.Value</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. SHRINK DATABASE (VACUUM) -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
+            <div class="flex items-center gap-3 pb-3 mb-3 border-b border-slate-100">
+                <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-base font-bold">
+                    <i class="fas fa-compress-alt"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-slate-800">Shrink / Kompresi Database</h3>
+                    <p class="text-xs text-slate-400">Jalankan VACUUM untuk mengklaim ruang kosong</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-600 leading-relaxed mb-4">
+                Operasi <strong>VACUUM</strong> mereorganisasi database SQLite untuk membersihkan ruang kosong dari data yang telah dihapus dan mengoptimalkan performa kueri.
+            </p>
+
+            <form method="post" asp-action="ShrinkDatabase" asp-controller="Configuration"
+                  data-confirm="Jalankan proses VACUUM pada database SQLite sekarang? Database akan dikompresi untuk mereklamasi ruang kosong dan mengoptimalkan performa."
+                  data-confirm-title="Shrink Database (VACUUM)"
+                  data-confirm-btn="<i class='fas fa-broom mr-1.5'></i>Ya, Jalankan VACUUM">
+                @Html.AntiForgeryToken()
+                <button type="submit" id="btn-shrink"
+                        class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md shadow-amber-200 transition-all cursor-pointer">
+                    <i class="fas fa-broom"></i>
+                    <span>Jalankan Shrink Database (VACUUM)</span>
+                </button>
+            </form>
+        </div>
+
+        <!-- 5. RESET DATABASE (MAINTENANCE) -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-rose-100">
+            <div class="flex items-center gap-3 pb-3 mb-3 border-b border-slate-100">
+                <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-base font-bold">
+                    <i class="fas fa-trash-restore"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-slate-800">Reset Data Database</h3>
+                    <p class="text-xs text-slate-400">Pembersihan data transaksi atau factory reset</p>
+                </div>
+            </div>
+
+            <p class="text-xs text-slate-500 leading-relaxed mb-4">
+                Fitur pemeliharaan sistem untuk membersihkan data lama. Tindakan ini tidak dapat dibatalkan.
+            </p>
+
+            <button type="button" onclick="openResetModal()"
+                    class="w-full flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-2.5 px-4 rounded-xl text-xs transition-all cursor-pointer">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Menu Reset Database...</span>
+            </button>
+        </div>
+
+    </div>
+
+</div>
+
+<!-- RESET CONFIRMATION MODAL -->
+<div id="reset-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-slideIn">
+        <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center text-sm font-bold">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Konfirmasi Reset Database</h3>
+                    <p class="text-[11px] text-slate-400">Pilih mode reset yang diinginkan</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeResetModal()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form method="post" asp-action="ResetDatabase" asp-controller="Configuration" class="mt-4 space-y-4">
+            @Html.AntiForgeryToken()
+
+            <!-- Mode Selection -->
+            <div class="space-y-2.5 text-xs">
+                <label class="flex items-start gap-3 p-3 rounded-2xl border border-slate-200 bg-slate-50/50 hover:bg-slate-50 cursor-pointer">
+                    <input type="radio" name="mode" value="transactional" checked class="mt-0.5 text-indigo-600 focus:ring-indigo-500">
+                    <div>
+                        <span class="font-bold text-slate-800 block">1. Reset Data Transaksi (Aman)</span>
+                        <span class="text-slate-500 text-[11px] block mt-0.5">
+                            Menghapus Sesi Kerja (Sessions), Audit Log, Riwayat JSON, dan Log Import Excel. Akun Pengguna, Proyek, dan Tugas tetap aman.
+                        </span>
+                    </div>
+                </label>
+
+                <label class="flex items-start gap-3 p-3 rounded-2xl border border-rose-200 bg-rose-50/40 hover:bg-rose-50 cursor-pointer">
+                    <input type="radio" name="mode" value="factory" class="mt-0.5 text-rose-600 focus:ring-rose-500">
+                    <div>
+                        <span class="font-bold text-rose-800 block">2. Factory Reset Data Transaksi & Tugas</span>
+                        <span class="text-rose-600 text-[11px] block mt-0.5">
+                            Menghapus seluruh Tugas, Catatan, File Lampiran, Sesi Kerja, dan Log. Akun Pengguna & Master Data tetap ada.
+                        </span>
+                    </div>
+                </label>
+            </div>
+
+            <!-- Confirmation Phrase Input -->
+            <div>
+                <label for="confirmationInput" class="block text-xs font-bold text-slate-700 mb-1">
+                    Ketik <span class="font-mono text-rose-600 bg-rose-50 px-1.5 py-0.5 rounded border border-rose-200">RESET-CONFIRM</span> untuk melanjutkan:
+                </label>
+                <input type="text" id="confirmationInput" name="confirmationCode" required autocomplete="off"
+                       placeholder="RESET-CONFIRM" oninput="validateResetCode()"
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-bold focus:outline-none focus:ring-2 focus:ring-rose-500">
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                <button type="button" onclick="closeResetModal()"
+                        class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <button type="submit" id="btn-execute-reset" disabled
+                        class="px-4 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer">
+                    <i class="fas fa-trash-alt mr-1"></i>Eksekusi Reset
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+function detectCurrentHost() {
+    const origin = window.location.origin;
+    document.getElementById('baseUrlInput').value = origin;
+    updatePreviewUrl(origin);
+}
+
+document.getElementById('baseUrlInput').addEventListener('input', function(e) {
+    updatePreviewUrl(e.target.value);
+});
+
+function updatePreviewUrl(val) {
+    const clean = val.replace(/\/+$/, '');
+    document.getElementById('preview-api-url').innerText = `${clean}/api/tasks`;
+    document.getElementById('code-snippet').innerText = `curl -X GET "${clean}/api/tasks?pageSize=10" \\\n  -H "Accept: application/json"`;
+}
+
+function copyCodeSnippet() {
+    const text = document.getElementById('code-snippet').innerText;
+    navigator.clipboard.writeText(text).then(() => {
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Tersalin', 'Snippet perintah cURL berhasil disalin ke clipboard!', 'success');
+        } else {
+            alert('Snippet perintah cURL berhasil disalin!');
+        }
+    });
+}
+
+function openResetModal() {
+    document.getElementById('reset-modal').classList.remove('hidden');
+    document.getElementById('confirmationInput').value = '';
+    document.getElementById('btn-execute-reset').disabled = true;
+}
+
+function closeResetModal() {
+    document.getElementById('reset-modal').classList.add('hidden');
+}
+
+function validateResetCode() {
+    const val = document.getElementById('confirmationInput').value.trim();
+    const btn = document.getElementById('btn-execute-reset');
+    btn.disabled = (val !== 'RESET-CONFIRM');
+}
+
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeResetModal();
+});
+</script>
+}

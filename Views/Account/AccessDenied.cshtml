@@ -1,0 +1,24 @@
+@{
+    ViewData["Title"] = "Akses Ditolak";
+}
+
+<div class="min-h-[70vh] flex items-center justify-center p-4">
+    <div class="max-w-md w-full text-center bg-white rounded-3xl p-8 border border-slate-200/80 shadow-xl">
+        <div class="w-20 h-20 bg-rose-50 text-rose-500 rounded-3xl flex items-center justify-center text-3xl mx-auto mb-5 shadow-inner">
+            <i class="fas fa-lock"></i>
+        </div>
+        <h2 class="text-2xl font-extrabold text-slate-800 tracking-tight mb-2">Akses Ditolak (403)</h2>
+        <p class="text-slate-500 text-sm mb-6 leading-relaxed">
+            Halaman pengaturan atau menu ini hanya dapat diakses oleh akun dengan hak istimewa <strong>Administrator</strong>.
+        </p>
+
+        <div class="flex flex-col gap-2.5">
+            <a href="/" class="w-full py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-600/30 transition-all">
+                <i class="fas fa-home mr-2"></i> Kembali ke Dashboard
+            </a>
+            <a href="/Task" class="w-full py-3 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl font-bold text-sm transition-all">
+                <i class="fas fa-tasks mr-2"></i> Buka Daftar Tugas
+            </a>
+        </div>
+    </div>
+</div>

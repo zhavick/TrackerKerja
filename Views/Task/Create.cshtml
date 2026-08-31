@@ -1,0 +1,333 @@
+@model TrackerKerja.ViewModels.TaskFormViewModel
+@{
+    var isEdit = Model.Task.Id > 0;
+    ViewData["Title"] = isEdit ? "Edit Tugas" : "Buat Tugas Baru";
+    var priorities = new[] { ("Low","🟢 Low"), ("Medium","🔵 Medium"), ("High","🟡 High"), ("Critical","🔴 Critical") };
+    var statuses = new[] { ("Todo","📋 Todo"), ("InProgress","🔄 In Progress"), ("Done","✅ Done") };
+}
+
+<div class="max-w-2xl mx-auto">
+    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
+                    <i class="fas @(isEdit ? "fa-edit" : "fa-plus") text-white"></i>
+                </div>
+                <div>
+                    <h2 class="text-white font-bold text-lg">@(isEdit ? "Edit Tugas" : "Buat Tugas Baru")</h2>
+                    <p class="text-indigo-200 text-sm">@(isEdit ? "Perbarui detail tugas" : "Tambahkan tugas ke dalam sistem")</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="p-6">
+            <form method="post" action="@(isEdit ? $"/Task/Edit/{Model.Task.Id}" : "/Task/Create")">
+                @Html.AntiForgeryToken()
+                @if (isEdit) { <input type="hidden" name="Id" value="@Model.Task.Id" /> }
+
+                <!-- Title -->
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        <i class="fas fa-heading text-indigo-400 mr-2"></i>Judul Tugas <span class="text-red-500">*</span>
+                    </label>
+                    <input type="text" name="Title" value="@Model.Task.Title" required
+                           placeholder="Masukkan judul tugas..."
+                           class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 transition-all">
+                </div>
+
+                <!-- Description -->
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        <i class="fas fa-align-left text-indigo-400 mr-2"></i>Deskripsi Tugas
+                    </label>
+                    <textarea name="Description" rows="3" placeholder="Deskripsi tugas (opsional)..."
+                              class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 transition-all resize-none">@Model.Task.Description</textarea>
+                </div>
+
+                <!-- Kendala / Hambatan -->
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>Kendala / Isu / Hambatan
+                    </label>
+                    <textarea name="Obstacle" rows="3" placeholder="Tuliskan kendala atau masalah yang dihadapi dalam pengerjaan tugas (opsional)..."
+                              class="w-full px-4 py-3 rounded-xl border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-slate-800 transition-all resize-none bg-amber-50/20">@Model.Task.Obstacle</textarea>
+                </div>
+
+                <!-- Solusi / Tindakan Penyelesaian -->
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        <i class="fas fa-lightbulb text-emerald-500 mr-2"></i>Solusi / Rencana Penyelesaian
+                    </label>
+                    <textarea name="Solution" rows="3" placeholder="Tuliskan solusi, tindakan penanganan, atau hasil troubleshooting (opsional)..."
+                              class="w-full px-4 py-3 rounded-xl border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800 transition-all resize-none bg-emerald-50/20">@Model.Task.Solution</textarea>
+                </div>
+
+                <!-- Assignee (Ditugaskan Kepada) -->
+                <div class="mb-5">
+                    <label class="block text-sm font-semibold text-slate-700 mb-2">
+                        <i class="fas fa-user-check text-indigo-500 mr-2"></i>Ditugaskan Kepada (Assignee)
+                    </label>
+                    <select name="AssignedToUserId" class="select2 w-full" data-placeholder="-- Cari PIC / Anggota Tim --">
+                        <option value="">-- Tanpa Penugasan / Belum Ditugaskan --</option>
+                        @foreach (var u in Model.Users)
+                        {
+                            if (Model.Task.AssignedToUserId == u.Id)
+                            {
+                                <option value="@u.Id" selected>👤 @u.FullName (@u.Email - @u.JobTitle)</option>
+                            }
+                            else
+                            {
+                                <option value="@u.Id">👤 @u.FullName (@u.Email - @u.JobTitle)</option>
+                            }
+                        }
+                    </select>
+                </div>
+
+                <!-- Parent Task (Tugas Induk) -->
+                <div class="mb-5 bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-semibold text-slate-700">
+                            <i class="fas fa-sitemap text-indigo-500 mr-2"></i>Tugas Induk (Parent Task)
+                        </label>
+                        <span class="text-[11px] font-bold text-slate-500 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
+                            @(Model.Task.ParentTaskId.HasValue ? "Sub-Task (Memiliki Induk)" : "Tugas Utama (Root Task)")
+                        </span>
+                    </div>
+                    <select name="ParentTaskId" id="parentTaskSelect" class="select2 w-full" data-placeholder="-- Cari & Pilih Tugas Induk (Kode/Judul/Proyek) --">
+                        <option value="">-- (Tugas Utama / Mandiri - Tanpa Induk) --</option>
+                        @foreach (var parent in Model.AvailableParentTasks)
+                        {
+                            <option value="@parent.Id" selected="@(Model.Task.ParentTaskId == parent.Id)">
+                                [@parent.TaskCode] @parent.Title (@(parent.Project?.Name ?? "Tanpa Proyek"))
+                            </option>
+                        }
+                    </select>
+                    <p class="text-[11px] text-slate-500 mt-2">
+                        <i class="fas fa-info-circle text-indigo-400 mr-1"></i>Ketik kode tugas (contoh: <code>TSK-</code>), judul, atau nama proyek untuk mencari tugas induk dengan cepat.
+                    </p>
+                </div>
+
+                <!-- Milestone (SDLC Waterfall Phase) -->
+                <div class="mb-5 bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-semibold text-slate-700">
+                            <i class="fas fa-layer-group text-indigo-500 mr-2"></i>Milestone (Fase SDLC Waterfall) <span class="text-indigo-600 font-bold">*</span>
+                        </label>
+                        <span class="text-[11px] font-bold text-indigo-700 bg-white px-2 py-0.5 rounded-lg border border-indigo-200">
+                            Waterfall SDLC
+                        </span>
+                    </div>
+                    <select name="Milestone" class="select2 w-full" data-placeholder="-- Pilih Milestone Fase SDLC --">
+                        @if (Model.Milestones != null && Model.Milestones.Any())
+                        {
+                            foreach (var m in Model.Milestones)
+                            {
+                                <option value="@m.Name" selected="@(Model.Task.Milestone == m.Name)">
+                                    🎯 @m.Name (@m.Description)
+                                </option>
+                            }
+                        }
+                        else
+                        {
+                            <option value="Requirement Analysis" selected="@(Model.Task.Milestone == "Requirement Analysis")">📋 1. Requirement Analysis (Analisis Kebutuhan & Dokumen SRS/BRD)</option>
+                            <option value="System Design" selected="@(Model.Task.Milestone == "System Design")">📐 2. System Design (Desain Sistem, Arsitektur & UI/UX)</option>
+                            <option value="Implementation" selected="@(string.IsNullOrEmpty(Model.Task.Milestone) || Model.Task.Milestone == "Implementation")">💻 3. Implementation (Pengembangan & Coding Backend/Frontend)</option>
+                            <option value="Testing & QA" selected="@(Model.Task.Milestone == "Testing & QA")">🧪 4. Testing & QA (Pengujian, QA, Bug Fixing & UAT)</option>
+                            <option value="Deployment" selected="@(Model.Task.Milestone == "Deployment")">🚀 5. Deployment (Penyebaran / Rilis Production & CI/CD)</option>
+                            <option value="Maintenance" selected="@(Model.Task.Milestone == "Maintenance")">🛠️ 6. Maintenance (Pemeliharaan, Monitoring & Support)</option>
+                        }
+                    </select>
+                    <p class="text-[11px] text-slate-500 mt-2">
+                        <i class="fas fa-info-circle text-indigo-400 mr-1"></i>Pilih fase SDLC Waterfall yang sesuai untuk memproyeksikan tahapan siklus hidup tugas ini.
+                    </p>
+                </div>
+
+                <!-- Project & Category -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                            <i class="fas fa-folder text-amber-400 mr-2"></i>Proyek
+                        </label>
+                        <select name="ProjectId" class="select2 w-full" data-placeholder="-- Pilih Proyek --">
+                            <option value="">-- Pilih Proyek --</option>
+                            @foreach (var proj in Model.Projects)
+                            {
+                                if (Model.Task.ProjectId == proj.Id)
+                                {
+                                    <option value="@proj.Id" selected>@proj.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@proj.Id">@proj.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                            <i class="fas fa-tag text-cyan-400 mr-2"></i>Kategori
+                        </label>
+                        <select name="CategoryId" class="select2 w-full" data-placeholder="-- Pilih Kategori --">
+                            <option value="">-- Pilih Kategori --</option>
+                            @foreach (var cat in Model.Categories)
+                            {
+                                if (Model.Task.CategoryId == cat.Id)
+                                {
+                                    <option value="@cat.Id" selected>@cat.Name</option>
+                                }
+                                else
+                                {
+                                    <option value="@cat.Id">@cat.Name</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Priority & Status -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                            <i class="fas fa-flag text-red-400 mr-2"></i>Prioritas
+                        </label>
+                        <select name="Priority" class="select2 w-full" data-placeholder="-- Pilih Prioritas --">
+                            @foreach (var (val, label) in priorities)
+                            {
+                                if (Model.Task.Priority.ToString() == val)
+                                {
+                                    <option value="@val" selected>@label</option>
+                                }
+                                else
+                                {
+                                    <option value="@val">@label</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                            <i class="fas fa-spinner text-indigo-400 mr-2"></i>Status
+                        </label>
+                        <select name="Status" id="taskStatusSelect" class="select2 w-full" data-placeholder="-- Pilih Status --">
+                            @foreach (var (val, label) in statuses)
+                            {
+                                if (Model.Task.Status.ToString() == val)
+                                {
+                                    <option value="@val" selected>@label</option>
+                                }
+                                else
+                                {
+                                    <option value="@val">@label</option>
+                                }
+                            }
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Progress Task (%) -->
+                <div class="mb-5 bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100/80">
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                            <i class="fas fa-chart-line text-indigo-500"></i>Progress Pengerjaan Tugas
+                        </label>
+                        <span id="progressDisplay" class="text-sm font-extrabold text-indigo-600 bg-white px-3 py-1 rounded-xl shadow-xs border border-indigo-100">
+                            @(Model.Task.Progress)%
+                        </span>
+                    </div>
+
+                    <input type="range" name="Progress" id="progressSlider" min="0" max="100" step="5" value="@Model.Task.Progress"
+                           class="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
+
+                    <!-- Quick Preset Buttons -->
+                    <div class="flex items-center justify-between gap-1.5 mt-3 flex-wrap sm:flex-nowrap">
+                        <button type="button" onclick="setProgress(0)" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all cursor-pointer">0%</button>
+                        <button type="button" onclick="setProgress(25)" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all cursor-pointer">25%</button>
+                        <button type="button" onclick="setProgress(50)" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all cursor-pointer">50%</button>
+                        <button type="button" onclick="setProgress(75)" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all cursor-pointer">75%</button>
+                        <button type="button" onclick="setProgress(100)" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-all cursor-pointer">100%</button>
+                    </div>
+                </div>
+
+                <!-- Start Date & Due Date -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                            <i class="fas fa-play-circle text-emerald-400 mr-2"></i>Tanggal Mulai
+                        </label>
+                        <input type="date" name="StartDate" value="@(Model.Task.StartDate?.ToString("yyyy-MM-dd"))"
+                               class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-700 transition-all">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-semibold text-slate-700 mb-2">
+                            <i class="fas fa-calendar-times text-red-400 mr-2"></i>Deadline
+                        </label>
+                        <input type="date" name="DueDate" value="@(Model.Task.DueDate?.ToString("yyyy-MM-dd"))"
+                               class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-700 transition-all">
+                    </div>
+                </div>
+
+                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+                    <button type="submit"
+                            class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 rounded-xl hover:shadow-lg hover:shadow-indigo-200 transition-all duration-200 cursor-pointer text-center">
+                        <i class="fas @(isEdit ? "fa-save" : "fa-plus") mr-2"></i>
+                        @(isEdit ? "Simpan Perubahan" : "Buat Tugas")
+                    </button>
+                    <a href="/Task" class="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 font-medium transition-all text-center">
+                        Batal
+                    </a>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    const slider = document.getElementById('progressSlider');
+    const display = document.getElementById('progressDisplay');
+    const statusSelect = document.getElementById('taskStatusSelect');
+
+    function updateProgress(val) {
+        val = parseInt(val) || 0;
+        if (slider) slider.value = val;
+        if (display) display.innerText = val + '%';
+        if (statusSelect) {
+            var oldVal = statusSelect.value;
+            var newVal = oldVal;
+            if (val >= 100) {
+                newVal = 'Done';
+            } else if (val > 0 && oldVal === 'Todo') {
+                newVal = 'InProgress';
+            } else if (val < 100 && oldVal === 'Done') {
+                newVal = 'InProgress';
+            }
+            if (newVal !== oldVal) {
+                statusSelect.value = newVal;
+                if (typeof jQuery !== 'undefined' && jQuery(statusSelect).hasClass('select2-hidden-accessible')) {
+                    jQuery(statusSelect).trigger('change.select2');
+                }
+            }
+        }
+    }
+
+    function setProgress(val) {
+        updateProgress(val);
+    }
+
+    if (slider) {
+        slider.addEventListener('input', function(e) {
+            updateProgress(e.target.value);
+        });
+    }
+
+    if (statusSelect) {
+        statusSelect.addEventListener('change', function(e) {
+            if (e.target.value === 'Done') {
+                updateProgress(100);
+            } else if (e.target.value === 'Todo' && parseInt(slider?.value || 0) === 100) {
+                updateProgress(0);
+            } else if (e.target.value === 'InProgress' && parseInt(slider?.value || 0) === 100) {
+                updateProgress(50);
+            }
+        });
+    }
+</script>

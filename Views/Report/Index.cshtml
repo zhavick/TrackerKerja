@@ -1,0 +1,862 @@
+@{
+    ViewData["Title"] = "Laporan & Gantt Chart";
+    double totalHours = ViewBag.TotalHours ?? 0;
+    int totalTasks = ViewBag.TotalTasks ?? 0;
+    int doneTasks = ViewBag.DoneTasks ?? 0;
+    int completionRate = totalTasks > 0 ? (int)((double)doneTasks / totalTasks * 100) : 0;
+    var projects = (List<TrackerKerja.Models.Project>)(ViewBag.Projects ?? new List<TrackerKerja.Models.Project>());
+    var members = (List<TrackerKerja.Models.AppUser>)(ViewBag.Members ?? new List<TrackerKerja.Models.AppUser>());
+}
+
+@section Styles {
+<style>
+    /* Gantt Chart Custom Styles */
+    .gantt-container {
+        scrollbar-width: thin;
+        scrollbar-color: #6366F1 #F1F5F9;
+    }
+    .gantt-grid-header {
+        background: linear-gradient(180deg, #F8FAFC 0%, #EDF2F7 100%);
+    }
+    .gantt-row:hover {
+        background-color: rgba(99, 102, 241, 0.04);
+    }
+    .gantt-row.active-row {
+        background-color: rgba(99, 102, 241, 0.08);
+    }
+    .gantt-bar-wrapper {
+        transition: transform 0.2s ease, filter 0.2s ease;
+    }
+    .gantt-bar-wrapper:hover {
+        transform: translateY(-2px);
+        filter: drop-shadow(0 6px 12px rgba(99, 102, 241, 0.25));
+        z-index: 30;
+    }
+    .gantt-today-line {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        width: 2px;
+        background: #EF4444;
+        z-index: 25;
+        pointer-events: none;
+    }
+    .gantt-today-badge {
+        position: absolute;
+        top: 4px;
+        transform: translateX(-50%);
+        background: #EF4444;
+        color: white;
+        font-size: 10px;
+        font-weight: 800;
+        padding: 2px 6px;
+        border-radius: 9999px;
+        white-space: nowrap;
+        box-shadow: 0 2px 4px rgba(239, 68, 68, 0.4);
+        z-index: 26;
+    }
+    .striped-progress {
+        background-image: linear-gradient(45deg, rgba(255, 255, 255, 0.2) 25%, transparent 25%, transparent 50%, rgba(255, 255, 255, 0.2) 50%, rgba(255, 255, 255, 0.2) 75%, transparent 75%, transparent);
+        background-size: 1rem 1rem;
+    }
+</style>
+}
+
+<!-- Header & Export Action -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <div>
+        <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-black text-slate-800 tracking-tight">Laporan & Gantt Chart Proyeksi</h1>
+            <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-100 text-indigo-700 border border-indigo-200">Pro</span>
+        </div>
+        <p class="text-xs text-slate-500 font-medium mt-0.5">Analisis timeline tugas, produktivitas tim, dan visualisasi Gantt chart interaktif</p>
+    </div>
+    <div class="flex items-center gap-2.5 flex-wrap">
+        <a href="/swagger" target="_blank"
+           class="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3.5 py-2.5 rounded-2xl border border-indigo-200 shadow-xs transition-all"
+           title="Buka Dokumentasi Swagger REST API">
+            <i class="fas fa-file-code text-indigo-500"></i>
+            <span>Swagger API</span>
+        </a>
+        <a href="/Timesheet/ExportPersonalExcel"
+           class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-md shadow-emerald-200 hover:shadow-emerald-300 transition-all"
+           title="Unduh Laporan Timesheet Jam Kerja Saya ke format Excel (.xlsx)">
+            <i class="fas fa-file-excel"></i>
+            <span>Timesheet Saya (Excel)</span>
+        </a>
+        <a href="/Task/ExportArmsExcel"
+           class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-md shadow-indigo-200 transition-all"
+           title="Export seluruh tugas ke format ARMS Excel (.xlsx)">
+            <i class="fas fa-file-export"></i>
+            <span>Export ke ARMS (Excel)</span>
+        </a>
+    </div>
+</div>
+
+<!-- Navigation Tabs -->
+<div class="flex items-center gap-2 border-b border-slate-200 mb-6 overflow-x-auto pb-1">
+    <button type="button" onclick="switchReportTab('gantt')" id="tab-btn-gantt"
+            class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-indigo-600 text-white shadow-sm shadow-indigo-200 cursor-pointer">
+        <i class="fas fa-stream"></i>
+        <span>Proyeksi Gantt Chart</span>
+    </button>
+    <button type="button" onclick="switchReportTab('analytics')" id="tab-btn-analytics"
+            class="flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer">
+        <i class="fas fa-chart-pie"></i>
+        <span>Ringkasan & Metrik Analitik</span>
+    </button>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 1: GANTT CHART PROJECTION MODULE -->
+<!-- ========================================================================= -->
+<div id="tab-content-gantt" class="space-y-5">
+    <!-- Gantt Controls Toolbar -->
+    <div class="bg-white rounded-3xl p-4 sm:p-5 shadow-sm border border-indigo-100">
+        <div class="flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-4">
+            
+            <!-- Filters Group -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2.5 flex-1">
+                <!-- Search Input -->
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="gantt-search" placeholder="Cari judul/kode..." oninput="debounceGanttFetch()"
+                           class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                </div>
+
+                <!-- Project Filter -->
+                <div>
+                    <select id="gantt-project" onchange="fetchGanttData()" class="select2 select2-compact w-full" data-placeholder="Semua Proyek">
+                        <option value="">Semua Proyek (@projects.Count)</option>
+                        @foreach (var p in projects)
+                        {
+                            <option value="@p.Id">@p.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Status Filter -->
+                <div>
+                    <select id="gantt-status" onchange="fetchGanttData()" class="select2 select2-compact w-full" data-placeholder="Semua Status">
+                        <option value="">Semua Status</option>
+                        <option value="Todo">Belum Selesai (Todo)</option>
+                        <option value="InProgress">Sedang Dikerjakan (In Progress)</option>
+                        <option value="Done">Selesai (Done)</option>
+                        <option value="Overdue">Terlambat (Overdue)</option>
+                    </select>
+                </div>
+
+                <!-- Assignee Filter -->
+                <div>
+                    <select id="gantt-assignee" onchange="fetchGanttData()" class="select2 select2-compact w-full" data-placeholder="Semua PIC">
+                        <option value="">Semua PIC / Anggota (@members.Count)</option>
+                        @foreach (var m in members)
+                        {
+                            <option value="@m.Id">@m.FullName</option>
+                        }
+                    </select>
+                </div>
+            </div>
+
+            <!-- View Mode Switcher & Tools -->
+            <div class="flex items-center gap-2 justify-between sm:justify-end flex-wrap border-t lg:border-t-0 pt-3 lg:pt-0 border-slate-100">
+                <!-- Scale View Toggle -->
+                <div class="flex items-center bg-slate-100 p-1 rounded-xl text-xs font-bold">
+                    <button type="button" onclick="setGanttScale('day')" id="scale-btn-day"
+                            class="px-3 py-1.5 rounded-lg bg-white text-indigo-700 shadow-2xs transition-all">Hari</button>
+                    <button type="button" onclick="setGanttScale('week')" id="scale-btn-week"
+                            class="px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all">Minggu</button>
+                    <button type="button" onclick="setGanttScale('month')" id="scale-btn-month"
+                            class="px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all">Bulan</button>
+                </div>
+
+                <!-- Reset & Refresh Button -->
+                <button type="button" onclick="resetGanttFilters()" title="Reset Filter"
+                        class="p-2 px-3 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold transition-all cursor-pointer">
+                    <i class="fas fa-undo-alt mr-1"></i>Reset
+                </button>
+                <button type="button" onclick="fetchGanttData()" title="Muat Ulang Data"
+                        class="p-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-bold transition-all cursor-pointer">
+                    <i class="fas fa-sync-alt mr-1"></i>Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Gantt Metrics Projection Bar -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-5 gap-3.5">
+        <div class="bg-white p-3.5 rounded-2xl border border-indigo-100 shadow-2xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-sm">
+                <i class="fas fa-tasks"></i>
+            </div>
+            <div>
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Total Terproyeksi</p>
+                <h4 class="text-lg font-black text-slate-800" id="gantt-stat-total">0</h4>
+            </div>
+        </div>
+        <div class="bg-white p-3.5 rounded-2xl border border-indigo-100 shadow-2xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold text-sm">
+                <i class="fas fa-spinner fa-spin"></i>
+            </div>
+            <div>
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">In Progress</p>
+                <h4 class="text-lg font-black text-amber-600" id="gantt-stat-inprogress">0</h4>
+            </div>
+        </div>
+        <div class="bg-white p-3.5 rounded-2xl border border-indigo-100 shadow-2xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-sm">
+                <i class="fas fa-check-circle"></i>
+            </div>
+            <div>
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Selesai (Done)</p>
+                <h4 class="text-lg font-black text-emerald-600" id="gantt-stat-done">0</h4>
+            </div>
+        </div>
+        <div class="bg-white p-3.5 rounded-2xl border border-indigo-100 shadow-2xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold text-sm">
+                <i class="fas fa-exclamation-triangle"></i>
+            </div>
+            <div>
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Terlambat</p>
+                <h4 class="text-lg font-black text-rose-600" id="gantt-stat-overdue">0</h4>
+            </div>
+        </div>
+        <div class="col-span-2 sm:col-span-4 lg:col-span-1 bg-white p-3.5 rounded-2xl border border-indigo-100 shadow-2xs flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold text-sm">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <div class="min-w-0">
+                <p class="text-[11px] text-slate-400 font-bold uppercase tracking-wider">Rentang Waktu</p>
+                <p class="text-xs font-bold text-slate-700 truncate" id="gantt-stat-range">-</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Interactive Gantt Chart Visualization Board -->
+    <div class="bg-white rounded-3xl shadow-sm border border-indigo-100 overflow-hidden relative">
+        <!-- Legend Indicator Bar -->
+        <div class="p-3.5 bg-slate-50/90 border-b border-slate-200 flex items-center justify-between gap-4 flex-wrap text-xs">
+            <div class="flex items-center gap-4 flex-wrap">
+                <span class="font-bold text-slate-600">Status Task:</span>
+                <span class="inline-flex items-center gap-1.5 text-slate-600">
+                    <span class="w-3 h-3 rounded-md bg-slate-400"></span> Todo
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-indigo-700">
+                    <span class="w-3 h-3 rounded-md bg-indigo-500"></span> In Progress
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-emerald-700">
+                    <span class="w-3 h-3 rounded-md bg-emerald-500"></span> Done (Selesai)
+                </span>
+                <span class="inline-flex items-center gap-1.5 text-rose-700">
+                    <span class="w-3 h-3 rounded-md bg-rose-500"></span> Overdue (Jatuh Tempo)
+                </span>
+            </div>
+            <div class="flex items-center gap-2 text-slate-400 font-medium text-[11px]">
+                <i class="fas fa-info-circle text-indigo-400"></i>
+                <span>Klik pada bar tugas untuk melihat detail / edit</span>
+            </div>
+        </div>
+
+        <!-- Gantt Main Split-Grid (Left Sidebar + Right Timeline) -->
+        <div class="flex min-h-[460px] max-h-[720px] overflow-hidden" id="gantt-wrapper">
+            <!-- Left Fixed Column: Task Metadata List -->
+            <div class="w-64 sm:w-80 md:w-96 flex-shrink-0 border-r border-slate-200 flex flex-col bg-white z-20 shadow-xs">
+                <!-- Header Column -->
+                <div class="h-14 px-4 py-3 bg-slate-100/90 border-b border-slate-200 flex items-center justify-between font-bold text-xs text-slate-700">
+                    <span>Daftar Tugas & PIC</span>
+                    <span class="text-slate-400 text-[11px] font-semibold" id="gantt-task-count-label">0 Tugas</span>
+                </div>
+                <!-- Rows List -->
+                <div class="flex-1 overflow-y-auto divide-y divide-slate-100" id="gantt-tasks-column">
+                    <div class="p-8 text-center text-slate-400">
+                        <i class="fas fa-spinner fa-spin text-2xl text-indigo-500 mb-2"></i>
+                        <p class="text-xs">Memuat proyeksi tugas...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right Scrollable Column: Timeline Calendar Grid -->
+            <div class="flex-1 overflow-x-auto overflow-y-auto gantt-container relative bg-slate-50/50" id="gantt-timeline-container">
+                <!-- Time Scale Header (Dates / Weeks / Months) -->
+                <div class="h-14 border-b border-slate-200 sticky top-0 bg-white z-10 flex flex-col justify-end" id="gantt-timeline-header">
+                    <!-- Dynamic Date Columns rendered by JS -->
+                </div>
+                <!-- Timeline Grid Body with Bars -->
+                <div class="relative min-h-[380px]" id="gantt-timeline-body">
+                    <!-- Dynamic Bars & Today Marker rendered by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- TAB 2: ANALYTICS SUMMARY & SESSIONS -->
+<!-- ========================================================================= -->
+<div id="tab-content-analytics" class="hidden space-y-6">
+    <!-- Summary Stats -->
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="card-hover bg-gradient-to-br from-indigo-500 to-indigo-700 rounded-2xl p-5 text-white shadow-md">
+            <i class="fas fa-clock text-indigo-200 text-xl mb-3"></i>
+            <p class="text-3xl font-black">@totalHours.ToString("F1")</p>
+            <p class="text-indigo-200 text-sm">Total Jam Kerja</p>
+        </div>
+        <div class="card-hover bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-2xl p-5 text-white shadow-md">
+            <i class="fas fa-check-circle text-emerald-200 text-xl mb-3"></i>
+            <p class="text-3xl font-black">@doneTasks</p>
+            <p class="text-emerald-200 text-sm">Tugas Selesai</p>
+        </div>
+        <div class="card-hover bg-gradient-to-br from-cyan-500 to-cyan-700 rounded-2xl p-5 text-white shadow-md">
+            <i class="fas fa-tasks text-cyan-200 text-xl mb-3"></i>
+            <p class="text-3xl font-black">@totalTasks</p>
+            <p class="text-cyan-200 text-sm">Total Tugas</p>
+        </div>
+        <div class="card-hover bg-gradient-to-br from-purple-500 to-purple-700 rounded-2xl p-5 text-white shadow-md">
+            <i class="fas fa-percentage text-purple-200 text-xl mb-3"></i>
+            <p class="text-3xl font-black">@completionRate%</p>
+            <p class="text-purple-200 text-sm">Tingkat Penyelesaian</p>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+        <!-- Work Hours Chart -->
+        <div class="bg-white rounded-3xl shadow-sm border border-indigo-100 p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-chart-line text-indigo-500"></i>
+                    Jam Kerja per Hari
+                </h3>
+                <div class="flex gap-2">
+                    <button onclick="loadChart('week')" id="btn-week"
+                            class="text-xs px-3 py-1.5 rounded-lg bg-indigo-500 text-white font-semibold transition-colors">7 Hari</button>
+                    <button onclick="loadChart('month')" id="btn-month"
+                            class="text-xs px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 font-semibold hover:bg-indigo-100 transition-colors">30 Hari</button>
+                </div>
+            </div>
+            <canvas id="hoursChart" height="180"></canvas>
+        </div>
+
+        <!-- Project Progress -->
+        <div class="bg-white rounded-3xl shadow-sm border border-indigo-100 p-5">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2 mb-5">
+                <i class="fas fa-folder-open text-amber-500"></i>
+                Progress per Proyek
+            </h3>
+            <div class="space-y-4 max-h-72 overflow-y-auto pr-1">
+                @foreach (var proj in projects)
+                {
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <div class="flex items-center gap-2 min-w-0">
+                                <span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background:@proj.Color"></span>
+                                <a href="/Project/Detail/@proj.Id" class="text-sm font-semibold text-slate-700 hover:text-indigo-600 truncate">@proj.Name</a>
+                            </div>
+                            <span class="text-xs font-bold text-slate-500">@proj.ProgressPercent%</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                            <div class="h-2.5 rounded-full transition-all duration-700"
+                                 style="width:@proj.ProgressPercent%; background: @proj.Color">
+                            </div>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-1">@proj.CompletedTasks dari @proj.TotalTasks tugas selesai</p>
+                    </div>
+                }
+            </div>
+        </div>
+    </div>
+
+    <!-- Work Sessions Table -->
+    <div class="bg-white rounded-3xl shadow-sm border border-indigo-100 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                <i class="fas fa-list text-indigo-500"></i>
+                Riwayat Sesi Kerja Terbaru
+            </h3>
+            <button onclick="window.print()" class="flex items-center gap-2 text-xs font-bold text-slate-600 hover:text-indigo-600 border border-slate-200 hover:border-indigo-300 px-3 py-1.5 rounded-xl transition-colors cursor-pointer">
+                <i class="fas fa-print"></i> Cetak / Print
+            </button>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50">
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Tugas</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Proyek</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Mulai</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase tracking-wider px-4 py-3">Selesai</th>
+                        <th class="text-right text-xs font-semibold text-slate-500 uppercase tracking-wider px-5 py-3">Durasi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    @{
+                        var sessions = (List<TrackerKerja.Models.WorkSession>)ViewBag.Sessions;
+                        if (!sessions.Any()) {
+                            <tr><td colspan="5" class="text-center py-12 text-slate-400"><i class="fas fa-clock text-4xl block mb-3 text-slate-200"></i>Belum ada sesi kerja tercatat</td></tr>
+                        } else {
+                            foreach (var s in sessions.OrderByDescending(s => s.StartTime).Take(30)) {
+                                var dur = TimeSpan.FromSeconds(s.Duration);
+                                <tr class="hover:bg-indigo-50/30 transition-colors">
+                                    <td class="px-5 py-3 font-medium text-slate-700">@s.Task?.Title</td>
+                                    <td class="px-4 py-3 text-slate-500 text-xs">@s.Task?.Project?.Name</td>
+                                    <td class="px-4 py-3 text-slate-500">@s.StartTime.ToString("dd/MM HH:mm")</td>
+                                    <td class="px-4 py-3 text-slate-500">@(s.EndTime?.ToString("dd/MM HH:mm") ?? "-")</td>
+                                    <td class="px-5 py-3 text-right font-mono font-semibold text-indigo-600">
+                                        @($"{(int)dur.TotalHours:D2}:{dur.Minutes:D2}:{dur.Seconds:D2}")
+                                    </td>
+                                </tr>
+                            }
+                        }
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Task Detail Modal for Gantt Preview -->
+<div id="gantt-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 animate-slideIn">
+        <div class="flex items-start justify-between gap-4 pb-3 border-b border-slate-100">
+            <div>
+                <span class="text-xs font-mono font-black text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100" id="modal-task-code">TSK-0000</span>
+                <h3 class="text-base font-bold text-slate-800 mt-1.5 leading-snug" id="modal-task-title">-</h3>
+            </div>
+            <button type="button" onclick="closeGanttModal()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+        <div class="py-4 space-y-3 text-xs">
+            <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-2xl border border-slate-100">
+                <div>
+                    <span class="text-slate-400 block font-medium">Proyek</span>
+                    <span class="font-bold text-slate-700" id="modal-task-project">-</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block font-medium">Penanggung Jawab (PIC)</span>
+                    <span class="font-bold text-slate-700" id="modal-task-assignee">-</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block font-medium">Rentang Timeline</span>
+                    <span class="font-bold text-slate-700" id="modal-task-dates">-</span>
+                </div>
+                <div>
+                    <span class="text-slate-400 block font-medium">Status & Progress</span>
+                    <span class="font-bold text-slate-700" id="modal-task-status">-</span>
+                </div>
+                <div class="col-span-2">
+                    <span class="text-slate-400 block font-medium">Milestone (Fase SDLC Waterfall)</span>
+                    <span class="font-bold text-indigo-600 inline-flex items-center gap-1.5 mt-0.5" id="modal-task-milestone">
+                        <i class="fas fa-layer-group text-xs text-indigo-500"></i>
+                        <span>-</span>
+                    </span>
+                </div>
+            </div>
+
+            <div id="modal-obstacle-box" class="hidden p-3 rounded-2xl bg-amber-50 border border-amber-200 text-amber-900">
+                <span class="font-bold block mb-1"><i class="fas fa-exclamation-circle mr-1"></i>Kendala (Obstacle):</span>
+                <p id="modal-task-obstacle">-</p>
+            </div>
+
+            <div id="modal-solution-box" class="hidden p-3 rounded-2xl bg-emerald-50 border border-emerald-200 text-emerald-900">
+                <span class="font-bold block mb-1"><i class="fas fa-check-circle mr-1"></i>Solusi:</span>
+                <p id="modal-task-solution">-</p>
+            </div>
+        </div>
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+            <button type="button" onclick="closeGanttModal()" class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+                Tutup
+            </button>
+            <a href="#" id="modal-task-link" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-colors">
+                Buka & Edit Tugas &rarr;
+            </a>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+let hoursChart = null;
+let currentGanttScale = 'day'; // 'day', 'week', 'month'
+let ganttData = [];
+let debounceTimer = null;
+
+// Tab Switcher
+function switchReportTab(tab) {
+    const ganttTabBtn = document.getElementById('tab-btn-gantt');
+    const analyticsTabBtn = document.getElementById('tab-btn-analytics');
+    const ganttContent = document.getElementById('tab-content-gantt');
+    const analyticsContent = document.getElementById('tab-content-analytics');
+
+    if (tab === 'gantt') {
+        ganttTabBtn.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-indigo-600 text-white shadow-sm shadow-indigo-200 cursor-pointer";
+        analyticsTabBtn.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer";
+        ganttContent.classList.remove('hidden');
+        analyticsContent.classList.add('hidden');
+        if (ganttData.length === 0) fetchGanttData();
+    } else {
+        analyticsTabBtn.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all bg-indigo-600 text-white shadow-sm shadow-indigo-200 cursor-pointer";
+        ganttTabBtn.className = "flex items-center gap-2 px-4 py-2.5 rounded-xl font-bold text-xs sm:text-sm text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-all cursor-pointer";
+        analyticsContent.classList.remove('hidden');
+        ganttContent.classList.add('hidden');
+        if (!hoursChart) loadChart('week');
+    }
+}
+
+// Gantt Scale Switcher
+function setGanttScale(scale) {
+    currentGanttScale = scale;
+    ['day', 'week', 'month'].forEach(s => {
+        const btn = document.getElementById(`scale-btn-${s}`);
+        if (s === scale) {
+            btn.className = "px-3 py-1.5 rounded-lg bg-white text-indigo-700 shadow-2xs transition-all";
+        } else {
+            btn.className = "px-3 py-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all";
+        }
+    });
+    renderGanttChart();
+}
+
+function debounceGanttFetch() {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(fetchGanttData, 300);
+}
+
+function resetGanttFilters() {
+    document.getElementById('gantt-search').value = '';
+    document.getElementById('gantt-project').value = '';
+    document.getElementById('gantt-status').value = '';
+    document.getElementById('gantt-assignee').value = '';
+    if (typeof jQuery !== 'undefined') {
+        jQuery('#gantt-project, #gantt-status, #gantt-assignee').trigger('change.select2');
+    }
+    fetchGanttData();
+}
+
+// Fetch Gantt Data from Controller
+async function fetchGanttData() {
+    const search = document.getElementById('gantt-search').value;
+    const project = document.getElementById('gantt-project').value;
+    const status = document.getElementById('gantt-status').value;
+    const assignee = document.getElementById('gantt-assignee').value;
+
+    const params = new URLSearchParams();
+    if (search) params.append('search', search);
+    if (project) params.append('projectId', project);
+    if (status) params.append('status', status);
+    if (assignee) params.append('assigneeId', assignee);
+
+    const tasksCol = document.getElementById('gantt-tasks-column');
+    tasksCol.innerHTML = `<div class="p-8 text-center text-slate-400"><i class="fas fa-spinner fa-spin text-2xl text-indigo-500 mb-2"></i><p class="text-xs">Memuat data proyeksi...</p></div>`;
+
+    try {
+        const res = await fetch(`/Report/GetGanttData?${params.toString()}`);
+        const data = await res.json();
+        ganttData = data.tasks || [];
+        updateGanttMetrics(ganttData);
+        renderGanttChart();
+    } catch (err) {
+        tasksCol.innerHTML = `<div class="p-8 text-center text-rose-500"><i class="fas fa-exclamation-circle text-2xl mb-2"></i><p class="text-xs">Gagal memuat data Gantt chart.</p></div>`;
+    }
+}
+
+function updateGanttMetrics(tasks) {
+    document.getElementById('gantt-stat-total').innerText = tasks.length;
+    document.getElementById('gantt-stat-inprogress').innerText = tasks.filter(t => t.status === 'InProgress').length;
+    document.getElementById('gantt-stat-done').innerText = tasks.filter(t => t.status === 'Done').length;
+    document.getElementById('gantt-stat-overdue').innerText = tasks.filter(t => t.status === 'Overdue').length;
+    document.getElementById('gantt-task-count-label').innerText = `${tasks.length} Tugas`;
+
+    if (tasks.length > 0) {
+        const starts = tasks.map(t => new Date(t.start).getTime());
+        const ends = tasks.map(t => new Date(t.end).getTime());
+        const minDate = new Date(Math.min(...starts));
+        const maxDate = new Date(Math.max(...ends));
+        const fmt = d => d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+        document.getElementById('gantt-stat-range').innerText = `${fmt(minDate)} - ${fmt(maxDate)}`;
+    } else {
+        document.getElementById('gantt-stat-range').innerText = "-";
+    }
+}
+
+// Render Gantt Chart Engine
+function renderGanttChart() {
+    const tasksCol = document.getElementById('gantt-tasks-column');
+    const headerCol = document.getElementById('gantt-timeline-header');
+    const bodyCol = document.getElementById('gantt-timeline-body');
+
+    if (!ganttData || ganttData.length === 0) {
+        tasksCol.innerHTML = `<div class="p-8 text-center text-slate-400"><i class="fas fa-inbox text-3xl mb-2 text-slate-300"></i><p class="text-xs font-semibold">Tidak ada tugas yang sesuai filter.</p></div>`;
+        headerCol.innerHTML = '';
+        bodyCol.innerHTML = `<div class="p-12 text-center text-slate-400 text-xs font-medium">Timeline kosong</div>`;
+        return;
+    }
+
+    // 1. Calculate Timeline Boundaries
+    const now = new Date();
+    const taskStarts = ganttData.map(t => new Date(t.start));
+    const taskEnds = ganttData.map(t => new Date(t.end));
+
+    let minDate = new Date(Math.min(...taskStarts.map(d => d.getTime()), now.getTime()));
+    let maxDate = new Date(Math.max(...taskEnds.map(d => d.getTime()), now.getTime()));
+
+    // Add padding days
+    minDate.setDate(minDate.getDate() - 3);
+    maxDate.setDate(maxDate.getDate() + 7);
+
+    // Normalize to midnight
+    minDate = new Date(minDate.getFullYear(), minDate.getMonth(), minDate.getDate());
+    maxDate = new Date(maxDate.getFullYear(), maxDate.getMonth(), maxDate.getDate());
+
+    const totalDays = Math.max(14, Math.round((maxDate - minDate) / (1000 * 60 * 60 * 24)));
+
+    // Column Width calculation based on scale
+    let colWidth = 38; // px per day
+    if (currentGanttScale === 'week') colWidth = 24;
+    if (currentGanttScale === 'month') colWidth = 12;
+
+    const totalTimelineWidth = totalDays * colWidth;
+
+    // 2. Build Timeline Header
+    let headerHtml = `<div class="flex" style="width: ${totalTimelineWidth}px;">`;
+    for (let i = 0; i < totalDays; i++) {
+        const d = new Date(minDate);
+        d.setDate(d.getDate() + i);
+
+        const isToday = d.toDateString() === now.toDateString();
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        const dayNum = d.getDate();
+        const monthShort = d.toLocaleDateString('id-ID', { month: 'short' });
+        const dayName = d.toLocaleDateString('id-ID', { weekday: 'narrow' });
+
+        headerHtml += `
+            <div class="flex-shrink-0 flex flex-col items-center justify-center border-r border-slate-200/80 text-[10px] ${isToday ? 'bg-indigo-50/90 font-bold text-indigo-700' : isWeekend ? 'bg-slate-100/70 text-slate-400' : 'text-slate-600'}"
+                 style="width: ${colWidth}px; height: 56px;" title="${d.toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}">
+                <span class="text-[9px] uppercase font-bold tracking-tighter opacity-70">${currentGanttScale === 'month' && dayNum !== 1 ? '' : monthShort}</span>
+                <span class="font-extrabold text-xs leading-none mt-0.5">${dayNum}</span>
+                <span class="text-[9px] font-semibold opacity-60">${dayName}</span>
+            </div>
+        `;
+    }
+    headerHtml += `</div>`;
+    headerCol.innerHTML = headerHtml;
+
+    // 3. Build Task Rows & Timeline Bars
+    let tasksHtml = '';
+    let bodyHtml = `<div style="width: ${totalTimelineWidth}px; position: relative;">`;
+
+    // Add Today Indicator Line
+    const todayDiff = Math.round((now - minDate) / (1000 * 60 * 60 * 24));
+    if (todayDiff >= 0 && todayDiff <= totalDays) {
+        const todayLeft = todayDiff * colWidth + (colWidth / 2);
+        bodyHtml += `
+            <div class="gantt-today-line" style="left: ${todayLeft}px;"></div>
+            <div class="gantt-today-badge" style="left: ${todayLeft}px;">HARI INI</div>
+        `;
+    }
+
+    // Grid Background Columns
+    bodyHtml += `<div class="absolute inset-0 flex pointer-events-none">`;
+    for (let i = 0; i < totalDays; i++) {
+        const d = new Date(minDate);
+        d.setDate(d.getDate() + i);
+        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
+        bodyHtml += `<div class="flex-shrink-0 border-r border-slate-200/40 ${isWeekend ? 'bg-slate-100/30' : ''}" style="width: ${colWidth}px;"></div>`;
+    }
+    bodyHtml += `</div>`;
+
+    // Render Each Task Row
+    ganttData.forEach((task, index) => {
+        const tStart = new Date(task.start);
+        const tEnd = new Date(task.end);
+
+        const startOffsetDays = (tStart - minDate) / (1000 * 60 * 60 * 24);
+        const durationDays = Math.max(1, (tEnd - tStart) / (1000 * 60 * 60 * 24));
+
+        const barLeft = Math.max(0, startOffsetDays * colWidth);
+        const barWidth = Math.max(colWidth * 0.9, durationDays * colWidth);
+
+        // Status badge color
+        let statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-600">Todo</span>`;
+        let barColor = task.projectColor || '#6366F1';
+        if (task.status === 'InProgress') {
+            statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-indigo-100 text-indigo-700">In Progress</span>`;
+            barColor = '#6366F1';
+        } else if (task.status === 'Done') {
+            statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-700">Done</span>`;
+            barColor = '#10B981';
+        } else if (task.status === 'Overdue') {
+            statusBadge = `<span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-700">Overdue</span>`;
+            barColor = '#EF4444';
+        }
+
+        // Left Table Row
+        tasksHtml += `
+            <div class="h-14 px-3.5 py-2.5 flex items-center justify-between gap-2 gantt-row cursor-pointer transition-colors border-b border-slate-100"
+                 onclick="openGanttModal(${index})" id="task-left-row-${index}"
+                 onmouseenter="highlightGanttRow(${index}, true)" onmouseleave="highlightGanttRow(${index}, false)">
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-1.5 mb-0.5">
+                        <span class="text-[10px] font-mono font-black text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100">${task.code}</span>
+                        ${task.isParent ? '<span class="text-[9px] font-bold bg-purple-100 text-purple-700 px-1 rounded">Parent</span>' : ''}
+                        <span class="text-[11px] font-bold text-slate-800 truncate">${task.name}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[10px] text-slate-400">
+                        <span class="truncate font-semibold" style="color: ${task.projectColor}">${task.projectName}</span>
+                        <span>&bull;</span>
+                        <span class="text-[9px] font-bold text-indigo-600 bg-indigo-50 px-1.5 py-0.2 rounded border border-indigo-100">${task.milestone || 'Implementation'}</span>
+                    </div>
+                </div>
+                <div class="flex flex-col items-end flex-shrink-0">
+                    ${statusBadge}
+                    <span class="text-[10px] font-bold text-slate-400 mt-0.5">${task.progress}%</span>
+                </div>
+            </div>
+        `;
+
+        // Right Timeline Bar Row
+        bodyHtml += `
+            <div class="h-14 border-b border-slate-100/80 relative flex items-center gantt-row transition-colors"
+                 id="task-bar-row-${index}"
+                 onmouseenter="highlightGanttRow(${index}, true)" onmouseleave="highlightGanttRow(${index}, false)">
+                
+                <div class="absolute h-9 rounded-xl shadow-xs gantt-bar-wrapper cursor-pointer overflow-hidden flex items-center px-2.5 text-white"
+                     style="left: ${barLeft}px; width: ${barWidth}px; background: ${barColor};"
+                     onclick="openGanttModal(${index})"
+                     title="${task.code} - ${task.name} (${task.start} s/d ${task.end} | Milestone: ${task.milestone || 'Implementation'} | Progress: ${task.progress}%)">
+                    
+                    <!-- Progress Inner Bar -->
+                    <div class="absolute inset-y-0 left-0 bg-black/20 striped-progress transition-all duration-300"
+                         style="width: ${task.progress}%;"></div>
+
+                    <!-- Task Bar Text Content -->
+                    <div class="relative z-10 flex items-center justify-between w-full min-w-0 text-xs font-bold">
+                        <span class="truncate drop-shadow-xs">${task.code}: ${task.name}</span>
+                        <span class="ml-2 text-[10px] font-black bg-black/30 px-1.5 py-0.5 rounded-md flex-shrink-0 drop-shadow-xs">${task.progress}%</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    bodyHtml += `</div>`;
+
+    tasksCol.innerHTML = tasksHtml;
+    bodyCol.innerHTML = bodyHtml;
+
+    // Auto-scroll timeline to center on "Today"
+    if (todayDiff >= 0 && todayDiff <= totalDays) {
+        const container = document.getElementById('gantt-timeline-container');
+        const scrollTarget = Math.max(0, (todayDiff * colWidth) - (container.clientWidth / 2) + 100);
+        container.scrollTo({ left: scrollTarget, behavior: 'smooth' });
+    }
+}
+
+function highlightGanttRow(index, isHighlight) {
+    const left = document.getElementById(`task-left-row-${index}`);
+    const right = document.getElementById(`task-bar-row-${index}`);
+    if (left && right) {
+        if (isHighlight) {
+            left.classList.add('active-row');
+            right.classList.add('active-row');
+        } else {
+            left.classList.remove('active-row');
+            right.classList.remove('active-row');
+        }
+    }
+}
+
+// Modal Detail Popup
+function openGanttModal(index) {
+    const t = ganttData[index];
+    if (!t) return;
+
+    document.getElementById('modal-task-code').innerText = t.code;
+    document.getElementById('modal-task-title').innerText = t.name;
+    document.getElementById('modal-task-project').innerText = t.projectName;
+    document.getElementById('modal-task-assignee').innerText = t.assigneeName;
+    document.getElementById('modal-task-dates').innerText = `${t.start} s/d ${t.end}`;
+    document.getElementById('modal-task-status').innerText = `${t.status} (${t.progress}%)`;
+    document.getElementById('modal-task-milestone').innerText = t.milestone || 'Implementation';
+    document.getElementById('modal-task-link').href = `/Task/Edit/${t.id}`;
+
+    const obsBox = document.getElementById('modal-obstacle-box');
+    const obsText = document.getElementById('modal-task-obstacle');
+    if (t.obstacle) {
+        obsText.innerText = t.obstacle;
+        obsBox.classList.remove('hidden');
+    } else {
+        obsBox.classList.add('hidden');
+    }
+
+    const solBox = document.getElementById('modal-solution-box');
+    const solText = document.getElementById('modal-task-solution');
+    if (t.solution) {
+        solText.innerText = t.solution;
+        solBox.classList.remove('hidden');
+    } else {
+        solBox.classList.add('hidden');
+    }
+
+    document.getElementById('gantt-modal').classList.remove('hidden');
+}
+
+function closeGanttModal() {
+    document.getElementById('gantt-modal').classList.add('hidden');
+}
+
+// Close modal on escape
+document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') closeGanttModal();
+});
+
+// Analytics Line Chart
+async function loadChart(period) {
+    const btnWeek = document.getElementById('btn-week');
+    const btnMonth = document.getElementById('btn-month');
+    if (btnWeek && btnMonth) {
+        btnWeek.className = `text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${period === 'week' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-indigo-100'}`;
+        btnMonth.className = `text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors ${period === 'month' ? 'bg-indigo-500 text-white' : 'bg-slate-100 text-slate-600 hover:bg-indigo-100'}`;
+    }
+
+    const res = await fetch(`/Report/GetChartData?period=${period}`);
+    const data = await res.json();
+
+    if (hoursChart) hoursChart.destroy();
+    const canvas = document.getElementById('hoursChart');
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    hoursChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: data.labels,
+            datasets: [{
+                label: 'Jam Kerja',
+                data: data.data,
+                borderColor: '#6366F1',
+                backgroundColor: 'rgba(99,102,241,0.1)',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#6366F1',
+                pointRadius: 4,
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: true,
+            plugins: { legend: { display: false } },
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(99,102,241,0.08)' }, ticks: { font: { size: 11 }, color: '#94A3B8' } },
+                x: { grid: { display: false }, ticks: { font: { size: 11 }, color: '#6366F1', maxRotation: 45 } }
+            }
+        }
+    });
+}
+
+// Initial Load
+document.addEventListener('DOMContentLoaded', () => {
+    fetchGanttData();
+});
+</script>
+}

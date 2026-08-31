@@ -1,0 +1,295 @@
+@model TrackerKerja.Models.WorkNote
+@{
+    ViewData["Title"] = Model.Title;
+    var cardColor = string.IsNullOrEmpty(Model.Color) ? "#6366F1" : Model.Color;
+}
+
+@section Styles {
+    <style>
+        .note-prose {
+            font-size: 1rem;
+            line-height: 1.75;
+            color: #334155;
+        }
+        .note-prose h1 { font-size: 1.85rem; font-weight: 800; margin-top: 1.5rem; margin-bottom: 0.75rem; color: #0F172A; }
+        .note-prose h2 { font-size: 1.45rem; font-weight: 700; margin-top: 1.25rem; margin-bottom: 0.5rem; color: #1E293B; }
+        .note-prose h3 { font-size: 1.2rem; font-weight: 700; margin-top: 1rem; margin-bottom: 0.5rem; color: #334155; }
+        .note-prose p { margin-bottom: 1rem; }
+        .note-prose ul { list-style-type: disc; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .note-prose ol { list-style-type: decimal; padding-left: 1.5rem; margin-bottom: 1rem; }
+        .note-prose li { margin-bottom: 0.25rem; }
+        .note-prose blockquote {
+            border-left: 4px solid #6366F1;
+            padding-left: 1rem;
+            margin: 1.25rem 0;
+            font-style: italic;
+            color: #475569;
+            background: #F8FAFC;
+            padding-top: 0.5rem;
+            padding-bottom: 0.5rem;
+            border-radius: 0 0.5rem 0.5rem 0;
+        }
+        .note-prose pre {
+            background: #1E1B4B;
+            color: #E0E7FF;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            overflow-x: auto;
+            margin: 1.25rem 0;
+            font-family: monospace;
+            font-size: 0.875rem;
+        }
+        .note-prose code {
+            background: #EEF2FF;
+            color: #4F46E5;
+            padding: 0.15rem 0.35rem;
+            border-radius: 0.25rem;
+            font-size: 0.875em;
+        }
+        .note-prose pre code {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+        }
+        .note-prose img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 1rem;
+            margin: 1.5rem auto;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1);
+            display: block;
+        }
+        @@media print {
+            aside, header, #action-bar, .no-print { display: none !important; }
+            main { padding: 0 !important; }
+        }
+    </style>
+}
+
+<div class="max-w-4xl mx-auto space-y-6">
+
+    <!-- Top Action Bar -->
+    <div id="action-bar" class="flex flex-wrap items-center justify-between gap-3">
+        <a href="/Note" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors">
+            <i class="fas fa-arrow-left"></i>
+            <span>Kembali ke Semua Catatan</span>
+        </a>
+
+        <div class="flex items-center gap-2">
+            <button onclick="window.print()" class="px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5">
+                <i class="fas fa-print"></i> Cetak / PDF
+            </button>
+
+            <a href="/Note/Edit/@Model.Id" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 shadow-sm">
+                <i class="fas fa-edit"></i> Edit Catatan
+            </a>
+
+            <form method="post" action="/Note/Delete/@Model.Id" class="inline"
+                  data-confirm="Apakah Anda yakin ingin menghapus catatan '@Model.Title' secara permanen? Seluruh lampiran file di dalamnya juga akan terhapus."
+                  data-confirm-title="Hapus Catatan"
+                  data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Hapus Catatan">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="px-3.5 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-xl text-xs font-semibold transition-colors flex items-center gap-1.5 cursor-pointer">
+                    <i class="fas fa-trash-alt"></i> Hapus
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Document Card -->
+    <div class="bg-white rounded-3xl shadow-sm border border-indigo-100 overflow-hidden">
+        
+        <!-- Top Accent Bar -->
+        <div class="h-2 w-full" style="background: @cardColor"></div>
+
+        <div class="p-6 sm:p-10">
+
+            <!-- Meta Header Badges -->
+            <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-xs font-bold px-3 py-1 rounded-full bg-slate-100 text-slate-700">
+                        📁 @Model.Category
+                    </span>
+
+                    @if (Model.IsStandalone)
+                    {
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-amber-50 text-amber-700 border border-amber-200 flex items-center gap-1">
+                            <i class="fas fa-file-alt text-amber-500"></i> Catatan Mandiri
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="text-xs font-semibold px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                            <i class="fas fa-link text-emerald-500"></i> Tertaut ke Tugas
+                        </span>
+                    }
+
+                    @if (Model.IsPinned)
+                    {
+                        <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 flex items-center gap-1">
+                            <i class="fas fa-thumbtack text-amber-600"></i> Disematkan
+                        </span>
+                    }
+                </div>
+
+                <div class="text-right text-xs text-slate-400">
+                    <span>Terakhir diperbarui: @Model.UpdatedAt.ToString("dd MMMM yyyy HH:mm")</span>
+                </div>
+            </div>
+
+            <!-- Title -->
+            <h1 class="text-2xl sm:text-4xl font-black text-slate-900 leading-tight mb-6">
+                @Model.Title
+            </h1>
+
+            <!-- Author & Linked Task Bar -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 rounded-2xl bg-indigo-50/40 border border-indigo-100 mb-8">
+                
+                <!-- Author Info -->
+                <div class="flex items-center gap-3">
+                    @if (Model.AuthorUser != null)
+                    {
+                        if (!string.IsNullOrEmpty(Model.AuthorUser.ProfilePictureUrl))
+                        {
+                            <img src="@Model.AuthorUser.ProfilePictureUrl" alt="@Model.AuthorUser.FullName"
+                                 class="w-11 h-11 rounded-xl object-cover shadow-sm flex-shrink-0 border border-white" />
+                        }
+                        else
+                        {
+                            <div class="w-11 h-11 rounded-xl flex items-center justify-center text-white text-sm font-bold flex-shrink-0 shadow-sm"
+                                 style="background:@Model.AuthorUser.AvatarColor">
+                                @Model.AuthorUser.Initials
+                            </div>
+                        }
+                        <div>
+                            <p class="text-xs text-slate-400 font-semibold uppercase">Dibuat Oleh:</p>
+                            <p class="text-sm font-black text-slate-800">@Model.AuthorUser.FullName</p>
+                            <p class="text-xs text-indigo-600 font-medium">@Model.AuthorUser.JobTitle</p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="w-11 h-11 rounded-xl bg-slate-200 flex items-center justify-center text-slate-500 text-sm font-bold">?</div>
+                        <div>
+                            <p class="text-xs text-slate-400 font-semibold uppercase">Dibuat Oleh:</p>
+                            <p class="text-sm font-bold text-slate-700">Pengguna Terdaftar</p>
+                        </div>
+                    }
+                </div>
+
+                <!-- Linked Task Info -->
+                <div class="flex items-center gap-3 border-t md:border-t-0 md:border-l border-indigo-100 pt-3 md:pt-0 md:pl-4">
+                    @if (Model.Task != null)
+                    {
+                        <div class="w-11 h-11 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg flex-shrink-0">
+                            <i class="fas fa-tasks"></i>
+                        </div>
+                        <div class="min-w-0 flex-1">
+                            <p class="text-xs text-slate-400 font-semibold uppercase">Tugas Terkait:</p>
+                            <a href="/Task/Edit/@Model.Task.Id" class="text-sm font-bold text-indigo-700 hover:underline truncate block" title="@Model.Task.Title">
+                                @Model.Task.Title
+                            </a>
+                            <p class="text-xs text-slate-500">Status: <span class="font-semibold text-slate-700">@Model.Task.Status</span></p>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="w-11 h-11 rounded-xl bg-slate-100 text-slate-400 flex items-center justify-center text-lg flex-shrink-0">
+                            <i class="fas fa-file-alt"></i>
+                        </div>
+                        <div>
+                            <p class="text-xs text-slate-400 font-semibold uppercase">Status Dokumen:</p>
+                            <p class="text-sm font-semibold text-slate-700">Catatan Mandiri</p>
+                            <p class="text-xs text-slate-400">Tidak terikat pada spesifik tugas</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Rich Text Body -->
+            <div class="note-prose border-t border-slate-100 pt-6">
+                @if (string.IsNullOrWhiteSpace(Model.ContentHtml))
+                {
+                    <p class="text-slate-400 italic text-sm">(Catatan ini belum memiliki isi konten.)</p>
+                }
+                else
+                {
+                    @Html.Raw(Model.ContentHtml)
+                }
+            </div>
+
+            <!-- Uploaded File Attachments Section -->
+            @if (Model.Attachments != null && Model.Attachments.Any())
+            {
+                <div class="border-t border-slate-100 mt-8 pt-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                            <span class="w-7 h-7 bg-indigo-50 text-indigo-600 rounded-lg flex items-center justify-center text-xs">
+                                <i class="fas fa-paperclip"></i>
+                            </span>
+                            <span>Lampiran Berkas & Dokumen</span>
+                            <span class="text-xs font-semibold px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full">
+                                @Model.Attachments.Count berkas
+                            </span>
+                        </h3>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                        @foreach (var att in Model.Attachments)
+                        {
+                            <div class="flex flex-col justify-between p-4 bg-slate-50/70 hover:bg-indigo-50/40 border border-slate-200/80 hover:border-indigo-200 rounded-2xl transition-all shadow-xs group">
+                                
+                                @if (att.IsImage)
+                                {
+                                    <div class="mb-3 overflow-hidden rounded-xl bg-white border border-slate-100 max-h-48 flex items-center justify-center">
+                                        <img src="@att.FilePath" alt="@att.FileName" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+                                    </div>
+                                }
+
+                                <div class="flex items-start justify-between gap-3">
+                                    <div class="flex items-center gap-3 min-w-0">
+                                        <div class="w-10 h-10 rounded-xl bg-white shadow-xs border border-slate-200 flex items-center justify-center text-xl flex-shrink-0">
+                                            <i class="@att.IconClass"></i>
+                                        </div>
+                                        <div class="min-w-0">
+                                            <p class="font-bold text-slate-800 text-sm truncate" title="@att.FileName">@att.FileName</p>
+                                            <p class="text-xs text-slate-400 mt-0.5">
+                                                <span>@att.FormattedSize</span> &bull; 
+                                                <span>@att.UploadedAt.ToString("dd MMM yyyy HH:mm")</span>
+                                            </p>
+                                            @if (att.UploadedByUser != null)
+                                            {
+                                                <p class="text-[11px] text-indigo-600 font-medium mt-0.5 flex items-center gap-1">
+                                                    <i class="far fa-user text-[10px]"></i> @att.UploadedByUser.FullName
+                                                </p>
+                                            }
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="flex items-center gap-2 mt-4 pt-3 border-t border-slate-200/60">
+                                    <a href="/Note/DownloadAttachment/@att.Id"
+                                       class="flex-1 inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs">
+                                        <i class="fas fa-download text-xs"></i>
+                                        <span>Download</span>
+                                    </a>
+                                    @if (att.IsImage || att.FileExtension?.ToLower() == ".pdf")
+                                    {
+                                        <a href="@att.FilePath" target="_blank"
+                                           class="inline-flex items-center justify-center gap-1.5 px-3 py-2 bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-xl text-xs font-semibold transition-all">
+                                            <i class="fas fa-external-link-alt text-xs"></i>
+                                            <span>Buka</span>
+                                        </a>
+                                    }
+                                </div>
+
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+        </div>
+    </div>
+</div>

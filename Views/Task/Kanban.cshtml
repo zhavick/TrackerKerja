@@ -1,0 +1,394 @@
+@model List<TrackerKerja.Models.WorkTask>
+@{
+    ViewData["Title"] = "Papan Kanban Tugas";
+    var projects = ViewBag.Projects as List<TrackerKerja.Models.Project> ?? new();
+    var users = ViewBag.Users as List<TrackerKerja.Models.AppUser> ?? new();
+    var selectedProject = ViewBag.SelectedProject as int?;
+    var selectedAssignee = ViewBag.SelectedAssignee as string;
+    var selectedPriority = ViewBag.SelectedPriority as string;
+    var search = ViewBag.Search as string;
+
+    var todoTasks = Model.Where(t => t.Status == TrackerKerja.Models.TaskStatus.Todo).ToList();
+    var inProgressTasks = Model.Where(t => t.Status == TrackerKerja.Models.TaskStatus.InProgress).ToList();
+    var doneTasks = Model.Where(t => t.Status == TrackerKerja.Models.TaskStatus.Done).ToList();
+}
+
+<!-- Header & View Mode Switcher -->
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+    <div>
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+                <i class="fas fa-columns text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Papan Kanban Tugas</h1>
+                <p class="text-xs text-slate-500 font-medium">Drag & Drop kartu untuk memperbarui status dan progress tugas</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Controls: View Switcher & Action Buttons -->
+    <div class="flex items-center gap-2.5">
+        <!-- View Switcher -->
+        <div class="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shadow-xs">
+            <a href="/Task" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 rounded-xl transition-all">
+                <i class="fas fa-table text-slate-400"></i>
+                <span>Tabel Grid</span>
+            </a>
+            <span class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 rounded-xl shadow-2xs">
+                <i class="fas fa-columns text-indigo-600"></i>
+                <span>Kanban Board</span>
+            </span>
+        </div>
+
+        <a href="/Task/ExportArmsExcel?projectId=@selectedProject&priority=@selectedPriority&assigneeId=@selectedAssignee&search=@search"
+           class="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3.5 py-2 rounded-2xl border border-indigo-200 shadow-xs transition-all"
+           title="Export data ke format ARMS Excel (.xlsx)">
+            <i class="fas fa-file-export text-indigo-600"></i>
+            <span>Export ARMS</span>
+        </a>
+
+        <a href="/Task/Create" class="flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold px-4 py-2 rounded-2xl shadow-md shadow-indigo-200 transition-all">
+            <i class="fas fa-plus"></i>
+            <span>Tugas Baru</span>
+        </a>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="bg-white rounded-3xl p-4 border border-slate-200/80 shadow-xs mb-6">
+    <form method="get" action="/Task/Kanban" class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+        <!-- Search -->
+        <div class="sm:col-span-4">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" name="search" value="@search" placeholder="Cari judul / deskripsi tugas..."
+                       class="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 focus:ring-2 focus:ring-indigo-400 focus:outline-none bg-slate-50/50">
+            </div>
+        </div>
+
+        <!-- Project Filter -->
+        <div class="sm:col-span-3">
+            <select name="projectId" onchange="this.form.submit()" class="select2 select2-compact w-full" data-placeholder="Semua Proyek">
+                <option value="">Semua Proyek</option>
+                @foreach (var proj in projects)
+                {
+                    <option value="@proj.Id" selected="@(selectedProject == proj.Id)">@proj.Name</option>
+                }
+            </select>
+        </div>
+
+        <!-- Assignee Filter -->
+        <div class="sm:col-span-3">
+            <select name="assigneeId" onchange="this.form.submit()" class="select2 select2-compact w-full" data-placeholder="Semua PIC">
+                <option value="">Semua PIC / Penugasan</option>
+                @foreach (var user in users)
+                {
+                    <option value="@user.Id" selected="@(selectedAssignee == user.Id)">@user.FullName</option>
+                }
+            </select>
+        </div>
+
+        <!-- Priority Filter -->
+        <div class="sm:col-span-2 flex items-center gap-2">
+            <select name="priority" onchange="this.form.submit()" class="select2 select2-compact w-full" data-placeholder="Prioritas">
+                <option value="">Prioritas</option>
+                <option value="Low" selected="@(selectedPriority == "Low")">Low</option>
+                <option value="Medium" selected="@(selectedPriority == "Medium")">Medium</option>
+                <option value="High" selected="@(selectedPriority == "High")">High</option>
+                <option value="Critical" selected="@(selectedPriority == "Critical")">Critical</option>
+            </select>
+
+            @if (!string.IsNullOrEmpty(search) || selectedProject.HasValue || !string.IsNullOrEmpty(selectedAssignee) || !string.IsNullOrEmpty(selectedPriority))
+            {
+                <a href="/Task/Kanban" class="p-2 text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors" title="Reset Filter">
+                    <i class="fas fa-times"></i>
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- ═══ MOBILE COLUMN TAB SWITCHER (Smartphone/Tablet < md) ═══ -->
+<div class="md:hidden flex items-center gap-1.5 p-1.5 bg-slate-200/80 rounded-2xl mb-4 text-xs font-bold shadow-inner">
+    <button type="button" onclick="switchKanbanTab('Todo')" id="kanban-tab-Todo"
+            class="flex-1 py-2 px-2 rounded-xl bg-white text-indigo-700 shadow-xs text-center transition-all flex items-center justify-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-slate-400"></span>
+        <span>Todo</span>
+        <span class="px-1.5 py-0.5 rounded-md bg-slate-100 text-[10px] text-slate-700 font-extrabold" id="tab-count-Todo">@todoTasks.Count</span>
+    </button>
+    <button type="button" onclick="switchKanbanTab('InProgress')" id="kanban-tab-InProgress"
+            class="flex-1 py-2 px-2 rounded-xl text-slate-600 hover:text-indigo-700 text-center transition-all flex items-center justify-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+        <span>In Progress</span>
+        <span class="px-1.5 py-0.5 rounded-md bg-indigo-50 text-[10px] text-indigo-700 font-extrabold" id="tab-count-InProgress">@inProgressTasks.Count</span>
+    </button>
+    <button type="button" onclick="switchKanbanTab('Done')" id="kanban-tab-Done"
+            class="flex-1 py-2 px-2 rounded-xl text-slate-600 hover:text-indigo-700 text-center transition-all flex items-center justify-center gap-1.5">
+        <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+        <span>Done</span>
+        <span class="px-1.5 py-0.5 rounded-md bg-emerald-50 text-[10px] text-emerald-700 font-extrabold" id="tab-count-Done">@doneTasks.Count</span>
+    </button>
+</div>
+
+<!-- ═══ KANBAN BOARD ═══ -->
+<div class="grid grid-cols-1 md:grid-cols-3 gap-5 items-start">
+
+    <!-- ── COLUMN 1: TODO ── -->
+    <div id="kanban-col-Todo" class="bg-slate-100/70 rounded-3xl p-4 border border-slate-200/80 flex flex-col min-h-[450px] md:min-h-[600px] kanban-col"
+         data-status="Todo"
+         ondragover="handleDragOver(event)"
+         ondragleave="handleDragLeave(event)"
+         ondrop="handleDrop(event, 'Todo')">
+        <!-- Col Header -->
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-200/80 px-1">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-slate-400"></span>
+                <h3 class="font-black text-slate-700 text-sm uppercase tracking-wider">Antrian (Todo)</h3>
+            </div>
+            <span class="col-count px-2.5 py-0.5 rounded-xl bg-white border border-slate-200 text-xs font-black text-slate-600 shadow-2xs" id="count-Todo">
+                @todoTasks.Count
+            </span>
+        </div>
+
+        <!-- Task Cards Container -->
+        <div class="space-y-3.5 flex-1 kanban-card-container" id="container-Todo">
+            @foreach (var task in todoTasks)
+            {
+                @await Html.PartialAsync("_KanbanTaskCard", task)
+            }
+        </div>
+    </div>
+
+    <!-- ── COLUMN 2: IN PROGRESS ── -->
+    <div id="kanban-col-InProgress" class="bg-indigo-50/40 rounded-3xl p-4 border border-indigo-200/80 flex flex-col min-h-[450px] md:min-h-[600px] kanban-col hidden md:flex"
+         data-status="InProgress"
+         ondragover="handleDragOver(event)"
+         ondragleave="handleDragLeave(event)"
+         ondrop="handleDrop(event, 'InProgress')">
+        <!-- Col Header -->
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-indigo-200/80 px-1">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-indigo-500 animate-pulse"></span>
+                <h3 class="font-black text-indigo-900 text-sm uppercase tracking-wider">Dikerjakan (In Progress)</h3>
+            </div>
+            <span class="col-count px-2.5 py-0.5 rounded-xl bg-indigo-100 border border-indigo-200 text-xs font-black text-indigo-700 shadow-2xs" id="count-InProgress">
+                @inProgressTasks.Count
+            </span>
+        </div>
+
+        <!-- Task Cards Container -->
+        <div class="space-y-3.5 flex-1 kanban-card-container" id="container-InProgress">
+            @foreach (var task in inProgressTasks)
+            {
+                @await Html.PartialAsync("_KanbanTaskCard", task)
+            }
+        </div>
+    </div>
+
+    <!-- ── COLUMN 3: DONE ── -->
+    <div id="kanban-col-Done" class="bg-emerald-50/40 rounded-3xl p-4 border border-emerald-200/80 flex flex-col min-h-[450px] md:min-h-[600px] kanban-col hidden md:flex"
+         data-status="Done"
+         ondragover="handleDragOver(event)"
+         ondragleave="handleDragLeave(event)"
+         ondrop="handleDrop(event, 'Done')">
+        <!-- Col Header -->
+        <div class="flex items-center justify-between pb-3 mb-3 border-b border-emerald-200/80 px-1">
+            <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-emerald-500"></span>
+                <h3 class="font-black text-emerald-900 text-sm uppercase tracking-wider">Selesai (Done - 100%)</h3>
+            </div>
+            <span class="col-count px-2.5 py-0.5 rounded-xl bg-emerald-100 border border-emerald-200 text-xs font-black text-emerald-700 shadow-2xs" id="count-Done">
+                @doneTasks.Count
+            </span>
+        </div>
+
+        <!-- Task Cards Container -->
+        <div class="space-y-3.5 flex-1 kanban-card-container" id="container-Done">
+            @foreach (var task in doneTasks)
+            {
+                @await Html.PartialAsync("_KanbanTaskCard", task)
+            }
+        </div>
+    </div>
+</div>
+
+<!-- Floating Toast Notification -->
+<div id="kanbanToast" class="hidden fixed bottom-6 right-6 bg-slate-900/95 text-white px-5 py-3.5 rounded-2xl shadow-2xl z-50 flex items-center gap-3 backdrop-blur-md border border-slate-700/60 animate-fadeIn">
+    <div class="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold" id="toastIcon">
+        <i class="fas fa-check"></i>
+    </div>
+    <div>
+        <p class="text-xs font-bold" id="toastTitle">Status Diperbarui</p>
+        <p class="text-[11px] text-slate-300" id="toastMessage">Tugas berhasil dipindahkan.</p>
+    </div>
+</div>
+
+<style>
+    .kanban-col.drag-over {
+        border-color: #6366F1 !important;
+        background-color: rgba(99, 102, 241, 0.08) !important;
+        box-shadow: inset 0 0 0 2px #6366F1;
+    }
+    .kanban-card {
+        cursor: grab;
+        transition: transform 0.15s ease, box-shadow 0.15s ease, opacity 0.15s ease;
+    }
+    .kanban-card:active {
+        cursor: grabbing;
+    }
+    .kanban-card.dragging {
+        opacity: 0.45;
+        transform: scale(0.97);
+    }
+</style>
+
+<script>
+    let draggedCard = null;
+    let toastTimeout = null;
+
+    function handleDragStart(e) {
+        draggedCard = e.currentTarget;
+        draggedCard.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', draggedCard.dataset.taskId);
+    }
+
+    function handleDragEnd(e) {
+        if (draggedCard) {
+            draggedCard.classList.remove('dragging');
+            draggedCard = null;
+        }
+        document.querySelectorAll('.kanban-col').forEach(col => col.classList.remove('drag-over'));
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        e.currentTarget.classList.add('drag-over');
+    }
+
+    function handleDragLeave(e) {
+        e.currentTarget.classList.remove('drag-over');
+    }
+
+    async function handleDrop(e, targetStatus) {
+        e.preventDefault();
+        e.currentTarget.classList.remove('drag-over');
+
+        if (!draggedCard) return;
+
+        const taskId = parseInt(draggedCard.dataset.taskId);
+        const currentStatus = draggedCard.dataset.status;
+        const targetContainer = document.getElementById('container-' + targetStatus);
+
+        if (currentStatus === targetStatus) return;
+
+        // Optimistic UI move
+        targetContainer.prepend(draggedCard);
+        draggedCard.dataset.status = targetStatus;
+
+        // Visual update on the card badge and progress
+        const progressBar = draggedCard.querySelector('.card-progress-bar');
+        const progressText = draggedCard.querySelector('.card-progress-text');
+        if (targetStatus === 'Done') {
+            if (progressBar) progressBar.style.width = '100%';
+            if (progressText) progressText.innerText = '100%';
+        } else if (targetStatus === 'Todo' && currentStatus === 'Done') {
+            if (progressBar) progressBar.style.width = '0%';
+            if (progressText) progressText.innerText = '0%';
+        } else if (targetStatus === 'InProgress' && currentStatus === 'Done') {
+            if (progressBar) progressBar.style.width = '50%';
+            if (progressText) progressText.innerText = '50%';
+        }
+
+        updateColumnCounts();
+
+        try {
+            const resp = await fetch('/Task/UpdateKanbanStatus', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    taskId: taskId,
+                    newStatus: targetStatus
+                })
+            });
+
+            const result = await resp.json();
+            if (result.success) {
+                showToast('Status Tugas Diperbarui', result.message, 'success');
+            } else {
+                showToast('Gagal', result.message || 'Gagal mengubah status', 'error');
+            }
+        } catch (err) {
+            console.error(err);
+            showToast('Error', 'Terjadi kesalahan koneksi server', 'error');
+        }
+    }
+
+    function switchKanbanTab(status) {
+        const statuses = ['Todo', 'InProgress', 'Done'];
+        statuses.forEach(s => {
+            const tabBtn = document.getElementById('kanban-tab-' + s);
+            const col = document.getElementById('kanban-col-' + s);
+            if (s === status) {
+                if (col) {
+                    col.classList.remove('hidden');
+                    col.classList.add('flex');
+                }
+                if (tabBtn) {
+                    tabBtn.className = 'flex-1 py-2 px-2 rounded-xl bg-white text-indigo-700 shadow-xs text-center transition-all flex items-center justify-center gap-1.5 font-bold';
+                }
+            } else {
+                if (col) {
+                    col.classList.add('hidden');
+                    col.classList.remove('flex');
+                }
+                if (tabBtn) {
+                    tabBtn.className = 'flex-1 py-2 px-2 rounded-xl text-slate-600 hover:text-indigo-700 text-center transition-all flex items-center justify-center gap-1.5 font-bold';
+                }
+            }
+        });
+    }
+
+    function updateColumnCounts() {
+        ['Todo', 'InProgress', 'Done'].forEach(status => {
+            const container = document.getElementById('container-' + status);
+            const counter = document.getElementById('count-' + status);
+            const tabCounter = document.getElementById('tab-count-' + status);
+            if (container) {
+                const len = container.children.length;
+                if (counter) counter.innerText = len;
+                if (tabCounter) tabCounter.innerText = len;
+            }
+        });
+    }
+
+    function showToast(title, message, type = 'success') {
+        const toast = document.getElementById('kanbanToast');
+        const toastTitle = document.getElementById('toastTitle');
+        const toastMessage = document.getElementById('toastMessage');
+        const toastIcon = document.getElementById('toastIcon');
+
+        if (!toast) return;
+
+        toastTitle.innerText = title;
+        toastMessage.innerText = message;
+
+        if (type === 'success') {
+            toastIcon.className = 'w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-sm font-bold';
+            toastIcon.innerHTML = '<i class="fas fa-check"></i>';
+        } else {
+            toastIcon.className = 'w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center text-sm font-bold';
+            toastIcon.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+        }
+
+        toast.classList.remove('hidden');
+        if (toastTimeout) clearTimeout(toastTimeout);
+        toastTimeout = setTimeout(() => {
+            toast.classList.add('hidden');
+        }, 3500);
+    }
+</script>

@@ -1,0 +1,1110 @@
+@using Microsoft.AspNetCore.Identity
+@using TrackerKerja.Models
+@inject UserManager<AppUser> UserManager
+@inject SignInManager<AppUser> SignInManager
+
+@{
+    var user = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
+    var userInitial = user?.Initials ?? (User.Identity?.Name?.Length > 0 ? User.Identity.Name.Substring(0,1).ToUpper() : "U");
+    var userFullName = user?.FullName ?? (User.Identity?.Name ?? "Pengguna");
+    var userJobTitle = user?.JobTitle ?? "Work Tracker User";
+    var userAvatarColor = string.IsNullOrEmpty(user?.AvatarColor) ? "#6366F1" : user.AvatarColor;
+    var userPhoto = user?.ProfilePictureUrl;
+}
+<!DOCTYPE html>
+<html lang="id" class="h-full">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Work Tracker Pro</title>
+    <meta name="description" content="Work Tracker Pro - All-in-One Dashboard untuk manajemen tugas dan waktu kerja" />
+
+    <!-- Tailwind CSS Play CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: { DEFAULT: '#6366F1', light: '#818CF8', dark: '#4F46E5' },
+                        secondary: { DEFAULT: '#06B6D4', light: '#22D3EE', dark: '#0891B2' },
+                        success: { DEFAULT: '#10B981', light: '#34D399', dark: '#059669' },
+                        warning: { DEFAULT: '#F59E0B', light: '#FCD34D', dark: '#D97706' },
+                        danger: { DEFAULT: '#EF4444', light: '#F87171', dark: '#DC2626' },
+                        sidebar: '#1E1B4B',
+                    },
+                    fontFamily: { sans: ['Inter', 'sans-serif'] }
+                }
+            }
+        }
+    </script>
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <!-- jQuery -->
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <!-- Select2 (Searchable Dropdowns) -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- SweetAlert2 (Modern Confirmation Dialogs & Alerts) -->
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+
+    <!-- FullCalendar -->
+    <link href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.10/index.global.min.js"></script>
+
+    <!-- Fuse.js -->
+    <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
+
+    <!-- Anti-FOUC Immediate Theme Applicator -->
+    <script>
+        (function () {
+            var theme = localStorage.getItem('app_theme') || 'indigo';
+            document.documentElement.setAttribute('data-theme', theme);
+        })();
+    </script>
+
+    <!-- Custom 10 Themes Stylesheet & Responsive Site Styles -->
+    <link rel="stylesheet" href="~/css/site.css" />
+    <link rel="stylesheet" href="~/css/themes.css" />
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        .sidebar-link { transition: all 0.2s ease; }
+        .sidebar-link:hover { transform: translateX(4px); }
+        .sidebar-link.active { background: rgba(99,102,241,0.25); border-left: 3px solid #818CF8; }
+        .card-hover { transition: all 0.3s ease; }
+        .card-hover:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(99,102,241,0.15); }
+        .stat-card { background: linear-gradient(135deg, var(--card-start), var(--card-end)); }
+        .pulse-dot { animation: pulse 2s infinite; }
+        @@keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.7; transform: scale(1.1); }
+        }
+        .badge-priority-critical { background: #FEE2E2; color: #DC2626; }
+        .badge-priority-high { background: #FEF3C7; color: #D97706; }
+        .badge-priority-medium { background: #DBEAFE; color: #2563EB; }
+        .badge-priority-low { background: #D1FAE5; color: #059669; }
+        .slide-in { animation: slideIn 0.3s ease; }
+        @@keyframes slideIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .toast-notification {
+            position: fixed; top: 20px; right: 20px; z-index: 99999;
+            min-width: 280px; max-width: calc(100vw - 40px); animation: slideIn 0.3s ease;
+        }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #F0F9FF; }
+        ::-webkit-scrollbar-thumb { background: #6366F1; border-radius: 3px; }
+        .fc .fc-toolbar-title { font-size: 1.1rem !important; font-weight: 700 !important; color: #1E1B4B; }
+        .fc .fc-button { background: #6366F1 !important; border-color: #6366F1 !important; font-size: 0.8rem !important; }
+        .fc .fc-button:hover { background: #4F46E5 !important; }
+        .fc .fc-day-today { background: #EEF2FF !important; }
+    </style>
+    @await RenderSectionAsync("Styles", required: false)
+</head>
+<body class="h-full bg-gradient-to-br from-sky-50 via-indigo-50 to-purple-50">
+
+<div class="flex h-screen overflow-hidden relative">
+
+    <!-- BACKDROP OVERLAY FOR MOBILE SIDEBAR -->
+    <div id="sidebar-backdrop" onclick="closeMobileSidebar()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 lg:hidden hidden transition-opacity duration-300"></div>
+
+    <!-- SIDEBAR (Off-canvas on mobile/tablet, fixed on desktop) -->
+    <aside class="fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-64 bg-sidebar flex flex-col flex-shrink-0 overflow-y-auto transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 shadow-2xl lg:shadow-none" id="sidebar">
+        <!-- Logo & Mobile Close -->
+        <div class="px-5 py-4 lg:py-5 border-b border-slate-200/80 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-3 group">
+                <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-md group-hover:scale-105 transition-transform">
+                    <i class="fas fa-rocket text-white text-sm"></i>
+                </div>
+                <div>
+                    <h1 class="text-slate-800 font-black text-base leading-tight">Work Tracker</h1>
+                    <p class="text-slate-400 text-xs font-semibold">Pro Dashboard</p>
+                </div>
+            </a>
+            <!-- Close Button for Mobile Drawer -->
+            <button type="button" onclick="closeMobileSidebar()" class="lg:hidden w-8 h-8 rounded-xl bg-slate-100 text-slate-500 hover:text-slate-800 hover:bg-slate-200 flex items-center justify-center transition-colors cursor-pointer" title="Tutup Menu">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Running Timers in Sidebar (Supports Multi-User & Multi-Task) -->
+        <div id="sidebar-timer" class="hidden mx-3 mt-3 p-3 rounded-2xl bg-gradient-to-br from-indigo-50/90 to-purple-50/90 border border-indigo-200/80 shadow-xs">
+            <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-indigo-100/70">
+                <div class="flex items-center gap-1.5">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 pulse-dot shadow-sm shadow-emerald-400"></span>
+                    <span class="text-indigo-950 text-[11px] font-black uppercase tracking-wider">Timer Aktif (<span id="sidebar-timer-count">0</span>)</span>
+                </div>
+            </div>
+            <div id="sidebar-timers-list" class="space-y-1.5 max-h-52 overflow-y-auto pr-0.5">
+                <!-- Multi-timer cards rendered here -->
+            </div>
+        </div>
+
+        <!-- Navigation -->
+        <nav class="flex-1 px-3 py-4 space-y-1">
+            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest px-3 mb-2">Menu Utama</p>
+
+            <a href="/" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "active" : "")">
+                <i class="fas fa-home w-5 text-center text-indigo-500"></i>
+                <span class="text-sm font-medium">Dashboard</span>
+            </a>
+
+            <a href="/Task" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Task" ? "active" : "")">
+                <i class="fas fa-tasks w-5 text-center text-cyan-500"></i>
+                <span class="text-sm font-medium">Tugas</span>
+            </a>
+
+            <a href="/Project" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Project" ? "active" : "")">
+                <i class="fas fa-folder-open w-5 text-center text-amber-500"></i>
+                <span class="text-sm font-medium">Proyek</span>
+            </a>
+
+            <a href="/Calendar" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Calendar" ? "active" : "")">
+                <i class="fas fa-calendar-alt w-5 text-center text-purple-500"></i>
+                <span class="text-sm font-medium">Kalender</span>
+            </a>
+
+            <a href="/Timesheet" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Timesheet" ? "active" : "")">
+                <i class="fas fa-user-clock w-5 text-center text-emerald-500"></i>
+                <span class="text-sm font-medium">Timesheet</span>
+            </a>
+
+            <a href="/Note" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Note" ? "active" : "")">
+                <i class="fas fa-book-open w-5 text-center text-violet-500"></i>
+                <span class="text-sm font-medium">Catatan & Dokumen</span>
+            </a>
+
+            <a href="/Member" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Member" ? "active" : "")">
+                <i class="fas fa-users w-5 text-center text-teal-500"></i>
+                <span class="text-sm font-medium">Anggota Tim</span>
+            </a>
+
+            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest px-3 mb-2 mt-5">Fitur & Tools</p>
+
+            <a href="/JsonTools" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "JsonTools" ? "active" : "")">
+                <i class="fas fa-code w-5 text-center text-pink-500"></i>
+                <span class="text-sm font-medium">JSON Tools</span>
+            </a>
+
+            <a href="/Report" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Report" ? "active" : "")">
+                <i class="fas fa-chart-bar w-5 text-center text-blue-500"></i>
+                <span class="text-sm font-medium">Laporan</span>
+            </a>
+
+            <a href="/swagger" target="_blank" class="sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 group">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-file-code w-5 text-center text-emerald-500"></i>
+                    <span class="text-sm font-medium">Swagger API</span>
+                </div>
+                <span class="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200">Doc</span>
+            </a>
+
+            @if (User.IsInRole("Admin"))
+            {
+                <p class="text-slate-400 text-xs font-bold uppercase tracking-widest px-3 mb-2 mt-5">Pengaturan & Admin</p>
+
+                <a href="/MasterData" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "MasterData" ? "active" : "")">
+                    <i class="fas fa-sliders-h w-5 text-center text-orange-500"></i>
+                    <span class="text-sm font-medium">Master Data</span>
+                </a>
+
+                <a href="/AuditTrail" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "AuditTrail" ? "active" : "")">
+                    <i class="fas fa-shield-alt w-5 text-center text-amber-500"></i>
+                    <span class="text-sm font-medium">Audit Trail</span>
+                </a>
+
+                <a href="/Configuration" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Configuration" ? "active" : "")">
+                    <i class="fas fa-cogs w-5 text-center text-indigo-500"></i>
+                    <span class="text-sm font-medium">Konfigurasi Sistem</span>
+                </a>
+            }
+
+            <p class="text-slate-400 text-xs font-bold uppercase tracking-widest px-3 mb-2 mt-5">Akun</p>
+
+            <a href="/Account/Profile" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Account" && ViewContext.RouteData.Values["action"]?.ToString() == "Profile" ? "active" : "")">
+                <i class="fas fa-user-cog w-5 text-center text-teal-500"></i>
+                <span class="text-sm font-medium">Pengaturan Profil</span>
+            </a>
+        </nav>
+
+        <!-- User Footer Section -->
+        <div class="p-3 border-t border-slate-200/80 bg-slate-50/80">
+            @if (SignInManager.IsSignedIn(User))
+            {
+                <div class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-white transition-all border border-transparent hover:border-slate-200">
+                    <a href="/Account/Profile" class="flex items-center gap-2.5 min-w-0 flex-1 group">
+                        @if (!string.IsNullOrEmpty(userPhoto))
+                        {
+                            <img src="@userPhoto" alt="@userFullName" class="w-9 h-9 rounded-xl object-cover shadow-sm flex-shrink-0 border border-slate-200" />
+                        }
+                        else
+                        {
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center text-white font-black text-sm shadow-sm flex-shrink-0"
+                                 style="background: @userAvatarColor">
+                                @userInitial
+                            </div>
+                        }
+                        <div class="min-w-0 flex-1">
+                            <p class="text-slate-800 text-xs font-bold truncate group-hover:text-indigo-600 transition-colors">@userFullName</p>
+                            <p class="text-slate-400 text-[11px] truncate font-medium">@userJobTitle</p>
+                        </div>
+                    </a>
+                    <form method="post" asp-action="Logout" asp-controller="Account" class="inline">
+                        @Html.AntiForgeryToken()
+                        <button type="submit" title="Logout" class="text-slate-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors">
+                            <i class="fas fa-sign-out-alt text-sm"></i>
+                        </button>
+                    </form>
+                </div>
+            }
+            else
+            {
+                <a href="/Account/Login" class="flex items-center justify-center gap-2 w-full py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-colors shadow-sm">
+                    <i class="fas fa-sign-in-alt"></i>
+                    <span>Masuk / Login</span>
+                </a>
+            }
+        </div>
+    </aside>
+
+    <!-- MAIN CONTENT -->
+    <div class="flex-1 flex flex-col overflow-hidden min-w-0">
+
+        <!-- TOP BAR -->
+        <header class="relative z-30 bg-white/90 backdrop-blur-md border-b border-indigo-100 px-3.5 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between gap-2.5 sm:gap-4 shadow-sm">
+            <div class="flex items-center gap-2 sm:gap-3 min-w-0 flex-shrink-0">
+                <!-- Mobile Hamburger Button -->
+                <button type="button" onclick="toggleMobileSidebar()" class="lg:hidden w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center shadow-xs transition-colors cursor-pointer" title="Menu Navigasi">
+                    <i class="fas fa-bars text-sm"></i>
+                </button>
+                <h2 class="text-slate-800 font-bold text-base sm:text-lg truncate max-w-[120px] sm:max-w-xs md:max-w-none">@ViewData["Title"]</h2>
+            </div>
+
+            <!-- Global Search -->
+            <div class="relative flex-1 max-w-[140px] sm:max-w-xs md:max-w-md z-30" id="search-container">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-xs sm:text-sm"></i>
+                <input type="text" id="global-search" placeholder="Cari..." autocomplete="off"
+                       class="w-full pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 rounded-xl border border-indigo-200 bg-indigo-50/50 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all">
+                <div id="search-results" class="hidden absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-xl border border-indigo-100 z-50 max-h-72 overflow-y-auto"></div>
+            </div>
+
+            <!-- Header Actions -->
+            <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
+                <a href="/swagger" target="_blank" class="hidden md:flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-2 rounded-xl transition-colors" title="Buka Dokumentasi Swagger REST API">
+                    <i class="fas fa-code text-indigo-500"></i>
+                    <span>Swagger API</span>
+                </a>
+
+                <a href="/Import" class="hidden lg:flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold px-3 py-2 rounded-xl transition-colors">
+                    <i class="fas fa-file-excel text-emerald-500"></i>
+                    <span>Import Excel</span>
+                </a>
+
+                <a href="/Task/Create" class="hidden sm:flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-semibold px-3 sm:px-3.5 py-2 rounded-xl hover:shadow-lg hover:shadow-indigo-200 transition-all duration-200">
+                    <i class="fas fa-plus text-xs"></i>
+                    <span class="hidden md:inline">Tugas Baru</span>
+                </a>
+
+                <!-- Notification Bell Dropdown -->
+                <div class="relative z-50">
+                    <button type="button" id="notifDropdownBtn" onclick="toggleNotificationDropdown()"
+                            class="relative p-2 px-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm shadow-xs hover:border-indigo-300 transition-all cursor-pointer"
+                            title="Pemberitahuan Tugas">
+                        <i class="fas fa-bell text-slate-600"></i>
+                        <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white font-black text-[10px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center shadow-xs animate-pulse">0</span>
+                    </button>
+
+                    <!-- Notification Panel Modal -->
+                    <div id="notifDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-88 max-w-[360px] bg-white rounded-3xl shadow-2xl border border-slate-200/90 p-4 z-[9999] animate-fadeIn" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-bold">
+                                    <i class="fas fa-bell"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-black text-slate-800">Pemberitahuan Tugas</h4>
+                                    <p class="text-[10px] text-slate-400">Jatuh tempo, progress & antrian</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="toggleNotificationDropdown()" class="text-slate-400 hover:text-slate-600 text-xs p-1 cursor-pointer">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+
+                        <!-- Notification Tabs -->
+                        <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl mb-3 text-xs font-bold">
+                            <button type="button" onclick="switchNotifTab('due')" id="notif-tab-due" class="flex-1 py-1 px-1.5 rounded-lg bg-white text-indigo-700 shadow-2xs transition-all text-center text-[11px]">
+                                Jatuh Tempo (<span id="notif-count-due">0</span>)
+                            </button>
+                            <button type="button" onclick="switchNotifTab('progress')" id="notif-tab-progress" class="flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all text-center text-[11px]">
+                                In Progress (<span id="notif-count-progress">0</span>)
+                            </button>
+                            <button type="button" onclick="switchNotifTab('todo')" id="notif-tab-todo" class="flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all text-center text-[11px]">
+                                Todo (<span id="notif-count-todo">0</span>)
+                            </button>
+                        </div>
+
+                        <!-- Notification Items List -->
+                        <div id="notif-content-due" class="space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+                        <div id="notif-content-progress" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+                        <div id="notif-content-todo" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+
+                        <div class="pt-3 mt-3 border-t border-slate-100 text-center">
+                            <a href="/Task" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">
+                                Lihat Semua Tugas &rarr;
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Dynamic Theme Switcher Dropdown (10 Themes) -->
+                <div class="relative z-50">
+                    <button type="button" id="themeDropdownBtn" onclick="ThemeManager.toggleDropdown()"
+                            class="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs hover:border-indigo-300 transition-all cursor-pointer"
+                            title="Pilih dan ganti 16 jenis tema tampilan (Light & Dark Theme)">
+                        <span id="topbar-theme-swatch" class="w-3.5 h-3.5 rounded-full shadow-xs border border-white flex-shrink-0" style="background: #6366F1"></span>
+                        <span id="topbar-theme-label" class="hidden md:inline font-bold text-slate-700">Tema</span>
+                        <i class="fas fa-palette text-indigo-500 text-xs ml-0.5"></i>
+                    </button>
+
+                    <!-- Theme Dropdown Floating Menu -->
+                    <div id="themeDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-88 max-w-[360px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-4 z-[9999] animate-fadeIn" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                            <div class="flex items-center gap-2">
+                                <div class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+                                    <i class="fas fa-palette"></i>
+                                </div>
+                                <div>
+                                    <h4 class="text-xs font-black text-slate-800">Kostumasi Tema (16 Pilihan)</h4>
+                                    <p class="text-[10px] text-slate-400">Pilihan Tema Terang & Dark Mode Modern</p>
+                                </div>
+                            </div>
+                            <button type="button" onclick="ThemeManager.closeDropdown()" class="text-slate-400 hover:text-slate-600 text-xs p-1 cursor-pointer">
+                                <i class="fas fa-times"></i>
+                            </button>
+                        </div>
+                        
+                        <!-- 16 Theme Choices List/Grid -->
+                        <div id="themeDropdownGrid" class="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
+                            <!-- Populated dynamically by ThemeManager.js -->
+                        </div>
+                    </div>
+                </div>
+
+                <!-- User Profile Dropdown in Topbar -->
+                @if (SignInManager.IsSignedIn(User))
+                {
+                    <div class="relative z-50">
+                        <button type="button" id="userProfileDropdownBtn" onclick="toggleUserProfileDropdown()"
+                                class="flex items-center gap-2 p-1.5 sm:pr-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs hover:border-indigo-300 transition-all cursor-pointer group"
+                                title="Menu Akun @userFullName">
+                            @if (!string.IsNullOrEmpty(userPhoto))
+                            {
+                                <img src="@userPhoto" alt="@userFullName" class="w-8 h-8 rounded-xl object-cover shadow-sm border border-slate-200 flex-shrink-0" />
+                            }
+                            else
+                            {
+                                <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black shadow-sm flex-shrink-0"
+                                     style="background: @userAvatarColor">
+                                     @userInitial
+                                </div>
+                            }
+                            <div class="text-left hidden md:block leading-tight">
+                                <p class="text-xs font-black text-slate-800 group-hover:text-indigo-600 transition-colors truncate max-w-[130px]">@userFullName</p>
+                                <p class="text-[10px] text-slate-400 font-semibold">@(User.IsInRole("Admin") ? "Administrator" : "Anggota Tim")</p>
+                            </div>
+                            <i class="fas fa-chevron-down text-[10px] text-slate-400 group-hover:text-indigo-500 transition-transform ml-0.5 hidden sm:inline-block" id="userDropdownChevron"></i>
+                        </button>
+
+                        <!-- Profile Dropdown Floating Menu -->
+                        <div id="userProfileDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-72 max-w-[320px] bg-white rounded-3xl shadow-2xl border border-slate-200/90 p-3 z-[9999] animate-fadeIn" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                            <!-- Header user info -->
+                            <div class="p-3 pb-3 mb-2 bg-gradient-to-br from-slate-50 to-indigo-50/40 rounded-2xl border border-slate-100 flex items-center gap-3">
+                                @if (!string.IsNullOrEmpty(userPhoto))
+                                {
+                                    <img src="@userPhoto" alt="@userFullName" class="w-11 h-11 rounded-2xl object-cover shadow-sm border border-white flex-shrink-0" />
+                                }
+                                else
+                                {
+                                    <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-white text-base font-black shadow-sm flex-shrink-0"
+                                         style="background: @userAvatarColor">
+                                         @userInitial
+                                    </div>
+                                }
+                                <div class="min-w-0 flex-1">
+                                    <h4 class="text-xs font-black text-slate-800 truncate">@userFullName</h4>
+                                    <p class="text-[11px] text-slate-500 truncate font-medium">@User.Identity?.Name</p>
+                                    <span class="inline-block mt-1 text-[9px] font-extrabold px-2 py-0.5 rounded-full @(User.IsInRole("Admin") ? "bg-amber-100 text-amber-800" : "bg-indigo-100 text-indigo-700")">
+                                        @(User.IsInRole("Admin") ? "🛡️ Administrator" : "👤 Anggota Tim")
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Menu Items -->
+                            <div class="space-y-1">
+                                <!-- 1. Profile -->
+                                <a href="/Account/Profile" class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 hover:text-indigo-700 hover:bg-indigo-50/80 transition-all group">
+                                    <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs group-hover:scale-110 transition-transform flex-shrink-0">
+                                        <i class="fas fa-user-circle text-sm"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="leading-none text-slate-800 font-bold group-hover:text-indigo-700">Profile</p>
+                                        <span class="text-[10px] text-slate-400 font-medium">Pengaturan akun & foto</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-[10px] text-slate-300 group-hover:text-indigo-400"></i>
+                                </a>
+
+                                <!-- 2. Change Password -->
+                                <a href="/Account/Profile#change-password" class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 hover:text-purple-700 hover:bg-purple-50/80 transition-all group">
+                                    <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xs group-hover:scale-110 transition-transform flex-shrink-0">
+                                        <i class="fas fa-key text-xs"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="leading-none text-slate-800 font-bold group-hover:text-purple-700">Change Password</p>
+                                        <span class="text-[10px] text-slate-400 font-medium">Ganti kata sandi login</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-[10px] text-slate-300 group-hover:text-purple-400"></i>
+                                </a>
+                            </div>
+
+                            <!-- Divider -->
+                            <div class="my-1.5 border-t border-slate-100"></div>
+
+                            <!-- 3. Logout -->
+                            <form method="post" asp-action="Logout" asp-controller="Account" class="block w-full">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-red-600 hover:bg-red-50 transition-all group text-left cursor-pointer">
+                                    <div class="w-8 h-8 rounded-xl bg-red-50 text-red-600 flex items-center justify-center text-xs group-hover:scale-110 transition-transform flex-shrink-0">
+                                        <i class="fas fa-sign-out-alt text-sm"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="leading-none text-red-600 font-bold">Logout</p>
+                                        <span class="text-[10px] text-red-400 font-medium">Keluar dari sesi aplikasi</span>
+                                    </div>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                }
+
+                <div class="text-right pl-2 border-l border-slate-200 hidden xl:block">
+                    <p class="text-xs text-slate-500" id="current-time">--:--</p>
+                    <p class="text-[11px] text-indigo-500 font-medium" id="current-date">--</p>
+                </div>
+            </div>
+        </header>
+
+        <!-- NOTIFICATION TOAST CONTAINER -->
+        <div id="toast-container" class="fixed top-5 right-5 z-[99999] flex flex-col gap-2 pointer-events-none">
+            @if (TempData["Success"] != null)
+            {
+                <div class="toast-notification pointer-events-auto">
+                    <div class="bg-white border border-emerald-200 rounded-xl shadow-xl p-4 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-check text-emerald-600 text-sm"></i>
+                        </div>
+                        <p class="text-slate-700 text-sm font-medium">@TempData["Success"]</p>
+                        <button onclick="this.closest('.toast-notification').remove()" class="ml-auto text-slate-400 hover:text-slate-600 cursor-pointer">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            }
+        </div>
+
+        <!-- PAGE CONTENT -->
+        <main class="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-6">
+            @RenderBody()
+        </main>
+
+        <!-- MOBILE BOTTOM NAVIGATION BAR -->
+        <nav class="lg:hidden fixed bottom-0 left-0 right-0 z-40 bottom-nav-glass px-2 sm:px-4 py-1.5 flex items-center justify-around pb-safe">
+            <a href="/" class="flex flex-col items-center justify-center w-14 py-1 rounded-xl text-xs font-bold @(ViewContext.RouteData.Values["controller"]?.ToString() == "Home" ? "text-indigo-600" : "text-slate-500 hover:text-indigo-600") transition-colors">
+                <i class="fas fa-home text-base"></i>
+                <span class="text-[10px] mt-0.5 font-semibold">Home</span>
+            </a>
+
+            <a href="/Task" class="flex flex-col items-center justify-center w-14 py-1 rounded-xl text-xs font-bold @(ViewContext.RouteData.Values["controller"]?.ToString() == "Task" ? "text-indigo-600" : "text-slate-500 hover:text-indigo-600") transition-colors">
+                <i class="fas fa-tasks text-base"></i>
+                <span class="text-[10px] mt-0.5 font-semibold">Tugas</span>
+            </a>
+
+            <!-- Floating Quick Add Button -->
+            <a href="/Task/Create" class="relative -top-3 w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-500 via-indigo-600 to-purple-600 text-white flex items-center justify-center shadow-lg pulse-glow text-lg group cursor-pointer" title="Tambah Tugas Baru">
+                <i class="fas fa-plus group-hover:rotate-90 transition-transform duration-200"></i>
+            </a>
+
+            <a href="/Project" class="flex flex-col items-center justify-center w-14 py-1 rounded-xl text-xs font-bold @(ViewContext.RouteData.Values["controller"]?.ToString() == "Project" ? "text-indigo-600" : "text-slate-500 hover:text-indigo-600") transition-colors">
+                <i class="fas fa-folder-open text-base"></i>
+                <span class="text-[10px] mt-0.5 font-semibold">Proyek</span>
+            </a>
+
+            <button type="button" onclick="toggleMobileSidebar()" class="flex flex-col items-center justify-center w-14 py-1 rounded-xl text-xs font-bold text-slate-500 hover:text-indigo-600 transition-colors cursor-pointer">
+                <i class="fas fa-bars text-base"></i>
+                <span class="text-[10px] mt-0.5 font-semibold">Menu</span>
+            </button>
+        </nav>
+    </div>
+</div>
+
+<!-- Global Scripts -->
+<script>
+    // Clock
+    function updateClock() {
+        const now = new Date();
+        const timeEl = document.getElementById('current-time');
+        const dateEl = document.getElementById('current-date');
+        if (timeEl) timeEl.textContent = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+        if (dateEl) dateEl.textContent = now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short' });
+    }
+    updateClock();
+    setInterval(updateClock, 1000);
+
+    // Auto-dismiss toast
+    setTimeout(() => {
+        document.querySelectorAll('.toast-notification').forEach(el => el.remove());
+    }, 4000);
+
+    function showToast(msg, type = 'success') {
+        const container = document.getElementById('toast-container');
+        if (!container) return;
+        const div = document.createElement('div');
+        div.className = 'toast-notification';
+        const isSuccess = type === 'success';
+        div.innerHTML = `<div class="bg-white border border-${isSuccess ? 'emerald' : 'red'}-200 rounded-xl shadow-xl p-4 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full bg-${isSuccess ? 'emerald' : 'red'}-100 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-${isSuccess ? 'check text-emerald-600' : 'times text-red-600'} text-sm"></i>
+            </div>
+            <p class="text-slate-700 text-sm font-medium">${msg}</p>
+            <button onclick="this.closest('.toast-notification').remove()" class="ml-auto text-slate-400 hover:text-slate-600">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>`;
+        container.appendChild(div);
+        setTimeout(() => div.remove(), 4000);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#039;');
+    }
+
+    // Multi-timer state (supports concurrent timers per user)
+    let activeRunningTimers = [];
+    let globalTimerInterval = null;
+    let globalSessionId = null;
+
+    async function checkRunningTimer() {
+        try {
+            const res = await fetch('/Task/GetRunningTimer');
+            const data = await res.json();
+            const sidebarTimer = document.getElementById('sidebar-timer');
+            const countEl = document.getElementById('sidebar-timer-count');
+            const listEl = document.getElementById('sidebar-timers-list');
+            if (!sidebarTimer || !listEl) return;
+
+            if (data.running && data.timers && data.timers.length > 0) {
+                sidebarTimer.classList.remove('hidden');
+                if (countEl) countEl.textContent = data.count || data.timers.length;
+
+                // Sync activeRunningTimers list with local start time
+                const now = Date.now();
+                activeRunningTimers = data.timers.map(t => ({
+                    sessionId: t.sessionId,
+                    taskId: t.taskId,
+                    taskTitle: t.taskTitle || 'Tugas',
+                    taskCode: t.taskCode || `TSK-${t.taskId}`,
+                    localStartTime: now - ((t.elapsed || 0) * 1000)
+                }));
+                globalSessionId = activeRunningTimers[0]?.sessionId || null;
+
+                renderSidebarTimers();
+
+                if (!globalTimerInterval) {
+                    globalTimerInterval = setInterval(updateGlobalTimersTick, 1000);
+                }
+                updateGlobalTimersTick();
+            } else {
+                activeRunningTimers = [];
+                globalSessionId = null;
+                sidebarTimer.classList.add('hidden');
+                listEl.innerHTML = '';
+                if (countEl) countEl.textContent = '0';
+                if (globalTimerInterval) { clearInterval(globalTimerInterval); globalTimerInterval = null; }
+            }
+        } catch (e) { }
+    }
+
+    function renderSidebarTimers() {
+        const listEl = document.getElementById('sidebar-timers-list');
+        if (!listEl) return;
+
+        listEl.innerHTML = activeRunningTimers.map(t => `
+            <div class="p-2 rounded-xl bg-white/90 border border-indigo-100/80 shadow-2xs transition-all" id="timer-card-${t.sessionId}">
+                <div class="flex items-center justify-between gap-1.5 mb-1">
+                    <span class="text-[10px] font-black text-indigo-700 bg-indigo-50 px-1.5 py-0.5 rounded-md truncate max-w-[100px]" title="${escapeHtml(t.taskCode)}">
+                        ${escapeHtml(t.taskCode)}
+                    </span>
+                    <button type="button" onclick="stopGlobalTimer(${t.sessionId})" title="Hentikan Timer Ini" 
+                            class="text-red-500 hover:text-white hover:bg-red-500 text-[10px] px-1.5 py-0.5 rounded bg-red-50 transition-colors font-bold cursor-pointer">
+                        <i class="fas fa-stop mr-0.5"></i>Stop
+                    </button>
+                </div>
+                <a href="/Task/Details/${t.taskId}" class="text-slate-800 text-xs font-bold block truncate hover:text-indigo-600 transition-colors" title="${escapeHtml(t.taskTitle)}">
+                    ${escapeHtml(t.taskTitle)}
+                </a>
+                <p class="text-indigo-600 font-mono text-sm font-black mt-0.5" id="timer-display-${t.sessionId}">00:00:00</p>
+            </div>
+        `).join('');
+    }
+
+    function updateGlobalTimersTick() {
+        const now = Date.now();
+        activeRunningTimers.forEach(t => {
+            const elapsed = Math.max(0, Math.floor((now - t.localStartTime) / 1000));
+            const h = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+            const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+            const s = (elapsed % 60).toString().padStart(2, '0');
+            const display = `${h}:${m}:${s}`;
+            const el = document.getElementById(`timer-display-${t.sessionId}`);
+            if (el) el.textContent = display;
+        });
+
+        // Also update legacy single display if exists
+        if (activeRunningTimers.length > 0) {
+            const first = activeRunningTimers[0];
+            const elapsed = Math.max(0, Math.floor((now - first.localStartTime) / 1000));
+            const h = Math.floor(elapsed / 3600).toString().padStart(2, '0');
+            const m = Math.floor((elapsed % 3600) / 60).toString().padStart(2, '0');
+            const s = (elapsed % 60).toString().padStart(2, '0');
+            const display = `${h}:${m}:${s}`;
+            const pageTimer = document.getElementById('page-timer-display');
+            if (pageTimer) pageTimer.textContent = display;
+        }
+    }
+
+    async function startGlobalTimer(taskId, taskTitle) {
+        try {
+            const res = await fetch('/Task/StartTimer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ taskId: parseInt(taskId) })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (typeof SwalToast === 'function') {
+                    SwalToast(`Timer dimulai: ${taskTitle || data.taskTitle || 'Tugas'}`, 'success');
+                } else {
+                    showToast(`Timer dimulai untuk: ${taskTitle || data.taskTitle || 'Tugas'}`, 'success');
+                }
+                checkRunningTimer();
+                setTimeout(() => location.reload(), 600);
+            } else {
+                if (typeof SwalAlert === 'function') {
+                    SwalAlert('Gagal Memulai Timer', data.message || 'Gagal memulai timer', 'error');
+                } else {
+                    showToast(data.message || 'Gagal memulai timer', 'error');
+                }
+            }
+        } catch (err) {
+            showToast('Error koneksi timer', 'error');
+        }
+    }
+
+    async function stopGlobalTimer(sessionId) {
+        try {
+            const idToStop = sessionId || globalSessionId || 0;
+            const res = await fetch('/Task/StopTimer', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ sessionId: parseInt(idToStop) })
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (typeof SwalToast === 'function') {
+                    SwalToast('Timer berhasil dihentikan!', 'success');
+                } else {
+                    showToast('Timer berhasil dihentikan!', 'success');
+                }
+                checkRunningTimer();
+                setTimeout(() => location.reload(), 600);
+            } else {
+                showToast(data.message || 'Gagal menghentikan timer', 'error');
+            }
+        } catch (err) {
+            showToast('Error koneksi timer', 'error');
+        }
+    }
+
+    checkRunningTimer();
+    setInterval(checkRunningTimer, 15000);
+
+    // Global Search
+    const searchInput = document.getElementById('global-search');
+    const searchResults = document.getElementById('search-results');
+
+    searchInput?.addEventListener('input', function() {
+        const q = this.value.trim();
+        if (q.length < 2) { searchResults?.classList.add('hidden'); return; }
+        if (searchResults) {
+            searchResults.innerHTML = `<a href="/Task?search=${encodeURIComponent(q)}" class="block px-4 py-3 hover:bg-indigo-50 text-sm text-indigo-700 font-medium">
+                <i class="fas fa-search mr-2 text-indigo-400"></i>Cari "<strong>${q}</strong>" di semua tugas
+            </a>`;
+            searchResults.classList.remove('hidden');
+        }
+    });
+
+    // ── NOTIFICATION MODULE SYSTEM ─────────────────────────
+    let currentNotifTab = 'due';
+
+    function toggleNotificationDropdown() {
+        const menu = document.getElementById('notifDropdownMenu');
+        if (!menu) return;
+        const isHidden = menu.classList.contains('hidden');
+        if (isHidden) {
+            // Close theme menu and profile menu if open
+            if (typeof ThemeManager !== 'undefined' && ThemeManager.closeDropdown) ThemeManager.closeDropdown();
+            closeUserProfileDropdown();
+            menu.classList.remove('hidden');
+            fetchNotifications();
+        } else {
+            menu.classList.add('hidden');
+        }
+    }
+
+    // ── USER PROFILE DROPDOWN SYSTEM ──────────────────────
+    function toggleUserProfileDropdown() {
+        const menu = document.getElementById('userProfileDropdownMenu');
+        const chevron = document.getElementById('userDropdownChevron');
+        if (!menu) return;
+        const isHidden = menu.classList.contains('hidden');
+        if (isHidden) {
+            // Close notification & theme dropdowns if open
+            const notifMenu = document.getElementById('notifDropdownMenu');
+            if (notifMenu) notifMenu.classList.add('hidden');
+            if (typeof ThemeManager !== 'undefined' && ThemeManager.closeDropdown) ThemeManager.closeDropdown();
+
+            menu.classList.remove('hidden');
+            if (chevron) chevron.style.transform = 'rotate(180deg)';
+        } else {
+            closeUserProfileDropdown();
+        }
+    }
+
+    function closeUserProfileDropdown() {
+        const menu = document.getElementById('userProfileDropdownMenu');
+        const chevron = document.getElementById('userDropdownChevron');
+        if (menu) menu.classList.add('hidden');
+        if (chevron) chevron.style.transform = 'rotate(0deg)';
+    }
+
+    function switchNotifTab(tab) {
+        currentNotifTab = tab;
+        ['due', 'progress', 'todo'].forEach(t => {
+            const tabBtn = document.getElementById('notif-tab-' + t);
+            const content = document.getElementById('notif-content-' + t);
+            if (tabBtn && content) {
+                if (t === tab) {
+                    tabBtn.className = 'flex-1 py-1 px-1.5 rounded-lg bg-white text-indigo-700 shadow-2xs font-bold text-[11px] text-center transition-all';
+                    content.classList.remove('hidden');
+                } else {
+                    tabBtn.className = 'flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 font-bold text-[11px] text-center transition-all';
+                    content.classList.add('hidden');
+                }
+            }
+        });
+    }
+
+    async function fetchNotifications() {
+        try {
+            const resp = await fetch('/Notification/GetSummary');
+            const data = await resp.json();
+            if (!data.success) return;
+
+            // Badge
+            const badge = document.getElementById('notif-badge');
+            if (badge) {
+                if (data.totalAlerts > 0) {
+                    badge.innerText = data.totalAlerts > 99 ? '99+' : data.totalAlerts;
+                    badge.classList.remove('hidden');
+                } else {
+                    badge.classList.add('hidden');
+                }
+            }
+
+            // Tab Counts
+            const cDue = document.getElementById('notif-count-due');
+            const cProg = document.getElementById('notif-count-progress');
+            const cTodo = document.getElementById('notif-count-todo');
+            if (cDue) cDue.innerText = data.dueDateCount;
+            if (cProg) cProg.innerText = data.inProgressCount;
+            if (cTodo) cTodo.innerText = data.todoCount;
+
+            // Render Due Date Content
+            const contentDue = document.getElementById('notif-content-due');
+            if (contentDue) {
+                if (data.dueDateTasks.length === 0) {
+                    contentDue.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs"><i class="fas fa-calendar-check text-2xl text-emerald-400 mb-1 block"></i>Tidak ada tugas yang jatuh tempo.</div>';
+                } else {
+                    contentDue.innerHTML = data.dueDateTasks.map(t => `
+                        <a href="/Task/Edit/${t.id}" class="block p-2.5 rounded-xl border ${t.isOverdue ? 'border-red-200 bg-red-50/40 hover:bg-red-50' : 'border-amber-200 bg-amber-50/30 hover:bg-amber-50'} transition-all group">
+                            <div class="flex items-center justify-between gap-1 mb-1">
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded ${t.isOverdue ? 'bg-red-100 text-red-700' : 'bg-amber-100 text-amber-800'}">
+                                    ${t.isOverdue ? '⚠️ Overdue' : '⏰ Segera'}
+                                </span>
+                                <span class="text-[10px] font-semibold text-slate-400">${t.dueDateFormatted}</span>
+                            </div>
+                            <h5 class="text-xs font-bold text-slate-800 group-hover:text-indigo-600 line-clamp-1">${t.title}</h5>
+                            <div class="flex items-center justify-between mt-1 text-[10px] text-slate-500">
+                                <span>${t.projectName}</span>
+                                <span class="font-bold text-indigo-600">${t.progress}%</span>
+                            </div>
+                        </a>
+                    `).join('');
+                }
+            }
+
+            // Render In Progress Content
+            const contentProg = document.getElementById('notif-content-progress');
+            if (contentProg) {
+                if (data.inProgressTasks.length === 0) {
+                    contentProg.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs"><i class="fas fa-tasks text-2xl text-indigo-400 mb-1 block"></i>Tidak ada tugas sedang dikerjakan.</div>';
+                } else {
+                    contentProg.innerHTML = data.inProgressTasks.map(t => `
+                        <a href="/Task/Edit/${t.id}" class="block p-2.5 rounded-xl border border-indigo-100 bg-indigo-50/30 hover:bg-indigo-50 transition-all group">
+                            <div class="flex items-center justify-between gap-1 mb-1">
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-indigo-100 text-indigo-700">⏳ In Progress</span>
+                                <span class="text-[10px] font-semibold text-slate-400">${t.dueDateFormatted}</span>
+                            </div>
+                            <h5 class="text-xs font-bold text-slate-800 group-hover:text-indigo-600 line-clamp-1">${t.title}</h5>
+                            <div class="flex items-center justify-between mt-1 text-[10px] text-slate-500">
+                                <span>${t.projectName}</span>
+                                <span class="font-bold text-indigo-600">${t.progress}%</span>
+                            </div>
+                        </a>
+                    `).join('');
+                }
+            }
+
+            // Render Todo Content
+            const contentTodo = document.getElementById('notif-content-todo');
+            if (contentTodo) {
+                if (data.todoTasks.length === 0) {
+                    contentTodo.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs"><i class="fas fa-clipboard-check text-2xl text-slate-300 mb-1 block"></i>Antrian tugas kosong.</div>';
+                } else {
+                    contentTodo.innerHTML = data.todoTasks.map(t => `
+                        <a href="/Task/Edit/${t.id}" class="block p-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 transition-all group">
+                            <div class="flex items-center justify-between gap-1 mb-1">
+                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded bg-slate-100 text-slate-700">📋 Todo</span>
+                                <span class="text-[10px] font-semibold text-slate-400">${t.dueDateFormatted}</span>
+                            </div>
+                            <h5 class="text-xs font-bold text-slate-800 group-hover:text-indigo-600 line-clamp-1">${t.title}</h5>
+                            <div class="flex items-center justify-between mt-1 text-[10px] text-slate-500">
+                                <span>${t.projectName}</span>
+                                <span>${t.assignedTo}</span>
+                            </div>
+                        </a>
+                    `).join('');
+                }
+            }
+        } catch (e) {
+            console.error('Failed fetching notifications', e);
+        }
+    }
+
+    // Initial fetch & interval
+    fetchNotifications();
+    setInterval(fetchNotifications, 30000);
+
+    // ── MOBILE SIDEBAR DRAWER CONTROLLER ────────────────
+    function toggleMobileSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        if (!sidebar || !backdrop) return;
+        const isHidden = sidebar.classList.contains('-translate-x-full');
+        if (isHidden) {
+            sidebar.classList.remove('-translate-x-full');
+            sidebar.classList.add('translate-x-0');
+            backdrop.classList.remove('hidden');
+            document.body.classList.add('overflow-hidden');
+        } else {
+            closeMobileSidebar();
+        }
+    }
+
+    function closeMobileSidebar() {
+        const sidebar = document.getElementById('sidebar');
+        const backdrop = document.getElementById('sidebar-backdrop');
+        if (!sidebar || !backdrop) return;
+        sidebar.classList.add('-translate-x-full');
+        sidebar.classList.remove('translate-x-0');
+        backdrop.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    // Auto-close drawer when clicking on sidebar links (for single-page navigation or jump)
+    document.querySelectorAll('#sidebar .sidebar-link').forEach(link => {
+        link.addEventListener('click', () => {
+            if (window.innerWidth < 1024) closeMobileSidebar();
+        });
+    });
+
+    // Close on Escape key & close on viewport resize above 1024px
+    window.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') closeMobileSidebar();
+    });
+    window.addEventListener('resize', function() {
+        if (window.innerWidth >= 1024) closeMobileSidebar();
+    });
+
+    // ── SWEETALERT2 MODERN UTILITY HELPERS ───────────────────────
+    window.SwalConfirm = async function({
+        title = 'Konfirmasi Tindakan',
+        text = 'Apakah Anda yakin ingin melanjutkan tindakan ini?',
+        icon = 'warning',
+        confirmButtonText = 'Ya, Lanjutkan',
+        cancelButtonText = 'Batal',
+        isDanger = true
+    } = {}) {
+        if (typeof Swal === 'undefined') {
+            return window.confirm(text);
+        }
+        const result = await Swal.fire({
+            title: title,
+            html: text,
+            icon: icon,
+            showCancelButton: true,
+            confirmButtonText: confirmButtonText,
+            cancelButtonText: cancelButtonText,
+            reverseButtons: true,
+            focusCancel: true,
+            customClass: {
+                popup: 'custom-swal-popup',
+                title: 'custom-swal-title',
+                htmlContainer: 'custom-swal-content',
+                actions: 'custom-swal-actions',
+                confirmButton: `custom-swal-confirm ${isDanger ? 'custom-swal-danger' : ''}`,
+                cancelButton: 'custom-swal-cancel'
+            },
+            buttonsStyling: false
+        });
+        return result.isConfirmed;
+    };
+
+    window.SwalAlert = function(title, text, icon = 'info') {
+        if (typeof Swal === 'undefined') {
+            alert(text);
+            return Promise.resolve();
+        }
+        return Swal.fire({
+            title: title,
+            html: text,
+            icon: icon,
+            confirmButtonText: 'OK',
+            customClass: {
+                popup: 'custom-swal-popup',
+                title: 'custom-swal-title',
+                htmlContainer: 'custom-swal-content',
+                confirmButton: 'custom-swal-confirm'
+            },
+            buttonsStyling: false
+        });
+    };
+
+    // ── GLOBAL AUTO-INTERCEPTOR FOR CONFIRMATION FORMS ───────────
+    document.addEventListener('submit', async function(e) {
+        const form = e.target;
+        if (!form) return;
+        
+        const confirmMsg = form.getAttribute('data-confirm');
+        if (confirmMsg && !form.dataset.swalConfirmed) {
+            e.preventDefault();
+            e.stopImmediatePropagation();
+            const title = form.getAttribute('data-confirm-title') || 'Konfirmasi Tindakan';
+            const isDanger = form.getAttribute('data-confirm-danger') !== 'false';
+            const btnText = form.getAttribute('data-confirm-btn') || (isDanger ? '<i class="fas fa-trash-alt mr-1.5"></i>Ya, Lanjutkan' : '<i class="fas fa-check mr-1.5"></i>Ya, Lanjutkan');
+            
+            const confirmed = await window.SwalConfirm({
+                title: title,
+                text: confirmMsg,
+                icon: isDanger ? 'warning' : 'question',
+                confirmButtonText: btnText,
+                cancelButtonText: 'Batal',
+                isDanger: isDanger
+            });
+            
+            if (confirmed) {
+                form.dataset.swalConfirmed = 'true';
+                form.submit();
+            }
+        }
+    }, true);
+
+    // ── SELECT2 AUTO-INITIALIZER ─────────────────────────────────
+    function initAppSelect2(scope) {
+        if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') return;
+        var root = scope ? jQuery(scope) : jQuery(document);
+        
+        root.find('select.select2, select.select2-searchable, select[data-search="true"]').each(function() {
+            var $el = jQuery(this);
+            if ($el.hasClass('select2-hidden-accessible')) return; // already initialized
+            
+            var placeholder = $el.attr('placeholder') || $el.data('placeholder') || '-- Pilih Opsi --';
+            var allowClear = $el.data('allow-clear') === true || $el.attr('data-allow-clear') === 'true';
+            var isCompact = $el.hasClass('select2-compact') || $el.closest('.select2-compact-container').length > 0;
+            
+            var modalParent = $el.closest('.fixed, [role="dialog"], #quickLogModal, #reset-modal');
+            var options = {
+                width: '100%',
+                placeholder: placeholder,
+                allowClear: allowClear,
+                language: {
+                    noResults: function() { return "Tidak ada data yang cocok"; },
+                    searching: function() { return "Mencari..."; }
+                }
+            };
+            
+            if (modalParent.length > 0) {
+                options.dropdownParent = modalParent;
+            }
+            
+            if (isCompact) {
+                options.containerCssClass = 'select2-container--compact';
+            }
+            
+            $el.select2(options);
+        });
+    }
+
+    jQuery(document).ready(function() {
+        initAppSelect2();
+    });
+</script>
+
+<script src="~/js/theme-manager.js"></script>
+
+@await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

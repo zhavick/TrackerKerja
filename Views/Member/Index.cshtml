@@ -1,0 +1,314 @@
+@model List<TrackerKerja.ViewModels.MemberListItemViewModel>
+@{
+    ViewData["Title"] = "Anggota Tim & Kontribusi";
+    var totalTasks = Model.Sum(m => m.TotalTasks);
+    var totalHours = Model.Sum(m => m.TotalHours);
+    var totalNotes = Model.Sum(m => m.NotesContributedCount);
+}
+
+<div class="space-y-6 max-w-7xl mx-auto">
+
+    <!-- Header & Action -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
+                <i class="fas fa-users text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-black text-slate-800">Direktori Anggota Tim</h2>
+                <p class="text-slate-500 text-xs mt-0.5">Pantau data member, distribusi penugasan tugas, dan kontribusi catatan kerja</p>
+            </div>
+        </div>
+
+        @if (User.IsInRole("Admin"))
+        {
+            <div class="flex gap-2">
+                <a href="/Member/Create" class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-lg hover:shadow-indigo-200 hover:scale-105 transition-all">
+                    <i class="fas fa-user-plus"></i><span>Tambah Member</span>
+                </a>
+            </div>
+        }
+    </div>
+
+    <!-- Summary Stats Bar -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-4 border border-indigo-100 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-slate-500">Total Anggota</span>
+                <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-user-friends"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@Model.Count</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Personel Terdaftar</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-emerald-100 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-slate-500">Tugas Terdistribusi</span>
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-tasks"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@totalTasks</p>
+            <p class="text-[11px] text-emerald-600 font-semibold mt-0.5">Penugasan Aktif & Selesai</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-amber-100 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-slate-500">Total Jam Kerja</span>
+                <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-business-time"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@totalHours.ToString("F1")j</p>
+            <p class="text-[11px] text-amber-600 font-semibold mt-0.5">Log Waktu Pengerjaan</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-purple-100 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-slate-500">Catatan & Dokumentasi</span>
+                <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-book-open"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@totalNotes</p>
+            <p class="text-[11px] text-purple-600 font-semibold mt-0.5">Dokumen Kontribusi</p>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-3.5 sm:p-4">
+        <form method="get" class="flex flex-wrap items-center gap-2.5">
+            <div class="relative flex-1 min-w-[180px]">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-xs"></i>
+                <input type="text" name="search" value="@ViewBag.Search" placeholder="Cari nama anggota, email, jabatan..."
+                       class="w-full pl-8 pr-3 py-2 rounded-xl border border-indigo-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50/50">
+            </div>
+
+            <div class="min-w-[180px]">
+                <select name="role" class="select2 select2-compact w-full" data-placeholder="Semua Peran (Role)">
+                    <option value="">Semua Peran (Role)</option>
+                    @if (ViewBag.RoleFilter == "Admin") { <option value="Admin" selected>🛡️ Admin</option> } else { <option value="Admin">🛡️ Admin</option> }
+                    @if (ViewBag.RoleFilter == "User") { <option value="User" selected>👤 User / Team Member</option> } else { <option value="User">👤 User / Team Member</option> }
+                </select>
+            </div>
+
+            <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors shadow-sm cursor-pointer">
+                <i class="fas fa-filter mr-1"></i>Filter
+            </button>
+            <a href="/Member" class="text-slate-500 hover:text-indigo-600 px-3 py-2 rounded-xl text-xs border border-slate-200 hover:border-indigo-300 font-semibold transition-colors">
+                Reset
+            </a>
+        </form>
+    </div>
+
+    <!-- Members Grid Cards -->
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-5">
+        @foreach (var m in Model)
+        {
+            var isLocked = m.User.LockoutEnd.HasValue && m.User.LockoutEnd.Value > DateTimeOffset.Now;
+
+            <div class="bg-white rounded-3xl p-5 border border-indigo-100 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all flex flex-col justify-between group @(isLocked ? "opacity-60 bg-slate-50" : "")">
+                <div>
+                    <!-- Top Member Profile -->
+                    <div class="flex items-start justify-between gap-3 mb-4">
+                        <div class="flex items-center gap-3">
+                            @if (!string.IsNullOrEmpty(m.User.ProfilePictureUrl))
+                            {
+                                <img src="@m.User.ProfilePictureUrl" alt="@m.User.FullName"
+                                     class="w-12 h-12 rounded-2xl object-cover shadow-md border-2 border-white ring-2 ring-indigo-100 flex-shrink-0" />
+                            }
+                            else
+                            {
+                                <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-base font-black flex-shrink-0 shadow-md ring-2 ring-indigo-50"
+                                     style="background:@m.User.AvatarColor">
+                                    @m.User.Initials
+                                </div>
+                            }
+                            <div class="min-w-0">
+                                <a href="/Member/Details/@m.User.Id" class="font-black text-slate-800 text-sm hover:text-indigo-600 block truncate transition-colors" title="@m.User.FullName">
+                                    @m.User.FullName
+                                </a>
+                                <p class="text-[11px] font-semibold text-slate-400 truncate">@m.User.JobTitle</p>
+                            </div>
+                        </div>
+
+                        <!-- Role Badge -->
+                        <span class="inline-flex items-center text-[10px] font-extrabold px-2 py-0.5 rounded-lg @(m.Role == "Admin" ? "bg-purple-100 text-purple-700" : "bg-slate-100 text-slate-600") flex-shrink-0">
+                            @(m.Role == "Admin" ? "🛡️ Admin" : "Member")
+                        </span>
+                    </div>
+
+                    <!-- Email & Contact -->
+                    <div class="space-y-1 mb-4 text-xs text-slate-500">
+                        <p class="flex items-center gap-2 truncate text-[11px]">
+                            <i class="far fa-envelope text-indigo-400 text-xs w-3.5"></i>
+                            <span class="truncate">@m.User.Email</span>
+                        </p>
+                        @if (!string.IsNullOrEmpty(m.User.PhoneNumber))
+                        {
+                            <p class="flex items-center gap-2 text-[11px]">
+                                <i class="fas fa-phone-alt text-emerald-400 text-xs w-3.5"></i>
+                                <span>@m.User.PhoneNumber</span>
+                            </p>
+                        }
+                    </div>
+
+                    <!-- Contribution Metrics Grid -->
+                    <div class="grid grid-cols-3 gap-2 bg-slate-50/80 p-3 rounded-2xl border border-slate-100 mb-4 text-center">
+                        <div>
+                            <p class="text-xs font-black text-slate-800">@m.TotalTasks</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Tugas</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-black text-indigo-600">@m.TotalHours.ToString("F1")j</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Waktu</p>
+                        </div>
+                        <div>
+                            <p class="text-xs font-black text-purple-600">@m.NotesContributedCount</p>
+                            <p class="text-[9px] font-bold text-slate-400 uppercase">Catatan</p>
+                        </div>
+                    </div>
+
+                    <!-- Completion Progress Bar -->
+                    <div class="space-y-1 mb-4">
+                        <div class="flex items-center justify-between text-[11px]">
+                            <span class="text-slate-400 font-semibold">Tugas Selesai</span>
+                            <span class="font-bold text-slate-700">@m.DoneTasks / @m.TotalTasks (@m.CompletionRate%)</span>
+                        </div>
+                        <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                            <div class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full"
+                                 style="width: @(m.CompletionRate)%"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer Actions -->
+                <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                    <a href="/Member/Details/@m.User.Id"
+                       class="flex-1 text-center py-2 px-3 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-600 hover:text-white text-xs font-bold transition-all shadow-sm">
+                        <i class="far fa-id-card mr-1"></i>Lihat Kontribusi
+                    </a>
+
+                    @if (User.IsInRole("Admin"))
+                    {
+                        <button type="button" onclick="openAdminResetPasswordModal('@m.User.Id', '@m.User.FullName.Replace("'", "\\'")')"
+                                class="p-2 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-600 hover:text-amber-700 text-xs transition-colors cursor-pointer" 
+                                title="Ubah Password Member Secara Langsung (Khusus Admin)">
+                            <i class="fas fa-key"></i>
+                        </button>
+
+                        <a href="/Member/Edit/@m.User.Id"
+                           class="p-2 rounded-xl bg-slate-100 hover:bg-indigo-100 text-slate-600 hover:text-indigo-700 text-xs transition-colors" title="Edit Data Member">
+                            <i class="fas fa-edit"></i>
+                        </a>
+
+                        <form method="post" action="/Member/ToggleStatus/@m.User.Id" class="inline"
+                              data-confirm="@(isLocked ? $"Apakah Anda yakin ingin mengaktifkan kembali akses akun '{m.User.FullName}'?" : $"Apakah Anda yakin ingin menonaktifkan / mengunci akses akun '{m.User.FullName}'?")"
+                              data-confirm-title="@(isLocked ? "Aktifkan Akun Member" : "Nonaktifkan Akun Member")"
+                              data-confirm-btn="@(isLocked ? "<i class='fas fa-unlock mr-1.5'></i>Aktifkan" : "<i class='fas fa-user-lock mr-1.5'></i>Kunci Akun")">
+                            @Html.AntiForgeryToken()
+                            <button type="submit"
+                                    class="p-2 rounded-xl @(isLocked ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white" : "bg-red-50 text-red-500 hover:bg-red-500 hover:text-white") text-xs transition-colors cursor-pointer"
+                                    title="@(isLocked ? "Aktifkan Akun" : "Kunci Akun")">
+                                <i class="fas @(isLocked ? "fa-unlock" : "fa-user-lock")"></i>
+                            </button>
+                        </form>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@if (User.IsInRole("Admin"))
+{
+    <!-- MODAL ADMIN DIRECT RESET PASSWORD -->
+    <div id="adminResetPasswordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden animate-fadeIn">
+        <div class="bg-white rounded-3xl shadow-2xl border border-indigo-100 max-w-md w-full overflow-hidden transform transition-all">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-amber-500 to-orange-600 p-5 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-lg shadow-inner">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black">Ubah Password Member</h3>
+                        <p class="text-amber-100 text-xs mt-0.5" id="modalMemberNameLabel">Setel kata sandi baru</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAdminResetPasswordModal()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <form method="post" action="/Member/ResetPassword" id="adminResetPasswordForm" class="p-6 space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="modalResetUserId" value="" />
+                <input type="hidden" name="returnUrl" value="/Member" />
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Password Baru <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="newPassword" id="modalNewPassword" required minlength="6" placeholder="Masukkan password baru..."
+                               class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-50">
+                        <button type="button" onclick="togglePasswordVisibility('modalNewPassword', this)" 
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Minimal 6 karakter. Password langsung aktif tanpa perlu konfirmasi email atau password lama.</p>
+                </div>
+
+                <!-- Footer -->
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                    <button type="button" onclick="closeAdminResetPasswordModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-all cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md hover:shadow-amber-200 transition-all cursor-pointer">
+                        <i class="fas fa-check"></i>
+                        <span>Simpan Password Baru</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @section Scripts {
+    <script>
+        function openAdminResetPasswordModal(userId, fullName) {
+            const modal = document.getElementById('adminResetPasswordModal');
+            const idInput = document.getElementById('modalResetUserId');
+            const nameLabel = document.getElementById('modalMemberNameLabel');
+            const pwdInput = document.getElementById('modalNewPassword');
+
+            if (idInput) idInput.value = userId;
+            if (nameLabel) nameLabel.textContent = `Anggota: ${fullName}`;
+            if (pwdInput) pwdInput.value = '';
+            if (modal) modal.classList.remove('hidden');
+        }
+
+        function closeAdminResetPasswordModal() {
+            const modal = document.getElementById('adminResetPasswordModal');
+            if (modal) modal.classList.add('hidden');
+        }
+
+        function togglePasswordVisibility(inputId, btn) {
+            const input = document.getElementById(inputId);
+            if (!input) return;
+            const icon = btn.querySelector('i');
+            if (input.type === 'password') {
+                input.type = 'text';
+                if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+            } else {
+                input.type = 'password';
+                if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+            }
+        }
+    </script>
+    }
+}

@@ -1,0 +1,4790 @@
+{
+  "info": {
+    "_postman_id": "7c763f71-399d-48c9-b9d2-f02976dda91e",
+    "name": "Work Tracker Pro REST API - Postman Collection",
+    "description": "Postman Collection untuk Work Tracker Pro REST API (v3.1).\nKonfigurasi telah disesuaikan untuk URL Ngrok: https://2109-157-85-207-238.ngrok-free.app\n\nFitur Utama:\n- Lengkap dengan header 'ngrok-skip-browser-warning: 69420' untuk bypass halaman peringatan ngrok.\n- Terbagi rapi berdasarkan modul/tag.\n- Script otomatis untuk menyimpan Auth Token / Cookie setelah Login.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "AuditTrailApi",
+      "description": "Endpoint API untuk modul AuditTrailApi",
+      "item": [
+        {
+          "name": "Mengambil daftar riwayat audit trail dengan filter dan pagination (GET /api/audit-trail)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit-trail",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit-trail"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Pencarian path, user email, controller, atau IP address",
+                  "disabled": true
+                },
+                {
+                  "key": "controllerName",
+                  "value": "",
+                  "description": "Filter nama Controller",
+                  "disabled": true
+                },
+                {
+                  "key": "httpMethod",
+                  "value": "",
+                  "description": "Filter HTTP Method (GET, POST, PUT, DELETE)",
+                  "disabled": true
+                },
+                {
+                  "key": "userEmail",
+                  "value": "",
+                  "description": "Filter email pengguna",
+                  "disabled": true
+                },
+                {
+                  "key": "date",
+                  "value": "",
+                  "description": "Filter tanggal (format: yyyy-MM-dd)",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "30",
+                  "description": "Jumlah per halaman (default: 30, max: 100)",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil daftar riwayat audit trail dengan filter dan pagination (GET /api/audit-trail)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil detail satu entri audit log (GET /api/audit-trail/{id})",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit-trail/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit-trail",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengambil detail satu entri audit log (GET /api/audit-trail/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil ringkasan statistik aktivitas sistem audit (GET /api/audit-trail/stats)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit-trail/stats",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit-trail",
+                "stats"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil ringkasan statistik aktivitas sistem audit (GET /api/audit-trail/stats)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengunduh seluruh log audit trail dalam format CSV (GET /api/audit-trail/export-csv)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit-trail/export-csv",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit-trail",
+                "export-csv"
+              ],
+              "query": [
+                {
+                  "key": "controllerName",
+                  "value": "",
+                  "description": "Filter nama Controller",
+                  "disabled": true
+                },
+                {
+                  "key": "httpMethod",
+                  "value": "",
+                  "description": "Filter HTTP Method",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengunduh seluruh log audit trail dalam format CSV (GET /api/audit-trail/export-csv)"
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus log audit trail lama untuk pemeliharaan storage (DELETE /api/audit-trail/clear)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/audit-trail/clear",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "audit-trail",
+                "clear"
+              ],
+              "query": [
+                {
+                  "key": "keepDays",
+                  "value": "30",
+                  "description": "Jumlah hari data yang dipertahankan (default: 30 hari)",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Menghapus log audit trail lama untuk pemeliharaan storage (DELETE /api/audit-trail/clear)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "AuthApi",
+      "description": "Endpoint API untuk modul AuthApi",
+      "item": [
+        {
+          "name": "Melakukan autentikasi / login pengguna (POST /api/auth/login)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/login",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "login"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Melakukan autentikasi / login pengguna (POST /api/auth/login)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\",\n  \"rememberMe\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": [],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Status code is 200', function () {",
+                  "    pm.response.to.have.status(200);",
+                  "});",
+                  "",
+                  "// Simpan info auth jika ada data/token dikembalikan",
+                  "try {",
+                  "    var jsonData = pm.response.json();",
+                  "    if (jsonData && jsonData.data) {",
+                  "        if (jsonData.data.token) {",
+                  "            pm.environment.set('authToken', jsonData.data.token);",
+                  "        }",
+                  "        if (jsonData.data.id) {",
+                  "            pm.environment.set('currentUserId', jsonData.data.id);",
+                  "        }",
+                  "    }",
+                  "} catch (e) {",
+                  "    console.log('No JSON response');",
+                  "}",
+                  ""
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mengakhiri sesi login pengguna aktif (POST /api/auth/logout)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/logout",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "logout"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengakhiri sesi login pengguna aktif (POST /api/auth/logout)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil data profil akun pengguna yang sedang login saat ini (GET /api/auth/me)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/me",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "me"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil data profil akun pengguna yang sedang login saat ini (GET /api/auth/me)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengubah password akun pengguna aktif (POST /api/auth/change-password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/change-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "change-password"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengubah password akun pengguna aktif (POST /api/auth/change-password)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currentPassword\": \"P@ssword123!\",\n  \"newPassword\": \"P@ssword123!\",\n  \"confirmNewPassword\": \"P@ssword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui informasi profil pengguna aktif (PUT /api/auth/profile)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/auth/profile",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "auth",
+                "profile"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Memperbarui informasi profil pengguna aktif (PUT /api/auth/profile)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Contoh fullName\",\n  \"jobTitle\": \"Contoh jobTitle\",\n  \"phoneNumber\": \"Contoh phoneNumber\",\n  \"avatarColor\": \"#6366F1\",\n  \"profilePictureUrl\": \"Contoh profilePictureUrl\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "CalendarApi",
+      "description": "Endpoint API untuk modul CalendarApi",
+      "item": [
+        {
+          "name": "Mengambil feed event tugas untuk kalender FullCalendar / Timeline (GET /api/calendar/events)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/calendar/events",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "calendar",
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "start",
+                  "value": "",
+                  "description": "Tanggal awal rentang kalender (format ISO: yyyy-MM-dd)",
+                  "disabled": true
+                },
+                {
+                  "key": "end",
+                  "value": "",
+                  "description": "Tanggal akhir rentang kalender (format ISO: yyyy-MM-dd)",
+                  "disabled": true
+                },
+                {
+                  "key": "projectId",
+                  "value": "",
+                  "description": "Filter ID Proyek",
+                  "disabled": true
+                },
+                {
+                  "key": "assigneeId",
+                  "value": "",
+                  "description": "Filter ID Pengguna PIC",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil feed event tugas untuk kalender FullCalendar / Timeline (GET /api/calendar/events)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ConfigurationApi",
+      "description": "Endpoint API untuk modul ConfigurationApi",
+      "item": [
+        {
+          "name": "Mengambil konfigurasi Global Base URL saat ini (GET /api/configuration/base-url)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/configuration/base-url",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "configuration",
+                "base-url"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil konfigurasi Global Base URL saat ini (GET /api/configuration/base-url)"
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui pengaturan Global Base URL (PUT /api/configuration/base-url)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/configuration/base-url",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "configuration",
+                "base-url"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Memperbarui pengaturan Global Base URL (PUT /api/configuration/base-url)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"baseUrl\": \"Contoh baseUrl\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil informasi kapasitas dan statistik penyimpanan database (GET /api/configuration/database-capacity)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/configuration/database-capacity",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "configuration",
+                "database-capacity"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil informasi kapasitas dan statistik penyimpanan database (GET /api/configuration/database-capacity)"
+          },
+          "response": []
+        },
+        {
+          "name": "Melakukan kompresi (shrink / VACUUM) database untuk membersihkan ruang kosong (POST /api/configuration/shrink-database)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/configuration/shrink-database",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "configuration",
+                "shrink-database"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Melakukan kompresi (shrink / VACUUM) database untuk membersihkan ruang kosong (POST /api/configuration/shrink-database)"
+          },
+          "response": []
+        },
+        {
+          "name": "Melakukan reset data database (POST /api/configuration/reset-database)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/configuration/reset-database",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "configuration",
+                "reset-database"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Melakukan reset data database (POST /api/configuration/reset-database)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mode\": \"Contoh mode\",\n  \"confirmationCode\": \"Contoh confirmationCode\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil ringkasan OpenAPI Swagger dan daftar endpoint modul (GET /api/configuration/api-doc-summary)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/configuration/api-doc-summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "configuration",
+                "api-doc-summary"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil ringkasan OpenAPI Swagger dan daftar endpoint modul (GET /api/configuration/api-doc-summary)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "DashboardApi",
+      "description": "Endpoint API untuk modul DashboardApi",
+      "item": [
+        {
+          "name": "Mengambil ringkasan metrik dashboard, statistik tugas, dan distribusi proyek (GET /api/dashboard/summary)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "summary"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil ringkasan metrik dashboard, statistik tugas, dan distribusi proyek (GET /api/dashboard/summary)"
+          },
+          "response": []
+        },
+        {
+          "name": "Memicu sinkronisasi evaluasi status tugas dan background worker secara instan (POST /api/dashboard/sync)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/dashboard/sync",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "dashboard",
+                "sync"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Memicu sinkronisasi evaluasi status tugas dan background worker secara instan (POST /api/dashboard/sync)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ImportApi",
+      "description": "Endpoint API untuk modul ImportApi",
+      "item": [
+        {
+          "name": "Mengunduh file template Excel standar (.xlsx) untuk impor tugas (GET /api/import/template)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/import/template",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "import",
+                "template"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengunduh file template Excel standar (.xlsx) untuk impor tugas (GET /api/import/template)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengunggah file Excel untuk diparsing dan divalidasi baris per baris sebelum diimpor (POST /api/import/preview)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/import/preview",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "import",
+                "preview"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengunggah file Excel untuk diparsing dan divalidasi baris per baris sebelum diimpor (POST /api/import/preview)",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Upload file lampiran / template"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mengeksekusi impor data baris tugas yang telah divalidasi ke database (POST /api/import/execute)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/import/execute",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "import",
+                "execute"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengeksekusi impor data baris tugas yang telah divalidasi ke database (POST /api/import/execute)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"rows\": [\n    {\n      \"rowNumber\": 0,\n      \"isValid\": true,\n      \"title\": \"Contoh title\",\n      \"category\": \"Contoh category\",\n      \"project\": \"Contoh project\",\n      \"assignee\": \"Contoh assignee\",\n      \"assigneeUserId\": \"Contoh assigneeUserId\",\n      \"priority\": \"Contoh priority\",\n      \"status\": \"Contoh status\",\n      \"progress\": 50,\n      \"startDate\": \"Contoh startDate\",\n      \"deadline\": \"Contoh deadline\",\n      \"milestone\": \"Contoh milestone\",\n      \"errorMessage\": \"Contoh errorMessage\",\n      \"warningMessage\": \"Contoh warningMessage\"\n    }\n  ],\n  \"defaultProjectId\": 1,\n  \"defaultAssigneeId\": \"Contoh defaultAssigneeId\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mengekspor seluruh data tugas ke dalam format standar ARMS Excel (.xlsx) (GET /api/import/export-arms)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/import/export-arms",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "import",
+                "export-arms"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengekspor seluruh data tugas ke dalam format standar ARMS Excel (.xlsx) (GET /api/import/export-arms)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "JsonToolsApi",
+      "description": "Endpoint API untuk modul JsonToolsApi",
+      "item": [
+        {
+          "name": "Melakukan formatting / pretty-print pada string JSON (POST /api/json-tools/format)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/json-tools/format",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "json-tools",
+                "format"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Melakukan formatting / pretty-print pada string JSON (POST /api/json-tools/format)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Contoh content\",\n  \"indentSize\": 0\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Melakukan minifikasi / kompresi whitespace pada string JSON (POST /api/json-tools/minify)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/json-tools/minify",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "json-tools",
+                "minify"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Melakukan minifikasi / kompresi whitespace pada string JSON (POST /api/json-tools/minify)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Contoh content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Memvalidasi sintaks struktur string JSON (POST /api/json-tools/validate)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/json-tools/validate",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "json-tools",
+                "validate"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Memvalidasi sintaks struktur string JSON (POST /api/json-tools/validate)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"content\": \"Contoh content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menyimpan snippet JSON ke riwayat database (POST /api/json-tools/save)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/json-tools/save",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "json-tools",
+                "save"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Menyimpan snippet JSON ke riwayat database (POST /api/json-tools/save)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"content\": \"Contoh content\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil daftar riwayat snippet JSON yang tersimpan (GET /api/json-tools/history)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/json-tools/history",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "json-tools",
+                "history"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil daftar riwayat snippet JSON yang tersimpan (GET /api/json-tools/history)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil detail satu snippet JSON dari riwayat (GET /api/json-tools/history/{id})",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/json-tools/history/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "json-tools",
+                "history",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengambil detail satu snippet JSON dari riwayat (GET /api/json-tools/history/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus satu snippet JSON dari riwayat (DELETE /api/json-tools/history/{id})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/json-tools/history/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "json-tools",
+                "history",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menghapus satu snippet JSON dari riwayat (DELETE /api/json-tools/history/{id})"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "MasterDataApi",
+      "description": "Endpoint API untuk modul MasterDataApi",
+      "item": [
+        {
+          "name": "Mengambil seluruh dataset master data dalam satu panggilan (GET /api/master-data/all)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "all"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil seluruh dataset master data dalam satu panggilan (GET /api/master-data/all)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil daftar seluruh kategori tugas (GET /api/master-data/categories)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "categories"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil daftar seluruh kategori tugas (GET /api/master-data/categories)"
+          },
+          "response": []
+        },
+        {
+          "name": "Membuat kategori tugas baru (POST /api/master-data/categories)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "categories"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Membuat kategori tugas baru (POST /api/master-data/categories)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"color\": \"#6366F1\",\n  \"description\": \"Contoh description\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui kategori tugas (PUT /api/master-data/categories/{id})",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/categories/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "categories",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui kategori tugas (PUT /api/master-data/categories/{id})",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"color\": \"#6366F1\",\n  \"description\": \"Contoh description\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus kategori tugas (DELETE /api/master-data/categories/{id})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/categories/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "categories",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menghapus kategori tugas (DELETE /api/master-data/categories/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil daftar tingkat prioritas tugas (GET /api/master-data/priorities)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/priorities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "priorities"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil daftar tingkat prioritas tugas (GET /api/master-data/priorities)"
+          },
+          "response": []
+        },
+        {
+          "name": "Menambahkan tingkat prioritas baru (POST /api/master-data/priorities)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/priorities",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "priorities"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Menambahkan tingkat prioritas baru (POST /api/master-data/priorities)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"color\": \"#6366F1\",\n  \"icon\": \"Contoh icon\",\n  \"orderIndex\": 0,\n  \"description\": \"Contoh description\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui data prioritas tugas (PUT /api/master-data/priorities/{id})",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/priorities/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "priorities",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui data prioritas tugas (PUT /api/master-data/priorities/{id})",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"color\": \"#6366F1\",\n  \"icon\": \"Contoh icon\",\n  \"orderIndex\": 0,\n  \"description\": \"Contoh description\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus data prioritas (DELETE /api/master-data/priorities/{id})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/priorities/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "priorities",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menghapus data prioritas (DELETE /api/master-data/priorities/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil daftar alur status tugas (GET /api/master-data/statuses)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/statuses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "statuses"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil daftar alur status tugas (GET /api/master-data/statuses)"
+          },
+          "response": []
+        },
+        {
+          "name": "Menambahkan status tugas baru (POST /api/master-data/statuses)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/statuses",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "statuses"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Menambahkan status tugas baru (POST /api/master-data/statuses)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"color\": \"#6366F1\",\n  \"isDoneState\": true,\n  \"orderIndex\": 0,\n  \"description\": \"Contoh description\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui data status tugas (PUT /api/master-data/statuses/{id})",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/statuses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "statuses",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui data status tugas (PUT /api/master-data/statuses/{id})",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"color\": \"#6366F1\",\n  \"isDoneState\": true,\n  \"orderIndex\": 0,\n  \"description\": \"Contoh description\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus data status (DELETE /api/master-data/statuses/{id})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/statuses/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "statuses",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menghapus data status (DELETE /api/master-data/statuses/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil daftar Milestone SDLC Waterfall (GET /api/master-data/milestones)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/milestones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "milestones"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil daftar Milestone SDLC Waterfall (GET /api/master-data/milestones)"
+          },
+          "response": []
+        },
+        {
+          "name": "Menambahkan Milestone SDLC Waterfall baru (POST /api/master-data/milestones)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/milestones",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "milestones"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Menambahkan Milestone SDLC Waterfall baru (POST /api/master-data/milestones)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"phase\": \"Contoh phase\",\n  \"color\": \"#6366F1\",\n  \"icon\": \"Contoh icon\",\n  \"orderIndex\": 0,\n  \"description\": \"Contoh description\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui Milestone SDLC Waterfall (PUT /api/master-data/milestones/{id})",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/milestones/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "milestones",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui Milestone SDLC Waterfall (PUT /api/master-data/milestones/{id})",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"phase\": \"Contoh phase\",\n  \"color\": \"#6366F1\",\n  \"icon\": \"Contoh icon\",\n  \"orderIndex\": 0,\n  \"description\": \"Contoh description\",\n  \"isDefault\": true\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus Milestone SDLC Waterfall (DELETE /api/master-data/milestones/{id})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/master-data/milestones/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "master-data",
+                "milestones",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menghapus Milestone SDLC Waterfall (DELETE /api/master-data/milestones/{id})"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "MembersApi",
+      "description": "Endpoint API untuk modul MembersApi",
+      "item": [
+        {
+          "name": "Mengambil daftar seluruh anggota tim beserta metrik kontribusi (GET /api/members)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Pencarian nama, email, atau jabatan",
+                  "disabled": true
+                },
+                {
+                  "key": "role",
+                  "value": "",
+                  "description": "Filter peran (Admin / User)",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil daftar seluruh anggota tim beserta metrik kontribusi (GET /api/members)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mendaftarkan anggota tim baru (POST /api/members)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mendaftarkan anggota tim baru (POST /api/members)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Contoh fullName\",\n  \"email\": \"user@trackerkerja.com\",\n  \"jobTitle\": \"Contoh jobTitle\",\n  \"password\": \"P@ssword123!\",\n  \"role\": \"Contoh role\",\n  \"avatarColor\": \"#6366F1\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil detail satu anggota tim berdasarkan ID (GET /api/members/{id})",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengambil detail satu anggota tim berdasarkan ID (GET /api/members/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui informasi anggota tim (PUT /api/members/{id})",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui informasi anggota tim (PUT /api/members/{id})",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"fullName\": \"Contoh fullName\",\n  \"jobTitle\": \"Contoh jobTitle\",\n  \"avatarColor\": \"#6366F1\",\n  \"role\": \"Contoh role\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus anggota tim (DELETE /api/members/{id})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menghapus anggota tim (DELETE /api/members/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengunci atau membuka kunci status akun anggota tim (POST /api/members/{id}/toggle-lock)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id/toggle-lock",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id",
+                "toggle-lock"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengunci atau membuka kunci status akun anggota tim (POST /api/members/{id}/toggle-lock)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil ringkasan kontribusi dan beban kerja anggota tim (GET /api/members/{id}/contributions)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id/contributions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id",
+                "contributions"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengambil ringkasan kontribusi dan beban kerja anggota tim (GET /api/members/{id}/contributions)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengubah password anggota tim secara langsung oleh Administrator (POST /api/members/{id}/reset-password)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/members/:id/reset-password",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "members",
+                ":id",
+                "reset-password"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengubah password anggota tim secara langsung oleh Administrator (POST /api/members/{id}/reset-password)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newPassword\": \"NewPassword123!\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "NotesApi",
+      "description": "Endpoint API untuk modul NotesApi",
+      "item": [
+        {
+          "name": "Mengambil daftar seluruh catatan kerja dengan filter (GET /api/notes)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes"
+              ],
+              "query": [
+                {
+                  "key": "category",
+                  "value": "",
+                  "description": "Filter kategori (Meeting, Technical, Task Note, General, dll)",
+                  "disabled": true
+                },
+                {
+                  "key": "isPinned",
+                  "value": "",
+                  "description": "Filter catatan yang di-pin (true / false)",
+                  "disabled": true
+                },
+                {
+                  "key": "taskId",
+                  "value": "",
+                  "description": "Filter catatan yang terhubung ke Task ID tertentu",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Pencarian judul atau konten catatan",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil daftar seluruh catatan kerja dengan filter (GET /api/notes)"
+          },
+          "response": []
+        },
+        {
+          "name": "Membuat catatan kerja baru (POST /api/notes)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notes",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Membuat catatan kerja baru (POST /api/notes)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Contoh title\",\n  \"contentHtml\": \"Contoh contentHtml\",\n  \"category\": \"Contoh category\",\n  \"color\": \"#6366F1\",\n  \"isPinned\": true,\n  \"taskId\": 1,\n  \"authorUserId\": \"Contoh authorUserId\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil detail satu catatan berdasarkan ID (GET /api/notes/{id})",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengambil detail satu catatan berdasarkan ID (GET /api/notes/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui catatan kerja (PUT /api/notes/{id})",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui catatan kerja (PUT /api/notes/{id})",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Contoh title\",\n  \"contentHtml\": \"Contoh contentHtml\",\n  \"category\": \"Contoh category\",\n  \"color\": \"#6366F1\",\n  \"isPinned\": true,\n  \"taskId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus catatan (DELETE /api/notes/{id})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notes/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menghapus catatan (DELETE /api/notes/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengubah status Pin catatan (PUT / POST /api/notes/{id}/pin)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notes/:id/pin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes",
+                ":id",
+                "pin"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengubah status Pin catatan (PUT / POST /api/notes/{id}/pin)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengubah status Pin catatan (PUT / POST /api/notes/{id}/pin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notes/:id/pin",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes",
+                ":id",
+                "pin"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengubah status Pin catatan (PUT / POST /api/notes/{id}/pin)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil daftar seluruh kategori unik catatan (GET /api/notes/categories)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notes/categories",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes",
+                "categories"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil daftar seluruh kategori unik catatan (GET /api/notes/categories)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengunggah file lampiran ke suatu catatan kerja (POST /api/notes/{id}/attachments)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notes/:id/attachments",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes",
+                ":id",
+                "attachments"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengunggah file lampiran ke suatu catatan kerja (POST /api/notes/{id}/attachments)",
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "description": "Upload file lampiran / template"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus file lampiran dari catatan (DELETE /api/notes/{id}/attachments/{attachmentId})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notes/:id/attachments/:attachmentId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notes",
+                ":id",
+                "attachments",
+                ":attachmentId"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                },
+                {
+                  "key": "attachmentId",
+                  "value": "1",
+                  "description": "Parameter attachmentId"
+                }
+              ]
+            },
+            "description": "Menghapus file lampiran dari catatan (DELETE /api/notes/{id}/attachments/{attachmentId})"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "NotificationsApi",
+      "description": "Endpoint API untuk modul NotificationsApi",
+      "item": [
+        {
+          "name": "Mengambil daftar seluruh notifikasi dan peringatan aktif pengguna (GET /api/notifications)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications"
+              ],
+              "query": [
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "Filter ID pengguna (opsional jika dipanggil oleh admin)",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil daftar seluruh notifikasi dan peringatan aktif pengguna (GET /api/notifications)"
+          },
+          "response": []
+        },
+        {
+          "name": "Menandai satu notifikasi telah dibaca (POST /api/notifications/{id}/read)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/:id/read",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                ":id",
+                "read"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menandai satu notifikasi telah dibaca (POST /api/notifications/{id}/read)"
+          },
+          "response": []
+        },
+        {
+          "name": "Menandai seluruh notifikasi telah dibaca (POST /api/notifications/read-all)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/notifications/read-all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "notifications",
+                "read-all"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Menandai seluruh notifikasi telah dibaca (POST /api/notifications/read-all)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ProjectsApi",
+      "description": "Endpoint API untuk modul ProjectsApi",
+      "item": [
+        {
+          "name": "Mengambil daftar seluruh proyek dengan metrik tugas dan durasi (GET /api/projects)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Filter status proyek (Active, Completed, Archived)",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Pencarian nama atau deskripsi proyek",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil daftar seluruh proyek dengan metrik tugas dan durasi (GET /api/projects)"
+          },
+          "response": []
+        },
+        {
+          "name": "Membuat proyek baru (POST /api/projects)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Membuat proyek baru (POST /api/projects)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"description\": \"Contoh description\",\n  \"color\": \"#6366F1\",\n  \"deadline\": \"2026-08-27T10:00:00\",\n  \"status\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil detail satu proyek beserta daftar tugasnya (GET /api/projects/{id})",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengambil detail satu proyek beserta daftar tugasnya (GET /api/projects/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui data proyek (PUT /api/projects/{id})",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui data proyek (PUT /api/projects/{id})",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"Contoh name\",\n  \"description\": \"Contoh description\",\n  \"color\": \"#6366F1\",\n  \"deadline\": \"2026-08-27T10:00:00\",\n  \"status\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus proyek beserta relasinya (DELETE /api/projects/{id})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menghapus proyek beserta relasinya (DELETE /api/projects/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil seluruh tugas yang terdaftar di dalam proyek (GET /api/projects/{id}/tasks)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/:id/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                ":id",
+                "tasks"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengambil seluruh tugas yang terdaftar di dalam proyek (GET /api/projects/{id}/tasks)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil ringkasan statistik dan metrik seluruh proyek (GET /api/projects/summary)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/projects/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "projects",
+                "summary"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil ringkasan statistik dan metrik seluruh proyek (GET /api/projects/summary)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "ReportsApi",
+      "description": "Endpoint API untuk modul ReportsApi",
+      "item": [
+        {
+          "name": "Mengambil data ringkasan laporan dashboard eksekutif (GET /api/reports/dashboard)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/dashboard",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "dashboard"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil data ringkasan laporan dashboard eksekutif (GET /api/reports/dashboard)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil tren jam kerja harian untuk grafik (GET /api/reports/chart-data)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/chart-data",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "chart-data"
+              ],
+              "query": [
+                {
+                  "key": "period",
+                  "value": "week",
+                  "description": "Rentang waktu: 'week' (7 hari) atau 'month' (30 hari)",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil tren jam kerja harian untuk grafik (GET /api/reports/chart-data)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil ringkasan beban kerja dan distribusi tugas per anggota tim (GET /api/reports/members-workload)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/members-workload",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "members-workload"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil ringkasan beban kerja dan distribusi tugas per anggota tim (GET /api/reports/members-workload)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil data proyeksi timeline seluruh tugas untuk Gantt Chart (GET /api/reports/gantt)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/reports/gantt",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "reports",
+                "gantt"
+              ],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "",
+                  "description": "Filter ID Proyek",
+                  "disabled": true
+                },
+                {
+                  "key": "assigneeId",
+                  "value": "",
+                  "description": "Filter ID Pengguna / PIC",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Filter status tugas",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "Filter batas tanggal awal",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "Filter batas tanggal akhir",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil data proyeksi timeline seluruh tugas untuk Gantt Chart (GET /api/reports/gantt)"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "TasksApi",
+      "description": "Endpoint API untuk modul TasksApi",
+      "item": [
+        {
+          "name": "Mengambil daftar seluruh tugas dengan opsi filter dan pagination (GET)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "",
+                  "description": "Pencarian judul atau deskripsi tugas",
+                  "disabled": true
+                },
+                {
+                  "key": "status",
+                  "value": "",
+                  "description": "Filter status (Todo, InProgress, Done, Overdue)",
+                  "disabled": true
+                },
+                {
+                  "key": "priority",
+                  "value": "",
+                  "description": "Filter prioritas (Low, Medium, High, Critical)",
+                  "disabled": true
+                },
+                {
+                  "key": "projectId",
+                  "value": "",
+                  "description": "Filter ID Proyek",
+                  "disabled": true
+                },
+                {
+                  "key": "assigneeId",
+                  "value": "",
+                  "description": "Filter ID Pengguna / PIC",
+                  "disabled": true
+                },
+                {
+                  "key": "milestone",
+                  "value": "",
+                  "description": "Filter Milestone SDLC (Requirement Analysis, System Design, Implementation, Testing dan QA, Deployment, Maintenance)",
+                  "disabled": true
+                },
+                {
+                  "key": "parentTaskId",
+                  "value": "",
+                  "description": "Filter ID Induk Tugas (null jika tugas utama)",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Halaman (default: 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "10",
+                  "description": "Jumlah item per halaman (default: 10, max: 100)",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil daftar seluruh tugas dengan opsi filter dan pagination (GET)"
+          },
+          "response": []
+        },
+        {
+          "name": "Membuat tugas baru (POST /api/tasks)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Membuat tugas baru (POST /api/tasks)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Contoh title\",\n  \"description\": \"Contoh description\",\n  \"obstacle\": \"Contoh obstacle\",\n  \"solution\": \"Contoh solution\",\n  \"projectId\": 1,\n  \"categoryId\": 1,\n  \"assignedToUserId\": \"Contoh assignedToUserId\",\n  \"milestone\": \"Contoh milestone\",\n  \"priority\": 1,\n  \"status\": 1,\n  \"progress\": 50,\n  \"startDate\": \"2026-08-27T10:00:00\",\n  \"dueDate\": \"2026-08-27T10:00:00\",\n  \"tags\": \"Contoh tags\",\n  \"parentTaskId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil ringkasan metrik statistik tugas (GET /summary)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "summary"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil ringkasan metrik statistik tugas (GET /summary)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil detail satu tugas berdasarkan ID (GET /api/tasks/{id})",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengambil detail satu tugas berdasarkan ID (GET /api/tasks/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui data tugas secara menyeluruh (PUT /api/tasks/{id})",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui data tugas secara menyeluruh (PUT /api/tasks/{id})",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"title\": \"Contoh title\",\n  \"description\": \"Contoh description\",\n  \"obstacle\": \"Contoh obstacle\",\n  \"solution\": \"Contoh solution\",\n  \"projectId\": 1,\n  \"categoryId\": 1,\n  \"assignedToUserId\": \"Contoh assignedToUserId\",\n  \"milestone\": \"Contoh milestone\",\n  \"priority\": 1,\n  \"status\": 1,\n  \"progress\": 50,\n  \"startDate\": \"2026-08-27T10:00:00\",\n  \"dueDate\": \"2026-08-27T10:00:00\",\n  \"tags\": \"Contoh tags\",\n  \"parentTaskId\": 1\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus tugas berdasarkan ID (DELETE /api/tasks/{id})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menghapus tugas berdasarkan ID (DELETE /api/tasks/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui status dan progress tugas secara spesifik (PUT /api/tasks/{id}/status)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/:id/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                ":id",
+                "status"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui status dan progress tugas secara spesifik (PUT /api/tasks/{id}/status)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1,\n  \"progress\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui status dan progress tugas secara spesifik (PUT /api/tasks/{id}/status)",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/:id/status",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                ":id",
+                "status"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui status dan progress tugas secara spesifik (PUT /api/tasks/{id}/status)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": 1,\n  \"progress\": 50\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus banyak tugas sekaligus berdasarkan daftar ID (DELETE /api/tasks/bulk)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/bulk",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "bulk"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Menghapus banyak tugas sekaligus berdasarkan daftar ID (DELETE /api/tasks/bulk)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskIds\": [\n    1\n  ]\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus seluruh data tugas (DELETE /api/tasks/all)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "all"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Menghapus seluruh data tugas (DELETE /api/tasks/all)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil data tugas terkelompok untuk Kanban Board (GET /api/tasks/kanban)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/kanban",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                "kanban"
+              ],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "",
+                  "description": "Filter ID Proyek",
+                  "disabled": true
+                },
+                {
+                  "key": "assigneeId",
+                  "value": "",
+                  "description": "Filter ID PIC",
+                  "disabled": true
+                },
+                {
+                  "key": "priority",
+                  "value": "",
+                  "description": "Filter Prioritas",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil data tugas terkelompok untuk Kanban Board (GET /api/tasks/kanban)"
+          },
+          "response": []
+        },
+        {
+          "name": "Menambahkan sesi pencatatan durasi kerja ke suatu tugas (POST /api/tasks/{id}/sessions)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/:id/sessions",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                ":id",
+                "sessions"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menambahkan sesi pencatatan durasi kerja ke suatu tugas (POST /api/tasks/{id}/sessions)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"2026-08-27T10:00:00\",\n  \"endTime\": \"2026-08-27T10:00:00\",\n  \"durationSeconds\": 0,\n  \"notes\": \"Contoh notes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus sesi pencatatan kerja dari tugas (DELETE /api/tasks/{id}/sessions/{sessionId})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/tasks/:id/sessions/:sessionId",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "tasks",
+                ":id",
+                "sessions",
+                ":sessionId"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                },
+                {
+                  "key": "sessionId",
+                  "value": "1",
+                  "description": "Parameter sessionId"
+                }
+              ]
+            },
+            "description": "Menghapus sesi pencatatan kerja dari tugas (DELETE /api/tasks/{id}/sessions/{sessionId})"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "TimesheetsApi",
+      "description": "Endpoint API untuk modul TimesheetsApi",
+      "item": [
+        {
+          "name": "Mengambil daftar sesi kerja / timesheet dengan filter dan pagination (GET /api/timesheets)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets"
+              ],
+              "query": [
+                {
+                  "key": "taskId",
+                  "value": "",
+                  "description": "Filter ID Tugas",
+                  "disabled": true
+                },
+                {
+                  "key": "projectId",
+                  "value": "",
+                  "description": "Filter ID Proyek",
+                  "disabled": true
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "Filter ID Pengguna / PIC",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "Filter tanggal mulai (format: yyyy-MM-dd)",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "Filter tanggal selesai (format: yyyy-MM-dd)",
+                  "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1",
+                  "description": "Nomor halaman (default: 1)",
+                  "disabled": true
+                },
+                {
+                  "key": "pageSize",
+                  "value": "20",
+                  "description": "Ukuran halaman (default: 20)",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengambil daftar sesi kerja / timesheet dengan filter dan pagination (GET /api/timesheets)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mencatat sesi kerja manual (POST /api/timesheets)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mencatat sesi kerja manual (POST /api/timesheets)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskId\": 1,\n  \"startTime\": \"2026-08-27T10:00:00\",\n  \"endTime\": \"2026-08-27T10:00:00\",\n  \"duration\": 0,\n  \"notes\": \"Contoh notes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil ringkasan statistik waktu kerja hari ini, minggu ini, dan bulan ini (GET /api/timesheets/summary)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets/summary",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets",
+                "summary"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil ringkasan statistik waktu kerja hari ini, minggu ini, dan bulan ini (GET /api/timesheets/summary)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil detail satu sesi kerja (GET /api/timesheets/{id})",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Mengambil detail satu sesi kerja (GET /api/timesheets/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Memperbarui catatan atau durasi sesi kerja (PUT /api/timesheets/{id})",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Memperbarui catatan atau durasi sesi kerja (PUT /api/timesheets/{id})",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"startTime\": \"2026-08-27T10:00:00\",\n  \"endTime\": \"2026-08-27T10:00:00\",\n  \"duration\": 0,\n  \"notes\": \"Contoh notes\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus sesi kerja (DELETE /api/timesheets/{id})",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets/:id",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets",
+                ":id"
+              ],
+              "query": null,
+              "variable": [
+                {
+                  "key": "id",
+                  "value": "1",
+                  "description": "Parameter id"
+                }
+              ]
+            },
+            "description": "Menghapus sesi kerja (DELETE /api/timesheets/{id})"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengambil seluruh timer yang sedang aktif berjalan untuk pengguna saat ini (GET /api/timesheets/active-timers)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets/active-timers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets",
+                "active-timers"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Mengambil seluruh timer yang sedang aktif berjalan untuk pengguna saat ini (GET /api/timesheets/active-timers)"
+          },
+          "response": []
+        },
+        {
+          "name": "Memulai live timer untuk suatu tugas secara bersamaan (POST /api/timesheets/start)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets/start",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets",
+                "start"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Memulai live timer untuk suatu tugas secara bersamaan (POST /api/timesheets/start)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"taskId\": 1,\n  \"notes\": \"Mengerjakan fitur baru\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghentikan live timer yang sedang berjalan (POST /api/timesheets/stop)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets/stop",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets",
+                "stop"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Menghentikan live timer yang sedang berjalan (POST /api/timesheets/stop)",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sessionId\": 1,\n  \"notes\": \"Selesai pengerjaan\"\n}",
+              "options": {
+                "raw": {
+                  "language": "json"
+                }
+              }
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Menghapus seluruh data sesi timesheet (DELETE /api/timesheets/all)",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets/all",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets",
+                "all"
+              ],
+              "query": null,
+              "variable": null
+            },
+            "description": "Menghapus seluruh data sesi timesheet (DELETE /api/timesheets/all)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengunduh laporan rekapitulasi timesheet dalam format Excel (.xlsx) (GET /api/timesheets/export-excel)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets/export-excel",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets",
+                "export-excel"
+              ],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "",
+                  "description": "Filter ID Proyek",
+                  "disabled": true
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "Filter ID Pengguna",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "Filter Tanggal Mulai",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "Filter Tanggal Selesai",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengunduh laporan rekapitulasi timesheet dalam format Excel (.xlsx) (GET /api/timesheets/export-excel)"
+          },
+          "response": []
+        },
+        {
+          "name": "Mengunduh laporan rekapitulasi timesheet dalam format CSV (GET /api/timesheets/export-csv)",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json",
+                "type": "text"
+              },
+              {
+                "key": "ngrok-skip-browser-warning",
+                "value": "69420",
+                "type": "text",
+                "description": "Bypass ngrok free tier browser warning"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/timesheets/export-csv",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "timesheets",
+                "export-csv"
+              ],
+              "query": [
+                {
+                  "key": "projectId",
+                  "value": "",
+                  "description": "Filter ID Proyek",
+                  "disabled": true
+                },
+                {
+                  "key": "userId",
+                  "value": "",
+                  "description": "Filter ID Pengguna",
+                  "disabled": true
+                },
+                {
+                  "key": "startDate",
+                  "value": "",
+                  "description": "Filter Tanggal Mulai",
+                  "disabled": true
+                },
+                {
+                  "key": "endDate",
+                  "value": "",
+                  "description": "Filter Tanggal Selesai",
+                  "disabled": true
+                }
+              ],
+              "variable": null
+            },
+            "description": "Mengunduh laporan rekapitulasi timesheet dalam format CSV (GET /api/timesheets/export-csv)"
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://2109-157-85-207-238.ngrok-free.app",
+      "type": "string"
+    }
+  ]
+}

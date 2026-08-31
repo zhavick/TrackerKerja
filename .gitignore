@@ -1,0 +1,26 @@
+## Build and Output
+bin/
+obj/
+publish/
+TrackerKerja_Publish.zip
+
+## User-specific & IDE files
+.vs/
+.vscode/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+## Database & Persistence
+*.db
+*.db-shm
+*.db-wal
+db_data/
+uploads/
+data/
+
+## Logs & Temp
+*.log
+scratch/
+.system_generated/

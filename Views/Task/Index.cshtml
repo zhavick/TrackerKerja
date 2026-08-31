@@ -1,0 +1,1089 @@
+@model List<TrackerKerja.Models.WorkTask>
+@inject Microsoft.AspNetCore.Identity.UserManager<TrackerKerja.Models.AppUser> UserManager
+@using TrackerKerja.Services
+@{
+    ViewData["Title"] = "Manajemen Tugas";
+    var currentUser = await UserManager.GetUserAsync(User);
+    var isAdmin = User.IsInRole("Admin");
+}
+
+<div class="space-y-6 max-w-7xl mx-auto">
+
+    <!-- Header & Action Buttons -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
+                    <i class="fas fa-tasks text-lg"></i>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-black text-slate-800">Daftar & Grid Tugas</h2>
+                    <p class="text-slate-500 text-xs mt-0.5">Total @Model.Count tugas tercatat dalam sistem</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex gap-2 flex-wrap items-center">
+            <!-- View Switcher -->
+            <div class="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shadow-xs">
+                <span class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-indigo-700 bg-indigo-50 rounded-xl shadow-2xs">
+                    <i class="fas fa-table text-indigo-600"></i>
+                    <span>Tabel Grid</span>
+                </span>
+                <a href="/Task/Kanban" class="flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold text-slate-600 hover:text-indigo-600 rounded-xl transition-all">
+                    <i class="fas fa-columns text-slate-400"></i>
+                    <span>Kanban Board</span>
+                </a>
+            </div>
+
+            @if (User.IsInRole("Admin") && Model.Any())
+            {
+                <form method="post" action="/Task/ClearAllTasks" class="inline"
+                      data-confirm="PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA tugas yang ada? Sesi waktu kerja juga akan dibersihkan. Tindakan ini tidak dapat dibatalkan!"
+                      data-confirm-title="Hapus Semua Tugas"
+                      data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Hapus Semua">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-3.5 py-2 rounded-xl border border-red-200 transition-all shadow-sm cursor-pointer" title="Hapus Semua Tugas (Khusus Admin)">
+                        <i class="fas fa-trash-alt"></i><span>Hapus Semua</span>
+                    </button>
+                </form>
+            }
+            <div class="relative inline-block text-left">
+                <button type="button" onclick="openTaskExportModal()" 
+                        class="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3.5 py-2 rounded-xl border border-indigo-200 transition-all shadow-sm cursor-pointer"
+                        title="Buka menu Export Excel & ARMS">
+                    <i class="fas fa-file-export text-indigo-600"></i><span>Export Data</span>
+                    <i class="fas fa-chevron-down text-[10px] text-indigo-400 ml-0.5"></i>
+                </button>
+            </div>
+            <a href="/Import" class="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-semibold px-3.5 py-2 rounded-xl border border-emerald-200 transition-all shadow-sm">
+                <i class="fas fa-file-excel text-emerald-500"></i><span>Import Excel</span>
+            </a>
+            <a href="/Task/Create" class="flex items-center gap-1.5 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold px-4 py-2 rounded-xl shadow-md hover:shadow-indigo-200 transition-all">
+                <i class="fas fa-plus"></i><span>Tugas Baru</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter Bar -->
+    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-3.5 sm:p-4">
+        <form method="get" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 items-center">
+            <!-- Search -->
+            <div class="relative sm:col-span-2 lg:col-span-2">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-xs"></i>
+                <input type="text" name="search" value="@ViewBag.Search" placeholder="Cari judul tugas, PIC, deskripsi..."
+                       class="w-full pl-8 pr-3 py-2 rounded-xl border border-indigo-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50/50">
+            </div>
+            
+            <!-- Status Filter -->
+            <div>
+                <select name="status" class="select2 select2-compact w-full" data-placeholder="Semua Status">
+                    <option value="">Semua Status</option>
+                    @if (ViewBag.StatusFilter == "Todo") { <option value="Todo" selected>📋 Todo</option> } else { <option value="Todo">📋 Todo</option> }
+                    @if (ViewBag.StatusFilter == "InProgress") { <option value="InProgress" selected>🔄 In Progress</option> } else { <option value="InProgress">🔄 In Progress</option> }
+                    @if (ViewBag.StatusFilter == "Done") { <option value="Done" selected>✅ Done</option> } else { <option value="Done">✅ Done</option> }
+                </select>
+            </div>
+            
+            <!-- Priority Filter -->
+            <div>
+                <select name="priority" class="select2 select2-compact w-full" data-placeholder="Semua Prioritas">
+                    <option value="">Semua Prioritas</option>
+                    @if (ViewBag.PriorityFilter == "Critical") { <option value="Critical" selected>🔴 Critical</option> } else { <option value="Critical">🔴 Critical</option> }
+                    @if (ViewBag.PriorityFilter == "High") { <option value="High" selected>🟡 High</option> } else { <option value="High">🟡 High</option> }
+                    @if (ViewBag.PriorityFilter == "Medium") { <option value="Medium" selected>🔵 Medium</option> } else { <option value="Medium">🔵 Medium</option> }
+                    @if (ViewBag.PriorityFilter == "Low") { <option value="Low" selected>🟢 Low</option> } else { <option value="Low">🟢 Low</option> }
+                </select>
+            </div>
+
+            <!-- Project Filter -->
+            <div>
+                <select name="projectId" class="select2 select2-compact w-full" data-placeholder="Semua Proyek">
+                    <option value="">Semua Proyek</option>
+                    @foreach (var proj in (List<TrackerKerja.Models.Project>)ViewBag.Projects)
+                    {
+                        if (ViewBag.ProjectFilter?.ToString() == proj.Id.ToString())
+                        {
+                            <option value="@proj.Id" selected>📁 @proj.Name</option>
+                        }
+                        else
+                        {
+                            <option value="@proj.Id">📁 @proj.Name</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Assignee Filter -->
+            <div>
+                <select name="assigneeId" class="select2 select2-compact w-full" data-placeholder="Semua PIC">
+                    <option value="">Semua PIC / Penugasan</option>
+                    @foreach (var user in (List<TrackerKerja.Models.AppUser>)ViewBag.Users)
+                    {
+                        if (ViewBag.AssigneeFilter?.ToString() == user.Id)
+                        {
+                            <option value="@user.Id" selected>👤 @user.FullName</option>
+                        }
+                        else
+                        {
+                            <option value="@user.Id">👤 @user.FullName</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Milestone (SDLC Waterfall) Filter -->
+            <div class="sm:col-span-2 lg:col-span-2">
+                <select name="milestone" class="select2 select2-compact w-full" data-placeholder="Semua Milestone SDLC">
+                    <option value="">Semua Milestone SDLC</option>
+                    @if (ViewBag.Milestones != null)
+                    {
+                        foreach (var m in (List<TrackerKerja.Models.MasterMilestone>)ViewBag.Milestones)
+                        {
+                            if (ViewBag.MilestoneFilter == m.Name)
+                            {
+                                <option value="@m.Name" selected>🎯 @m.Name</option>
+                            }
+                            else
+                            {
+                                <option value="@m.Name">🎯 @m.Name</option>
+                            }
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="sm:col-span-2 lg:col-span-4 flex items-center justify-end gap-2 pt-1">
+                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors shadow-sm cursor-pointer">
+                    <i class="fas fa-filter mr-1"></i>Filter
+                </button>
+                <a href="/Task" class="text-slate-500 hover:text-indigo-600 px-3 py-2 rounded-xl text-xs border border-slate-200 hover:border-indigo-300 font-semibold transition-colors">
+                    Reset
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Data Grid Table -->
+    @if (!Model.Any())
+    {
+        <div class="bg-white rounded-3xl shadow-sm border border-indigo-100 p-16 text-center">
+            <div class="w-20 h-20 rounded-3xl bg-indigo-50 flex items-center justify-center mx-auto mb-5 text-indigo-400 text-3xl">
+                <i class="fas fa-clipboard-list"></i>
+            </div>
+            <h3 class="text-slate-800 font-black text-lg mb-2">Belum Ada Tugas yang Ditemukan</h3>
+            <p class="text-slate-500 text-xs mb-5 max-w-md mx-auto">
+                Silakan buat tugas baru atau import data tugas dari template Excel yang telah disediakan.
+            </p>
+            <div class="flex items-center justify-center gap-3">
+                <a href="/Import" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold px-5 py-2.5 rounded-xl border border-emerald-200 transition-all">
+                    <i class="fas fa-file-excel mr-1.5 text-emerald-500"></i>Import dari Excel
+                </a>
+                <a href="/Task/Create" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-lg hover:shadow-indigo-200 hover:scale-105 transition-all">
+                    <i class="fas fa-plus mr-1.5"></i>Buat Tugas Baru
+                </a>
+            </div>
+        </div>
+    }
+    else
+    {
+@functions {
+    string GetPageUrl(int targetPage)
+    {
+        var queryParams = new List<string>();
+        queryParams.Add($"page={targetPage}");
+        if (ViewBag.PageSize != null) queryParams.Add($"pageSize={ViewBag.PageSize}");
+        if (!string.IsNullOrEmpty(ViewBag.Search)) queryParams.Add($"search={Uri.EscapeDataString(ViewBag.Search)}");
+        if (!string.IsNullOrEmpty(ViewBag.StatusFilter)) queryParams.Add($"status={Uri.EscapeDataString(ViewBag.StatusFilter)}");
+        if (!string.IsNullOrEmpty(ViewBag.PriorityFilter)) queryParams.Add($"priority={Uri.EscapeDataString(ViewBag.PriorityFilter)}");
+        if (ViewBag.ProjectFilter != null) queryParams.Add($"projectId={ViewBag.ProjectFilter}");
+        if (!string.IsNullOrEmpty(ViewBag.AssigneeFilter)) queryParams.Add($"assigneeId={Uri.EscapeDataString(ViewBag.AssigneeFilter)}");
+        if (!string.IsNullOrEmpty(ViewBag.MilestoneFilter)) queryParams.Add($"milestone={Uri.EscapeDataString(ViewBag.MilestoneFilter)}");
+        if (!string.IsNullOrEmpty(ViewBag.SortBy)) queryParams.Add($"sortBy={ViewBag.SortBy}");
+        if (!string.IsNullOrEmpty(ViewBag.SortOrder)) queryParams.Add($"sortOrder={ViewBag.SortOrder}");
+
+        return $"/Task?{string.Join("&", queryParams)}";
+    }
+
+    string GetSortUrl(string column)
+    {
+        var currentSortBy = ViewBag.SortBy as string ?? "created";
+        var currentSortOrder = ViewBag.SortOrder as string ?? "desc";
+        
+        string nextOrder = "asc";
+        if (string.Equals(currentSortBy, column, StringComparison.OrdinalIgnoreCase))
+        {
+            nextOrder = string.Equals(currentSortOrder, "asc", StringComparison.OrdinalIgnoreCase) ? "desc" : "asc";
+        }
+
+        var queryParams = new List<string>();
+        queryParams.Add("page=1");
+        if (ViewBag.PageSize != null) queryParams.Add($"pageSize={ViewBag.PageSize}");
+        if (!string.IsNullOrEmpty(ViewBag.Search)) queryParams.Add($"search={Uri.EscapeDataString(ViewBag.Search)}");
+        if (!string.IsNullOrEmpty(ViewBag.StatusFilter)) queryParams.Add($"status={Uri.EscapeDataString(ViewBag.StatusFilter)}");
+        if (!string.IsNullOrEmpty(ViewBag.PriorityFilter)) queryParams.Add($"priority={Uri.EscapeDataString(ViewBag.PriorityFilter)}");
+        if (ViewBag.ProjectFilter != null) queryParams.Add($"projectId={ViewBag.ProjectFilter}");
+        if (!string.IsNullOrEmpty(ViewBag.AssigneeFilter)) queryParams.Add($"assigneeId={Uri.EscapeDataString(ViewBag.AssigneeFilter)}");
+        if (!string.IsNullOrEmpty(ViewBag.MilestoneFilter)) queryParams.Add($"milestone={Uri.EscapeDataString(ViewBag.MilestoneFilter)}");
+        
+        queryParams.Add($"sortBy={column}");
+        queryParams.Add($"sortOrder={nextOrder}");
+
+        return $"/Task?{string.Join("&", queryParams)}";
+    }
+
+    string RenderSortIcon(string column)
+    {
+        var currentSortBy = ViewBag.SortBy as string ?? "created";
+        var currentSortOrder = ViewBag.SortOrder as string ?? "desc";
+
+        if (string.Equals(currentSortBy, column, StringComparison.OrdinalIgnoreCase))
+        {
+            return string.Equals(currentSortOrder, "asc", StringComparison.OrdinalIgnoreCase)
+                ? "<i class=\"fas fa-sort-up text-indigo-600 ml-1.5 text-xs font-black\"></i>"
+                : "<i class=\"fas fa-sort-down text-indigo-600 ml-1.5 text-xs font-black\"></i>";
+        }
+        return "<i class=\"fas fa-sort text-slate-300 group-hover:text-indigo-400 ml-1.5 text-xs transition-colors\"></i>";
+    }
+}
+
+        <!-- BULK ACTION TOOLBAR (Appears when 1 or more tasks are selected) -->
+        <div id="bulkActionBar" class="hidden bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 rounded-2xl p-4 text-white shadow-2xl border border-indigo-500/30 flex flex-wrap items-center justify-between gap-4 transition-all duration-300 animate-fadeIn">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-indigo-500/30 text-indigo-300 flex items-center justify-center text-sm font-bold border border-indigo-400/30">
+                    <i class="fas fa-check-double"></i>
+                </div>
+                <div>
+                    <p class="text-sm font-black text-white">
+                        <span id="selectedCountBadge" class="px-2 py-0.5 rounded-lg bg-indigo-500 text-white font-mono mr-1">0</span> Tugas Dipilih
+                    </p>
+                    <p class="text-[11px] text-indigo-200">Gunakan aksi massal untuk menghapus atau mengosongkan tugas dengan cepat</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+                <button type="button" onclick="exportSelectedTasks('standard')"
+                        class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold shadow-sm transition-all hover:scale-105 cursor-pointer"
+                        title="Export tugas yang dicentang ke format Excel Standar (.xlsx)">
+                    <i class="fas fa-file-excel"></i>
+                    <span>Export Excel (<span class="selected-count-label">0</span>)</span>
+                </button>
+                <button type="button" onclick="exportSelectedTasks('arms')"
+                        class="flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold shadow-sm transition-all hover:scale-105 cursor-pointer"
+                        title="Export tugas yang dicentang ke format ARMS Enterprise (.xlsx 21-kolom)">
+                    <i class="fas fa-file-export"></i>
+                    <span>Export ARMS (<span class="selected-count-label">0</span>)</span>
+                </button>
+                <button type="button" onclick="selectAllRows(false)"
+                        class="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-indigo-200 text-xs font-bold transition-all cursor-pointer">
+                    <i class="fas fa-times mr-1"></i>Batal
+                </button>
+                <button type="button" onclick="confirmBulkDelete()"
+                        class="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold shadow-lg hover:shadow-red-500/30 transition-all hover:scale-105 cursor-pointer">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Hapus (<span id="deleteCountLabel">0</span>)</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Hidden form for Bulk Delete Submission -->
+        <form id="bulkDeleteForm" method="post" action="/Task/BulkDelete" class="hidden">
+            @Html.AntiForgeryToken()
+            <div id="bulkDeleteInputs"></div>
+        </form>
+
+        <div class="bg-white rounded-3xl shadow-sm border border-indigo-100 overflow-hidden">
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm whitespace-nowrap" id="taskTable">
+                    <thead>
+                        <tr class="bg-gradient-to-r from-slate-50 to-indigo-50/50 border-b border-indigo-100 text-slate-600 text-xs uppercase tracking-wider font-bold">
+                            <!-- Checkbox Select All Column -->
+                            <th class="py-4 px-4 w-10 text-center">
+                                <input type="checkbox" id="selectAllCheckbox" onchange="toggleSelectAll(this)"
+                                       class="w-4 h-4 rounded text-indigo-600 focus:ring-indigo-400 border-slate-300 cursor-pointer"
+                                       title="Pilih Semua Tugas pada Grid">
+                            </th>
+                            <th class="py-4 px-5">
+                                <a href="@GetSortUrl("title")" class="inline-flex items-center gap-1 text-slate-700 hover:text-indigo-600 font-bold transition-colors group" title="Urutkan berdasarkan Nama Task">
+                                    <span>Nama Task</span>
+                                    @Html.Raw(RenderSortIcon("title"))
+                                </a>
+                            </th>
+                            <th class="py-4 px-4">
+                                <a href="@GetSortUrl("project")" class="inline-flex items-center gap-1 text-slate-700 hover:text-indigo-600 font-bold transition-colors group" title="Urutkan berdasarkan Proyek">
+                                    <span>Nama Project</span>
+                                    @Html.Raw(RenderSortIcon("project"))
+                                </a>
+                            </th>
+                            <th class="py-4 px-4">
+                                <a href="@GetSortUrl("assignee")" class="inline-flex items-center gap-1 text-slate-700 hover:text-indigo-600 font-bold transition-colors group" title="Urutkan berdasarkan PIC">
+                                    <span>Assignment (PIC)</span>
+                                    @Html.Raw(RenderSortIcon("assignee"))
+                                </a>
+                            </th>
+                            <th class="py-4 px-4">
+                                <a href="@GetSortUrl("milestone")" class="inline-flex items-center gap-1 text-slate-700 hover:text-indigo-600 font-bold transition-colors group" title="Urutkan berdasarkan Milestone SDLC">
+                                    <span>Milestone (SDLC)</span>
+                                    @Html.Raw(RenderSortIcon("milestone"))
+                                </a>
+                            </th>
+                            <th class="py-4 px-4">
+                                <a href="@GetSortUrl("startdate")" class="inline-flex items-center gap-1 text-slate-700 hover:text-indigo-600 font-bold transition-colors group" title="Urutkan berdasarkan Tanggal Mulai">
+                                    <span>Tanggal Mulai</span>
+                                    @Html.Raw(RenderSortIcon("startdate"))
+                                </a>
+                            </th>
+                            <th class="py-4 px-4">
+                                <a href="@GetSortUrl("duedate")" class="inline-flex items-center gap-1 text-slate-700 hover:text-indigo-600 font-bold transition-colors group" title="Urutkan berdasarkan Deadline">
+                                    <span>Deadline</span>
+                                    @Html.Raw(RenderSortIcon("duedate"))
+                                </a>
+                            </th>
+                            <th class="py-4 px-4">
+                                <a href="@GetSortUrl("priority")" class="inline-flex items-center gap-1 text-slate-700 hover:text-indigo-600 font-bold transition-colors group" title="Urutkan berdasarkan Prioritas">
+                                    <span>Prioritas</span>
+                                    @Html.Raw(RenderSortIcon("priority"))
+                                </a>
+                            </th>
+                            <th class="py-4 px-4">
+                                <a href="@GetSortUrl("status")" class="inline-flex items-center gap-1 text-slate-700 hover:text-indigo-600 font-bold transition-colors group" title="Urutkan berdasarkan Status">
+                                    <span>Status</span>
+                                    @Html.Raw(RenderSortIcon("status"))
+                                </a>
+                            </th>
+                            <th class="py-4 px-4">
+                                <a href="@GetSortUrl("progress")" class="inline-flex items-center gap-1 text-slate-700 hover:text-indigo-600 font-bold transition-colors group" title="Urutkan berdasarkan Progress">
+                                    <span>Progress</span>
+                                    @Html.Raw(RenderSortIcon("progress"))
+                                </a>
+                            </th>
+                            <th class="py-4 px-4 text-center">
+                                <a href="@GetSortUrl("duration")" class="inline-flex items-center justify-center gap-1 text-slate-700 hover:text-indigo-600 font-bold transition-colors group" title="Urutkan berdasarkan Durasi">
+                                    <span>Durasi</span>
+                                    @Html.Raw(RenderSortIcon("duration"))
+                                </a>
+                            </th>
+                            <th class="py-4 px-5 text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var task in Model)
+                        {
+                            var priorityBadge = task.Priority switch {
+                                TrackerKerja.Models.TaskPriority.Critical => "bg-red-50 text-red-700 border border-red-200",
+                                TrackerKerja.Models.TaskPriority.High => "bg-amber-50 text-amber-700 border border-amber-200",
+                                TrackerKerja.Models.TaskPriority.Medium => "bg-blue-50 text-blue-700 border border-blue-200",
+                                _ => "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                            };
+
+                            var statusBadge = task.Status switch {
+                                TrackerKerja.Models.TaskStatus.Done => "bg-emerald-50 text-emerald-700 border border-emerald-200",
+                                TrackerKerja.Models.TaskStatus.InProgress => "bg-indigo-50 text-indigo-700 border border-indigo-200",
+                                TrackerKerja.Models.TaskStatus.Overdue => "bg-red-50 text-red-700 border border-red-200",
+                                _ => "bg-slate-50 text-slate-700 border border-slate-200"
+                            };
+
+                            var isOverdue = task.DueDate.HasValue && task.DueDate.Value < DateTime.Now && task.Status != TrackerKerja.Models.TaskStatus.Done;
+                            bool canEdit = TaskPermissionHelper.CanEditTask(currentUser, isAdmin, task);
+                            bool canDelete = TaskPermissionHelper.CanDeleteTask(currentUser, isAdmin, task);
+
+                            <tr class="hover:bg-indigo-50/40 transition-colors group task-row @(isOverdue ? "bg-red-50/20" : "")" id="task-row-@task.Id">
+                                
+                                <!-- 0. Selection Checkbox -->
+                                <td class="py-3.5 px-4 text-center">
+                                    @if (canDelete)
+                                    {
+                                        <input type="checkbox" class="task-checkbox w-4 h-4 rounded text-indigo-600 focus:ring-indigo-400 border-slate-300 cursor-pointer"
+                                               value="@task.Id" data-id="@task.Id" onchange="onTaskCheckboxChange(this)">
+                                    }
+                                    else
+                                    {
+                                        <input type="checkbox" disabled
+                                               class="w-4 h-4 rounded border-slate-200 bg-slate-100 text-slate-300 cursor-not-allowed opacity-50"
+                                               title="Akses Hapus Terbatas: Hanya Administrator atau Pemilik Tugas">
+                                    }
+                                </td>
+
+                                <!-- 1. Nama Task & Kategori -->
+                                <td class="py-3.5 px-5">
+                                    <div class="flex items-center gap-3">
+                                        <!-- Priority Color Bar -->
+                                        <div class="w-1.5 h-10 rounded-full flex-shrink-0
+                                            @(task.Priority == TrackerKerja.Models.TaskPriority.Critical ? "bg-red-500" :
+                                              task.Priority == TrackerKerja.Models.TaskPriority.High ? "bg-amber-400" :
+                                              task.Priority == TrackerKerja.Models.TaskPriority.Medium ? "bg-blue-400" : "bg-emerald-400")"></div>
+                                        
+                                        <div class="min-w-0 max-w-xs">
+                                            <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+                                                <span class="font-mono font-bold text-[10px] text-indigo-700 bg-indigo-50 border border-indigo-200/80 px-1.5 py-0.5 rounded">@task.TaskCode</span>
+                                                @if (task.HasParent)
+                                                {
+                                                    <span class="font-mono text-[9px] font-semibold text-purple-700 bg-purple-50 border border-purple-200 px-1 py-0.5 rounded" title="Sub-task dari @task.ParentCode">
+                                                        <i class="fas fa-level-up-alt rotate-90 mr-0.5"></i>Induk: @task.ParentCode
+                                                    </span>
+                                                }
+                                                else if (task.IsParent)
+                                                {
+                                                    <span class="text-[9px] font-bold text-amber-700 bg-amber-50 border border-amber-200 px-1 py-0.5 rounded" title="Tugas Induk (@task.ChildTasks.Count sub-task)">
+                                                        <i class="fas fa-sitemap mr-0.5"></i>Induk (@task.ChildTasks.Count sub-task)
+                                                    </span>
+                                                }
+                                            </div>
+                                            @if (canEdit)
+                                            {
+                                                <a href="/Task/Edit/@task.Id" class="font-bold text-slate-800 hover:text-indigo-600 text-sm block truncate" title="@task.Title">
+                                                    @task.Title
+                                                </a>
+                                            }
+                                            else
+                                            {
+                                                <span class="font-bold text-slate-700 text-sm block truncate" title="@task.Title">
+                                                    @task.Title
+                                                </span>
+                                            }
+                                            <div class="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                @if (task.Category != null)
+                                                {
+                                                    <span class="text-[10px] font-semibold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                                                        <i class="fas fa-tag text-[9px] text-cyan-500"></i>@task.Category.Name
+                                                    </span>
+                                                }
+                                                @if (!string.IsNullOrEmpty(task.Obstacle))
+                                                {
+                                                    <span class="text-[10px] font-semibold text-amber-700 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-md flex items-center gap-1 truncate max-w-[140px]" title="Kendala: @task.Obstacle">
+                                                        <i class="fas fa-exclamation-triangle text-[9px] text-amber-500"></i>@task.Obstacle
+                                                    </span>
+                                                }
+                                                @if (!string.IsNullOrEmpty(task.Solution))
+                                                {
+                                                    <span class="text-[10px] font-semibold text-emerald-700 bg-emerald-50 border border-emerald-200 px-1.5 py-0.5 rounded-md flex items-center gap-1 truncate max-w-[140px]" title="Solusi: @task.Solution">
+                                                        <i class="fas fa-lightbulb text-[9px] text-emerald-500"></i>@task.Solution
+                                                    </span>
+                                                }
+                                                @if (!string.IsNullOrEmpty(task.Description))
+                                                {
+                                                    <span class="text-[11px] text-slate-400 truncate max-w-[150px]" title="@task.Description">
+                                                        @task.Description
+                                                    </span>
+                                                }
+                                            </div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- 2. Nama Project -->
+                                <td class="py-3.5 px-4">
+                                    @if (task.Project != null)
+                                    {
+                                        <span class="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-xl bg-indigo-50 text-indigo-700 border border-indigo-100 shadow-sm">
+                                            <span class="w-2 h-2 rounded-full" style="background:@task.Project.Color"></span>
+                                            <span class="truncate max-w-[160px]" title="@task.Project.Name">@task.Project.Name</span>
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-400 italic">Tanpa Proyek</span>
+                                    }
+                                </td>
+
+                                <!-- 3. Assignment / PIC -->
+                                <td class="py-3.5 px-4">
+                                    @if (task.AssignedToUser != null)
+                                    {
+                                        <div class="flex items-center gap-2.5">
+                                            @if (!string.IsNullOrEmpty(task.AssignedToUser.ProfilePictureUrl))
+                                            {
+                                                <img src="@task.AssignedToUser.ProfilePictureUrl" alt="@task.AssignedToUser.FullName"
+                                                     class="w-8 h-8 rounded-xl object-cover shadow-sm flex-shrink-0 border border-slate-200" />
+                                            }
+                                            else
+                                            {
+                                                <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-bold flex-shrink-0 shadow-sm"
+                                                     style="background:@task.AssignedToUser.AvatarColor">
+                                                    @task.AssignedToUser.Initials
+                                                </div>
+                                            }
+                                            <div class="min-w-0">
+                                                <p class="text-xs font-bold text-slate-800 truncate">@task.AssignedToUser.FullName</p>
+                                                <p class="text-[10px] text-slate-400 truncate">@task.AssignedToUser.JobTitle</p>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="inline-flex items-center gap-1 text-[11px] text-slate-400 bg-slate-100 px-2.5 py-1 rounded-lg">
+                                            <i class="far fa-user"></i> Belum ditugaskan
+                                        </span>
+                                    }
+                                </td>
+
+                                <!-- Milestone (SDLC Waterfall) -->
+                                <td class="py-3.5 px-4">
+                                    @{
+                                        var ms = task.Milestone ?? "Implementation";
+                                        var msBadge = ms switch {
+                                            "Requirement Analysis" => "bg-blue-50 text-blue-700 border-blue-200",
+                                            "System Design" => "bg-purple-50 text-purple-700 border-purple-200",
+                                            "Implementation" => "bg-indigo-50 text-indigo-700 border-indigo-200",
+                                            "Testing & QA" => "bg-amber-50 text-amber-700 border-amber-200",
+                                            "Deployment" => "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                            "Maintenance" => "bg-slate-100 text-slate-700 border-slate-200",
+                                            _ => "bg-indigo-50 text-indigo-700 border-indigo-200"
+                                        };
+                                        var msIcon = ms switch {
+                                            "Requirement Analysis" => "fa-clipboard-list text-blue-500",
+                                            "System Design" => "fa-drafting-compass text-purple-500",
+                                            "Implementation" => "fa-code text-indigo-500",
+                                            "Testing & QA" => "fa-vial text-amber-500",
+                                            "Deployment" => "fa-rocket text-emerald-500",
+                                            "Maintenance" => "fa-tools text-slate-500",
+                                            _ => "fa-layer-group text-indigo-500"
+                                        };
+                                    }
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold border @msBadge shadow-2xs">
+                                        <i class="fas @msIcon text-[10px]"></i>
+                                        <span>@ms</span>
+                                    </span>
+                                </td>
+
+                                <!-- 4. Tanggal Mulai -->
+                                <td class="py-3.5 px-4">
+                                    @if (task.StartDate.HasValue)
+                                    {
+                                        <div class="text-xs font-semibold text-slate-700 flex items-center gap-1.5">
+                                            <i class="far fa-calendar-check text-emerald-500 text-xs"></i>
+                                            <span>@task.StartDate.Value.ToString("dd MMM yyyy")</span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-400">-</span>
+                                    }
+                                </td>
+
+                                <!-- 5. Tanggal Deadline -->
+                                <td class="py-3.5 px-4">
+                                    @if (task.DueDate.HasValue)
+                                    {
+                                        <div>
+                                            <div class="text-xs font-bold flex items-center gap-1.5 @(isOverdue ? "text-red-600" : "text-slate-700")">
+                                                <i class="far fa-calendar-alt @(isOverdue ? "text-red-500" : "text-indigo-400") text-xs"></i>
+                                                <span>@task.DueDate.Value.ToString("dd MMM yyyy")</span>
+                                            </div>
+                                            @if (isOverdue)
+                                            {
+                                                <span class="inline-block text-[9px] font-bold text-red-600 bg-red-100 px-1.5 py-0.2 rounded mt-0.5">
+                                                    ⚠️ Lewat Deadline
+                                                </span>
+                                            }
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-400">-</span>
+                                    }
+                                </td>
+
+                                <!-- 6. Prioritas -->
+                                <td class="py-3.5 px-4">
+                                    <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full @priorityBadge">
+                                        @task.Priority
+                                    </span>
+                                </td>
+
+                                <!-- 7. Status -->
+                                <td class="py-3.5 px-4">
+                                    <span class="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-1 rounded-full @statusBadge">
+                                        @if (task.Status == TrackerKerja.Models.TaskStatus.InProgress)
+                                        {
+                                            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+                                        }
+                                        @task.Status
+                                    </span>
+                                </td>
+
+                                <!-- 8. Progress Bar & Persentase -->
+                                <td class="py-3.5 px-4 min-w-[130px]">
+                                    <div class="space-y-1">
+                                        <div class="flex items-center justify-between text-xs font-bold">
+                                            <span class="@(task.Progress == 100 ? "text-emerald-700 font-extrabold" : task.Progress >= 50 ? "text-indigo-700" : "text-slate-600")">
+                                                @task.Progress%
+                                            </span>
+                                            @if (task.Progress == 100)
+                                            {
+                                                <i class="fas fa-check-circle text-emerald-500 text-[11px]"></i>
+                                            }
+                                        </div>
+                                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden border border-slate-200/60 shadow-inner">
+                                            <div class="h-full rounded-full transition-all duration-300 @(task.Progress == 100 ? "bg-emerald-500" : task.Progress >= 50 ? "bg-gradient-to-r from-indigo-500 to-purple-600" : task.Progress > 0 ? "bg-amber-400" : "bg-transparent")"
+                                                 style="width: @(task.Progress)%"></div>
+                                        </div>
+                                    </div>
+                                </td>
+
+                                <!-- 9. Durasi Kerja -->
+                                <td class="py-3.5 px-4 text-center">
+                                    <span class="font-mono text-xs font-bold text-slate-700 bg-slate-50 px-2.5 py-1 rounded-lg border border-slate-200">
+                                        @task.TotalDurationFormatted
+                                    </span>
+                                </td>
+
+                                <!-- 10. Aksi -->
+                                <td class="py-3.5 px-5 text-right">
+                                    <div class="flex items-center justify-end gap-1.5">
+                                        @if (task.Status != TrackerKerja.Models.TaskStatus.Done && canEdit)
+                                        {
+                                            <button onclick="startGlobalTimer(@task.Id, '@task.Title.Replace("'","\\'")')"
+                                                    class="p-2 rounded-xl bg-indigo-50 text-indigo-600 hover:bg-indigo-600 hover:text-white transition-all shadow-sm"
+                                                    title="Mulai Timer">
+                                                <i class="fas fa-play text-xs"></i>
+                                            </button>
+                                        }
+
+                                        @if (canEdit)
+                                        {
+                                            <a href="/Task/Edit/@task.Id"
+                                               class="p-2 rounded-xl bg-slate-100 text-slate-600 hover:bg-indigo-100 hover:text-indigo-700 transition-all shadow-sm"
+                                               title="Edit Tugas & Durasi">
+                                                <i class="fas fa-pencil-alt text-xs"></i>
+                                            </a>
+                                        }
+                                        else
+                                        {
+                                            <span class="p-2 rounded-xl bg-slate-50 text-slate-300 cursor-not-allowed inline-flex items-center"
+                                                  title="Akses Edit Terbatas: Hanya PIC, System Analyst, Tech Writer, atau Administrator">
+                                                <i class="fas fa-lock text-xs"></i>
+                                            </span>
+                                        }
+
+                                        @if (canDelete)
+                                        {
+                                            <form method="post" action="/Task/Delete/@task.Id" class="inline"
+                                                  data-confirm="Apakah Anda yakin ingin menghapus tugas '@task.Title' (@task.TaskCode)? Sesi kerja terkait juga akan ikut dibersihkan."
+                                                  data-confirm-title="Hapus Tugas"
+                                                  data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Hapus">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit"
+                                                        class="p-2 rounded-xl bg-red-50 text-red-500 hover:bg-red-500 hover:text-white transition-all shadow-sm cursor-pointer"
+                                                        title="Hapus Tugas">
+                                                    <i class="fas fa-trash-alt text-xs"></i>
+                                                </button>
+                                            </form>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Table Footer & Pagination Controls -->
+            @{
+                int currentPage = ViewBag.CurrentPage ?? 1;
+                int totalPages = ViewBag.TotalPages ?? 1;
+                int totalItems = ViewBag.TotalItems ?? Model.Count;
+                int pageSize = ViewBag.PageSize ?? 10;
+                int startItem = totalItems > 0 ? (currentPage - 1) * pageSize + 1 : 0;
+                int endItem = Math.Min(currentPage * pageSize, totalItems);
+            }
+
+            <div class="bg-slate-50/90 px-6 py-4 border-t border-slate-100 flex flex-col md:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-3 text-xs text-slate-500 flex-wrap">
+                    <span>
+                        Menampilkan <strong>@startItem - @endItem</strong> dari <strong>@totalItems</strong> tugas
+                    </span>
+                    <span class="text-slate-300">•</span>
+                    <!-- Page Size Selector -->
+                    <div class="flex items-center gap-1.5">
+                        <label class="text-slate-500">Tampilkan:</label>
+                        <select onchange="changePageSize(this.value)" class="text-xs font-bold text-slate-700 bg-white border border-slate-200 rounded-lg px-2 py-1 focus:ring-1 focus:ring-indigo-400">
+                            <!option value="10" @(pageSize == 10 ? "selected" : "")>10</!option>
+                            <!option value="25" @(pageSize == 25 ? "selected" : "")>25</!option>
+                            <!option value="50" @(pageSize == 50 ? "selected" : "")>50</!option>
+                            <!option value="100" @(pageSize == 100 ? "selected" : "")>100</!option>
+                        </select>
+                        <span class="text-slate-500">per halaman</span>
+                    </div>
+                </div>
+
+                <!-- Pagination Buttons -->
+                @if (totalPages > 1)
+                {
+                    <div class="flex items-center gap-1.5">
+                        <!-- First & Prev -->
+                        @if (currentPage > 1)
+                        {
+                            <a href="@GetPageUrl(1)" class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-center text-xs font-bold transition-all shadow-xs" title="Halaman Pertama">
+                                <i class="fas fa-angle-double-left text-[11px]"></i>
+                            </a>
+                            <a href="@GetPageUrl(currentPage - 1)" class="px-3 h-8 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-center text-xs font-bold gap-1 transition-all shadow-xs" title="Halaman Sebelumnya">
+                                <i class="fas fa-chevron-left text-[10px]"></i> Prev
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="px-3 h-8 rounded-xl border border-slate-100 bg-slate-50 text-slate-300 flex items-center justify-center text-xs font-bold gap-1 cursor-not-allowed">
+                                <i class="fas fa-chevron-left text-[10px]"></i> Prev
+                            </span>
+                        }
+
+                        <!-- Page Numbers (window of 5 pages) -->
+                        @for (int p = Math.Max(1, currentPage - 2); p <= Math.Min(totalPages, currentPage + 2); p++)
+                        {
+                            if (p == currentPage)
+                            {
+                                <span class="w-8 h-8 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-white flex items-center justify-center text-xs font-black shadow-md shadow-indigo-200">
+                                    @p
+                                </span>
+                            }
+                            else
+                            {
+                                <a href="@GetPageUrl(p)" class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-center text-xs font-bold transition-all shadow-xs">
+                                    @p
+                                </a>
+                            }
+                        }
+
+                        <!-- Next & Last -->
+                        @if (currentPage < totalPages)
+                        {
+                            <a href="@GetPageUrl(currentPage + 1)" class="px-3 h-8 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-center text-xs font-bold gap-1 transition-all shadow-xs" title="Halaman Selanjutnya">
+                                Next <i class="fas fa-chevron-right text-[10px]"></i>
+                            </a>
+                            <a href="@GetPageUrl(totalPages)" class="w-8 h-8 rounded-xl border border-slate-200 bg-white text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center justify-center text-xs font-bold transition-all shadow-xs" title="Halaman Terakhir">
+                                <i class="fas fa-angle-double-right text-[11px]"></i>
+                            </a>
+                        }
+                        else
+                        {
+                            <span class="px-3 h-8 rounded-xl border border-slate-100 bg-slate-50 text-slate-300 flex items-center justify-center text-xs font-bold gap-1 cursor-not-allowed">
+                                Next <i class="fas fa-chevron-right text-[10px]"></i>
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+<script>
+    function changePageSize(size) {
+        const url = new URL(window.location.href);
+        url.searchParams.set('pageSize', size);
+        url.searchParams.set('page', '1');
+        window.location.href = url.toString();
+    }
+    function getSelectedCheckboxes() {
+        return Array.from(document.querySelectorAll('.task-checkbox:checked'));
+    }
+
+    function updateBulkActionBar() {
+        const selected = getSelectedCheckboxes();
+        const count = selected.length;
+        const bar = document.getElementById('bulkActionBar');
+        const badge = document.getElementById('selectedCountBadge');
+        const deleteLabel = document.getElementById('deleteCountLabel');
+        const selectAll = document.getElementById('selectAllCheckbox');
+        const allCheckboxes = document.querySelectorAll('.task-checkbox');
+
+        if (badge) badge.textContent = count;
+        if (deleteLabel) deleteLabel.textContent = count;
+
+        if (count > 0) {
+            if (bar) bar.classList.remove('hidden');
+        } else {
+            if (bar) bar.classList.add('hidden');
+        }
+
+        if (selectAll && allCheckboxes.length > 0) {
+            selectAll.checked = count === allCheckboxes.length;
+            selectAll.indeterminate = count > 0 && count < allCheckboxes.length;
+        }
+    }
+
+    function onTaskCheckboxChange(checkbox) {
+        const row = document.getElementById('task-row-' + checkbox.value);
+        if (row) {
+            if (checkbox.checked) {
+                row.classList.add('bg-indigo-50/70', 'ring-1', 'ring-indigo-200');
+            } else {
+                row.classList.remove('bg-indigo-50/70', 'ring-1', 'ring-indigo-200');
+            }
+        }
+        updateBulkActionBar();
+    }
+
+    function toggleSelectAll(masterCheckbox) {
+        const isChecked = masterCheckbox.checked;
+        const allCheckboxes = document.querySelectorAll('.task-checkbox');
+        allCheckboxes.forEach(cb => {
+            cb.checked = isChecked;
+            const row = document.getElementById('task-row-' + cb.value);
+            if (row) {
+                if (isChecked) {
+                    row.classList.add('bg-indigo-50/70', 'ring-1', 'ring-indigo-200');
+                } else {
+                    row.classList.remove('bg-indigo-50/70', 'ring-1', 'ring-indigo-200');
+                }
+            }
+        });
+        updateBulkActionBar();
+    }
+
+    function selectAllRows(select) {
+        const selectAll = document.getElementById('selectAllCheckbox');
+        if (selectAll) selectAll.checked = select;
+        toggleSelectAll({ checked: select });
+    }
+
+    async function confirmBulkDelete() {
+        const selected = getSelectedCheckboxes();
+        const count = selected.length;
+        if (count === 0) {
+            if (typeof SwalAlert === 'function') {
+                SwalAlert('Pilih Tugas', 'Silakan pilih setidaknya satu tugas untuk dihapus dengan mencentang kotak seleksi.', 'warning');
+            } else {
+                alert('Silakan pilih setidaknya satu tugas untuk dihapus.');
+            }
+            return;
+        }
+
+        const confirmed = typeof SwalConfirm === 'function'
+            ? await SwalConfirm({
+                title: `Hapus ${count} Tugas Terpilih?`,
+                text: `PERINGATAN: Apakah Anda yakin ingin menghapus <strong>${count} tugas</strong> yang dipilih secara permanen? Sesi waktu kerja terkait juga akan dibersihkan.`,
+                icon: 'warning',
+                confirmButtonText: `<i class="fas fa-trash-alt mr-1.5"></i>Ya, Hapus ${count} Tugas`,
+                cancelButtonText: 'Batal',
+                isDanger: true
+            })
+            : confirm(`PERINGATAN: Apakah Anda yakin ingin menghapus ${count} tugas yang dipilih secara permanen? Sesi waktu kerja terkait juga akan dibersihkan.`);
+
+        if (!confirmed) return;
+
+        const form = document.getElementById('bulkDeleteForm');
+        const container = document.getElementById('bulkDeleteInputs');
+        if (!form || !container) return;
+
+        container.innerHTML = '';
+        selected.forEach(cb => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'ids';
+            input.value = cb.value;
+            container.appendChild(input);
+        });
+
+        form.submit();
+    }
+
+    // ── TASK EXPORT (SELECTED & PERIOD) ──────────────────
+    function exportSelectedTasks(format) {
+        const selected = getSelectedCheckboxes();
+        if (selected.length === 0) {
+            if (typeof SwalAlert === 'function') {
+                SwalAlert('Pilih Tugas', 'Silakan pilih setidaknya satu tugas dengan mencentang kotak di tabel sebelum mengekspor.', 'info');
+            } else {
+                alert('Pilih setidaknya satu tugas.');
+            }
+            return;
+        }
+
+        const ids = selected.map(cb => cb.value).join(',');
+        const url = format === 'arms' 
+            ? `/Task/ExportArmsExcel?selectedIds=${encodeURIComponent(ids)}` 
+            : `/Task/ExportStandardExcel?selectedIds=${encodeURIComponent(ids)}`;
+        
+        if (typeof SwalToast === 'function') {
+            SwalToast(`Mengunduh ${selected.length} tugas format ${(format === 'arms' ? 'ARMS' : 'Excel Standar')}...`, 'info');
+        }
+        window.location.href = url;
+    }
+
+    function openTaskExportModal() {
+        const selected = getSelectedCheckboxes();
+        const selectedOption = document.getElementById('exportScopeSelectedOption');
+        const selectedCountSpan = document.getElementById('modalSelectedCount');
+        
+        if (selectedOption && selectedCountSpan) {
+            selectedCountSpan.textContent = selected.length;
+            if (selected.length > 0) {
+                selectedOption.classList.remove('hidden');
+                document.getElementById('scope_selected').checked = true;
+            } else {
+                selectedOption.classList.add('hidden');
+                document.getElementById('scope_filtered').checked = true;
+            }
+        }
+        
+        const modal = document.getElementById('taskExportModal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeTaskExportModal() {
+        const modal = document.getElementById('taskExportModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function onExportPeriodChange(val) {
+        const customDateDiv = document.getElementById('exportCustomDateRange');
+        if (customDateDiv) {
+            if (val === 'custom') {
+                customDateDiv.classList.remove('hidden');
+            } else {
+                customDateDiv.classList.add('hidden');
+            }
+        }
+    }
+
+    function executeTaskExport() {
+        const format = document.querySelector('input[name="exportFormat"]:checked')?.value || 'arms';
+        const scope = document.querySelector('input[name="exportScope"]:checked')?.value || 'filtered';
+        const period = document.getElementById('exportPeriodSelect')?.value || 'all';
+        const startDate = document.getElementById('exportStartDate')?.value || '';
+        const endDate = document.getElementById('exportEndDate')?.value || '';
+
+        const params = new URLSearchParams();
+
+        if (scope === 'selected') {
+            const selected = getSelectedCheckboxes();
+            if (selected.length === 0) {
+                SwalAlert('Peringatan', 'Tidak ada tugas yang dicentang. Silakan pilih tugas pada tabel terlebih dahulu.', 'warning');
+                return;
+            }
+            params.append('selectedIds', selected.map(cb => cb.value).join(','));
+        } else {
+            // Apply current grid filters
+            const urlParams = new URLSearchParams(window.location.search);
+            ['projectId', 'status', 'priority', 'assigneeId', 'milestone', 'search'].forEach(key => {
+                if (urlParams.has(key) && urlParams.get(key)) {
+                    params.append(key, urlParams.get(key));
+                }
+            });
+
+            if (period && period !== 'all') {
+                params.append('period', period);
+            }
+            if (period === 'custom') {
+                if (startDate) params.append('startDate', startDate);
+                if (endDate) params.append('endDate', endDate);
+            }
+        }
+
+        const endpoint = format === 'standard' ? '/Task/ExportStandardExcel' : '/Task/ExportArmsExcel';
+        const finalUrl = `${endpoint}?${params.toString()}`;
+
+        if (typeof SwalToast === 'function') {
+            SwalToast(`Memproses export ${(format === 'standard' ? 'Excel Standar' : 'ARMS')}...`, 'info');
+        }
+
+        closeTaskExportModal();
+        window.location.href = finalUrl;
+    }
+</script>
+
+<!-- MODAL EXPORT TUGAS INTERAKTIF -->
+<div id="taskExportModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden animate-fadeIn">
+    <div class="bg-white rounded-3xl shadow-2xl border border-indigo-100 max-w-lg w-full overflow-hidden transform transition-all">
+        <!-- Header -->
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-5 text-white flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-lg shadow-inner">
+                    <i class="fas fa-file-export"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-black">Export Data Tugas ke Spreadsheet</h3>
+                    <p class="text-indigo-100 text-xs mt-0.5">Pilih format Excel dan cakupan periode waktu</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeTaskExportModal()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Body -->
+        <div class="p-6 space-y-5 text-slate-700 text-xs">
+            <!-- 1. Pilihan Format -->
+            <div>
+                <label class="block font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
+                    <i class="fas fa-file-alt text-indigo-500 mr-1"></i>1. Pilih Format File Excel
+                </label>
+                <div class="grid grid-cols-2 gap-3">
+                    <label class="relative flex flex-col p-3.5 rounded-2xl border-2 border-indigo-200 hover:border-indigo-500 bg-indigo-50/30 cursor-pointer transition-all has-checked:border-indigo-600 has-checked:bg-indigo-50 has-checked:ring-2 has-checked:ring-indigo-300">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-bold text-slate-800 text-sm">Format ARMS</span>
+                            <input type="radio" name="exportFormat" value="arms" checked class="text-indigo-600 focus:ring-indigo-400">
+                        </div>
+                        <p class="text-[11px] text-slate-500">21 Kolom lengkap (Task Code, Requirement, PIC, BA, Infra, Tester, Kendala, Solusi)</p>
+                    </label>
+                    <label class="relative flex flex-col p-3.5 rounded-2xl border-2 border-slate-200 hover:border-emerald-500 bg-slate-50/50 cursor-pointer transition-all has-checked:border-emerald-600 has-checked:bg-emerald-50 has-checked:ring-2 has-checked:ring-emerald-300">
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-bold text-slate-800 text-sm">Format Standar</span>
+                            <input type="radio" name="exportFormat" value="standard" class="text-emerald-600 focus:ring-emerald-400">
+                        </div>
+                        <p class="text-[11px] text-slate-500">Format tabel standar 16 kolom (No, Kode, Judul, Proyek, Status, Tanggal, dll)</p>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 2. Cakupan Data (Scope) -->
+            <div>
+                <label class="block font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
+                    <i class="fas fa-layer-group text-indigo-500 mr-1"></i>2. Cakupan Data yang Diekspor
+                </label>
+                <div class="space-y-2">
+                    <label id="exportScopeSelectedOption" class="hidden flex items-center gap-2.5 p-2.5 rounded-xl border border-indigo-200 bg-indigo-50/60 cursor-pointer">
+                        <input type="radio" name="exportScope" id="scope_selected" value="selected" class="text-indigo-600 focus:ring-indigo-400">
+                        <span class="font-bold text-indigo-900">Hanya Tugas yang Dicentang (<span id="modalSelectedCount">0</span> tugas)</span>
+                    </label>
+                    <label class="flex items-center gap-2.5 p-2.5 rounded-xl border border-slate-200 hover:bg-slate-50 cursor-pointer">
+                        <input type="radio" name="exportScope" id="scope_filtered" value="filtered" checked class="text-indigo-600 focus:ring-indigo-400">
+                        <span class="font-semibold text-slate-700">Semua Data Sesuai Filter / Pencarian Saat Ini</span>
+                    </label>
+                </div>
+            </div>
+
+            <!-- 3. Filter Periode Tanggal -->
+            <div>
+                <label class="block font-bold text-slate-800 text-xs uppercase tracking-wider mb-2">
+                    <i class="fas fa-calendar-alt text-indigo-500 mr-1"></i>3. Filter Periode Waktu
+                </label>
+                <select id="exportPeriodSelect" onchange="onExportPeriodChange(this.value)" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    <option value="all">Semua Waktu (Tanpa Batasan Periode)</option>
+                    <option value="today">Hari Ini (Harian)</option>
+                    <option value="this_week">Minggu Ini (Mingguan)</option>
+                    <option value="this_month">Bulan Ini (Bulanan)</option>
+                    <option value="custom">Kustom Rentang Tanggal (Dari - Sampai)</option>
+                </select>
+
+                <!-- Kustom Rentang Tanggal -->
+                <div id="exportCustomDateRange" class="hidden grid grid-cols-2 gap-3 mt-2.5 pt-2.5 border-t border-slate-100 animate-fadeIn">
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Dari Tanggal:</label>
+                        <input type="date" id="exportStartDate" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] font-bold text-slate-600 mb-1">Sampai Tanggal:</label>
+                        <input type="date" id="exportEndDate" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-indigo-400">
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <div class="bg-slate-50 p-4 px-6 border-t border-slate-100 flex items-center justify-end gap-2.5">
+            <button type="button" onclick="closeTaskExportModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-all cursor-pointer">
+                Batal
+            </button>
+            <button type="button" onclick="executeTaskExport()" class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md hover:shadow-indigo-200 transition-all cursor-pointer">
+                <i class="fas fa-download"></i>
+                <span>Unduh File Excel (.xlsx)</span>
+            </button>
+        </div>
+    </div>
+</div>
+}

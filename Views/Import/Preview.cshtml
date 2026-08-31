@@ -1,0 +1,245 @@
+@model TrackerKerja.ViewModels.ImportResultViewModel
+@inject TrackerKerja.Data.AppDbContext DbContext
+@{
+    ViewData["Title"] = "Preview Import Task";
+    var users = (ViewBag.Users as List<TrackerKerja.Models.AppUser>) ?? DbContext.Users.OrderBy(u => u.FullName).ToList();
+}
+
+<div class="mb-5">
+    <a href="/Import" class="text-indigo-500 hover:text-indigo-700 text-sm flex items-center gap-1.5 inline-flex">
+        <i class="fas fa-arrow-left"></i> Kembali ke Import
+    </a>
+</div>
+
+<!-- Summary Bar -->
+<div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-5">
+    <div class="bg-white border border-indigo-100 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+        <div class="w-10 h-10 bg-indigo-50 rounded-xl flex items-center justify-center">
+            <i class="fas fa-file-excel text-indigo-500"></i>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500">File</p>
+            <p class="text-sm font-bold text-slate-700 truncate max-w-32" title="@Model.FileName">@Model.FileName</p>
+        </div>
+    </div>
+    <div class="bg-white border border-slate-100 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+        <div class="w-10 h-10 bg-slate-50 rounded-xl flex items-center justify-center">
+            <i class="fas fa-list text-slate-400"></i>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500">Total Baris</p>
+            <p class="text-2xl font-black text-slate-800">@Model.TotalRows</p>
+        </div>
+    </div>
+    <div class="bg-white border border-emerald-100 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+        <div class="w-10 h-10 bg-emerald-50 rounded-xl flex items-center justify-center">
+            <i class="fas fa-check-circle text-emerald-500"></i>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500">Siap Diimpor</p>
+            <p class="text-2xl font-black text-emerald-600">@Model.SuccessRows</p>
+        </div>
+    </div>
+    <div class="bg-white border border-red-100 rounded-2xl p-4 flex items-center gap-3 shadow-sm">
+        <div class="w-10 h-10 bg-red-50 rounded-xl flex items-center justify-center">
+            <i class="fas fa-times-circle text-red-400"></i>
+        </div>
+        <div>
+            <p class="text-xs text-slate-500">Baris Gagal</p>
+            <p class="text-2xl font-black text-red-500">@Model.FailedRows</p>
+        </div>
+    </div>
+</div>
+
+<form method="post" action="/Import/Confirm" id="confirm-import-form">
+    @Html.AntiForgeryToken()
+
+    <!-- Preview Table -->
+    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 mb-5 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex flex-wrap items-center justify-between gap-4">
+            <div>
+                <h3 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-table text-indigo-500"></i>
+                    Preview Data (@Model.TotalRows baris)
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Anda dapat mengatur ulang PIC setiap task langsung pada kolom dropdown di bawah.</p>
+            </div>
+            
+            <!-- Bulk PIC Toolbar -->
+            <div class="flex items-center gap-2 bg-indigo-50/70 border border-indigo-200/80 p-1.5 px-3 rounded-2xl flex-wrap">
+                <span class="text-xs font-bold text-indigo-900 flex items-center gap-1.5">
+                    <i class="fas fa-user-edit text-indigo-600"></i>
+                    <span>Atur Ulang Semua PIC:</span>
+                </span>
+                <div class="min-w-[220px]">
+                    <select id="bulk-pic-select" class="select2 select2-compact w-full" data-placeholder="-- Pilih PIC untuk Semua --">
+                        <option value="">-- Pilih PIC untuk Semua --</option>
+                        <option value="none">-- Tanpa PIC (Kosongkan) --</option>
+                        @foreach (var u in users)
+                        {
+                            <option value="@u.Id">@u.FullName (@u.Email)</option>
+                        }
+                    </select>
+                </div>
+                <button type="button" onclick="applyBulkPic()" class="bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-xs transition-all cursor-pointer">
+                    Terapkan
+                </button>
+            </div>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+                <thead>
+                    <tr class="border-b border-slate-100 bg-slate-50">
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-4 py-3">#</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-4 py-3">Status</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-4 py-3">Nama Task</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-3 py-3">Kategori</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-3 py-3">Project</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-3 py-3 w-56">PIC / Penugasan</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-3 py-3">Prioritas</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-3 py-3">Status Task</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-3 py-3">Progress</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-3 py-3">Mulai</th>
+                        <th class="text-left text-xs font-semibold text-slate-500 uppercase px-3 py-3">Deadline</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-50">
+                    @foreach (var row in Model.Rows)
+                    {
+                        var rowClass = !row.IsValid ? "bg-red-50/50" : !string.IsNullOrEmpty(row.WarningMessage) ? "bg-amber-50/30" : "hover:bg-indigo-50/20";
+                        <tr class="@rowClass transition-colors">
+                            <td class="px-4 py-3 text-slate-400 text-xs font-mono">@row.RowNumber</td>
+                            <td class="px-4 py-3">
+                                @if (!row.IsValid)
+                                {
+                                    <span class="inline-flex items-center gap-1 text-xs text-red-600 font-semibold bg-red-100 px-2 py-0.5 rounded-full">
+                                        <i class="fas fa-times text-xs"></i>Error
+                                    </span>
+                                }
+                                else if (!string.IsNullOrEmpty(row.WarningMessage))
+                                {
+                                    <span class="inline-flex items-center gap-1 text-xs text-amber-600 font-semibold bg-amber-100 px-2 py-0.5 rounded-full" title="@row.WarningMessage">
+                                        <i class="fas fa-exclamation text-xs"></i>Warning
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="inline-flex items-center gap-1 text-xs text-emerald-600 font-semibold bg-emerald-100 px-2 py-0.5 rounded-full">
+                                        <i class="fas fa-check text-xs"></i>OK
+                                    </span>
+                                }
+                            </td>
+                            <td class="px-4 py-3">
+                                <p class="font-semibold text-slate-800 text-sm">@row.Title</p>
+                                @if (!string.IsNullOrEmpty(row.ErrorMessage))
+                                {
+                                    <p class="text-xs text-red-600 mt-0.5"><i class="fas fa-times-circle mr-1"></i>@row.ErrorMessage</p>
+                                }
+                                @if (!string.IsNullOrEmpty(row.WarningMessage))
+                                {
+                                    <p class="text-xs text-amber-600 mt-0.5"><i class="fas fa-exclamation-triangle mr-1"></i>@row.WarningMessage</p>
+                                }
+                            </td>
+                            <td class="px-3 py-3 text-slate-500 text-xs">@(row.Category ?? "—")</td>
+                            <td class="px-3 py-3 text-slate-500 text-xs">@(row.Project ?? "—")</td>
+                            <td class="px-3 py-3">
+                                @if (row.IsValid)
+                                {
+                                    <select name="rowAssignees[@row.RowNumber]" class="row-pic-select select2 select2-compact w-full" data-placeholder="-- Belum Ditugaskan --">
+                                        <option value="">-- Belum Ditugaskan --</option>
+                                        @foreach (var u in users)
+                                        {
+                                            var isSelected = (!string.IsNullOrEmpty(row.AssigneeUserId) && row.AssigneeUserId == u.Id) ||
+                                                             (!string.IsNullOrEmpty(row.Assignee) && (row.Assignee.Equals(u.Email, StringComparison.OrdinalIgnoreCase) || row.Assignee.Equals(u.FullName, StringComparison.OrdinalIgnoreCase)));
+                                            <option value="@u.Id" selected="@(isSelected ? "selected" : null)">
+                                                @u.FullName (@(u.Email?.Split('@')[0] ?? ""))
+                                            </option>
+                                        }
+                                    </select>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-400 italic text-xs">—</span>
+                                }
+                            </td>
+                            <td class="px-3 py-3">
+                                @{
+                                    var pColor = row.Priority switch { "Critical" => "bg-red-100 text-red-700", "High" => "bg-amber-100 text-amber-700", "Low" => "bg-emerald-100 text-emerald-700", _ => "bg-blue-100 text-blue-700" };
+                                }
+                                <span class="text-xs font-semibold px-2 py-0.5 rounded-full @pColor">@row.Priority</span>
+                            </td>
+                            <td class="px-3 py-3 text-slate-500 text-xs font-semibold">@row.Status</td>
+                            <td class="px-3 py-3">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-xl text-xs font-bold @(row.Progress == 100 ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : row.Progress > 0 ? "bg-indigo-50 text-indigo-700 border border-indigo-200" : "bg-slate-100 text-slate-600 border border-slate-200")">
+                                    <i class="fas @(row.Progress == 100 ? "fa-check-circle text-emerald-500" : "fa-chart-line text-indigo-400") text-[10px]"></i>
+                                    @(row.Progress)%
+                                </span>
+                            </td>
+                            <td class="px-3 py-3 text-slate-400 text-xs font-mono">@(string.IsNullOrEmpty(row.StartDate) ? "—" : row.StartDate)</td>
+                            <td class="px-3 py-3 text-slate-400 text-xs font-mono">@(string.IsNullOrEmpty(row.Deadline) ? (string.IsNullOrEmpty(row.EndDate) ? "—" : row.EndDate) : row.Deadline)</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Action Buttons -->
+    @if (Model.SuccessRows > 0)
+    {
+        <div class="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 flex items-center justify-between gap-4">
+            <div>
+                <p class="font-bold text-emerald-800 text-base">
+                    <i class="fas fa-check-circle mr-2"></i>
+                    Siap mengimpor <strong>@Model.SuccessRows task</strong>
+                    @if (Model.FailedRows > 0) { <span class="text-amber-600">(@Model.FailedRows baris akan dilewati)</span> }
+                </p>
+                <p class="text-emerald-600 text-sm mt-0.5">Seluruh penugasan PIC yang dipilih pada tabel di atas akan disimpan ke sistem.</p>
+            </div>
+            <button type="submit"
+                    class="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold px-8 py-3 rounded-xl hover:shadow-lg hover:shadow-emerald-200 transition-all whitespace-nowrap cursor-pointer">
+                <i class="fas fa-database mr-2"></i>Konfirmasi Import Task
+            </button>
+        </div>
+    }
+    else
+    {
+        <div class="bg-red-50 border border-red-200 rounded-2xl p-5 text-center">
+            <i class="fas fa-exclamation-circle text-red-400 text-2xl mb-2"></i>
+            <p class="text-red-700 font-semibold">Tidak ada data valid untuk diimpor.</p>
+            <a href="/Import" class="mt-3 inline-block text-red-600 underline text-sm">Upload ulang file lain</a>
+        </div>
+    }
+</form>
+
+<script>
+    function applyBulkPic() {
+        const bulkSelect = document.getElementById('bulk-pic-select');
+        const selectedVal = bulkSelect.value;
+        if (!selectedVal) {
+            if (typeof SwalAlert === 'function') {
+                SwalAlert('Pilih PIC', 'Pilih nama PIC terlebih dahulu.', 'warning');
+            } else {
+                alert('Pilih nama PIC terlebih dahulu.');
+            }
+            return;
+        }
+
+        const targetVal = selectedVal === 'none' ? '' : selectedVal;
+        const rowSelects = document.querySelectorAll('.row-pic-select');
+        rowSelects.forEach(sel => {
+            sel.value = targetVal;
+            if (typeof jQuery !== 'undefined' && jQuery(sel).hasClass('select2-hidden-accessible')) {
+                jQuery(sel).trigger('change.select2');
+            }
+        });
+
+        const selectedText = bulkSelect.options[bulkSelect.selectedIndex].text;
+        if (typeof showToast === 'function') {
+            showToast(`Semua PIC baris berhasil diatur ke: ${selectedText}`, 'success');
+        } else if (typeof SwalAlert === 'function') {
+            SwalAlert('Berhasil', `Semua PIC baris berhasil diatur ke: ${selectedText}`, 'success');
+        }
+    }
+</script>

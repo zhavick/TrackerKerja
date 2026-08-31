@@ -1,0 +1,650 @@
+@model TrackerKerja.ViewModels.TimesheetViewModel
+@{
+    ViewData["Title"] = "Timesheet & Jam Kerja";
+    var prevWeek = Model.WeekStart.AddDays(-7).ToString("yyyy-MM-dd");
+    var nextWeek = Model.WeekStart.AddDays(7).ToString("yyyy-MM-dd");
+    var thisWeek = DateTime.Today.ToString("yyyy-MM-dd");
+}
+
+<!-- Top Header & Week Navigation -->
+<div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 mb-6">
+    <div>
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md shadow-indigo-200">
+                <i class="fas fa-user-clock text-lg"></i>
+            </div>
+            <div>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Timesheet Kerja</h1>
+                <p class="text-xs text-slate-500 font-medium">Rekapitulasi dan informasi jam kerja tugas per hari</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navigation & Action Buttons -->
+    <div class="flex flex-wrap items-center gap-2.5">
+        <!-- Week Selector Nav -->
+        <div class="flex items-center bg-white border border-slate-200 rounded-2xl p-1 shadow-xs">
+            <a href="/Timesheet?weekDate=@prevWeek&projectId=@Model.SelectedProjectId&memberId=@Model.SelectedMemberId"
+               class="p-2 px-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all text-xs font-bold flex items-center gap-1"
+               title="Minggu Lalu">
+                <i class="fas fa-chevron-left"></i>
+                <span class="hidden sm:inline">Lalu</span>
+            </a>
+            <a href="/Timesheet?weekDate=@thisWeek&projectId=@Model.SelectedProjectId&memberId=@Model.SelectedMemberId"
+               class="p-2 px-3 text-xs font-bold text-indigo-600 bg-indigo-50/80 rounded-xl transition-all">
+                Minggu Ini
+            </a>
+            <a href="/Timesheet?weekDate=@nextWeek&projectId=@Model.SelectedProjectId&memberId=@Model.SelectedMemberId"
+               class="p-2 px-3 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-xl transition-all text-xs font-bold flex items-center gap-1"
+               title="Minggu Depan">
+                <span class="hidden sm:inline">Depan</span>
+                <i class="fas fa-chevron-right"></i>
+            </a>
+        </div>
+
+        <div class="bg-white border border-slate-200 px-4 py-2 rounded-2xl shadow-xs text-xs font-black text-slate-700 flex items-center gap-2">
+            <i class="fas fa-calendar-week text-indigo-500"></i>
+            <span>@Model.WeekStart.ToString("dd MMM yyyy") — @Model.WeekEnd.ToString("dd MMM yyyy")</span>
+        </div>
+
+        <!-- Generate Laporan Excel Timesheet Saya -->
+        <button type="button" onclick="openTimesheetReportModal()"
+                class="flex items-center gap-2 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold px-3.5 py-2.5 rounded-2xl shadow-md shadow-emerald-200 hover:shadow-emerald-300 transition-all cursor-pointer">
+            <i class="fas fa-file-excel text-sm"></i>
+            <span>Laporan Excel Saya</span>
+        </button>
+
+        <!-- Export CSV Button -->
+        <a href="/Timesheet/ExportCsv?weekDate=@Model.WeekStart.ToString("yyyy-MM-dd")&projectId=@Model.SelectedProjectId&memberId=@Model.SelectedMemberId"
+           class="flex items-center gap-2 bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 text-xs font-bold px-3.5 py-2.5 rounded-2xl shadow-xs hover:border-emerald-300 hover:text-emerald-700 transition-all">
+            <i class="fas fa-file-csv text-emerald-500 text-sm"></i>
+            <span>Export CSV</span>
+        </a>
+
+        @if (User.IsInRole("Admin") && Model.RecentSessions.Any())
+        {
+            <form method="post" action="/Timesheet/ClearAllTimesheets" class="inline"
+                  data-confirm="PERINGATAN: Apakah Anda yakin ingin mereset/menghapus SEMUA riwayat pencatatan jam kerja timesheet? Tindakan ini bersifat permanen dan tidak dapat dibatalkan!"
+                  data-confirm-title="Reset Semua Timesheet"
+                  data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Reset Timesheet">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold px-3.5 py-2.5 rounded-2xl border border-red-200 shadow-xs transition-all cursor-pointer" title="Reset Semua Timesheet (Khusus Admin)">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Reset Timesheet</span>
+                </button>
+            </form>
+        }
+
+        <!-- Quick Log Time Button -->
+        <button type="button" onclick="openQuickLogModal()"
+                class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white text-xs font-bold px-4 py-2.5 rounded-2xl shadow-md shadow-indigo-200 transition-all cursor-pointer">
+            <i class="fas fa-plus"></i>
+            <span>Catat Jam</span>
+        </button>
+    </div>
+</div>
+
+<!-- Filters Bar -->
+<div class="bg-white rounded-3xl p-4 border border-slate-200/80 shadow-xs mb-6">
+    <form method="get" action="/Timesheet" class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+        <input type="hidden" name="weekDate" value="@Model.WeekStart.ToString("yyyy-MM-dd")" />
+
+        <div class="@(User.IsInRole("Admin") ? "sm:col-span-5" : "sm:col-span-10")">
+            <select name="projectId" onchange="this.form.submit()" class="select2 select2-compact w-full" data-placeholder="Semua Proyek">
+                <option value="">Semua Proyek</option>
+                @foreach (var proj in Model.AllProjects)
+                {
+                    <option value="@proj.Id" selected="@(Model.SelectedProjectId == proj.Id)">@proj.Name</option>
+                }
+            </select>
+        </div>
+
+        @if (User.IsInRole("Admin"))
+        {
+            <div class="sm:col-span-5">
+                <select name="memberId" onchange="this.form.submit()" class="select2 select2-compact w-full" data-placeholder="Semua Anggota Tim">
+                    <option value="all" selected="@(Model.SelectedMemberId == "all")">Semua Anggota Tim (All)</option>
+                    @foreach (var member in Model.AllMembers)
+                    {
+                        <option value="@member.Id" selected="@(Model.SelectedMemberId == member.Id)">@member.FullName (@member.Email)</option>
+                    }
+                </select>
+            </div>
+        }
+
+        <div class="sm:col-span-2 flex items-center gap-2">
+            @if (Model.SelectedProjectId.HasValue || (!string.IsNullOrEmpty(Model.SelectedMemberId) && Model.SelectedMemberId != "all"))
+            {
+                <a href="/Timesheet?weekDate=@Model.WeekStart.ToString("yyyy-MM-dd")" class="w-full py-2 px-3 text-center text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 rounded-xl transition-colors">
+                    <i class="fas fa-times mr-1"></i>Reset
+                </a>
+            }
+        </div>
+    </form>
+</div>
+
+<!-- Summary Metric Cards -->
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+    <!-- Total Hours Card -->
+    <div class="bg-white rounded-3xl p-5 border border-indigo-100 shadow-xs flex items-center justify-between">
+        <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Jam Minggu Ini</p>
+            <h3 class="text-2xl font-black text-indigo-600 mt-1 font-mono">@Model.TotalWeekHours <span class="text-sm font-semibold text-slate-400">jam</span></h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">@Model.TotalSessionsCount sesi kerja tercatat</p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600 text-xl shadow-xs">
+            <i class="fas fa-stopwatch"></i>
+        </div>
+    </div>
+
+    <!-- Active Tasks Card -->
+    <div class="bg-white rounded-3xl p-5 border border-emerald-100 shadow-xs flex items-center justify-between">
+        <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tugas Dikerjakan</p>
+            <h3 class="text-2xl font-black text-emerald-600 mt-1 font-mono">@Model.ActiveTasksCount <span class="text-sm font-semibold text-slate-400">task</span></h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">Mendapat alokasi waktu minggu ini</p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600 text-xl shadow-xs">
+            <i class="fas fa-tasks"></i>
+        </div>
+    </div>
+
+    <!-- Daily Average Card -->
+    <div class="bg-white rounded-3xl p-5 border border-cyan-100 shadow-xs flex items-center justify-between">
+        <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Rata-Rata Harian</p>
+            <h3 class="text-2xl font-black text-cyan-600 mt-1 font-mono">@(Math.Round(Model.TotalWeekHours / 7.0, 1)) <span class="text-sm font-semibold text-slate-400">jam/hari</span></h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">Dihitung selama 7 hari kalender</p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-cyan-50 flex items-center justify-center text-cyan-600 text-xl shadow-xs">
+            <i class="fas fa-chart-line"></i>
+        </div>
+    </div>
+
+    <!-- Most Productive Day Card -->
+    @{
+        var maxDayIndex = 0;
+        var maxDayVal = 0.0;
+        for (int i = 0; i < 7; i++)
+        {
+            if (Model.DayTotals[i] > maxDayVal)
+            {
+                maxDayVal = Model.DayTotals[i];
+                maxDayIndex = i;
+            }
+        }
+    }
+    <div class="bg-white rounded-3xl p-5 border border-amber-100 shadow-xs flex items-center justify-between">
+        <div>
+            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Hari Paling Produktif</p>
+            <h3 class="text-xl font-black text-amber-600 mt-1">@Model.DayNames[maxDayIndex] <span class="text-sm font-bold text-slate-500">(@maxDayVal j)</span></h3>
+            <p class="text-[11px] text-slate-500 mt-0.5">@Model.DayDates[maxDayIndex].ToString("dd MMM yyyy")</p>
+        </div>
+        <div class="w-12 h-12 rounded-2xl bg-amber-50 flex items-center justify-center text-amber-500 text-xl shadow-xs">
+            <i class="fas fa-fire"></i>
+        </div>
+    </div>
+</div>
+
+<!-- Weekly Timesheet Matrix Table -->
+<div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden mb-6">
+    <div class="p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
+                <i class="fas fa-table"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm">Matriks Jam Kerja Mingguan</h3>
+                <p class="text-[11px] text-slate-400">Total durasi pengerjaan tugas per hari (Senin s/d Minggu)</p>
+            </div>
+        </div>
+        <span class="text-xs font-semibold px-3 py-1 bg-slate-100 text-slate-600 rounded-full">
+            @Model.TaskRows.Count Tugas Tercatat
+        </span>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+            <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-600 font-bold">
+                    <th class="py-3.5 px-4 min-w-[240px]">Tugas & Proyek</th>
+                    <th class="py-3.5 px-3 min-w-[120px]">PIC</th>
+                    @for (int i = 0; i < 7; i++)
+                    {
+                        var isToday = Model.DayDates[i].Date == DateTime.Today;
+                        <th class="py-3.5 px-3 text-center min-w-[75px] @(isToday ? "bg-indigo-50/80 text-indigo-700 font-black border-x border-indigo-200/60" : "")">
+                            <span class="block">@Model.DayNames[i]</span>
+                            <span class="text-[10px] font-normal @(isToday ? "text-indigo-600 font-bold" : "text-slate-400") font-mono">@Model.DayDates[i].ToString("dd/MM")</span>
+                        </th>
+                    }
+                    <th class="py-3.5 px-4 text-right min-w-[90px] bg-slate-100/70 font-black text-slate-800">Total Jam</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @if (!Model.TaskRows.Any())
+                {
+                    <tr>
+                        <td colspan="10" class="py-12 text-center text-slate-400">
+                            <i class="fas fa-clock text-3xl mb-2 block text-slate-300"></i>
+                            <p class="font-semibold">Belum ada catatan jam kerja pada rentang minggu ini.</p>
+                            <p class="text-[11px] text-slate-400 mt-1">Gunakan tombol "Catat Jam" di atas untuk menambah jam kerja manual.</p>
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var row in Model.TaskRows)
+                    {
+                        <tr class="hover:bg-indigo-50/20 transition-colors group">
+                            <td class="py-3.5 px-4">
+                                <a href="/Task/Edit/@row.TaskId" class="font-bold text-slate-800 hover:text-indigo-600 line-clamp-1 group-hover:underline">
+                                    @row.TaskTitle
+                                </a>
+                                <div class="flex items-center gap-2 mt-1">
+                                    @if (!string.IsNullOrEmpty(row.ProjectName))
+                                    {
+                                        <span class="text-[10px] font-semibold text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                                            @row.ProjectName
+                                        </span>
+                                    }
+                                    <span class="text-[10px] font-semibold text-slate-500">
+                                        Progress: @(row.Progress)%
+                                    </span>
+                                </div>
+                            </td>
+                            <td class="py-3.5 px-3">
+                                <div class="flex items-center gap-1.5">
+                                    @if (!string.IsNullOrEmpty(row.AssigneeAvatar))
+                                    {
+                                        <img src="@row.AssigneeAvatar" class="w-6 h-6 rounded-full object-cover shadow-2xs" />
+                                    }
+                                    else
+                                    {
+                                        <div class="w-6 h-6 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center font-bold text-[10px]">
+                                            @(string.IsNullOrEmpty(row.AssigneeName) ? "?" : row.AssigneeName.Substring(0, 1))
+                                        </div>
+                                    }
+                                    <span class="font-medium text-slate-700 truncate max-w-[90px]" title="@row.AssigneeName">
+                                        @(string.IsNullOrEmpty(row.AssigneeName) ? "Unassigned" : row.AssigneeName)
+                                    </span>
+                                </div>
+                            </td>
+
+                            <!-- 7 Days Values -->
+                            @for (int i = 0; i < 7; i++)
+                            {
+                                var hours = row.DailyHours[i];
+                                var isToday = Model.DayDates[i].Date == DateTime.Today;
+                                <td class="py-3.5 px-3 text-center font-mono text-xs @(isToday ? "bg-indigo-50/40 border-x border-indigo-100" : "")">
+                                    @if (hours > 0)
+                                    {
+                                        <span class="inline-block px-2 py-0.5 font-bold rounded-lg bg-indigo-100/70 text-indigo-700">
+                                            @hours j
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-slate-300">—</span>
+                                    }
+                                </td>
+                            }
+
+                            <!-- Row Total -->
+                            <td class="py-3.5 px-4 text-right font-mono font-bold text-slate-800 bg-slate-50/60">
+                                <span class="px-2.5 py-1 rounded-xl bg-slate-200/80 text-slate-800 font-black">
+                                    @Math.Round(row.TotalHours, 1) j
+                                </span>
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+            <!-- Footer Day Totals -->
+            <tfoot>
+                <tr class="bg-slate-100/90 border-t-2 border-slate-300 font-bold text-slate-800">
+                    <td colspan="2" class="py-3.5 px-4 uppercase text-[11px] tracking-wider font-black">
+                        Total Harian
+                    </td>
+                    @for (int i = 0; i < 7; i++)
+                    {
+                        var isToday = Model.DayDates[i].Date == DateTime.Today;
+                        <td class="py-3.5 px-3 text-center font-mono font-black text-xs @(isToday ? "bg-indigo-100/90 text-indigo-900 border-x border-indigo-300" : "")">
+                            @if (Model.DayTotals[i] > 0)
+                            {
+                                <span class="text-indigo-700">@Math.Round(Model.DayTotals[i], 1) j</span>
+                            }
+                            else
+                            {
+                                <span class="text-slate-400">0 j</span>
+                            }
+                        </td>
+                    }
+                    <td class="py-3.5 px-4 text-right font-mono font-black text-sm text-indigo-700 bg-indigo-50/80">
+                        @Model.TotalWeekHours j
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+<!-- Detailed Daily Sessions Table -->
+<div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+            <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
+                <i class="fas fa-history"></i>
+            </div>
+            <div>
+                <h3 class="font-bold text-slate-800 text-sm">Rincian Log Jam Kerja (@Model.RecentSessions.Count Sesi)</h3>
+                <p class="text-[11px] text-slate-400">Daftar entri waktu pengerjaan tugas secara rinci</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="overflow-x-auto">
+        <table class="w-full text-left border-collapse text-xs">
+            <thead>
+                <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-semibold">
+                    <th class="py-3 px-4">Tanggal & Waktu</th>
+                    <th class="py-3 px-3">Tugas</th>
+                    <th class="py-3 px-3">Proyek</th>
+                    <th class="py-3 px-3">PIC</th>
+                    <th class="py-3 px-3">Durasi</th>
+                    <th class="py-3 px-4">Keterangan / Catatan</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-slate-100">
+                @if (!Model.RecentSessions.Any())
+                {
+                    <tr>
+                        <td colspan="6" class="py-8 text-center text-slate-400 text-xs">
+                            Tidak ada riwayat log sesi kerja pada minggu ini.
+                        </td>
+                    </tr>
+                }
+                else
+                {
+                    @foreach (var session in Model.RecentSessions)
+                    {
+                        var durationHours = Math.Round(session.Duration / 3600.0, 2);
+                        <tr class="hover:bg-slate-50/80 transition-colors">
+                            <td class="py-3 px-4 text-slate-600 font-mono">
+                                @session.StartTime.ToString("dd MMM yyyy")
+                                <span class="text-slate-400 text-[11px] block">@session.StartTime.ToString("HH:mm") — @(session.EndTime?.ToString("HH:mm") ?? "Berjalan")</span>
+                            </td>
+                            <td class="py-3 px-3">
+                                <a href="/Task/Edit/@session.TaskId" class="font-bold text-slate-800 hover:text-indigo-600">
+                                    @(session.Task?.Title ?? "—")
+                                </a>
+                            </td>
+                            <td class="py-3 px-3">
+                                <span class="text-[11px] font-semibold text-slate-600">@(session.Task?.Project?.Name ?? "—")</span>
+                            </td>
+                            <td class="py-3 px-3">
+                                <span class="text-[11px] font-medium text-slate-700">@(session.Task?.AssignedToUser?.FullName ?? "—")</span>
+                            </td>
+                            <td class="py-3 px-3">
+                                <span class="inline-flex items-center gap-1 font-mono font-bold text-indigo-700 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                                    <i class="fas fa-clock text-[10px]"></i>
+                                    @session.DurationFormatted
+                                </span>
+                            </td>
+                            <td class="py-3 px-4 text-slate-600 text-xs">
+                                @(string.IsNullOrEmpty(session.Notes) ? "—" : session.Notes)
+                            </td>
+                        </tr>
+                    }
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Quick Log Time -->
+<div id="quickLogModal" class="hidden fixed inset-0 bg-slate-900/40 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-md shadow-2xl border border-slate-100">
+        <div class="flex items-center justify-between pb-3 mb-4 border-b border-slate-100">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                    <i class="fas fa-clock"></i>
+                </div>
+                <h4 class="font-bold text-slate-800 text-sm">Catat Jam Kerja Manual</h4>
+            </div>
+            <button type="button" onclick="document.getElementById('quickLogModal').classList.add('hidden')" class="text-slate-400 hover:text-slate-600">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form method="post" action="/Timesheet/AddSession">
+            @Html.AntiForgeryToken()
+
+            <!-- Task Selector -->
+            <div class="mb-3">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Pilih Tugas</label>
+                @if (Model.UserTasks.Any())
+                {
+                    <select name="taskId" required class="select2 w-full" data-placeholder="-- Cari Tugas yang Dikerjakan --">
+                        <option value="">-- Cari Tugas yang Dikerjakan --</option>
+                        @foreach (var task in Model.UserTasks)
+                        {
+                            <option value="@task.Id">[@task.TaskCode] @task.Title (@task.Status - @task.Progress%)</option>
+                        }
+                    </select>
+                }
+                else
+                {
+                    <div class="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-xs">
+                        <i class="fas fa-info-circle mr-1"></i>Belum ada tugas yang ditugaskan kepada Anda.
+                    </div>
+                }
+            </div>
+
+            <!-- Date -->
+            <div class="mb-3">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal Pengerjaan</label>
+                <input type="date" name="sessionDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" required
+                       class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+            </div>
+
+            <!-- Hours & Minutes -->
+            <div class="grid grid-cols-2 gap-3 mb-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Jam</label>
+                    <input type="number" name="hours" min="0" max="24" value="1" required
+                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Menit</label>
+                    <input type="number" name="minutes" min="0" max="59" value="0" required
+                           class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+                </div>
+            </div>
+
+            <!-- Notes -->
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-slate-700 mb-1">Catatan Pekerjaan</label>
+                <input type="text" name="notes" placeholder="Contoh: Menyelesaikan integrasi API"
+                       class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none">
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button type="submit" class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-2.5 rounded-xl text-xs shadow-md shadow-indigo-200 transition-all">
+                    Simpan Jam Kerja
+                </button>
+                <button type="button" onclick="document.getElementById('quickLogModal').classList.add('hidden')" class="px-4 py-2.5 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs">
+                    Batal
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal Generate Laporan Timesheet Personal (Excel) -->
+<div id="timesheetReportModal" class="hidden fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50 animate-fadeIn">
+    <div class="bg-white rounded-3xl p-6 w-full max-w-lg shadow-2xl border border-slate-100 relative">
+        <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold text-lg shadow-xs">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <div>
+                    <h4 class="font-black text-slate-800 text-base">Laporan Timesheet Saya (Excel)</h4>
+                    <p class="text-xs text-slate-400">Generate dan download rekapitulasi jam kerja ke format .xlsx</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeTimesheetReportModal()" class="text-slate-400 hover:text-slate-600 w-8 h-8 rounded-xl hover:bg-slate-100 flex items-center justify-center transition-all">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Privacy Isolation Alert -->
+        <div class="p-3.5 bg-indigo-50/70 rounded-2xl border border-indigo-100 flex items-start gap-3 text-xs text-indigo-900 mb-5">
+            <i class="fas fa-shield-alt text-indigo-600 text-base mt-0.5 flex-shrink-0"></i>
+            <div class="leading-relaxed">
+                <p class="font-bold text-indigo-950">Data Terproteksi & Terisolasi Personal</p>
+                <p class="text-indigo-700/90 text-[11px] mt-0.5">Laporan ini hanya mengambil data pencatatan waktu dan tugas yang terkait dengan akun Anda (<strong>@User.Identity?.Name</strong>).</p>
+            </div>
+        </div>
+
+        <form method="get" action="/Timesheet/ExportPersonalExcel" id="exportPersonalExcelForm">
+            <!-- Preset Quick Selection Tabs -->
+            <div class="mb-4">
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">Pilihan Cepat Periode:</label>
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs font-bold">
+                    <button type="button" onclick="setReportPreset('this_week')" id="preset-btn-this_week"
+                            class="report-preset-btn py-2 px-2.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-center transition-all hover:border-indigo-400">
+                        Minggu Ini
+                    </button>
+                    <button type="button" onclick="setReportPreset('last_week')" id="preset-btn-last_week"
+                            class="report-preset-btn py-2 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-center transition-all hover:border-indigo-400">
+                        Minggu Lalu
+                    </button>
+                    <button type="button" onclick="setReportPreset('this_month')" id="preset-btn-this_month"
+                            class="report-preset-btn py-2 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-center transition-all hover:border-indigo-400">
+                        Bulan Ini
+                    </button>
+                    <button type="button" onclick="setReportPreset('last_month')" id="preset-btn-last_month"
+                            class="report-preset-btn py-2 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-center transition-all hover:border-indigo-400">
+                        Bulan Lalu
+                    </button>
+                </div>
+                <input type="hidden" name="preset" id="reportPresetInput" value="this_week" />
+            </div>
+
+            <!-- Custom Date Range -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-4">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        <i class="fas fa-calendar-alt text-indigo-500 mr-1"></i>Dari Tanggal:
+                    </label>
+                    <input type="date" name="startDate" id="reportStartDate" value="@Model.WeekStart.ToString("yyyy-MM-dd")"
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none bg-slate-50/50">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">
+                        <i class="fas fa-calendar-check text-indigo-500 mr-1"></i>Sampai Tanggal:
+                    </label>
+                    <input type="date" name="endDate" id="reportEndDate" value="@Model.WeekEnd.ToString("yyyy-MM-dd")"
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold text-slate-800 focus:ring-2 focus:ring-indigo-400 focus:outline-none bg-slate-50/50">
+                </div>
+            </div>
+
+            <!-- Project Filter -->
+            <div class="mb-5">
+                <label class="block text-xs font-bold text-slate-700 mb-1">
+                    <i class="fas fa-folder text-amber-500 mr-1"></i>Filter Proyek (Opsional):
+                </label>
+                <select name="projectId" class="select2 w-full" data-placeholder="Semua Proyek">
+                    <option value="">Semua Proyek</option>
+                    @foreach (var proj in Model.AllProjects)
+                    {
+                        <option value="@proj.Id">@proj.Name</option>
+                    }
+                </select>
+            </div>
+
+            <!-- Submit Button -->
+            <div class="flex items-center gap-2.5">
+                <button type="submit"
+                        class="flex-1 flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 rounded-xl text-xs shadow-lg shadow-emerald-200 hover:shadow-emerald-300 transition-all cursor-pointer">
+                    <i class="fas fa-download"></i>
+                    <span>Unduh Laporan Excel (.xlsx)</span>
+                </button>
+                <button type="button" onclick="closeTimesheetReportModal()"
+                        class="px-5 py-3 border border-slate-200 text-slate-600 font-bold rounded-xl text-xs hover:bg-slate-50 transition-all">
+                    Tutup
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function openQuickLogModal() {
+        document.getElementById('quickLogModal').classList.remove('hidden');
+        if (typeof initAppSelect2 === 'function') {
+            setTimeout(() => initAppSelect2('#quickLogModal'), 50);
+        }
+    }
+
+    function openTimesheetReportModal() {
+        document.getElementById('timesheetReportModal').classList.remove('hidden');
+        if (typeof initAppSelect2 === 'function') {
+            setTimeout(() => initAppSelect2('#timesheetReportModal'), 50);
+        }
+    }
+
+    function closeTimesheetReportModal() {
+        document.getElementById('timesheetReportModal').classList.add('hidden');
+    }
+
+    function setReportPreset(preset) {
+        const today = new Date();
+        let startDate = new Date();
+        let endDate = new Date();
+
+        if (preset === 'this_week') {
+            const day = today.getDay();
+            const diff = (day === 0 ? -6 : 1) - day;
+            startDate.setDate(today.getDate() + diff);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+        } else if (preset === 'last_week') {
+            const day = today.getDay();
+            const diff = (day === 0 ? -6 : 1) - day - 7;
+            startDate.setDate(today.getDate() + diff);
+            endDate = new Date(startDate);
+            endDate.setDate(startDate.getDate() + 6);
+        } else if (preset === 'this_month') {
+            startDate = new Date(today.getFullYear(), today.getMonth(), 1);
+            endDate = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+        } else if (preset === 'last_month') {
+            startDate = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+            endDate = new Date(today.getFullYear(), today.getMonth(), 0);
+        }
+
+        const formatDate = (d) => {
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${year}-${month}-${day}`;
+        };
+
+        document.getElementById('reportStartDate').value = formatDate(startDate);
+        document.getElementById('reportEndDate').value = formatDate(endDate);
+        document.getElementById('reportPresetInput').value = preset;
+
+        // Update active preset button styling
+        ['this_week', 'last_week', 'this_month', 'last_month'].forEach(p => {
+            const btn = document.getElementById('preset-btn-' + p);
+            if (btn) {
+                if (p === preset) {
+                    btn.className = 'report-preset-btn py-2 px-2.5 rounded-xl border border-indigo-200 bg-indigo-50 text-indigo-700 text-center transition-all hover:border-indigo-400 font-bold';
+                } else {
+                    btn.className = 'report-preset-btn py-2 px-2.5 rounded-xl border border-slate-200 bg-white text-slate-600 text-center transition-all hover:border-indigo-400';
+                }
+            }
+        });
+    }
+</script>

@@ -1,0 +1,296 @@
+@model IEnumerable<TrackerKerja.Models.WorkNote>
+@{
+    ViewData["Title"] = "Catatan & Dokumentasi Kerja";
+    var categories = new[] { "All", "General", "Meeting", "Technical", "Bug Note", "Task Note", "Idea" };
+    var currentFilter = ViewBag.Filter as string;
+    var currentCat = ViewBag.Category as string ?? "All";
+    var currentSearch = ViewBag.Search as string;
+    var currentAuthor = ViewBag.AuthorId as string;
+    var currentTaskId = ViewBag.TaskId as int?;
+}
+
+<div class="space-y-6 max-w-7xl mx-auto">
+
+    <!-- Header Banner -->
+    <div class="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-700 rounded-3xl p-6 sm:p-8 text-white shadow-xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-60 h-60 bg-white/10 rounded-full blur-2xl"></div>
+        <div class="absolute right-1/3 -top-10 w-40 h-40 bg-pink-500/20 rounded-full blur-xl"></div>
+
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+            <div>
+                <div class="inline-flex items-center gap-2 bg-white/15 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-sm mb-3">
+                    <i class="fas fa-book-open text-violet-300"></i>
+                    <span>Knowledge & Work Notes Hub</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight">Catatan & Dokumentasi Tugas</h1>
+                <p class="text-indigo-100 text-sm mt-1 max-w-2xl">
+                    Catat notula meeting, dokumentasi teknis, atau instruksi kerja lengkap dengan format rich text dan lampiran gambar.
+                </p>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <a href="/Note/Create"
+                   class="inline-flex items-center gap-2 bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-5 py-3 rounded-2xl shadow-lg hover:shadow-xl hover:scale-105 transition-all text-sm">
+                    <i class="fas fa-pen-nib"></i>
+                    <span>Tulis Catatan Baru</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Quick Summary Stats -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3 mt-6 pt-5 border-t border-white/15">
+            <a href="/Note" class="bg-white/10 hover:bg-white/20 transition-colors rounded-2xl p-3 backdrop-blur-sm text-center">
+                <p class="text-xl sm:text-2xl font-black">@ViewBag.TotalCount</p>
+                <p class="text-indigo-200 text-[11px] sm:text-xs font-medium mt-0.5">Semua Catatan</p>
+            </a>
+            <a href="/Note?filter=standalone" class="bg-white/10 hover:bg-white/20 transition-colors rounded-2xl p-3 backdrop-blur-sm text-center">
+                <p class="text-xl sm:text-2xl font-black text-amber-300">@ViewBag.StandaloneCount</p>
+                <p class="text-indigo-200 text-[11px] sm:text-xs font-medium mt-0.5">Catatan Mandiri</p>
+            </a>
+            <a href="/Note?filter=linked" class="bg-white/10 hover:bg-white/20 transition-colors rounded-2xl p-3 backdrop-blur-sm text-center">
+                <p class="text-xl sm:text-2xl font-black text-emerald-300">@ViewBag.LinkedCount</p>
+                <p class="text-indigo-200 text-[11px] sm:text-xs font-medium mt-0.5">Tertaut Tugas</p>
+            </a>
+        </div>
+    </div>
+
+    <!-- Filter & Search Toolbar -->
+    <div class="bg-white rounded-2xl p-4 shadow-sm border border-indigo-100 flex flex-col md:flex-row items-center justify-between gap-4">
+        
+        <!-- Filter Tabs: All, Standalone, Linked -->
+        <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl w-full md:w-auto">
+            <a href="/Note?category=@currentCat&search=@currentSearch&authorId=@currentAuthor"
+               class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all @(string.IsNullOrEmpty(currentFilter) ? "bg-white text-indigo-700 shadow-sm" : "text-slate-600 hover:text-slate-900")">
+                Semua
+            </a>
+            <a href="/Note?filter=standalone&category=@currentCat&search=@currentSearch&authorId=@currentAuthor"
+               class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all @(currentFilter == "standalone" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-600 hover:text-slate-900")">
+                <i class="fas fa-file-alt text-amber-500 mr-1"></i>Mandiri
+            </a>
+            <a href="/Note?filter=linked&category=@currentCat&search=@currentSearch&authorId=@currentAuthor"
+               class="px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all @(currentFilter == "linked" ? "bg-white text-indigo-700 shadow-sm" : "text-slate-600 hover:text-slate-900")">
+                <i class="fas fa-link text-emerald-500 mr-1"></i>Tertaut Tugas
+            </a>
+        </div>
+
+        <!-- Filter Dropdowns & Search Form -->
+        <form method="get" action="/Note" class="flex flex-wrap items-center gap-2.5 w-full md:w-auto flex-1 justify-end">
+            <input type="hidden" name="filter" value="@currentFilter" />
+
+            <!-- Author Filter -->
+            <div class="min-w-[140px]">
+                <select name="authorId" onchange="this.form.submit()" class="select2 select2-compact w-full" data-placeholder="Semua Penulis">
+                    <option value="">Semua Penulis</option>
+                    @foreach (var a in ViewBag.Authors as List<TrackerKerja.Models.AppUser> ?? new())
+                    {
+                        if (currentAuthor == a.Id)
+                        {
+                            <option value="@a.Id" selected>👤 @a.FullName</option>
+                        }
+                        else
+                        {
+                            <option value="@a.Id">👤 @a.FullName</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Category Filter -->
+            <div class="min-w-[130px]">
+                <select name="category" onchange="this.form.submit()" class="select2 select2-compact w-full" data-placeholder="Semua Kategori">
+                    <option value="">Semua Kategori</option>
+                    @foreach (var c in categories)
+                    {
+                        if (currentCat == c)
+                        {
+                            <option value="@c" selected>📁 @c</option>
+                        }
+                        else
+                        {
+                            <option value="@c">📁 @c</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Search Input -->
+            <div class="relative min-w-[200px] flex-1 sm:flex-none">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" name="search" value="@currentSearch" placeholder="Cari isi catatan..."
+                       class="w-full pl-8 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+            </div>
+
+            <button type="submit" class="px-3 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-semibold transition-colors">
+                <i class="fas fa-filter mr-1"></i>Filter
+            </button>
+
+            @if (!string.IsNullOrEmpty(currentFilter) || !string.IsNullOrEmpty(currentSearch) || !string.IsNullOrEmpty(currentAuthor) || (currentCat != "All"))
+            {
+                <a href="/Note" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-600 rounded-xl text-xs font-semibold transition-colors" title="Reset Filter">
+                    <i class="fas fa-redo"></i>
+                </a>
+            }
+        </form>
+    </div>
+
+    <!-- Notes Grid -->
+    @if (!Model.Any())
+    {
+        <div class="bg-white rounded-3xl p-12 text-center border border-indigo-100 shadow-sm">
+            <div class="w-16 h-16 bg-indigo-50 text-indigo-500 rounded-3xl flex items-center justify-center mx-auto text-2xl mb-4">
+                <i class="fas fa-sticky-note"></i>
+            </div>
+            <h3 class="text-lg font-bold text-slate-800">Belum Ada Catatan</h3>
+            <p class="text-slate-500 text-sm mt-1 max-w-md mx-auto">
+                Mulai dokumentasikan alur kerja, notula meeting, atau informasi penting terkait tugas Anda.
+            </p>
+            <a href="/Note/Create" class="inline-flex items-center gap-2 mt-5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold text-xs px-5 py-2.5 rounded-xl shadow hover:shadow-indigo-200 hover:scale-105 transition-all">
+                <i class="fas fa-plus"></i> Buat Catatan Pertama
+            </a>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+            @foreach (var note in Model)
+            {
+                var cardColor = string.IsNullOrEmpty(note.Color) ? "#6366F1" : note.Color;
+
+                <div class="bg-white rounded-2xl border border-indigo-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between overflow-hidden group relative">
+                    
+                    <!-- Top Color Accent Bar -->
+                    <div class="h-1.5 w-full" style="background: @cardColor"></div>
+
+                    <div class="p-5 flex-1 flex flex-col justify-between">
+                        <div>
+                            <!-- Header: Category + Pin + Actions -->
+                            <div class="flex items-center justify-between gap-2 mb-2.5">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-slate-100 text-slate-700">
+                                        @note.Category
+                                    </span>
+
+                                    @if (note.IsStandalone)
+                                    {
+                                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200">
+                                            <i class="fas fa-file-alt mr-0.5"></i> Mandiri
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 border border-emerald-200">
+                                            <i class="fas fa-link mr-0.5"></i> Tugas
+                                        </span>
+                                    }
+
+                                    @if (note.Attachments != null && note.Attachments.Any())
+                                    {
+                                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-200 flex items-center gap-1" title="@note.Attachments.Count berkas lampiran">
+                                            <i class="fas fa-paperclip text-indigo-500"></i> @note.Attachments.Count berkas
+                                        </span>
+                                    }
+                                </div>
+
+                                <div class="flex items-center gap-1">
+                                    <!-- Pin Toggle Form -->
+                                    <form method="post" action="/Note/TogglePin/@note.Id" class="inline">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" title="@(note.IsPinned ? "Lepas Sematan" : "Sematkan di Atas")"
+                                                class="p-1.5 rounded-lg text-xs transition-colors @(note.IsPinned ? "text-amber-500 bg-amber-50" : "text-slate-300 hover:text-amber-500")">
+                                            <i class="fas fa-thumbtack"></i>
+                                        </button>
+                                    </form>
+
+                                    <!-- Edit -->
+                                    <a href="/Note/Edit/@note.Id" class="p-1.5 rounded-lg text-xs text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors" title="Edit Catatan">
+                                        <i class="fas fa-pencil-alt"></i>
+                                    </a>
+
+                                    <!-- Delete -->
+                                    <form method="post" action="/Note/Delete/@note.Id" class="inline"
+                                          data-confirm="Apakah Anda yakin ingin menghapus catatan '@note.Title'?"
+                                          data-confirm-title="Hapus Catatan"
+                                          data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Hapus">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="p-1.5 rounded-lg text-xs text-slate-400 hover:text-red-500 hover:bg-red-50 transition-colors cursor-pointer" title="Hapus Catatan">
+                                            <i class="fas fa-trash-alt"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+
+                            <!-- Note Title -->
+                            <a href="/Note/Details/@note.Id" class="block group-hover:text-indigo-600 transition-colors">
+                                <h3 class="font-black text-slate-800 text-base leading-snug line-clamp-2">
+                                    @if (note.IsPinned)
+                                    {
+                                        <i class="fas fa-thumbtack text-amber-500 text-xs mr-1"></i>
+                                    }
+                                    @note.Title
+                                </h3>
+                            </a>
+
+                            <!-- Plain Text Excerpt -->
+                            <p class="text-slate-500 text-xs mt-2 line-clamp-3 leading-relaxed">
+                                @(string.IsNullOrEmpty(note.PlainTextPreview) ? "(Tidak ada teks)" : note.PlainTextPreview)
+                            </p>
+
+                            <!-- Linked Task Badge (If Linked) -->
+                            @if (note.Task != null)
+                            {
+                                <div class="mt-3 p-2 bg-indigo-50/60 rounded-xl border border-indigo-100 flex items-center gap-2">
+                                    <i class="fas fa-tasks text-indigo-500 text-xs flex-shrink-0"></i>
+                                    <div class="min-w-0 flex-1">
+                                        <p class="text-[10px] text-slate-400 font-semibold uppercase">Tertaut ke Tugas:</p>
+                                        <a href="/Task/Edit/@note.Task.Id" class="text-xs font-bold text-indigo-700 hover:underline truncate block">
+                                            @note.Task.Title
+                                        </a>
+                                    </div>
+                                </div>
+                            }
+                        </div>
+
+                        <!-- Footer: Author & Timestamp -->
+                        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                            <!-- Author Avatar & Name -->
+                            <div class="flex items-center gap-2 min-w-0">
+                                @if (note.AuthorUser != null)
+                                {
+                                    if (!string.IsNullOrEmpty(note.AuthorUser.ProfilePictureUrl))
+                                    {
+                                        <img src="@note.AuthorUser.ProfilePictureUrl" alt="@note.AuthorUser.FullName"
+                                             class="w-6 h-6 rounded-lg object-cover shadow-sm flex-shrink-0 border border-slate-200" />
+                                    }
+                                    else
+                                    {
+                                        <div class="w-6 h-6 rounded-lg flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0"
+                                             style="background:@note.AuthorUser.AvatarColor">
+                                            @note.AuthorUser.Initials
+                                        </div>
+                                    }
+                                    <div class="min-w-0">
+                                        <p class="text-[11px] font-bold text-slate-700 truncate">@note.AuthorUser.FullName</p>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="w-6 h-6 rounded-lg bg-slate-300 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                                        ?
+                                    </div>
+                                    <p class="text-[11px] text-slate-400 font-medium">Anonim</p>
+                                }
+                            </div>
+
+                            <!-- Date -->
+                            <div class="text-right flex-shrink-0">
+                                <span class="text-[11px] text-slate-400" title="Diperbarui: @note.UpdatedAt.ToString("dd MMM yyyy HH:mm")">
+                                    <i class="far fa-clock mr-0.5"></i>@note.UpdatedAt.ToString("dd MMM yyyy")
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

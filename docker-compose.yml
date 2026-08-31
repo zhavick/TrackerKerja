@@ -1,0 +1,18 @@
+services:
+  trackerkerja:
+    image: trackerkerja:latest
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: trackerkerja_app
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5000
+      - ConnectionStrings__DefaultConnection=Data Source=data/trackerkerja.db
+      - GlobalBaseUrl=http://localhost:5000
+    volumes:
+      - ./db_data:/app/data
+      - ./uploads:/app/wwwroot/uploads

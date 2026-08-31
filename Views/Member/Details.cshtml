@@ -1,0 +1,422 @@
+@model TrackerKerja.ViewModels.MemberDetailsViewModel
+@{
+    ViewData["Title"] = $"Kontribusi - {Model.User.FullName}";
+}
+
+<div class="space-y-6 max-w-7xl mx-auto">
+
+    <!-- Top Breadcrumb & Actions -->
+    <div class="flex items-center justify-between">
+        <a href="/Member" class="inline-flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-indigo-600 transition-colors">
+            <i class="fas fa-arrow-left"></i>
+            <span>Kembali ke Direktori Anggota</span>
+        </a>
+
+        @if (User.IsInRole("Admin"))
+        {
+            <div class="flex gap-2">
+                <button type="button" onclick="openAdminResetPasswordModal('@Model.User.Id', '@Model.User.FullName.Replace("'", "\\'")')"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold transition-all border border-amber-200 cursor-pointer">
+                    <i class="fas fa-key"></i> Ubah Password
+                </button>
+                <a href="/Member/Edit/@Model.User.Id" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 hover:bg-indigo-100 hover:text-indigo-700 text-xs font-bold transition-all">
+                    <i class="fas fa-edit"></i> Edit Data Member
+                </a>
+            </div>
+        }
+    </div>
+
+    <!-- Member Profile Hero Card -->
+    <div class="bg-white rounded-3xl p-6 border border-indigo-100 shadow-sm">
+        <div class="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
+            <div class="flex items-center gap-5">
+                @if (!string.IsNullOrEmpty(Model.User.ProfilePictureUrl))
+                {
+                    <img src="@Model.User.ProfilePictureUrl" alt="@Model.User.FullName"
+                         class="w-20 h-20 rounded-3xl object-cover shadow-lg border-2 border-white ring-4 ring-indigo-50 flex-shrink-0" />
+                }
+                else
+                {
+                    <div class="w-20 h-20 rounded-3xl flex items-center justify-center text-white text-2xl font-black flex-shrink-0 shadow-lg ring-4 ring-indigo-50"
+                         style="background:@Model.User.AvatarColor">
+                        @Model.User.Initials
+                    </div>
+                }
+                <div>
+                    <div class="flex items-center gap-2.5 flex-wrap">
+                        <h2 class="text-2xl font-black text-slate-800">@Model.User.FullName</h2>
+                        <span class="text-xs font-bold px-2.5 py-0.5 rounded-full @(Model.Role == "Admin" ? "bg-purple-100 text-purple-700" : "bg-indigo-100 text-indigo-700")">
+                            @(Model.Role == "Admin" ? "🛡️ Admin" : "Team Member")
+                        </span>
+                    </div>
+                    <p class="text-sm font-semibold text-indigo-600 mt-0.5">@Model.User.JobTitle</p>
+                    <div class="flex items-center gap-4 mt-2 text-xs text-slate-500 flex-wrap">
+                        <span class="flex items-center gap-1.5"><i class="far fa-envelope text-slate-400"></i>@Model.User.Email</span>
+                        @if (!string.IsNullOrEmpty(Model.User.PhoneNumber))
+                        {
+                            <span class="flex items-center gap-1.5"><i class="fas fa-phone text-slate-400"></i>@Model.User.PhoneNumber</span>
+                        }
+                        <span class="flex items-center gap-1.5"><i class="far fa-calendar-alt text-slate-400"></i>Bergabung: @Model.User.CreatedAt.ToString("dd MMM yyyy")</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Mini Progress Pill -->
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-100 min-w-[200px] w-full md:w-auto">
+                <div class="flex items-center justify-between text-xs mb-1.5">
+                    <span class="font-bold text-slate-600">Penyelesaian Tugas</span>
+                    <span class="font-black text-indigo-600">@Model.CompletionRate%</span>
+                </div>
+                <div class="w-full h-2 bg-slate-200 rounded-full overflow-hidden mb-1">
+                    <div class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full" style="width: @(Model.CompletionRate)%"></div>
+                </div>
+                <p class="text-[10px] text-slate-400 text-right">@Model.DoneTasks dari @Model.TotalTasks tugas selesai</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- 4 Stats Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
+        <div class="bg-white rounded-2xl p-4 border border-indigo-100 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-slate-500">Total Tugas</span>
+                <i class="fas fa-tasks text-indigo-500"></i>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@Model.TotalTasks</p>
+            <p class="text-[11px] text-slate-400 mt-0.5">Penugasan Personal</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-amber-100 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-slate-500">Sedang Dikerjakan</span>
+                <i class="fas fa-spinner text-amber-500 animate-spin"></i>
+            </div>
+            <p class="text-2xl font-black text-amber-600">@Model.InProgressTasks</p>
+            <p class="text-[11px] text-amber-600 font-semibold mt-0.5">In Progress</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-emerald-100 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-slate-500">Tugas Selesai</span>
+                <i class="fas fa-check-circle text-emerald-500"></i>
+            </div>
+            <p class="text-2xl font-black text-emerald-600">@Model.DoneTasks</p>
+            <p class="text-[11px] text-emerald-600 font-semibold mt-0.5">Terselesaikan</p>
+        </div>
+
+        <div class="bg-white rounded-2xl p-4 border border-purple-100 shadow-sm">
+            <div class="flex items-center justify-between mb-1">
+                <span class="text-xs font-bold text-slate-500">Catatan Kontribusi</span>
+                <i class="fas fa-book-open text-purple-500"></i>
+            </div>
+            <p class="text-2xl font-black text-purple-600">@Model.NotesContributedCount</p>
+            <p class="text-[11px] text-purple-600 font-semibold mt-0.5">Dokumentasi Kerja</p>
+        </div>
+    </div>
+
+    <!-- Contribution Tabs -->
+    <div class="bg-white rounded-3xl p-6 border border-indigo-100 shadow-sm">
+        
+        <!-- Tab Navigation Buttons -->
+        <div class="flex items-center gap-3 border-b border-slate-100 pb-4 mb-6">
+            <button onclick="switchTab('tasks')" id="tab-btn-tasks"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm flex items-center gap-2">
+                <i class="fas fa-tasks"></i> Daftar Tugas (@Model.AssignedTasks.Count)
+            </button>
+            <button onclick="switchTab('notes')" id="tab-btn-notes"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2">
+                <i class="fas fa-sticky-note"></i> Catatan & Dokumentasi (@Model.ContributedNotes.Count)
+            </button>
+            <button onclick="switchTab('sessions')" id="tab-btn-sessions"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2">
+                <i class="fas fa-history"></i> Riwayat Sesi Kerja (@Model.WorkSessions.Count)
+            </button>
+        </div>
+
+        <!-- TAB 1: TASKS -->
+        <div id="tab-content-tasks" class="space-y-4">
+            @if (!Model.AssignedTasks.Any())
+            {
+                <div class="p-12 text-center text-slate-400">
+                    <i class="fas fa-tasks text-4xl mb-3 text-slate-200 block"></i>
+                    <p class="font-bold text-slate-700">Belum ada tugas yang ditugaskan kepada anggota ini</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider font-bold">
+                                <th class="py-3 px-4">Nama Task</th>
+                                <th class="py-3 px-3">Proyek</th>
+                                <th class="py-3 px-3">Prioritas</th>
+                                <th class="py-3 px-3">Status</th>
+                                <th class="py-3 px-3">Mulai</th>
+                                <th class="py-3 px-3">Deadline</th>
+                                <th class="py-3 px-3 text-center">Durasi</th>
+                                <th class="py-3 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach (var task in Model.AssignedTasks)
+                            {
+                                var priorityBadge = task.Priority switch {
+                                    TrackerKerja.Models.TaskPriority.Critical => "bg-red-50 text-red-700 border border-red-200",
+                                    TrackerKerja.Models.TaskPriority.High => "bg-amber-50 text-amber-700 border border-amber-200",
+                                    TrackerKerja.Models.TaskPriority.Medium => "bg-blue-50 text-blue-700 border border-blue-200",
+                                    _ => "bg-emerald-50 text-emerald-700 border border-emerald-200"
+                                };
+                                var statusBadge = task.Status switch {
+                                    TrackerKerja.Models.TaskStatus.Done => "bg-emerald-50 text-emerald-700 border border-emerald-200",
+                                    TrackerKerja.Models.TaskStatus.InProgress => "bg-indigo-50 text-indigo-700 border border-indigo-200",
+                                    _ => "bg-slate-50 text-slate-700 border border-slate-200"
+                                };
+
+                                <tr class="hover:bg-indigo-50/20 transition-colors">
+                                    <td class="py-3 px-4">
+                                        <a href="/Task/Edit/@task.Id" class="font-bold text-slate-800 hover:text-indigo-600 text-sm block">
+                                            @task.Title
+                                        </a>
+                                        @if (task.Category != null)
+                                        {
+                                            <span class="text-[10px] text-slate-400"><i class="fas fa-tag mr-1 text-cyan-500"></i>@task.Category.Name</span>
+                                        }
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        @if (task.Project != null)
+                                        {
+                                            <span class="inline-flex items-center gap-1.5 text-xs font-bold px-2.5 py-0.5 rounded-lg bg-indigo-50 text-indigo-700">
+                                                <span class="w-1.5 h-1.5 rounded-full" style="background:@task.Project.Color"></span>
+                                                @task.Project.Name
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <span class="text-xs font-bold px-2 py-0.5 rounded-md @priorityBadge">@task.Priority</span>
+                                    </td>
+                                    <td class="py-3 px-3">
+                                        <span class="text-xs font-bold px-2 py-0.5 rounded-md @statusBadge">@task.Status</span>
+                                    </td>
+                                    <td class="py-3 px-3 text-xs text-slate-500">
+                                        @(task.StartDate.HasValue ? task.StartDate.Value.ToString("dd MMM yyyy") : "-")
+                                    </td>
+                                    <td class="py-3 px-3 text-xs text-slate-500">
+                                        @(task.DueDate.HasValue ? task.DueDate.Value.ToString("dd MMM yyyy") : "-")
+                                    </td>
+                                    <td class="py-3 px-3 text-center font-mono text-xs font-bold text-slate-700">
+                                        @task.TotalDurationFormatted
+                                    </td>
+                                    <td class="py-3 px-4 text-right">
+                                        <a href="/Task/Edit/@task.Id" class="text-xs font-bold text-indigo-600 hover:text-indigo-800 bg-indigo-50 px-2.5 py-1 rounded-lg">
+                                            Detail & Catatan
+                                        </a>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+
+        <!-- TAB 2: NOTES -->
+        <div id="tab-content-notes" class="hidden space-y-4">
+            @if (!Model.ContributedNotes.Any())
+            {
+                <div class="p-12 text-center text-slate-400">
+                    <i class="fas fa-sticky-note text-4xl mb-3 text-slate-200 block"></i>
+                    <p class="font-bold text-slate-700">Belum ada catatan yang ditulis oleh anggota ini</p>
+                </div>
+            }
+            else
+            {
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    @foreach (var note in Model.ContributedNotes)
+                    {
+                        <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm hover:shadow-md transition-all flex flex-col justify-between"
+                             style="border-top: 4px solid @note.Color;">
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded bg-slate-100 text-slate-600">@note.Category</span>
+                                    <span class="text-[10px] text-slate-400">@note.UpdatedAt.ToString("dd MMM yyyy")</span>
+                                </div>
+                                <h4 class="font-bold text-slate-800 text-sm mb-2 hover:text-indigo-600">
+                                    <a href="/Note/Details/@note.Id">@note.Title</a>
+                                </h4>
+                                <p class="text-xs text-slate-500 line-clamp-3 mb-3">@note.PlainTextPreview</p>
+                            </div>
+                            <div class="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
+                                @if (note.Task != null)
+                                {
+                                    <span class="text-indigo-600 font-semibold text-[11px] truncate max-w-[180px]" title="@note.Task.Title">
+                                        <i class="fas fa-link mr-1"></i>@note.Task.Title
+                                    </span>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-400 italic text-[11px]">Catatan Mandiri</span>
+                                }
+                                <a href="/Note/Details/@note.Id" class="text-indigo-600 font-bold hover:underline">Baca →</a>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- TAB 3: SESSIONS -->
+        <div id="tab-content-sessions" class="hidden space-y-4">
+            @if (!Model.WorkSessions.Any())
+            {
+                <div class="p-12 text-center text-slate-400">
+                    <i class="fas fa-history text-4xl mb-3 text-slate-200 block"></i>
+                    <p class="font-bold text-slate-700">Belum ada rekaman sesi waktu kerja</p>
+                </div>
+            }
+            else
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider font-bold">
+                                <th class="py-3 px-4">Tugas Terkait</th>
+                                <th class="py-3 px-3">Proyek</th>
+                                <th class="py-3 px-3">Waktu Mulai</th>
+                                <th class="py-3 px-3">Waktu Selesai</th>
+                                <th class="py-3 px-3 text-right">Durasi Kerja</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach (var s in Model.WorkSessions)
+                            {
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="py-3 px-4 font-bold text-slate-800 text-xs">
+                                        @(s.Task?.Title ?? "—")
+                                    </td>
+                                    <td class="py-3 px-3 text-xs text-slate-500">
+                                        @(s.Task?.Project?.Name ?? "—")
+                                    </td>
+                                    <td class="py-3 px-3 text-xs font-mono text-slate-600">
+                                        @s.StartTime.ToString("dd MMM yyyy HH:mm")
+                                    </td>
+                                    <td class="py-3 px-3 text-xs font-mono text-slate-600">
+                                        @(s.EndTime.HasValue ? s.EndTime.Value.ToString("dd MMM yyyy HH:mm") : "Sedang Berjalan...")
+                                    </td>
+                                    <td class="py-3 px-3 text-right font-mono font-bold text-indigo-600 text-xs">
+                                        @s.DurationFormatted
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tab) {
+        // Reset buttons
+        document.getElementById('tab-btn-tasks').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2";
+        document.getElementById('tab-btn-notes').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2";
+        document.getElementById('tab-btn-sessions').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2";
+
+        // Hide contents
+        document.getElementById('tab-content-tasks').classList.add('hidden');
+        document.getElementById('tab-content-notes').classList.add('hidden');
+        document.getElementById('tab-content-sessions').classList.add('hidden');
+
+        // Activate selected
+        document.getElementById('tab-btn-' + tab).className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm flex items-center gap-2";
+        document.getElementById('tab-content-' + tab).classList.remove('hidden');
+    }
+
+    function openAdminResetPasswordModal(userId, fullName) {
+        const modal = document.getElementById('adminResetPasswordModal');
+        const idInput = document.getElementById('modalResetUserId');
+        const nameLabel = document.getElementById('modalMemberNameLabel');
+        const pwdInput = document.getElementById('modalNewPassword');
+
+        if (idInput) idInput.value = userId;
+        if (nameLabel) nameLabel.textContent = `Anggota: ${fullName}`;
+        if (pwdInput) pwdInput.value = '';
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeAdminResetPasswordModal() {
+        const modal = document.getElementById('adminResetPasswordModal');
+        if (modal) modal.classList.add('hidden');
+    }
+
+    function togglePasswordVisibility(inputId, btn) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        const icon = btn.querySelector('i');
+        if (input.type === 'password') {
+            input.type = 'text';
+            if (icon) { icon.classList.remove('fa-eye'); icon.classList.add('fa-eye-slash'); }
+        } else {
+            input.type = 'password';
+            if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
+        }
+    }
+</script>
+
+@if (User.IsInRole("Admin"))
+{
+    <!-- MODAL ADMIN DIRECT RESET PASSWORD -->
+    <div id="adminResetPasswordModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden animate-fadeIn">
+        <div class="bg-white rounded-3xl shadow-2xl border border-indigo-100 max-w-md w-full overflow-hidden transform transition-all">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-amber-500 to-orange-600 p-5 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-lg shadow-inner">
+                        <i class="fas fa-key"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black">Ubah Password Member</h3>
+                        <p class="text-amber-100 text-xs mt-0.5" id="modalMemberNameLabel">Setel kata sandi baru</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAdminResetPasswordModal()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <form method="post" action="/Member/ResetPassword" id="adminResetPasswordForm" class="p-6 space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="id" id="modalResetUserId" value="@Model.User.Id" />
+                <input type="hidden" name="returnUrl" value="/Member/Details/@Model.User.Id" />
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Password Baru <span class="text-red-500">*</span>
+                    </label>
+                    <div class="relative">
+                        <input type="password" name="newPassword" id="modalNewPassword" required minlength="6" placeholder="Masukkan password baru..."
+                               class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-50">
+                        <button type="button" onclick="togglePasswordVisibility('modalNewPassword', this)" 
+                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+                            <i class="fas fa-eye"></i>
+                        </button>
+                    </div>
+                    <p class="text-[11px] text-slate-400 mt-1">Minimal 6 karakter. Password langsung aktif tanpa perlu konfirmasi email atau password lama.</p>
+                </div>
+
+                <!-- Footer -->
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                    <button type="button" onclick="closeAdminResetPasswordModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-all cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md hover:shadow-amber-200 transition-all cursor-pointer">
+                        <i class="fas fa-check"></i>
+                        <span>Simpan Password Baru</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}

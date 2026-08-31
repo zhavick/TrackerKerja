@@ -1,0 +1,524 @@
+@model List<TrackerKerja.Models.AuditLog>
+@{
+    ViewData["Title"] = "Audit Trail & Analisis Aktivitas";
+    int currentPage = ViewBag.CurrentPage ?? 1;
+    int totalPages = ViewBag.TotalPages ?? 1;
+    int totalItems = ViewBag.TotalItems ?? 0;
+    var chartData = ViewBag.ChartData as TrackerKerja.ViewModels.AuditTrailChartDto ?? new TrackerKerja.ViewModels.AuditTrailChartDto();
+}
+
+<div class="space-y-6 max-w-7xl mx-auto">
+
+    <!-- Header & Action Buttons -->
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-2xl bg-indigo-500 text-white flex items-center justify-center shadow-lg shadow-indigo-200">
+                <i class="fas fa-shield-alt text-lg"></i>
+            </div>
+            <div>
+                <h2 class="text-2xl font-black text-slate-800">Audit Trail & Analisis Aktivitas</h2>
+                <p class="text-slate-500 text-xs mt-0.5">Pemantauan dan perekaman seluruh interaksi controller, operasi CRUD, dan autentikasi</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+            <a href="/AuditTrail/ExportCsv"
+               class="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold px-4 py-2.5 rounded-xl border border-emerald-200 transition-all shadow-sm">
+                <i class="fas fa-file-csv text-emerald-600"></i>
+                <span>Export CSV</span>
+            </a>
+            <form method="post" action="/AuditTrail/ClearLogs" class="inline"
+                  data-confirm="PERINGATAN: Apakah Anda yakin ingin menghapus SEMUA riwayat catatan audit log? Tindakan ini bersifat permanen dan tidak dapat dibatalkan!"
+                  data-confirm-title="Bersihkan Audit Log"
+                  data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Bersihkan Log">
+                @Html.AntiForgeryToken()
+                <button type="submit"
+                        class="flex items-center gap-2 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold px-4 py-2.5 rounded-xl border border-red-200 transition-all shadow-sm cursor-pointer">
+                    <i class="fas fa-trash-alt"></i>
+                    <span>Bersihkan Log</span>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- 6 Operation Summary Cards -->
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3.5">
+        
+        <!-- 1. GET -->
+        <div class="bg-white rounded-2xl p-4 border border-sky-100 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold text-sky-600 uppercase tracking-wider">GET / View</span>
+                <div class="w-7 h-7 rounded-lg bg-sky-50 text-sky-500 flex items-center justify-center text-xs">
+                    <i class="fas fa-eye"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@chartData.TotalGet</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Akses Halaman & Data</p>
+        </div>
+
+        <!-- 2. CREATE -->
+        <div class="bg-white rounded-2xl p-4 border border-emerald-100 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold text-emerald-600 uppercase tracking-wider">Create</span>
+                <div class="w-7 h-7 rounded-lg bg-emerald-50 text-emerald-500 flex items-center justify-center text-xs">
+                    <i class="fas fa-plus-circle"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@chartData.TotalCreate</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Penambahan & Import</p>
+        </div>
+
+        <!-- 3. EDIT -->
+        <div class="bg-white rounded-2xl p-4 border border-amber-100 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold text-amber-600 uppercase tracking-wider">Edit / Timer</span>
+                <div class="w-7 h-7 rounded-lg bg-amber-50 text-amber-500 flex items-center justify-center text-xs">
+                    <i class="fas fa-edit"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@chartData.TotalEdit</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Update & Durasi Kerja</p>
+        </div>
+
+        <!-- 4. DELETE -->
+        <div class="bg-white rounded-2xl p-4 border border-rose-100 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold text-rose-600 uppercase tracking-wider">Delete</span>
+                <div class="w-7 h-7 rounded-lg bg-rose-50 text-rose-500 flex items-center justify-center text-xs">
+                    <i class="fas fa-trash"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@chartData.TotalDelete</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Penghapusan Data</p>
+        </div>
+
+        <!-- 5. LOGIN -->
+        <div class="bg-white rounded-2xl p-4 border border-purple-100 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold text-purple-600 uppercase tracking-wider">Login</span>
+                <div class="w-7 h-7 rounded-lg bg-purple-50 text-purple-500 flex items-center justify-center text-xs">
+                    <i class="fas fa-sign-in-alt"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@chartData.TotalLogin</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Autentikasi Masuk</p>
+        </div>
+
+        <!-- 6. LOGOUT -->
+        <div class="bg-white rounded-2xl p-4 border border-orange-100 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-[11px] font-bold text-orange-600 uppercase tracking-wider">Logout</span>
+                <div class="w-7 h-7 rounded-lg bg-orange-50 text-orange-500 flex items-center justify-center text-xs">
+                    <i class="fas fa-sign-out-alt"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800">@chartData.TotalLogout</p>
+            <p class="text-[10px] text-slate-400 mt-0.5">Keluar Sesi</p>
+        </div>
+    </div>
+
+    <!-- Multi-Series Line Chart Card -->
+    <div class="bg-white rounded-3xl p-6 border border-indigo-100 shadow-sm">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
+            <div>
+                <h3 class="font-black text-slate-800 text-base flex items-center gap-2">
+                    <i class="fas fa-chart-line text-indigo-500"></i>
+                    Tren Aktivitas Controller (7 Hari Terakhir)
+                </h3>
+                <p class="text-slate-400 text-xs mt-0.5">Grafik garis interaktif membandingkan aktivitas GET, Create, Edit, Delete, Login, dan Logout</p>
+            </div>
+
+            <!-- Interactive Legend Info -->
+            <div class="flex items-center gap-2 flex-wrap text-xs">
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-sky-50 text-sky-700 font-bold border border-sky-200">
+                    <span class="w-2 h-2 rounded-full bg-sky-500"></span> GET
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 font-bold border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500"></span> Create
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-amber-50 text-amber-700 font-bold border border-amber-200">
+                    <span class="w-2 h-2 rounded-full bg-amber-500"></span> Edit
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-rose-50 text-rose-700 font-bold border border-rose-200">
+                    <span class="w-2 h-2 rounded-full bg-rose-500"></span> Delete
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 font-bold border border-purple-200">
+                    <span class="w-2 h-2 rounded-full bg-purple-500"></span> Login
+                </span>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-orange-50 text-orange-700 font-bold border border-orange-200">
+                    <span class="w-2 h-2 rounded-full bg-orange-500"></span> Logout
+                </span>
+            </div>
+        </div>
+
+        <div class="h-72 w-full relative">
+            <canvas id="auditLineChart"></canvas>
+        </div>
+    </div>
+
+    <!-- Filters Bar -->
+    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-4">
+        <form method="get" action="/AuditTrail" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <!-- Search Query -->
+            <div class="relative lg:col-span-2">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-xs"></i>
+                <input type="text" name="search" value="@ViewBag.Search" placeholder="Cari path, email, controller, IP..."
+                       class="w-full pl-8 pr-3 py-2 rounded-xl border border-indigo-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white text-slate-800 transition-all">
+            </div>
+
+            <!-- Controller Filter -->
+            <div>
+                <select name="controllerFilter" class="select2 select2-compact w-full" data-placeholder="Semua Controller">
+                    <option value="">Semua Controller</option>
+                    @foreach (var c in (List<string>)ViewBag.AvailableControllers)
+                    {
+                        if (ViewBag.ControllerFilter == c)
+                        {
+                            <option value="@c" selected>@c</option>
+                        }
+                        else
+                        {
+                            <option value="@c">@c</option>
+                        }
+                    }
+                </select>
+            </div>
+
+            <!-- Method Filter -->
+            <div>
+                <select name="methodFilter" class="select2 select2-compact w-full" data-placeholder="Semua Method">
+                    <option value="">Semua Method</option>
+                    @if (ViewBag.MethodFilter == "GET") { <option value="GET" selected>GET</option> } else { <option value="GET">GET</option> }
+                    @if (ViewBag.MethodFilter == "POST") { <option value="POST" selected>POST</option> } else { <option value="POST">POST</option> }
+                    @if (ViewBag.MethodFilter == "PUT") { <option value="PUT" selected>PUT</option> } else { <option value="PUT">PUT</option> }
+                    @if (ViewBag.MethodFilter == "DELETE") { <option value="DELETE" selected>DELETE</option> } else { <option value="DELETE">DELETE</option> }
+                </select>
+            </div>
+
+            <!-- Submit & Reset -->
+            <div class="flex gap-2">
+                <button type="submit" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 rounded-xl text-xs transition-all shadow-sm">
+                    <i class="fas fa-filter mr-1"></i>Filter
+                </button>
+                <a href="/AuditTrail" class="px-3 py-2 rounded-xl border border-slate-200 text-slate-500 hover:text-indigo-600 hover:border-indigo-300 text-xs flex items-center justify-center font-semibold transition-colors">
+                    <i class="fas fa-undo"></i>
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- Table Card -->
+    <div class="bg-white rounded-3xl shadow-sm border border-indigo-100 overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+            <h3 class="font-black text-slate-800 text-sm flex items-center gap-2">
+                <i class="fas fa-list-alt text-indigo-500"></i>
+                Daftar Aktivitas Terinci (@totalItems rekaman)
+            </h3>
+            <span class="text-xs text-slate-400">Halaman @currentPage dari @totalPages</span>
+        </div>
+
+        @if (!Model.Any())
+        {
+            <div class="p-16 text-center text-slate-400">
+                <i class="fas fa-clipboard-check text-4xl mb-3 text-slate-200 block"></i>
+                <p class="font-bold text-slate-700">Belum ada riwayat audit log</p>
+                <p class="text-xs text-slate-400 mt-1">Interaksi controller akan otomatis tercatat di sini</p>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-left text-sm whitespace-nowrap">
+                    <thead>
+                        <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase tracking-wider font-bold">
+                            <th class="py-3 px-4">Waktu</th>
+                            <th class="py-3 px-4">Pengguna</th>
+                            <th class="py-3 px-3 text-center">Method</th>
+                            <th class="py-3 px-4">Controller / Action</th>
+                            <th class="py-3 px-4">Path</th>
+                            <th class="py-3 px-3 text-center">Status</th>
+                            <th class="py-3 px-4 text-right">Durasi</th>
+                            <th class="py-3 px-4">IP Address</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100">
+                        @foreach (var log in Model)
+                        {
+                            var methodBadge = log.HttpMethod switch
+                            {
+                                "POST" => "bg-amber-50 text-amber-700 border-amber-200",
+                                "GET" => "bg-sky-50 text-sky-700 border-sky-200",
+                                "PUT" => "bg-purple-50 text-purple-700 border-purple-200",
+                                "DELETE" => "bg-rose-50 text-rose-700 border-rose-200",
+                                _ => "bg-slate-50 text-slate-700 border-slate-200"
+                            };
+
+                            var statusBadge = log.StatusCode switch
+                            {
+                                >= 200 and < 300 => "bg-emerald-50 text-emerald-700 border-emerald-200",
+                                >= 300 and < 400 => "bg-cyan-50 text-cyan-700 border-cyan-200",
+                                >= 400 and < 500 => "bg-amber-50 text-amber-700 border-amber-200",
+                                _ => "bg-rose-50 text-rose-700 border-rose-200"
+                            };
+
+                            <tr class="hover:bg-indigo-50/30 transition-colors">
+                                <!-- Timestamp -->
+                                <td class="py-3 px-4 whitespace-nowrap">
+                                    <p class="text-xs font-bold text-slate-800">@log.Timestamp.ToString("dd MMM yyyy")</p>
+                                    <p class="text-[10px] text-slate-400 font-mono">@log.Timestamp.ToString("HH:mm:ss")</p>
+                                </td>
+
+                                <!-- User -->
+                                <td class="py-3 px-4">
+                                    @if (!string.IsNullOrEmpty(log.UserEmail))
+                                    {
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-6 h-6 rounded-lg bg-indigo-100 text-indigo-700 flex items-center justify-center text-[10px] font-black">
+                                                @(log.UserName?.Length > 0 ? log.UserName.Substring(0, 1).ToUpper() : "U")
+                                            </div>
+                                            <div>
+                                                <p class="text-xs font-bold text-slate-800">@(log.UserName ?? "Pengguna")</p>
+                                                <p class="text-[10px] text-slate-400">@log.UserEmail</p>
+                                            </div>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-400 italic">Guest / Anonim</span>
+                                    }
+                                </td>
+
+                                <!-- Method -->
+                                <td class="py-3 px-3 text-center">
+                                    <span class="inline-block px-2 py-0.5 rounded-lg text-[10px] font-bold border @methodBadge font-mono">
+                                        @log.HttpMethod
+                                    </span>
+                                </td>
+
+                                <!-- Controller / Action -->
+                                <td class="py-3 px-4">
+                                    <p class="text-xs font-bold text-slate-800">@log.ControllerName</p>
+                                    <p class="text-[10px] text-indigo-500 font-mono">@log.ActionName</p>
+                                </td>
+
+                                <!-- Path -->
+                                <td class="py-3 px-4 text-xs font-mono text-slate-600 max-w-[200px] truncate" title="@log.Path">
+                                    @log.Path
+                                </td>
+
+                                <!-- Status -->
+                                <td class="py-3 px-3 text-center">
+                                    <span class="inline-block px-2 py-0.5 rounded-lg text-[10px] font-bold border @statusBadge font-mono">
+                                        @log.StatusCode
+                                    </span>
+                                </td>
+
+                                <!-- Duration -->
+                                <td class="py-3 px-4 text-right font-mono text-xs text-slate-600 whitespace-nowrap">
+                                    @(log.DurationMs) ms
+                                </td>
+
+                                <!-- IP Address -->
+                                <td class="py-3 px-4 text-xs text-slate-400 font-mono whitespace-nowrap">
+                                    @(string.IsNullOrEmpty(log.IpAddress) ? "::1" : log.IpAddress)
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+
+            <!-- Pagination -->
+            @if (totalPages > 1)
+            {
+                <div class="p-4 border-t border-slate-100 flex items-center justify-between flex-wrap gap-3">
+                    <p class="text-xs text-slate-500">
+                        Menampilkan rekaman @((currentPage - 1) * ViewBag.PageSize + 1) - @Math.Min(currentPage * ViewBag.PageSize, totalItems) dari @totalItems
+                    </p>
+                    <div class="flex gap-1">
+                        @if (currentPage > 1)
+                        {
+                            <a href="/AuditTrail?page=@(currentPage - 1)&search=@ViewBag.Search&controllerFilter=@ViewBag.ControllerFilter&methodFilter=@ViewBag.MethodFilter"
+                               class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-indigo-50 transition-colors">
+                                <i class="fas fa-chevron-left"></i> Prev
+                            </a>
+                        }
+                        @for (int p = Math.Max(1, currentPage - 2); p <= Math.Min(totalPages, currentPage + 2); p++)
+                        {
+                            if (p == currentPage)
+                            {
+                                <span class="px-3 py-1.5 rounded-lg bg-indigo-600 text-white text-xs font-bold">@p</span>
+                            }
+                            else
+                            {
+                                <a href="/AuditTrail?page=@p&search=@ViewBag.Search&controllerFilter=@ViewBag.ControllerFilter&methodFilter=@ViewBag.MethodFilter"
+                                   class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-indigo-50 transition-colors">@p</a>
+                            }
+                        }
+                        @if (currentPage < totalPages)
+                        {
+                            <a href="/AuditTrail?page=@(currentPage + 1)&search=@ViewBag.Search&controllerFilter=@ViewBag.ControllerFilter&methodFilter=@ViewBag.MethodFilter"
+                               class="px-3 py-1.5 rounded-lg border border-slate-200 text-xs font-semibold text-slate-600 hover:bg-indigo-50 transition-colors">
+                                Next <i class="fas fa-chevron-right"></i>
+                            </a>
+                        }
+                    </div>
+                </div>
+            }
+        }
+    </div>
+</div>
+
+<!-- Chart.js Initialization Script -->
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const ctx = document.getElementById('auditLineChart');
+        if (!ctx) return;
+
+        const labels = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(chartData.Labels));
+        const getCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(chartData.GetCounts));
+        const createCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(chartData.CreateCounts));
+        const editCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(chartData.EditCounts));
+        const deleteCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(chartData.DeleteCounts));
+        const loginCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(chartData.LoginCounts));
+        const logoutCounts = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(chartData.LogoutCounts));
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [
+                    {
+                        label: 'GET / View',
+                        data: getCounts,
+                        borderColor: '#0284C7', // Sky Blue
+                        backgroundColor: 'rgba(2, 132, 199, 0.08)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#0284C7',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2.5
+                    },
+                    {
+                        label: 'Create / Add',
+                        data: createCounts,
+                        borderColor: '#10B981', // Emerald
+                        backgroundColor: 'rgba(16, 185, 129, 0.08)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#10B981',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2.5
+                    },
+                    {
+                        label: 'Edit / Update',
+                        data: editCounts,
+                        borderColor: '#F59E0B', // Amber
+                        backgroundColor: 'rgba(245, 158, 11, 0.08)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#F59E0B',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2.5
+                    },
+                    {
+                        label: 'Delete',
+                        data: deleteCounts,
+                        borderColor: '#EF4444', // Rose Red
+                        backgroundColor: 'rgba(239, 68, 68, 0.08)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#EF4444',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2.5
+                    },
+                    {
+                        label: 'Login',
+                        data: loginCounts,
+                        borderColor: '#8B5CF6', // Purple
+                        backgroundColor: 'rgba(139, 92, 246, 0.08)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#8B5CF6',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2.5
+                    },
+                    {
+                        label: 'Logout',
+                        data: logoutCounts,
+                        borderColor: '#F97316', // Orange
+                        backgroundColor: 'rgba(249, 115, 22, 0.08)',
+                        fill: true,
+                        tension: 0.35,
+                        pointBackgroundColor: '#F97316',
+                        pointBorderColor: '#ffffff',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        borderWidth: 2.5
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        display: false // Using custom top legend
+                    },
+                    tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                        titleFont: { size: 12, family: 'Inter', weight: 'bold' },
+                        bodyFont: { size: 11, family: 'Inter' },
+                        padding: 12,
+                        cornerRadius: 12,
+                        boxPadding: 6,
+                        usePointStyle: true
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: {
+                            display: false
+                        },
+                        ticks: {
+                            font: { size: 11, family: 'Inter', weight: '500' },
+                            color: '#64748B'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: '#F1F5F9',
+                            drawBorder: false
+                        },
+                        ticks: {
+                            stepSize: 1,
+                            font: { size: 11, family: 'Inter' },
+                            color: '#94A3B8'
+                        }
+                    }
+                }
+            }
+        });
+    });
+</script>

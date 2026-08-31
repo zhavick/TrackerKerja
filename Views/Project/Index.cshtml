@@ -1,0 +1,119 @@
+@model List<TrackerKerja.Models.Project>
+@{
+    ViewData["Title"] = "Proyek";
+}
+
+<div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-6">
+    <div>
+        <h2 class="text-2xl font-extrabold text-slate-800">Daftar Proyek</h2>
+        <p class="text-slate-500 text-xs sm:text-sm mt-0.5">@Model.Count proyek ditemukan</p>
+    </div>
+    @if (User.IsInRole("Admin"))
+    {
+        <a href="/Project/Create" class="flex items-center gap-2 bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs sm:text-sm font-semibold px-4 py-2.5 rounded-xl hover:shadow-lg transition-all">
+            <i class="fas fa-plus"></i><span>Proyek Baru</span>
+        </a>
+    }
+</div>
+
+@if (!Model.Any())
+{
+    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-16 text-center">
+        <div class="w-20 h-20 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-5">
+            <i class="fas fa-folder-open text-indigo-300 text-3xl"></i>
+        </div>
+        <h3 class="text-slate-700 font-bold text-lg mb-2">Belum ada proyek</h3>
+        @if (User.IsInRole("Admin"))
+        {
+            <a href="/Project/Create" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white px-6 py-2.5 rounded-xl font-semibold inline-block hover:shadow-lg transition-all">
+                <i class="fas fa-plus mr-2"></i>Buat Proyek Pertama
+            </a>
+        }
+        else
+        {
+            <p class="text-slate-400 text-sm">Hubungi Administrator untuk menambahkan proyek baru.</p>
+        }
+    </div>
+}
+else
+{
+    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
+        @foreach (var proj in Model)
+        {
+            var statusColor = proj.Status == TrackerKerja.Models.ProjectStatus.Active ? "bg-emerald-100 text-emerald-700"
+                            : proj.Status == TrackerKerja.Models.ProjectStatus.Completed ? "bg-blue-100 text-blue-700"
+                            : "bg-slate-100 text-slate-600";
+
+            <div class="card-hover bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                <!-- Project Color Bar -->
+                <div class="h-2 w-full" style="background: @proj.Color"></div>
+
+                <div class="p-5">
+                    <div class="flex items-start justify-between gap-2 mb-3">
+                        <div class="flex items-center gap-2">
+                            <div class="w-9 h-9 rounded-xl flex items-center justify-center shadow-sm" style="background: @proj.Color + '22'">
+                                <i class="fas fa-folder" style="color: @proj.Color"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-slate-800 text-base">@proj.Name</h3>
+                                <span class="text-xs px-2 py-0.5 rounded-full font-medium @statusColor">@proj.Status</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    @if (!string.IsNullOrEmpty(proj.Description))
+                    {
+                        <p class="text-slate-500 text-sm mb-4 line-clamp-2">@proj.Description</p>
+                    }
+
+                    <!-- Progress -->
+                    <div class="mb-4">
+                        <div class="flex justify-between text-xs text-slate-500 mb-1.5">
+                            <span>Progress</span>
+                            <span class="font-semibold">@proj.CompletedTasks/@proj.TotalTasks tugas</span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2">
+                            <div class="h-2 rounded-full transition-all duration-700"
+                                 style="width: @proj.ProgressPercent%; background: @proj.Color"></div>
+                        </div>
+                        <p class="text-xs text-slate-400 mt-1 text-right">@proj.ProgressPercent% selesai</p>
+                    </div>
+
+                    @if (proj.Deadline.HasValue)
+                    {
+                        var isDeadlinePast = proj.Deadline < DateTime.Now && proj.Status != TrackerKerja.Models.ProjectStatus.Completed;
+                        <p class="text-xs @(isDeadlinePast ? "text-red-500 font-semibold" : "text-slate-400") mb-4">
+                            <i class="fas fa-calendar mr-1"></i>
+                            Deadline: @proj.Deadline.Value.ToString("dd MMMM yyyy")
+                            @if (isDeadlinePast) { <span>⚠️</span> }
+                        </p>
+                    }
+
+                    <!-- Actions -->
+                    <div class="flex gap-2">
+                        <a href="/Project/Detail/@proj.Id"
+                           class="flex-1 text-center bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-semibold py-2 rounded-lg transition-colors">
+                            <i class="fas fa-eye mr-1"></i>Detail
+                        </a>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <a href="/Project/Edit/@proj.Id"
+                               class="flex-1 text-center bg-slate-50 hover:bg-slate-100 text-slate-600 text-xs font-semibold py-2 rounded-lg transition-colors">
+                                <i class="fas fa-edit mr-1"></i>Edit
+                            </a>
+                            <form method="post" action="/Project/Delete/@proj.Id"
+                                  data-confirm="Apakah Anda yakin ingin menghapus proyek '@proj.Name'? Seluruh tugas, riwayat, dan sesi kerja terkait proyek ini akan ikut terhapus secara permanen!"
+                                  data-confirm-title="Hapus Proyek"
+                                  data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Hapus Proyek">
+                                @Html.AntiForgeryToken()
+                                <button type="submit" class="bg-red-50 hover:bg-red-100 text-red-600 text-xs font-semibold py-2 px-3 rounded-lg transition-colors cursor-pointer" title="Hapus Proyek">
+                                    <i class="fas fa-trash"></i>
+                                </button>
+                            </form>
+                        }
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}

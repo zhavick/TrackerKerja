@@ -1,0 +1,841 @@
+@model TrackerKerja.ViewModels.MasterDataViewModel
+@{
+    ViewData["Title"] = "Pengaturan Master Data";
+    var activeTab = Model.ActiveTab;
+}
+
+<div class="space-y-6">
+
+    <!-- Header Card -->
+    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-xl relative overflow-hidden">
+        <div class="absolute -right-10 -bottom-10 w-48 h-48 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div>
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-indigo-300 text-xs font-semibold backdrop-blur-md mb-3">
+                    <i class="fas fa-sliders-h"></i> Sistem Konfigurasi
+                </div>
+                <h1 class="text-2xl md:text-3xl font-extrabold text-white tracking-tight">Pengaturan Master Data</h1>
+                <p class="text-slate-300 text-sm mt-1">Kelola data master kategori tugas, tingkatan prioritas, dan alur status kerja dalam satu tempat.</p>
+            </div>
+            
+            <!-- Tab Quick Navigation -->
+            <div class="flex items-center bg-white/10 p-1.5 rounded-2xl backdrop-blur-md border border-white/10 flex-wrap gap-1 w-full md:w-auto">
+                <a href="/MasterData?tab=categories" class="flex-1 md:flex-none justify-center px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 sm:gap-2 @(activeTab == "categories" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
+                    <i class="fas fa-tags"></i> <span>Kategori (@Model.Categories.Count)</span>
+                </a>
+                <a href="/MasterData?tab=priorities" class="flex-1 md:flex-none justify-center px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 sm:gap-2 @(activeTab == "priorities" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
+                    <i class="fas fa-flag"></i> <span>Prioritas (@Model.Priorities.Count)</span>
+                </a>
+                <a href="/MasterData?tab=statuses" class="flex-1 md:flex-none justify-center px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 sm:gap-2 @(activeTab == "statuses" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
+                    <i class="fas fa-tasks"></i> <span>Status (@Model.Statuses.Count)</span>
+                </a>
+                <a href="/MasterData?tab=milestones" class="flex-1 md:flex-none justify-center px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 sm:gap-2 @(activeTab == "milestones" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
+                    <i class="fas fa-layer-group"></i> <span>Milestone SDLC (@Model.Milestones.Count)</span>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notifications -->
+    @if (TempData["Success"] != null)
+    {
+        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 shadow-sm animate-fade-in">
+            <i class="fas fa-check-circle text-emerald-500 text-lg"></i>
+            <p class="text-emerald-800 text-sm font-semibold">@TempData["Success"]</p>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 shadow-sm animate-fade-in">
+            <i class="fas fa-exclamation-circle text-rose-500 text-lg"></i>
+            <p class="text-rose-800 text-sm font-semibold">@TempData["Error"]</p>
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 1: MASTER KATEGORI                                  -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    @if (activeTab == "categories")
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: Add Category Form -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm h-fit">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                        <i class="fas fa-plus"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Tambah Kategori Baru</h3>
+                        <p class="text-xs text-slate-400">Buat klasifikasi bidang/kategori tugas</p>
+                    </div>
+                </div>
+
+                <form method="post" action="/MasterData/CreateCategory" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Kategori <span class="text-rose-500">*</span></label>
+                        <input type="text" name="Name" required placeholder="Contoh: Mobile App, Security, dll"
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Warna Aksen</label>
+                        <div class="flex items-center gap-3">
+                            <input type="color" name="Color" value="#6366F1" id="catColorPicker"
+                                   class="w-10 h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5">
+                            <span class="text-xs text-slate-500 font-mono" id="catColorHex">#6366F1</span>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi</label>
+                        <textarea name="Description" rows="2" placeholder="Keterangan kategori (opsional)..."
+                                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none"></textarea>
+                    </div>
+
+                    <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm shadow-md shadow-indigo-600/30 transition-all">
+                        <i class="fas fa-save mr-1.5"></i> Simpan Kategori
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right: Categories List Table -->
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Daftar Kategori Tersedia</h3>
+                        <p class="text-xs text-slate-400">Total @Model.Categories.Count kategori terdaftar</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-semibold text-xs uppercase tracking-wider border-b border-slate-100">
+                            <tr>
+                                <th class="py-3 px-4">Kategori</th>
+                                <th class="py-3 px-4">Warna</th>
+                                <th class="py-3 px-4">Deskripsi</th>
+                                <th class="py-3 px-4 text-center">Tugas Terkait</th>
+                                <th class="py-3 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            @foreach (var cat in Model.Categories)
+                            {
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3.5 px-4 font-bold text-slate-800 flex items-center gap-2.5">
+                                        <span class="w-3 h-3 rounded-full flex-shrink-0" style="background: @cat.Color"></span>
+                                        @cat.Name
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="px-2.5 py-1 rounded-lg text-xs font-bold text-white shadow-xs" style="background: @cat.Color">
+                                            @cat.Color
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-xs text-slate-500 max-w-xs truncate">
+                                        @(string.IsNullOrEmpty(cat.Description) ? "-" : cat.Description)
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+                                            @cat.Tasks.Count Tugas
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right">
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            <!-- Edit Trigger Button -->
+                                            <button type="button" onclick="openEditCatModal(@cat.Id, '@cat.Name', '@cat.Color', '@(cat.Description?.Replace("'", "\\'"))')"
+                                                    class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors" title="Edit Kategori">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+
+                                            <!-- Delete Form -->
+                                            <form method="post" action="/MasterData/DeleteCategory"
+                                                  data-confirm="Apakah Anda yakin ingin menghapus kategori '@cat.Name'?"
+                                                  data-confirm-title="Hapus Kategori"
+                                                  data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Hapus" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@cat.Id" />
+                                                <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer" title="Hapus Kategori">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 2: MASTER PRIORITAS                                 -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    @if (activeTab == "priorities")
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: Add Priority Form -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm h-fit">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-9 h-9 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
+                        <i class="fas fa-flag"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Tambah Prioritas Baru</h3>
+                        <p class="text-xs text-slate-400">Atur tingkat urgensi tugas</p>
+                    </div>
+                </div>
+
+                <form method="post" action="/MasterData/CreatePriority" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Prioritas <span class="text-rose-500">*</span></label>
+                        <input type="text" name="Name" required placeholder="Contoh: Urgent, Low, Normal"
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Warna</label>
+                            <input type="color" name="Color" value="#F59E0B"
+                                   class="w-full h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Urutan (Index)</label>
+                            <input type="number" name="OrderIndex" value="@(Model.Priorities.Count + 1)"
+                                   class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi</label>
+                        <textarea name="Description" rows="2" placeholder="Penjelasan tingkat urgensi..."
+                                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all resize-none"></textarea>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" name="IsDefault" value="true" id="priIsDefault" class="rounded text-amber-600 focus:ring-amber-500 w-4 h-4">
+                        <label for="priIsDefault" class="text-xs font-semibold text-slate-700 cursor-pointer">Jadikan Prioritas Bawaan (Default)</label>
+                    </div>
+
+                    <button type="submit" class="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white rounded-xl font-bold text-sm shadow-md shadow-amber-500/30 transition-all">
+                        <i class="fas fa-save mr-1.5"></i> Simpan Prioritas
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right: Priorities List Table -->
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Tingkatan Prioritas Sistem</h3>
+                        <p class="text-xs text-slate-400">Urutan menentukan level eskalasi tugas</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-semibold text-xs uppercase tracking-wider border-b border-slate-100">
+                            <tr>
+                                <th class="py-3 px-4">Urutan</th>
+                                <th class="py-3 px-4">Nama Prioritas</th>
+                                <th class="py-3 px-4">Badge Preview</th>
+                                <th class="py-3 px-4">Deskripsi</th>
+                                <th class="py-3 px-4 text-center">Default</th>
+                                <th class="py-3 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            @foreach (var pri in Model.Priorities)
+                            {
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3.5 px-4 font-mono text-xs font-bold text-slate-500">
+                                        #@pri.OrderIndex
+                                    </td>
+                                    <td class="py-3.5 px-4 font-bold text-slate-800 flex items-center gap-2">
+                                        <i class="fas @(string.IsNullOrEmpty(pri.Icon) ? "fa-flag" : pri.Icon)" style="color: @pri.Color"></i>
+                                        @pri.Name
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="px-2.5 py-1 rounded-xl text-xs font-bold text-white inline-flex items-center gap-1 shadow-xs" style="background: @pri.Color">
+                                            <i class="fas @(string.IsNullOrEmpty(pri.Icon) ? "fa-flag" : pri.Icon) text-[10px]"></i> @pri.Name
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-xs text-slate-500 max-w-xs truncate">
+                                        @(string.IsNullOrEmpty(pri.Description) ? "-" : pri.Description)
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        @if (pri.IsDefault)
+                                        {
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800">
+                                                Default
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-slate-300">-</span>
+                                        }
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right">
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            <button type="button" onclick="openEditPriorityModal(@pri.Id, '@pri.Name', '@pri.Color', '@pri.Icon', @pri.OrderIndex, @(pri.IsDefault ? "true" : "false"), '@(pri.Description?.Replace("'", "\\'"))')"
+                                                    class="p-1.5 rounded-lg text-slate-400 hover:text-amber-600 hover:bg-amber-50 transition-colors" title="Edit Prioritas">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+
+                                            <form method="post" action="/MasterData/DeletePriority"
+                                                  data-confirm="Apakah Anda yakin ingin menghapus prioritas '@pri.Name'?"
+                                                  data-confirm-title="Hapus Prioritas"
+                                                  data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Hapus" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@pri.Id" />
+                                                <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer" title="Hapus Prioritas">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 3: MASTER STATUS                                    -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    @if (activeTab == "statuses")
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: Add Status Form -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm h-fit">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center font-bold">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Tambah Status Baru</h3>
+                        <p class="text-xs text-slate-400">Atur alur tahapan pengerjaan tugas</p>
+                    </div>
+                </div>
+
+                <form method="post" action="/MasterData/CreateStatus" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Status <span class="text-rose-500">*</span></label>
+                        <input type="text" name="Name" required placeholder="Contoh: Testing, Deployment, In Review"
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Warna</label>
+                            <input type="color" name="Color" value="#06B6D4"
+                                   class="w-full h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Urutan Alur</label>
+                            <input type="number" name="OrderIndex" value="@(Model.Statuses.Count + 1)"
+                                   class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi</label>
+                        <textarea name="Description" rows="2" placeholder="Penjelasan status alur..."
+                                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500 transition-all resize-none"></textarea>
+                    </div>
+
+                    <div class="space-y-2">
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" name="IsDoneState" value="true" id="statIsDone" class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                            <label for="statIsDone" class="text-xs font-semibold text-slate-700 cursor-pointer">Menandai Tugas Telah Selesai (Done State)</label>
+                        </div>
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" name="IsDefault" value="true" id="statIsDefault" class="rounded text-cyan-600 focus:ring-cyan-500 w-4 h-4">
+                            <label for="statIsDefault" class="text-xs font-semibold text-slate-700 cursor-pointer">Jadikan Status Bawaan Awal (Default)</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="w-full py-2.5 bg-cyan-600 hover:bg-cyan-700 text-white rounded-xl font-bold text-sm shadow-md shadow-cyan-600/30 transition-all">
+                        <i class="fas fa-save mr-1.5"></i> Simpan Status
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right: Statuses List Table -->
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Alur Status Pengerjaan</h3>
+                        <p class="text-xs text-slate-400">Alur siklus hidup penyelesaian tugas</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-slate-50 text-slate-500 font-semibold text-xs uppercase tracking-wider border-b border-slate-100">
+                            <tr>
+                                <th class="py-3 px-4">Urutan</th>
+                                <th class="py-3 px-4">Nama Status</th>
+                                <th class="py-3 px-4">Badge Preview</th>
+                                <th class="py-3 px-4">Tipe Status</th>
+                                <th class="py-3 px-4 text-center">Default</th>
+                                <th class="py-3 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            @foreach (var stat in Model.Statuses)
+                            {
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3.5 px-4 font-mono text-xs font-bold text-slate-500">
+                                        #@stat.OrderIndex
+                                    </td>
+                                    <td class="py-3.5 px-4 font-bold text-slate-800 flex items-center gap-2">
+                                        <span class="w-2.5 h-2.5 rounded-full" style="background: @stat.Color"></span>
+                                        @stat.Name
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="px-2.5 py-1 rounded-xl text-xs font-bold text-white inline-flex items-center gap-1 shadow-xs" style="background: @stat.Color">
+                                            @stat.Name
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        @if (stat.IsDoneState)
+                                        {
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800">
+                                                <i class="fas fa-check-circle text-[10px]"></i> Selesai (Done)
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-slate-100 text-slate-700">
+                                                <i class="fas fa-spinner text-[10px] text-slate-400"></i> Berjalan / Aktif
+                                            </span>
+                                        }
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        @if (stat.IsDefault)
+                                        {
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-cyan-100 text-cyan-800">
+                                                Default
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-slate-300">-</span>
+                                        }
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right">
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            <button type="button" onclick="openEditStatusModal(@stat.Id, '@stat.Name', '@stat.Color', @stat.OrderIndex, @(stat.IsDoneState ? "true" : "false"), @(stat.IsDefault ? "true" : "false"), '@(stat.Description?.Replace("'", "\\'"))')"
+                                                    class="p-1.5 rounded-lg text-slate-400 hover:text-cyan-600 hover:bg-cyan-50 transition-colors" title="Edit Status">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+
+                                            <form method="post" action="/MasterData/DeleteStatus"
+                                                  data-confirm="Apakah Anda yakin ingin menghapus status '@stat.Name'?"
+                                                  data-confirm-title="Hapus Status"
+                                                  data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Hapus" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@stat.Id" />
+                                                <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer" title="Hapus Status">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 4: MASTER MILESTONE (SDLC WATERFALL)                -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    @if (activeTab == "milestones")
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: Add Milestone Form -->
+            <div class="bg-white rounded-2xl p-6 border border-slate-200/80 shadow-sm h-fit">
+                <div class="flex items-center gap-3 mb-5">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Tambah Milestone SDLC</h3>
+                        <p class="text-xs text-slate-400">Tahapan fase siklus pengembangan Waterfall</p>
+                    </div>
+                </div>
+
+                <form method="post" action="/MasterData/CreateMilestone" class="space-y-4">
+                    @Html.AntiForgeryToken()
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Milestone <span class="text-red-500">*</span></label>
+                        <input type="text" name="Name" required placeholder="Contoh: Requirement Analysis"
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Warna</label>
+                            <input type="color" name="Color" value="#6366F1"
+                                   class="w-full h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5 bg-slate-50">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Urutan (Index)</label>
+                            <input type="number" name="OrderIndex" value="@(Model.Milestones.Count + 1)"
+                                   class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Icon FontAwesome</label>
+                        <input type="text" name="Icon" value="fa-flag" placeholder="fa-code, fa-vial, fa-rocket..."
+                               class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi</label>
+                        <textarea name="Description" rows="2" placeholder="Penjelasan ruang lingkup fase milestone ini..."
+                                  class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+                    </div>
+
+                    <div class="flex items-center gap-2">
+                        <input type="checkbox" name="IsDefault" value="true" id="addMilestoneIsDefault" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                        <label for="addMilestoneIsDefault" class="text-xs font-semibold text-slate-700 cursor-pointer">Jadikan Milestone Default saat Buat Task</label>
+                    </div>
+
+                    <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-sm rounded-xl shadow-md shadow-indigo-200 transition-all flex items-center justify-center gap-2">
+                        <i class="fas fa-plus"></i> Simpan Milestone
+                    </button>
+                </form>
+            </div>
+
+            <!-- Right: Milestones Table List -->
+            <div class="lg:col-span-2 bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden flex flex-col">
+                <div class="p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Daftar Fase Milestone SDLC Waterfall</h3>
+                        <p class="text-xs text-slate-400 mt-0.5">Total @Model.Milestones.Count tahapan terdaftar</p>
+                    </div>
+                </div>
+
+                <div class="overflow-x-auto flex-1">
+                    <table class="w-full text-left text-sm whitespace-nowrap">
+                        <thead>
+                            <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs uppercase font-bold tracking-wider">
+                                <th class="py-3 px-4 w-12">Urutan</th>
+                                <th class="py-3 px-4">Nama Fase Milestone</th>
+                                <th class="py-3 px-4">Badge Preview</th>
+                                <th class="py-3 px-4">Deskripsi</th>
+                                <th class="py-3 px-4 text-center">Default</th>
+                                <th class="py-3 px-4 text-right">Aksi</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100 text-slate-700">
+                            @foreach (var m in Model.Milestones)
+                            {
+                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                    <td class="py-3.5 px-4 font-mono text-xs font-bold text-slate-500">
+                                        #@m.OrderIndex
+                                    </td>
+                                    <td class="py-3.5 px-4 font-bold text-slate-800 flex items-center gap-2">
+                                        <div class="w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-bold shadow-2xs" style="background: @m.Color">
+                                            <i class="fas @(string.IsNullOrEmpty(m.Icon) ? "fa-flag" : m.Icon)"></i>
+                                        </div>
+                                        <span>@m.Name</span>
+                                    </td>
+                                    <td class="py-3.5 px-4">
+                                        <span class="px-2.5 py-1 rounded-xl text-xs font-bold text-white inline-flex items-center gap-1.5 shadow-2xs" style="background: @m.Color">
+                                            <i class="fas @(string.IsNullOrEmpty(m.Icon) ? "fa-flag" : m.Icon) text-[10px]"></i>
+                                            @m.Name
+                                        </span>
+                                    </td>
+                                    <td class="py-3.5 px-4 text-xs text-slate-500 truncate max-w-[200px]" title="@m.Description">
+                                        @(string.IsNullOrEmpty(m.Description) ? "-" : m.Description)
+                                    </td>
+                                    <td class="py-3.5 px-4 text-center">
+                                        @if (m.IsDefault)
+                                        {
+                                            <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-indigo-100 text-indigo-800">
+                                                Default
+                                            </span>
+                                        }
+                                        else
+                                        {
+                                            <span class="text-slate-300">-</span>
+                                        }
+                                    </td>
+                                    <td class="py-3.5 px-4 text-right">
+                                        <div class="flex items-center justify-end gap-1.5">
+                                            <button type="button" onclick="openEditMilestoneModal(@m.Id, '@m.Name', '@m.Color', '@m.Icon', @m.OrderIndex, @(m.IsDefault ? "true" : "false"), '@(m.Description?.Replace("'", "\\'"))')"
+                                                    class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 transition-colors" title="Edit Milestone">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+
+                                            <form method="post" action="/MasterData/DeleteMilestone"
+                                                  data-confirm="Apakah Anda yakin ingin menghapus milestone '@m.Name'?"
+                                                  data-confirm-title="Hapus Milestone"
+                                                  data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Hapus" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@m.Id" />
+                                                <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition-colors cursor-pointer" title="Hapus Milestone">
+                                                    <i class="fas fa-trash-alt"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODAL: EDIT CATEGORY                                       -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="editCategoryModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-scale-in">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-800 text-lg">Edit Kategori</h3>
+            <button type="button" onclick="closeModal('editCategoryModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="/MasterData/EditCategory" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" id="editCatId" />
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Kategori</label>
+                <input type="text" name="Name" id="editCatName" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Warna Aksen</label>
+                <input type="color" name="Color" id="editCatColor" class="w-full h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi</label>
+                <textarea name="Description" id="editCatDesc" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm resize-none"></textarea>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('editCategoryModal')" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODAL: EDIT PRIORITY                                       -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="editPriorityModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-scale-in">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-800 text-lg">Edit Prioritas</h3>
+            <button type="button" onclick="closeModal('editPriorityModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="/MasterData/EditPriority" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" id="editPriId" />
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Prioritas</label>
+                <input type="text" name="Name" id="editPriName" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-amber-500">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Warna</label>
+                    <input type="color" name="Color" id="editPriColor" class="w-full h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Urutan (Index)</label>
+                    <input type="number" name="OrderIndex" id="editPriOrder" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi</label>
+                <textarea name="Description" id="editPriDesc" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm resize-none"></textarea>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="IsDefault" value="true" id="editPriIsDefault" class="rounded text-amber-600 focus:ring-amber-500 w-4 h-4">
+                <label for="editPriIsDefault" class="text-xs font-semibold text-slate-700 cursor-pointer">Jadikan Prioritas Default</label>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('editPriorityModal')" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl shadow-md">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODAL: EDIT STATUS                                         -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="editStatusModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-scale-in">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-800 text-lg">Edit Status</h3>
+            <button type="button" onclick="closeModal('editStatusModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="/MasterData/EditStatus" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" id="editStatId" />
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Status</label>
+                <input type="text" name="Name" id="editStatName" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-cyan-500">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Warna</label>
+                    <input type="color" name="Color" id="editStatColor" class="w-full h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Urutan Alur</label>
+                    <input type="number" name="OrderIndex" id="editStatOrder" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi</label>
+                <textarea name="Description" id="editStatDesc" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm resize-none"></textarea>
+            </div>
+            <div class="space-y-2">
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="IsDoneState" value="true" id="editStatIsDone" class="rounded text-emerald-600 focus:ring-emerald-500 w-4 h-4">
+                    <label for="editStatIsDone" class="text-xs font-semibold text-slate-700 cursor-pointer">Menandai Tugas Telah Selesai (Done State)</label>
+                </div>
+                <div class="flex items-center gap-2">
+                    <input type="checkbox" name="IsDefault" value="true" id="editStatIsDefault" class="rounded text-cyan-600 focus:ring-cyan-500 w-4 h-4">
+                    <label for="editStatIsDefault" class="text-xs font-semibold text-slate-700 cursor-pointer">Jadikan Status Default</label>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('editStatusModal')" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-cyan-600 hover:bg-cyan-700 text-white text-sm font-bold rounded-xl shadow-md">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODAL: EDIT MILESTONE                                      -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="editMilestoneModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-scale-in">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-800 text-lg">Edit Fase Milestone SDLC</h3>
+            <button type="button" onclick="closeModal('editMilestoneModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="/MasterData/EditMilestone" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" id="editMsId" />
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Milestone</label>
+                <input type="text" name="Name" id="editMsName" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Warna</label>
+                    <input type="color" name="Color" id="editMsColor" class="w-full h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Urutan (Index)</label>
+                    <input type="number" name="OrderIndex" id="editMsOrder" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-sm">
+                </div>
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Icon FontAwesome</label>
+                <input type="text" name="Icon" id="editMsIcon" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500">
+            </div>
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi</label>
+                <textarea name="Description" id="editMsDesc" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm resize-none"></textarea>
+            </div>
+            <div class="flex items-center gap-2">
+                <input type="checkbox" name="IsDefault" value="true" id="editMsIsDefault" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                <label for="editMsIsDefault" class="text-xs font-semibold text-slate-700 cursor-pointer">Jadikan Milestone Default</label>
+            </div>
+            <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="closeModal('editMilestoneModal')" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold rounded-xl shadow-md">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    function closeModal(id) {
+        const el = document.getElementById(id);
+        if (el) {
+            el.classList.add('hidden');
+            el.classList.remove('flex');
+        }
+    }
+
+    function openEditCatModal(id, name, color, desc) {
+        document.getElementById('editCatId').value = id;
+        document.getElementById('editCatName').value = name;
+        document.getElementById('editCatColor').value = color || '#6366F1';
+        document.getElementById('editCatDesc').value = desc || '';
+        const modal = document.getElementById('editCategoryModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function openEditPriorityModal(id, name, color, icon, order, isDefault, desc) {
+        document.getElementById('editPriId').value = id;
+        document.getElementById('editPriName').value = name;
+        document.getElementById('editPriColor').value = color || '#F59E0B';
+        document.getElementById('editPriOrder').value = order;
+        document.getElementById('editPriIsDefault').checked = isDefault;
+        document.getElementById('editPriDesc').value = desc || '';
+        const modal = document.getElementById('editPriorityModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function openEditStatusModal(id, name, color, order, isDone, isDefault, desc) {
+        document.getElementById('editStatId').value = id;
+        document.getElementById('editStatName').value = name;
+        document.getElementById('editStatColor').value = color || '#06B6D4';
+        document.getElementById('editStatOrder').value = order;
+        document.getElementById('editStatIsDone').checked = isDone;
+        document.getElementById('editStatIsDefault').checked = isDefault;
+        document.getElementById('editStatDesc').value = desc || '';
+        const modal = document.getElementById('editStatusModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function openEditMilestoneModal(id, name, color, icon, order, isDefault, desc) {
+        document.getElementById('editMsId').value = id;
+        document.getElementById('editMsName').value = name;
+        document.getElementById('editMsColor').value = color || '#6366F1';
+        document.getElementById('editMsIcon').value = icon || 'fa-flag';
+        document.getElementById('editMsOrder').value = order;
+        document.getElementById('editMsIsDefault').checked = isDefault;
+        document.getElementById('editMsDesc').value = desc || '';
+        const modal = document.getElementById('editMilestoneModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    // Color input hex live update
+    const catPicker = document.getElementById('catColorPicker');
+    if (catPicker) {
+        catPicker.addEventListener('input', function(e) {
+            document.getElementById('catColorHex').innerText = e.target.value.toUpperCase();
+        });
+    }
+</script>

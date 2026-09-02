@@ -19,6 +19,9 @@ namespace TrackerKerja.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        // Gamification Navigation Property
+        public virtual ICollection<UserBadge> UserBadges { get; set; } = new List<UserBadge>();
+
         // Computed: initials from FullName
         public string Initials
         {

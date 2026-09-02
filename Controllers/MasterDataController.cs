@@ -38,6 +38,10 @@ namespace TrackerKerja.Controllers
                 Milestones = await _db.MasterMilestones
                     .OrderBy(m => m.OrderIndex)
                     .ThenBy(m => m.Name)
+                    .ToListAsync(),
+                Badges = await _db.MasterBadges
+                    .OrderBy(b => b.OrderIndex)
+                    .ThenBy(b => b.Name)
                     .ToListAsync()
             };
 
@@ -411,6 +415,120 @@ namespace TrackerKerja.Controllers
 
             TempData["Success"] = $"Milestone '{milestone.Name}' berhasil dihapus.";
             return RedirectToAction(nameof(Index), new { tab = "milestones" });
+        }
+
+        // ── BADGES & ACHIEVEMENTS CRUD ─────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateBadge(MasterBadge model)
+        {
+            if (string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.Code))
+            {
+                TempData["Error"] = "Kode dan Nama Badge tidak boleh kosong.";
+                return RedirectToAction(nameof(Index), new { tab = "badges" });
+            }
+
+            model.Code = model.Code.Trim().ToUpperInvariant().Replace(" ", "_");
+
+            if (await _db.MasterBadges.AnyAsync(b => b.Code == model.Code))
+            {
+                TempData["Error"] = $"Badge dengan kode '{model.Code}' sudah ada.";
+                return RedirectToAction(nameof(Index), new { tab = "badges" });
+            }
+
+            model.Name = model.Name.Trim();
+            model.Description = model.Description?.Trim() ?? string.Empty;
+            model.Category = string.IsNullOrWhiteSpace(model.Category) ? "Tasks" : model.Category.Trim();
+            model.Icon = string.IsNullOrWhiteSpace(model.Icon) ? "fa-solid fa-award" : model.Icon.Trim();
+            model.Color = string.IsNullOrWhiteSpace(model.Color) ? "#F59E0B" : model.Color.Trim();
+            model.Points = Math.Max(10, model.Points);
+            model.TriggerThreshold = Math.Max(1, model.TriggerThreshold);
+            model.CreatedAt = DateTime.UtcNow;
+
+            _db.MasterBadges.Add(model);
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = $"Badge '{model.Name}' berhasil ditambahkan ke sistem gamifikasi!";
+            return RedirectToAction(nameof(Index), new { tab = "badges" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditBadge(MasterBadge model)
+        {
+            var badge = await _db.MasterBadges.FindAsync(model.Id);
+            if (badge == null)
+            {
+                TempData["Error"] = "Data badge tidak ditemukan.";
+                return RedirectToAction(nameof(Index), new { tab = "badges" });
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Name) || string.IsNullOrWhiteSpace(model.Code))
+            {
+                TempData["Error"] = "Kode dan Nama Badge tidak boleh kosong.";
+                return RedirectToAction(nameof(Index), new { tab = "badges" });
+            }
+
+            model.Code = model.Code.Trim().ToUpperInvariant().Replace(" ", "_");
+
+            if (await _db.MasterBadges.AnyAsync(b => b.Code == model.Code && b.Id != model.Id))
+            {
+                TempData["Error"] = $"Badge dengan kode '{model.Code}' sudah digunakan oleh badge lain.";
+                return RedirectToAction(nameof(Index), new { tab = "badges" });
+            }
+
+            badge.Code = model.Code;
+            badge.Name = model.Name.Trim();
+            badge.Description = model.Description?.Trim() ?? string.Empty;
+            badge.Category = string.IsNullOrWhiteSpace(model.Category) ? "Tasks" : model.Category.Trim();
+            badge.Icon = string.IsNullOrWhiteSpace(model.Icon) ? "fa-solid fa-award" : model.Icon.Trim();
+            badge.Color = string.IsNullOrWhiteSpace(model.Color) ? "#F59E0B" : model.Color.Trim();
+            badge.Points = Math.Max(10, model.Points);
+            badge.Rarity = model.Rarity;
+            badge.TriggerType = model.TriggerType;
+            badge.TriggerThreshold = Math.Max(1, model.TriggerThreshold);
+            badge.IsActive = model.IsActive;
+            badge.OrderIndex = model.OrderIndex;
+
+            await _db.SaveChangesAsync();
+            TempData["Success"] = $"Badge '{badge.Name}' berhasil diperbarui!";
+            return RedirectToAction(nameof(Index), new { tab = "badges" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteBadge(int id)
+        {
+            var badge = await _db.MasterBadges.Include(b => b.UserBadges).FirstOrDefaultAsync(b => b.Id == id);
+            if (badge == null)
+            {
+                TempData["Error"] = "Badge tidak ditemukan.";
+                return RedirectToAction(nameof(Index), new { tab = "badges" });
+            }
+
+            _db.MasterBadges.Remove(badge);
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = $"Badge '{badge.Name}' berhasil dihapus.";
+            return RedirectToAction(nameof(Index), new { tab = "badges" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleBadgeStatus(int id)
+        {
+            var badge = await _db.MasterBadges.FindAsync(id);
+            if (badge == null)
+            {
+                TempData["Error"] = "Badge tidak ditemukan.";
+                return RedirectToAction(nameof(Index), new { tab = "badges" });
+            }
+
+            badge.IsActive = !badge.IsActive;
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = $"Status badge '{badge.Name}' berhasil diubah menjadi {(badge.IsActive ? "Aktif" : "Nonaktif")}.";
+            return RedirectToAction(nameof(Index), new { tab = "badges" });
         }
     }
 }

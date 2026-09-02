@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
 using TrackerKerja.ViewModels;
+using TrackerKerja.Services;
 
 namespace TrackerKerja.Controllers
 {
@@ -14,17 +15,20 @@ namespace TrackerKerja.Controllers
         private readonly SignInManager<AppUser> _signInManager;
         private readonly AppDbContext _db;
         private readonly IWebHostEnvironment _env;
+        private readonly IGamificationService _gamificationService;
 
         public AccountController(
             UserManager<AppUser> userManager,
             SignInManager<AppUser> signInManager,
             AppDbContext db,
-            IWebHostEnvironment env)
+            IWebHostEnvironment env,
+            IGamificationService gamificationService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _db = db;
             _env = env;
+            _gamificationService = gamificationService;
         }
 
         // ── LOGIN ────────────────────────────────────────────
@@ -120,10 +124,15 @@ namespace TrackerKerja.Controllers
             var user = await _userManager.GetUserAsync(User);
             if (user == null) return RedirectToAction("Login");
 
-            var totalTasks = await _db.Tasks.CountAsync();
-            var doneTasks = await _db.Tasks.CountAsync(t => t.Status == Models.TaskStatus.Done);
+            // Automatically evaluate badges on profile view
+            await _gamificationService.EvaluateAndAwardBadgesAsync(user.Id);
+
+            var totalTasks = await _db.Tasks.CountAsync(t => t.AssignedToUserId == user.Id);
+            var doneTasks = await _db.Tasks.CountAsync(t => t.AssignedToUserId == user.Id && t.Status == Models.TaskStatus.Done);
             var totalProjects = await _db.Projects.CountAsync();
-            var totalSeconds = await _db.Sessions.Where(s => s.EndTime != null).SumAsync(s => s.Duration);
+            var totalSeconds = await _db.Sessions.Where(s => s.UserId == user.Id && s.EndTime != null).SumAsync(s => (long?)s.DurationSeconds) ?? 0;
+
+            var gamification = await _gamificationService.GetGamificationStatsAsync(user.Id);
 
             var vm = new ProfileViewModel
             {
@@ -137,7 +146,8 @@ namespace TrackerKerja.Controllers
                 TotalTasks = totalTasks,
                 DoneTasks = doneTasks,
                 TotalProjects = totalProjects,
-                TotalHours = Math.Round(totalSeconds / 3600.0, 1)
+                TotalHours = Math.Round(totalSeconds / 3600.0, 1),
+                Gamification = gamification
             };
 
             ViewData["Title"] = "Profil Saya";
@@ -158,6 +168,7 @@ namespace TrackerKerja.Controllers
                 model.Initials = user.Initials;
                 model.CreatedAt = user.CreatedAt;
                 model.ProfilePictureUrl = user.ProfilePictureUrl;
+                model.Gamification = await _gamificationService.GetGamificationStatsAsync(user.Id);
                 return View(model);
             }
 
@@ -199,7 +210,31 @@ namespace TrackerKerja.Controllers
             user.AvatarColor = model.AvatarColor;
 
             await _userManager.UpdateAsync(user);
-            TempData["Success"] = "Profil berhasil diperbarui!";
+
+            // Re-evaluate badges after profile update
+            var newBadges = await _gamificationService.EvaluateAndAwardBadgesAsync(user.Id);
+            if (newBadges.Any())
+            {
+                TempData["Success"] = $"Profil diperbarui! 🎉 Selamat, kamu membuka badge baru: {string.Join(", ", newBadges.Select(b => b.Name))}!";
+            }
+            else
+            {
+                TempData["Success"] = "Profil berhasil diperbarui!";
+            }
+
+            return RedirectToAction("Profile");
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        [Authorize]
+        public async Task<IActionResult> ToggleFeatureBadge(int id)
+        {
+            var user = await _userManager.GetUserAsync(User);
+            if (user == null) return RedirectToAction("Login");
+
+            await _gamificationService.ToggleFeatureBadgeAsync(user.Id, id);
+            TempData["Success"] = "Status badge utama berhasil diperbarui!";
             return RedirectToAction("Profile");
         }
 

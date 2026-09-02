@@ -5,6 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 
 namespace TrackerKerja.Controllers
 {
@@ -14,12 +15,18 @@ namespace TrackerKerja.Controllers
         private readonly AppDbContext _db;
         private readonly UserManager<AppUser> _userManager;
         private readonly IWebHostEnvironment _env;
+        private readonly IGamificationService _gamificationService;
 
-        public NoteController(AppDbContext db, UserManager<AppUser> userManager, IWebHostEnvironment env)
+        public NoteController(
+            AppDbContext db,
+            UserManager<AppUser> userManager,
+            IWebHostEnvironment env,
+            IGamificationService gamificationService)
         {
             _db = db;
             _userManager = userManager;
             _env = env;
+            _gamificationService = gamificationService;
         }
 
         // ── USER FOLDER HELPER ─────────────────────────────────
@@ -186,6 +193,18 @@ namespace TrackerKerja.Controllers
             if (attachments != null && attachments.Count > 0)
             {
                 await SaveAttachmentsAsync(attachments, model.Id, currentUser);
+            }
+
+            if (currentUser != null)
+            {
+                var newBadges = await _gamificationService.EvaluateAndAwardBadgesAsync(currentUser.Id);
+                if (newBadges.Any())
+                {
+                    TempData["Success"] = $"Catatan disimpan! 🎉 Selamat, kamu membuka badge baru: {string.Join(", ", newBadges.Select(b => b.Name))}!";
+                    if (model.TaskId.HasValue)
+                        return RedirectToAction("Edit", "Task", new { id = model.TaskId.Value });
+                    return RedirectToAction(nameof(Index));
+                }
             }
 
             TempData["Success"] = "Catatan dan lampiran berhasil disimpan!";

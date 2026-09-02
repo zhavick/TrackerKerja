@@ -100,6 +100,10 @@ namespace TrackerKerja.ViewModels
         public double TotalHours { get; set; }
         public int NotesContributedCount { get; set; }
         public int CompletionRate => TotalTasks > 0 ? (int)Math.Round((double)DoneTasks / TotalTasks * 100) : 0;
+        public int UserLevel { get; set; } = 1;
+        public string? FeaturedBadgeIcon { get; set; }
+        public string? FeaturedBadgeColor { get; set; }
+        public string? FeaturedBadgeName { get; set; }
     }
 
     public class MemberDetailsViewModel
@@ -118,6 +122,10 @@ namespace TrackerKerja.ViewModels
         public List<WorkTask> AssignedTasks { get; set; } = new();
         public List<WorkNote> ContributedNotes { get; set; } = new();
         public List<WorkSession> WorkSessions { get; set; } = new();
+
+        // Gamification & Badges
+        public GamificationProfileDto Gamification { get; set; } = new();
+        public List<MasterBadge> AvailableManualBadges { get; set; } = new();
     }
 
     public class MemberFormViewModel
@@ -181,5 +189,53 @@ namespace TrackerKerja.ViewModels
         public List<MasterPriority> Priorities { get; set; } = new();
         public List<MasterStatus> Statuses { get; set; } = new();
         public List<MasterMilestone> Milestones { get; set; } = new();
+        public List<MasterBadge> Badges { get; set; } = new();
+    }
+
+    // ── Gamification ViewModels & DTOs ─────────────────────────
+    public class GamificationProfileDto
+    {
+        public int TotalExp { get; set; }
+        public int Level { get; set; } = 1;
+        public string LevelTitle { get; set; } = "🌱 Novice Tracker";
+        public int CurrentLevelExp { get; set; }
+        public int NextLevelExp { get; set; } = 200;
+        public int ExpProgressPercent { get; set; }
+        public int UnlockedBadgesCount { get; set; }
+        public int TotalBadgesCount { get; set; }
+        public BadgeItemDto? FeaturedBadge { get; set; }
+        public List<BadgeItemDto> Badges { get; set; } = new();
+    }
+
+    public class BadgeItemDto
+    {
+        public int Id { get; set; }
+        public int? UserBadgeId { get; set; }
+        public string Code { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public string Category { get; set; } = "Tasks";
+        public string Icon { get; set; } = "fa-solid fa-medal";
+        public string Color { get; set; } = "#F59E0B";
+        public int Points { get; set; } = 100;
+        public BadgeRarity Rarity { get; set; }
+        public string RarityName => Rarity.ToString();
+        public BadgeTriggerType TriggerType { get; set; }
+        public int TriggerThreshold { get; set; }
+        public bool IsActive { get; set; }
+        public int OrderIndex { get; set; }
+        public bool IsUnlocked { get; set; }
+        public bool IsFeatured { get; set; }
+        public DateTime? UnlockedAt { get; set; }
+        public string? AwardedBy { get; set; }
+        public int CurrentProgress { get; set; }
+        public int ProgressPercent { get; set; }
+    }
+
+    public class AwardManualBadgeDto
+    {
+        public string UserId { get; set; } = string.Empty;
+        public int BadgeId { get; set; }
+        public string? Note { get; set; }
     }
 }

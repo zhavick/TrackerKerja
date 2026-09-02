@@ -25,11 +25,16 @@ namespace TrackerKerja.Controllers
     {
         private readonly AppDbContext _db;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IGamificationService _gamificationService;
 
-        public TaskController(AppDbContext db, UserManager<AppUser> userManager)
+        public TaskController(
+            AppDbContext db,
+            UserManager<AppUser> userManager,
+            IGamificationService gamificationService)
         {
             _db = db;
             _userManager = userManager;
+            _gamificationService = gamificationService;
         }
 
         public async Task<IActionResult> Index(
@@ -296,6 +301,18 @@ namespace TrackerKerja.Controllers
             model.UpdatedAt = DateTime.Now;
             _db.Tasks.Update(model);
             await _db.SaveChangesAsync();
+
+            // Evaluate Gamification Badges
+            if (!string.IsNullOrEmpty(model.AssignedToUserId))
+            {
+                var newBadges = await _gamificationService.EvaluateAndAwardBadgesAsync(model.AssignedToUserId);
+                if (newBadges.Any() && currentUser?.Id == model.AssignedToUserId)
+                {
+                    TempData["Success"] = $"Tugas diperbarui! 🎉 Selamat, kamu membuka badge baru: {string.Join(", ", newBadges.Select(b => b.Name))}!";
+                    return RedirectToAction(nameof(Index));
+                }
+            }
+
             TempData["Success"] = "Tugas berhasil diperbarui!";
             return RedirectToAction(nameof(Index));
         }
@@ -577,6 +594,11 @@ namespace TrackerKerja.Controllers
             session.Duration = Math.Max(1, (long)(session.EndTime.Value - session.StartTime).TotalSeconds);
             await _db.SaveChangesAsync();
 
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                await _gamificationService.EvaluateAndAwardBadgesAsync(currentUserId);
+            }
+
             return Json(new { success = true, duration = session.Duration, sessionId = session.Id, taskId = session.TaskId });
         }
 
@@ -602,29 +624,16 @@ namespace TrackerKerja.Controllers
             {
                 sessionId = s.Id,
                 taskId = s.TaskId,
-                taskCode = s.Task?.TaskCode ?? $"TSK-{s.TaskId:D4}",
-                taskTitle = s.Task?.Title ?? "Tugas",
+                taskTitle = s.Task?.Title ?? "Tugas Tanpa Judul",
                 projectName = s.Task?.Project?.Name ?? "-",
-                startTime = s.StartTime.ToString("yyyy-MM-dd HH:mm:ss"),
-                elapsed = Math.Max(0, (long)(DateTime.Now - s.StartTime).TotalSeconds)
-            }).ToList();
-
-            var primary = timers.First();
-
-            return Json(new
-            {
-                running = true,
-                count = timers.Count,
-                sessionId = primary.sessionId,
-                taskId = primary.taskId,
-                taskCode = primary.taskCode,
-                taskTitle = primary.taskTitle,
-                projectName = primary.projectName,
-                elapsed = primary.elapsed,
-                timers = timers
+                startTime = s.StartTime.ToString("o"),
+                elapsedSeconds = (long)(DateTime.Now - s.StartTime).TotalSeconds
             });
+
+            return Json(new { running = true, count = runningSessions.Count, timers });
         }
 
+        // ── KANBAN ACTIONS ─────────────────────────────────────
         [HttpGet]
         public async Task<IActionResult> Kanban(string? search, int? projectId, string? assigneeId, string? priority)
         {
@@ -651,7 +660,6 @@ namespace TrackerKerja.Controllers
 
             var tasks = await query.OrderByDescending(t => t.UpdatedAt).ToListAsync();
 
-            // Logika Kanban: Cukup tampilkan non parent task, kecuali jika semua child task selesai semua (Done)!
             var kanbanTasks = tasks.Where(t =>
                 !t.ChildTasks.Any() ||
                 (t.ChildTasks.Any() && t.ChildTasks.All(c => c.Status == ModelTaskStatus.Done))
@@ -672,11 +680,12 @@ namespace TrackerKerja.Controllers
         public async Task<IActionResult> UpdateKanbanStatus([FromBody] UpdateKanbanStatusDto dto)
         {
             if (dto == null || dto.TaskId <= 0)
-                return Json(new { success = false, message = "Data tidak valid." });
+            {
+                return Json(new { success = false, message = "Data tugas tidak valid." });
+            }
 
             var task = await _db.Tasks.FindAsync(dto.TaskId);
-            if (task == null)
-                return Json(new { success = false, message = "Tugas tidak ditemukan." });
+            if (task == null) return Json(new { success = false, message = "Tugas tidak ditemukan." });
 
             var currentUser = await _userManager.GetUserAsync(User);
             var isAdmin = User.IsInRole("Admin");
@@ -687,19 +696,20 @@ namespace TrackerKerja.Controllers
             }
 
             if (!Enum.TryParse<ModelTaskStatus>(dto.NewStatus, true, out var targetStatus))
-                return Json(new { success = false, message = "Status tidak dikenali." });
+            {
+                return Json(new { success = false, message = $"Status '{dto.NewStatus}' tidak dikenali." });
+            }
 
             var prevStatus = task.Status;
             task.Status = targetStatus;
 
-            // Logic: jika pindah ke Done atau progress >= 100, set progress = 100
             if (targetStatus == ModelTaskStatus.Done)
             {
                 task.Progress = 100;
             }
             else if (prevStatus == ModelTaskStatus.Done && targetStatus == ModelTaskStatus.InProgress)
             {
-                task.Progress = dto.Progress.HasValue && dto.Progress.Value < 100 ? dto.Progress.Value : 50;
+                task.Progress = dto.Progress.HasValue && dto.Progress.Value > 0 && dto.Progress.Value < 100 ? dto.Progress.Value : 50;
             }
             else if (prevStatus == ModelTaskStatus.Done && targetStatus == ModelTaskStatus.Todo)
             {
@@ -716,6 +726,11 @@ namespace TrackerKerja.Controllers
 
             task.UpdatedAt = DateTime.Now;
             await _db.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(task.AssignedToUserId))
+            {
+                await _gamificationService.EvaluateAndAwardBadgesAsync(task.AssignedToUserId);
+            }
 
             return Json(new
             {
@@ -747,6 +762,12 @@ namespace TrackerKerja.Controllers
                 if (s == ModelTaskStatus.Done) task.Progress = 100;
                 task.UpdatedAt = DateTime.Now;
                 await _db.SaveChangesAsync();
+
+                if (!string.IsNullOrEmpty(task.AssignedToUserId))
+                {
+                    await _gamificationService.EvaluateAndAwardBadgesAsync(task.AssignedToUserId);
+                }
+
                 return Json(new { success = true });
             }
             return Json(new { success = false, message = "Status tidak valid." });

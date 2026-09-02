@@ -66,6 +66,9 @@ namespace TrackerKerja.ViewModels
         public int DoneTasks { get; set; }
         public int TotalProjects { get; set; }
         public double TotalHours { get; set; }
+
+        // Gamification & Badges
+        public GamificationProfileDto Gamification { get; set; } = new();
     }
 
     public class ChangePasswordViewModel

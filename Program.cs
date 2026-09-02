@@ -2,6 +2,7 @@ using Microsoft.AspNetCore.Identity;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
 using TrackerKerja.Filters;
+using TrackerKerja.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
 
@@ -65,6 +66,9 @@ if (connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase
 // Add EF Core with SQLite
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));
+
+// Add Gamification Service
+builder.Services.AddScoped<IGamificationService, GamificationService>();
 
 // Add session support (for Import preview)
 builder.Services.AddSession(options =>
@@ -248,6 +252,58 @@ using (var scope = app.Services.CreateScope())
             new MasterMilestone { Name = "Testing & QA", Phase = "Testing & QA", Color = "#F59E0B", Icon = "fa-vial", OrderIndex = 4, Description = "Pengujian sistem, QA test cases, bug fixing, performa, dan User Acceptance Testing (UAT)" },
             new MasterMilestone { Name = "Deployment", Phase = "Deployment", Color = "#10B981", Icon = "fa-rocket", OrderIndex = 5, Description = "Setup server hosting, CI/CD pipeline deployment, migrasi DB, dan go-live production" },
             new MasterMilestone { Name = "Maintenance", Phase = "Maintenance", Color = "#64748B", Icon = "fa-tools", OrderIndex = 6, Description = "Pemeliharaan sistem, monitoring server, penanganan bug pasca rilis, dan patch update" }
+        );
+        db.SaveChanges();
+    }
+
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS MasterBadges (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Code TEXT NOT NULL,
+                Name TEXT NOT NULL,
+                Description TEXT NULL,
+                Category TEXT NULL,
+                Icon TEXT NULL,
+                Color TEXT NULL,
+                Points INTEGER NOT NULL DEFAULT 100,
+                Rarity INTEGER NOT NULL DEFAULT 1,
+                TriggerType INTEGER NOT NULL DEFAULT 0,
+                TriggerThreshold INTEGER NOT NULL DEFAULT 1,
+                IsActive INTEGER NOT NULL DEFAULT 1,
+                OrderIndex INTEGER NOT NULL DEFAULT 0,
+                CreatedAt TEXT NOT NULL
+            );");
+    } catch { }
+
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS UserBadges (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId TEXT NOT NULL,
+                BadgeId INTEGER NOT NULL,
+                UnlockedAt TEXT NOT NULL,
+                IsFeatured INTEGER NOT NULL DEFAULT 0,
+                AwardedBy TEXT NULL,
+                FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id) ON DELETE CASCADE,
+                FOREIGN KEY (BadgeId) REFERENCES MasterBadges(Id) ON DELETE CASCADE
+            );");
+    } catch { }
+
+    if (!db.MasterBadges.Any())
+    {
+        db.MasterBadges.AddRange(
+            new MasterBadge { Code = "TASK_FIRST", Name = "Langkah Pertama 🐾", Description = "Selesaikan tugas pertamamu di sistem", Category = "Tasks", Icon = "fa-solid fa-paw", Color = "#10B981", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 1, IsActive = true, OrderIndex = 1, CreatedAt = DateTime.UtcNow },
+            new MasterBadge { Code = "TASK_10", Name = "Task Crusher ⚡", Description = "Selesaikan 10 tugas dengan sukses", Category = "Tasks", Icon = "fa-solid fa-bolt", Color = "#F59E0B", Points = 150, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 10, IsActive = true, OrderIndex = 2, CreatedAt = DateTime.UtcNow },
+            new MasterBadge { Code = "TASK_50", Name = "Master Executor ⚔️", Description = "Selesaikan 50 tugas secara produktif", Category = "Tasks", Icon = "fa-solid fa-shield-halved", Color = "#8B5CF6", Points = 400, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 50, IsActive = true, OrderIndex = 3, CreatedAt = DateTime.UtcNow },
+            new MasterBadge { Code = "TASK_100", Name = "Century Hero 🏆", Description = "Menembus pencapaian 100 tugas terselesaikan!", Category = "Tasks", Icon = "fa-solid fa-trophy", Color = "#EAB308", Points = 1000, Rarity = BadgeRarity.Legendary, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 100, IsActive = true, OrderIndex = 4, CreatedAt = DateTime.UtcNow },
+            new MasterBadge { Code = "WORK_10H", Name = "Fokus Membara 🔥", Description = "Kumpulkan total 10 jam kerja produktif", Category = "Timesheets", Icon = "fa-solid fa-fire-flame-curved", Color = "#F97316", Points = 100, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_TotalHours, TriggerThreshold = 10, IsActive = true, OrderIndex = 5, CreatedAt = DateTime.UtcNow },
+            new MasterBadge { Code = "WORK_50H", Name = "Coffee Fuelled ☕", Description = "Tembus 50 jam dedikasi kerja keras", Category = "Timesheets", Icon = "fa-solid fa-mug-hot", Color = "#EC4899", Points = 300, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_TotalHours, TriggerThreshold = 50, IsActive = true, OrderIndex = 6, CreatedAt = DateTime.UtcNow },
+            new MasterBadge { Code = "NOTE_FIRST", Name = "Juru Tulis 📜", Description = "Buat catatan kerja/dev log pertama", Category = "Notes", Icon = "fa-solid fa-scroll", Color = "#06B6D4", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_NotesCount, TriggerThreshold = 1, IsActive = true, OrderIndex = 7, CreatedAt = DateTime.UtcNow },
+            new MasterBadge { Code = "NOTE_10", Name = "Knowledge Keeper 🧠", Description = "Bagikan 10 catatan & dokumentasi kerja", Category = "Notes", Icon = "fa-solid fa-brain", Color = "#6366F1", Points = 200, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_NotesCount, TriggerThreshold = 10, IsActive = true, OrderIndex = 8, CreatedAt = DateTime.UtcNow },
+            new MasterBadge { Code = "ROCKSTAR_DEV", Name = "Rockstar of The Month 🌟", Description = "Penghargaan khusus atas kinerja luar biasa dari Admin", Category = "Special", Icon = "fa-solid fa-star", Color = "#E11D48", Points = 500, Rarity = BadgeRarity.Legendary, TriggerType = BadgeTriggerType.Manual, TriggerThreshold = 1, IsActive = true, OrderIndex = 9, CreatedAt = DateTime.UtcNow }
         );
         db.SaveChanges();
     }

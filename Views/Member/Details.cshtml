@@ -14,7 +14,11 @@
 
         @if (User.IsInRole("Admin"))
         {
-            <div class="flex gap-2">
+            <div class="flex gap-2 flex-wrap">
+                <button type="button" onclick="openAdminAwardBadgeModal()"
+                        class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-purple-50 text-purple-700 hover:bg-purple-100 text-xs font-bold transition-all border border-purple-200 cursor-pointer">
+                    <i class="fas fa-medal"></i> Berikan Badge
+                </button>
                 <button type="button" onclick="openAdminResetPasswordModal('@Model.User.Id', '@Model.User.FullName.Replace("'", "\\'")')"
                         class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 text-xs font-bold transition-all border border-amber-200 cursor-pointer">
                     <i class="fas fa-key"></i> Ubah Password
@@ -130,6 +134,10 @@
             <button onclick="switchTab('sessions')" id="tab-btn-sessions"
                     class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2">
                 <i class="fas fa-history"></i> Riwayat Sesi Kerja (@Model.WorkSessions.Count)
+            </button>
+            <button onclick="switchTab('badges')" id="tab-btn-badges"
+                    class="px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-amber-50 hover:text-amber-600 flex items-center gap-2">
+                <i class="fas fa-medal"></i> Badge & Prestasi (@(Model.Gamification?.UnlockedBadgesCount ?? 0))
             </button>
         </div>
 
@@ -313,24 +321,156 @@
                 </div>
             }
         </div>
+
+        <!-- TAB 4: BADGES & ACHIEVEMENTS -->
+        <div id="tab-content-badges" class="space-y-6 hidden">
+            <!-- Gamification Level Banner -->
+            <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 rounded-2xl p-5 text-white shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div class="flex items-center gap-4">
+                    <div class="w-14 h-14 rounded-2xl bg-white/20 flex items-center justify-center text-white text-2xl font-black border border-white/20 shadow-inner">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-white text-amber-900 shadow-xs">
+                                LEVEL @(Model.Gamification?.Level ?? 1)
+                            </span>
+                            <h3 class="font-extrabold text-lg text-white">@(Model.Gamification?.LevelTitle ?? "🌱 Novice Tracker")</h3>
+                        </div>
+                        <p class="text-xs text-amber-100 mt-0.5">Total @(Model.Gamification?.TotalExp ?? 0) EXP terkumpul dari seluruh aktivitas & tugas.</p>
+                    </div>
+                </div>
+
+                @if (User.IsInRole("Admin"))
+                {
+                    <button type="button" onclick="openAdminAwardBadgeModal()"
+                            class="px-4 py-2 bg-white hover:bg-amber-50 text-amber-900 font-bold text-xs rounded-xl shadow-sm transition-all flex items-center gap-1.5 cursor-pointer flex-shrink-0">
+                        <i class="fas fa-award text-amber-600"></i> Berikan Badge Baru
+                    </button>
+                }
+            </div>
+
+            <!-- Badges Grid -->
+            @if (Model.Gamification?.Badges != null && Model.Gamification.Badges.Any())
+            {
+                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
+                    @foreach (var badge in Model.Gamification.Badges)
+                    {
+                        var rarityBadgeClass = badge.Rarity switch
+                        {
+                            TrackerKerja.Models.BadgeRarity.Rare => "bg-blue-100 text-blue-800 border-blue-200",
+                            TrackerKerja.Models.BadgeRarity.Epic => "bg-purple-100 text-purple-800 border-purple-200",
+                            TrackerKerja.Models.BadgeRarity.Legendary => "bg-amber-100 text-amber-800 border-amber-300 font-black",
+                            _ => "bg-slate-100 text-slate-700 border-slate-200"
+                        };
+
+                        if (badge.IsUnlocked)
+                        {
+                            <div class="bg-gradient-to-b from-white to-amber-50/30 rounded-2xl p-4 border-2 border-amber-300/80 shadow-xs flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-start gap-3 mb-2.5">
+                                        <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-white text-lg shadow-sm flex-shrink-0"
+                                             style="background: @badge.Color">
+                                            <i class="@badge.Icon"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="font-extrabold text-slate-800 text-sm truncate">@badge.Name</h4>
+                                            <div class="flex items-center gap-1.5 mt-0.5">
+                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold border @rarityBadgeClass">
+                                                    @badge.Rarity.ToString().ToUpper()
+                                                </span>
+                                                <span class="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded">
+                                                    +@badge.Points EXP
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-slate-600 leading-relaxed mb-3">@badge.Description</p>
+                                </div>
+
+                                <div class="pt-2 border-t border-amber-200/60 flex items-center justify-between text-[11px] text-slate-500">
+                                    <span class="text-emerald-600 font-semibold flex items-center gap-1">
+                                        <i class="fas fa-check-circle"></i> @(badge.UnlockedAt.HasValue ? badge.UnlockedAt.Value.ToString("dd MMM yyyy") : "Terbuka")
+                                    </span>
+
+                                    @if (User.IsInRole("Admin"))
+                                    {
+                                        <form method="post" action="/Member/RevokeBadge"
+                                              data-confirm="Apakah Anda yakin ingin mencabut badge '@badge.Name' dari anggota ini?"
+                                              data-confirm-title="Cabut Badge Penghargaan"
+                                              data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Ya, Cabut" class="inline">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="userId" value="@Model.User.Id" />
+                                            <input type="hidden" name="badgeId" value="@badge.Id" />
+                                            <button type="submit" class="text-[11px] text-rose-500 hover:text-rose-700 font-semibold hover:underline cursor-pointer">
+                                                Cabut
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="bg-slate-50/80 rounded-2xl p-4 border border-slate-200 shadow-2xs opacity-70 flex flex-col justify-between">
+                                <div>
+                                    <div class="flex items-start gap-3 mb-2.5">
+                                        <div class="w-11 h-11 rounded-2xl flex items-center justify-center bg-slate-200 text-slate-400 text-lg flex-shrink-0">
+                                            <i class="fas fa-lock"></i>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <h4 class="font-bold text-slate-600 text-sm truncate">@badge.Name</h4>
+                                            <div class="flex items-center gap-1.5 mt-0.5">
+                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold border @rarityBadgeClass">
+                                                    @badge.Rarity.ToString().ToUpper()
+                                                </span>
+                                                <span class="text-[10px] font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
+                                                    +@badge.Points EXP
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <p class="text-xs text-slate-500 leading-relaxed mb-3">@badge.Description</p>
+                                </div>
+
+                                <div class="pt-2 border-t border-slate-200 text-[11px] text-slate-400">
+                                    Progress: @badge.CurrentProgress / @badge.TriggerThreshold (@badge.ProgressPercent%)
+                                </div>
+                            </div>
+                        }
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="p-8 text-center text-slate-400">
+                    <i class="fas fa-medal text-4xl mb-2 text-slate-200 block"></i>
+                    <p class="font-bold text-slate-700">Belum ada badge yang terbuka untuk anggota ini</p>
+                </div>
+            }
+        </div>
     </div>
 </div>
 
 <script>
     function switchTab(tab) {
         // Reset buttons
-        document.getElementById('tab-btn-tasks').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2";
-        document.getElementById('tab-btn-notes').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2";
-        document.getElementById('tab-btn-sessions').className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2";
-
-        // Hide contents
-        document.getElementById('tab-content-tasks').classList.add('hidden');
-        document.getElementById('tab-content-notes').classList.add('hidden');
-        document.getElementById('tab-content-sessions').classList.add('hidden');
+        ['tasks', 'notes', 'sessions', 'badges'].forEach(t => {
+            const btn = document.getElementById('tab-btn-' + t);
+            if (btn) btn.className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-slate-100 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 flex items-center gap-2";
+            const content = document.getElementById('tab-content-' + t);
+            if (content) content.classList.add('hidden');
+        });
 
         // Activate selected
-        document.getElementById('tab-btn-' + tab).className = "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm flex items-center gap-2";
-        document.getElementById('tab-content-' + tab).classList.remove('hidden');
+        const activeBtn = document.getElementById('tab-btn-' + tab);
+        if (activeBtn) {
+            activeBtn.className = tab === 'badges'
+                ? "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-amber-500 text-white shadow-sm flex items-center gap-2"
+                : "px-4 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-sm flex items-center gap-2";
+        }
+        const activeContent = document.getElementById('tab-content-' + tab);
+        if (activeContent) activeContent.classList.remove('hidden');
     }
 
     function openAdminResetPasswordModal(userId, fullName) {
@@ -361,6 +501,16 @@
             input.type = 'password';
             if (icon) { icon.classList.remove('fa-eye-slash'); icon.classList.add('fa-eye'); }
         }
+    }
+
+    function openAdminAwardBadgeModal() {
+        const modal = document.getElementById('adminAwardBadgeModal');
+        if (modal) modal.classList.remove('hidden');
+    }
+
+    function closeAdminAwardBadgeModal() {
+        const modal = document.getElementById('adminAwardBadgeModal');
+        if (modal) modal.classList.add('hidden');
     }
 </script>
 
@@ -399,7 +549,7 @@
                         <input type="password" name="newPassword" id="modalNewPassword" required minlength="6" placeholder="Masukkan password baru..."
                                class="w-full pl-3.5 pr-10 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-slate-50">
                         <button type="button" onclick="togglePasswordVisibility('modalNewPassword', this)" 
-                                class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+                                 class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
                             <i class="fas fa-eye"></i>
                         </button>
                     </div>
@@ -414,6 +564,60 @@
                     <button type="submit" class="flex items-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md hover:shadow-amber-200 transition-all cursor-pointer">
                         <i class="fas fa-check"></i>
                         <span>Simpan Password Baru</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- MODAL ADMIN AWARD BADGE -->
+    <div id="adminAwardBadgeModal" class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs hidden animate-fadeIn">
+        <div class="bg-white rounded-3xl shadow-2xl border border-purple-100 max-w-md w-full overflow-hidden transform transition-all">
+            <!-- Header -->
+            <div class="bg-gradient-to-r from-purple-600 to-indigo-600 p-5 text-white flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-white/20 flex items-center justify-center text-lg shadow-inner">
+                        <i class="fas fa-medal"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black">Berikan Badge Penghargaan</h3>
+                        <p class="text-purple-100 text-xs mt-0.5">Untuk @Model.User.FullName</p>
+                    </div>
+                </div>
+                <button type="button" onclick="closeAdminAwardBadgeModal()" class="w-8 h-8 rounded-xl bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+
+            <!-- Form -->
+            <form method="post" action="/Member/AwardBadge" class="p-6 space-y-4">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="userId" value="@Model.User.Id" />
+
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Pilih Badge Penghargaan <span class="text-red-500">*</span>
+                    </label>
+                    <select name="badgeId" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-purple-500 bg-white">
+                        <option value="">-- Pilih Badge --</option>
+                        @foreach (var badge in Model.AvailableManualBadges)
+                        {
+                            <option value="@badge.Id">
+                                @badge.Name (+@badge.Points EXP) [@badge.Rarity]
+                            </option>
+                        }
+                    </select>
+                    <p class="text-[11px] text-slate-400 mt-1">Badge yang diberikan akan otomatis menambahkan EXP ke profil anggota.</p>
+                </div>
+
+                <!-- Footer -->
+                <div class="pt-4 border-t border-slate-100 flex items-center justify-end gap-2.5">
+                    <button type="button" onclick="closeAdminAwardBadgeModal()" class="px-4 py-2 rounded-xl text-xs font-bold text-slate-500 hover:text-slate-700 bg-white border border-slate-200 hover:bg-slate-100 transition-all cursor-pointer">
+                        Batal
+                    </button>
+                    <button type="submit" class="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white text-xs font-bold px-5 py-2.5 rounded-xl shadow-md hover:shadow-purple-200 transition-all cursor-pointer">
+                        <i class="fas fa-check"></i>
+                        <span>Berikan Badge</span>
                     </button>
                 </div>
             </form>

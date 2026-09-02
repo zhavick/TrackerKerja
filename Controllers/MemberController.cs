@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
 using TrackerKerja.ViewModels;
+using TrackerKerja.Services;
 
 namespace TrackerKerja.Controllers
 {
@@ -14,12 +15,18 @@ namespace TrackerKerja.Controllers
         private readonly AppDbContext _db;
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IGamificationService _gamificationService;
 
-        public MemberController(AppDbContext db, UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
+        public MemberController(
+            AppDbContext db,
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IGamificationService gamificationService)
         {
             _db = db;
             _userManager = userManager;
             _roleManager = roleManager;
+            _gamificationService = gamificationService;
         }
 
         // ── 1. INDEX: LIST ALL TEAM MEMBERS ──────────────────────
@@ -42,6 +49,7 @@ namespace TrackerKerja.Controllers
             var users = await usersQuery.OrderBy(u => u.FullName).ToListAsync();
             var allTasks = await _db.Tasks.Include(t => t.Sessions).ToListAsync();
             var allNotes = await _db.Notes.ToListAsync();
+            var allUserBadges = await _db.UserBadges.Include(ub => ub.Badge).ToListAsync();
 
             var memberList = new List<MemberListItemViewModel>();
 
@@ -57,9 +65,12 @@ namespace TrackerKerja.Controllers
 
                 var userTasks = allTasks.Where(t => t.AssignedToUserId == user.Id).ToList();
                 var userNotesCount = allNotes.Count(n => n.AuthorUserId == user.Id);
-
                 var totalSecs = userTasks.SelectMany(t => t.Sessions).Sum(s => s.DurationSeconds);
-                var totalHours = Math.Round(totalSecs / 3600.0, 1);
+
+                var userBadges = allUserBadges.Where(ub => ub.UserId == user.Id).ToList();
+                var totalExp = userBadges.Sum(ub => ub.Badge?.Points ?? 0);
+                var level = 1 + (totalExp / 200);
+                var featured = userBadges.FirstOrDefault(ub => ub.IsFeatured)?.Badge ?? userBadges.FirstOrDefault()?.Badge;
 
                 memberList.Add(new MemberListItemViewModel
                 {
@@ -68,8 +79,12 @@ namespace TrackerKerja.Controllers
                     TotalTasks = userTasks.Count,
                     ActiveTasks = userTasks.Count(t => t.Status != Models.TaskStatus.Done),
                     DoneTasks = userTasks.Count(t => t.Status == Models.TaskStatus.Done),
-                    TotalHours = totalHours,
-                    NotesContributedCount = userNotesCount
+                    TotalHours = Math.Round(totalSecs / 3600.0, 1),
+                    NotesContributedCount = userNotesCount,
+                    UserLevel = level,
+                    FeaturedBadgeIcon = featured?.Icon,
+                    FeaturedBadgeColor = featured?.Color,
+                    FeaturedBadgeName = featured?.Name
                 });
             }
 
@@ -89,6 +104,9 @@ namespace TrackerKerja.Controllers
                 TempData["Error"] = "Anggota tim tidak ditemukan.";
                 return RedirectToAction(nameof(Index));
             }
+
+            // Auto-evaluate badges for this member
+            await _gamificationService.EvaluateAndAwardBadgesAsync(id);
 
             var roles = await _userManager.GetRolesAsync(user);
             var userRole = roles.FirstOrDefault() ?? "User";
@@ -118,6 +136,12 @@ namespace TrackerKerja.Controllers
             var totalSecs = assignedTasks.SelectMany(t => t.Sessions).Sum(s => s.DurationSeconds);
             var totalHours = Math.Round(totalSecs / 3600.0, 1);
 
+            var gamification = await _gamificationService.GetGamificationStatsAsync(id);
+            var availableManualBadges = await _db.MasterBadges
+                .Where(b => b.IsActive)
+                .OrderBy(b => b.Name)
+                .ToListAsync();
+
             var vm = new MemberDetailsViewModel
             {
                 User = user,
@@ -131,7 +155,9 @@ namespace TrackerKerja.Controllers
                 NotesContributedCount = contributedNotes.Count,
                 AssignedTasks = assignedTasks,
                 ContributedNotes = contributedNotes,
-                WorkSessions = userSessions
+                WorkSessions = userSessions,
+                Gamification = gamification,
+                AvailableManualBadges = availableManualBadges
             };
 
             ViewData["Title"] = $"Profil & Kontribusi - {user.FullName}";
@@ -329,6 +355,46 @@ namespace TrackerKerja.Controllers
 
             if (!string.IsNullOrEmpty(returnUrl)) return Redirect(returnUrl);
             return RedirectToAction(nameof(Index));
+        }
+
+        // ── 7. ADMIN AWARD / REVOKE BADGE ───────────────────────
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> AwardBadge(string userId, int badgeId)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var awardedByName = currentUser?.FullName ?? "Admin";
+
+            var success = await _gamificationService.AwardManualBadgeAsync(userId, badgeId, awardedByName);
+            if (!success)
+            {
+                TempData["Error"] = "Badge ini sudah pernah diberikan kepada anggota atau tidak valid.";
+            }
+            else
+            {
+                TempData["Success"] = "Badge penghargaan berhasil diberikan kepada anggota!";
+            }
+
+            return RedirectToAction(nameof(Details), new { id = userId });
+        }
+
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RevokeBadge(string userId, int badgeId)
+        {
+            var success = await _gamificationService.RevokeBadgeAsync(userId, badgeId);
+            if (!success)
+            {
+                TempData["Error"] = "Gagal mencabut badge atau badge tidak ditemukan.";
+            }
+            else
+            {
+                TempData["Success"] = "Badge penghargaan berhasil dicabut.";
+            }
+
+            return RedirectToAction(nameof(Details), new { id = userId });
         }
     }
 }

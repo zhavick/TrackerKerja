@@ -144,26 +144,6 @@ Untuk mengunggah kode terbaru ke GitHub menggunakan Personal Access Token (PAT):
 ```powershell
 # Jalankan script helper push
 .\git-push.ps1
-```
-
----
-
-## 🔐 Kredensial Akun Default
-
-Saat pertama kali aplikasi dijalankan, database SQLite akan otomatis dibuat dan di-seed dengan akun default:
-
-| Role | Email | Password Default | Akses |
-| :--- | :--- | :--- | :--- |
-| **Administrator** | `admin@trackerkerja.com` | `Admin123!` | Akses Penuh: Konfigurasi, Reset Password, Audit Trail, Master Data |
-| **Project Lead** | `glenn.hakim@elistec.com` | `Password123!` | Manajemen Proyek, Tugas, Timesheet, Catatan |
-| **QA Specialist** | `heni.rahayu@elistec.com` | `Password123!` | Pengujian, Kanban, Timesheet, Catatan |
-| **Frontend Dev** | `haviz.indra@elistec.com` | `Password123!` | Tugas Frontend, Timesheet, Catatan |
-| **Backend Dev** | `Iqbal.ali@elistec.com` | `Password123!` | Tugas Backend, Timesheet, Catatan |
-| **DevOps Engineer** | `mohammad.danang@elistec.com` | `Password123!` | Tugas DevOps, Timesheet, Catatan |
-| **System Analyst** | `syafix.said@elistec.com` | `Password123!` | Analisis Kebutuhan, Timesheet, Catatan |
-| **Technical Writer** | `nanda.putri@elistec.com` | `Password123!` | Dokumentasi Teknis, Timesheet, Catatan |
-| **Fullstack Dev** | `athallah.bariq@elistec.com` | `Password123!` | Fitur End-to-End, Timesheet, Catatan |
-
 ---
 
 ## 🌐 Endpoint & Akses Cepat

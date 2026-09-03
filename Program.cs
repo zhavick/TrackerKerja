@@ -201,6 +201,20 @@ using (var scope = app.Services.CreateScope())
     try
     {
         db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS SqlHistories (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT NOT NULL,
+                Content TEXT NOT NULL,
+                Dialect TEXT NULL,
+                TaskId INTEGER NULL,
+                CreatedAt TEXT NOT NULL,
+                FOREIGN KEY (TaskId) REFERENCES Tasks(Id) ON DELETE SET NULL
+            );");
+    } catch { }
+
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
             CREATE TABLE IF NOT EXISTS SystemSettings (
                 Key TEXT PRIMARY KEY,
                 Value TEXT NOT NULL,

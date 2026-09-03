@@ -917,6 +917,91 @@ namespace TrackerKerja.ViewModels
     }
     #endregion
 
+    #region SQL Tools DTOs
+    public class FormatSqlRequestDto
+    {
+        [Required(ErrorMessage = "Konten SQL wajib diisi.")]
+        public string Content { get; set; } = string.Empty;
+        public string Dialect { get; set; } = "sql";
+        public int IndentSize { get; set; } = 2;
+        public bool UseTabs { get; set; } = false;
+        public string KeywordCase { get; set; } = "upper"; // upper, lower, preserve
+        public string IdentifierCase { get; set; } = "preserve"; // upper, lower, preserve
+        public string DataTypeCase { get; set; } = "upper"; // upper, lower, preserve
+        public int LinesBetweenQueries { get; set; } = 1;
+        public bool Dense { get; set; } = false;
+    }
+
+    public class FormatSqlResponseDto
+    {
+        public string FormattedContent { get; set; } = string.Empty;
+        public bool IsValid { get; set; } = true;
+        public string Dialect { get; set; } = "sql";
+        public string? ErrorMessage { get; set; }
+        public long OriginalSizeBytes { get; set; }
+        public long FormattedSizeBytes { get; set; }
+        public int LineCount { get; set; }
+    }
+
+    public class MinifySqlRequestDto
+    {
+        [Required(ErrorMessage = "Konten SQL wajib diisi.")]
+        public string Content { get; set; } = string.Empty;
+    }
+
+    public class MinifySqlResponseDto
+    {
+        public string MinifiedContent { get; set; } = string.Empty;
+        public bool IsValid { get; set; } = true;
+        public string? ErrorMessage { get; set; }
+        public long OriginalSizeBytes { get; set; }
+        public long MinifiedSizeBytes { get; set; }
+        public double CompressionRatioPercent { get; set; }
+    }
+
+    public class ValidateSqlRequestDto
+    {
+        [Required(ErrorMessage = "Konten SQL wajib diisi.")]
+        public string Content { get; set; } = string.Empty;
+        public string Dialect { get; set; } = "sql";
+    }
+
+    public class ValidateSqlResponseDto
+    {
+        public bool IsValid { get; set; }
+        public string? ErrorMessage { get; set; }
+        public int? LineNumber { get; set; }
+        public string? Dialect { get; set; }
+    }
+
+    public class SaveSqlSnippetRequestDto
+    {
+        [Required(ErrorMessage = "Nama snippet SQL wajib diisi.")]
+        [MaxLength(200)]
+        public string Name { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Konten SQL wajib diisi.")]
+        public string Content { get; set; } = string.Empty;
+
+        [MaxLength(50)]
+        public string Dialect { get; set; } = "sql";
+
+        public int? TaskId { get; set; }
+    }
+
+    public class SqlHistoryResponseDto
+    {
+        public int Id { get; set; }
+        public string Name { get; set; } = string.Empty;
+        public string Content { get; set; } = string.Empty;
+        public string Dialect { get; set; } = "sql";
+        public int? TaskId { get; set; }
+        public string? TaskTitle { get; set; }
+        public DateTime CreatedAt { get; set; }
+        public string SizeFormatted { get; set; } = "0 Bytes";
+    }
+    #endregion
+
     #region Notifications DTOs
     public class NotificationResponseDto
     {

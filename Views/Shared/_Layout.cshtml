@@ -199,6 +199,11 @@
                 <span class="text-sm font-medium">JSON Tools</span>
             </a>
 
+            <a href="/SqlTools" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "SqlTools" ? "active" : "")">
+                <i class="fas fa-database w-5 text-center text-indigo-500"></i>
+                <span class="text-sm font-medium">SQL Beautifier</span>
+            </a>
+
             <a href="/Report" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Report" ? "active" : "")">
                 <i class="fas fa-chart-bar w-5 text-center text-blue-500"></i>
                 <span class="text-sm font-medium">Laporan</span>

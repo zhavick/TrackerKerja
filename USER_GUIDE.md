@@ -272,7 +272,32 @@ Modul JSON Tools (`/JsonTools`) disediakan khusus untuk memudahkan tim (khususny
 
 ---
 
-## 7. Modul Catatan Kerja & Dokumentasi (Notes)
+## 7. Modul SQL Beautifier & Formatter
+
+Modul SQL Beautifier (`/SqlTools`) dirancang untuk membantu System Analyst, Database Administrator, dan Software Engineer dalam merapikan, memformat, memvalidasi, dan mengompres kueri SQL dengan standar 15+ database engine modern.
+
+### 7.1 Fitur & Kemampuan Format SQL
+- **Dukungan 15+ Dialek Database Engine**: Standard SQL (ANSI), PostgreSQL, MySQL, MariaDB, SQLite, Transact-SQL (T-SQL / SQL Server), Oracle (PL/SQL), Google BigQuery, Snowflake, Amazon Redshift, Spark SQL, IBM DB2, Trino / Presto, Couchbase (N1QL), dan SingleStoreDB.
+- **Kustomisasi Indentasi**: Mendukung 2 spasi, 4 spasi, 8 spasi, atau Tab (`\t`).
+- **Kustomisasi Casing Huruf Keyword**: Ubah kata kunci SQL menjadi `UPPERCASE` (`SELECT`, `FROM`, `WHERE`), `lowercase` (`select`, `where`), atau pertahankan format asli (*Preserve*).
+- **Format Instan Cepat**: Cukup tekan tombol pintas **Ctrl + Enter** pada editor untuk merapikan kueri secara instan.
+
+### 7.2 Minify / Kompresi Kueri SQL
+- Menghapus komentar baris (`--`) dan komentar blok (`/* ... */`), serta mereduksi whitespace berlebih menjadi single-line kueri padat berkecepatan transfer optimal.
+- Menampilkan metrik rasio kompresi data (*Compression Ratio*) dan perbandingan ukuran byte.
+
+### 7.3 Validasi Sintaks & Inspeksi Struktur
+- Memeriksa keseimbangan tanda kurung `()`, tanda kutip tunggal `'`, dan tanda kutip ganda `"` secara otomatis.
+- Mendeteksi letak nomor baris jika terdapat kesalahan penulisan struktur SQL.
+
+### 7.4 Ekspor & Manajemen Snippet Kueri
+- **Salin ke Clipboard**: Menyalin hasil kueri terformat dalam 1 klik.
+- **Download File `.sql`**: Mengunduh file skrip SQL langsung ke komputer.
+- **Simpan Snippet & Riwayat**: Simpan kueri ke database lokal dan dapat dihubungkan ke referensi Tugas Kerja (*Task*) tertentu untuk dokumentasi tim.
+
+---
+
+## 8. Modul Catatan Kerja & Dokumentasi (Notes)
 
 Modul Catatan (`/Note`) berfungsi sebagai repositori dokumentasi teknis, rangkuman rapat (*minutes of meeting*), hasil analisis, dan catatan referensi harian.
 

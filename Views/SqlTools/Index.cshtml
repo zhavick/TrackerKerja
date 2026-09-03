@@ -1,0 +1,845 @@
+@model List<TrackerKerja.Models.SqlHistory>
+@{
+    ViewData["Title"] = "SQL Beautifier & Formatter";
+    var tasks = ViewBag.Tasks as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+@section Styles {
+    <!-- Highlight.js Stylesheets -->
+    <link id="hljs-dark-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/atom-one-dark.min.css">
+    <link id="hljs-light-theme" rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/github.min.css" disabled>
+    
+    <style>
+        .code-font {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', 'Courier New', monospace;
+        }
+        .sql-output-container pre {
+            margin: 0;
+            padding: 1rem;
+            border-radius: 0.75rem;
+            max-height: 520px;
+            overflow: auto;
+            font-size: 0.85rem;
+            line-height: 1.5;
+        }
+        .sql-output-container code {
+            font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace !important;
+            border-radius: 0.5rem;
+        }
+        .line-numbers-wrapper {
+            counter-reset: line;
+        }
+        .line-numbers-wrapper .hljs-line {
+            counter-increment: line;
+            display: block;
+        }
+        .line-numbers-wrapper .hljs-line::before {
+            content: counter(line);
+            display: inline-block;
+            width: 2.5rem;
+            margin-right: 1rem;
+            color: #64748b;
+            text-align: right;
+            user-select: none;
+            opacity: 0.6;
+        }
+    </style>
+}
+
+<!-- Page Header & Overview Card -->
+<div class="mb-5 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 p-5 rounded-3xl text-white shadow-xl border border-indigo-900/50">
+    <div class="flex items-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-indigo-500/20 border border-indigo-400/30 flex items-center justify-center text-indigo-400 text-2xl shadow-inner">
+            <i class="fas fa-database"></i>
+        </div>
+        <div>
+            <div class="flex items-center gap-2">
+                <h1 class="text-xl font-extrabold tracking-tight">SQL Beautifier & Formatter</h1>
+                <span class="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-300 border border-indigo-400/30 uppercase tracking-wider">Multi-Dialect Pro</span>
+            </div>
+            <p class="text-xs text-slate-300 mt-0.5">Format, rapikan, validasi, dan kompres kueri SQL dengan standar 15+ database engine secara instan.</p>
+        </div>
+    </div>
+    <div class="flex items-center gap-2 flex-wrap">
+        <div class="flex items-center bg-slate-800/80 rounded-xl p-1 border border-slate-700">
+            <button type="button" id="btn-layout-split" onclick="setLayoutMode('split')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-xs transition-all flex items-center gap-1.5" title="Tampilan Berdampingan (Side-by-Side)">
+                <i class="fas fa-columns"></i> <span class="hidden sm:inline">Split</span>
+            </button>
+            <button type="button" id="btn-layout-stacked" onclick="setLayoutMode('stacked')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5" title="Tampilan Atas-Bawah (Stacked)">
+                <i class="fas fa-bars"></i> <span class="hidden sm:inline">Stacked</span>
+            </button>
+        </div>
+
+        <div class="flex items-center bg-slate-800/80 rounded-xl p-1 border border-slate-700">
+            <button type="button" id="btn-theme-dark" onclick="setCodeTheme('dark')" class="px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 text-indigo-300 shadow-xs transition-all flex items-center gap-1" title="Tema Editor Gelap (Dark Mode)">
+                <i class="fas fa-moon"></i>
+            </button>
+            <button type="button" id="btn-theme-light" onclick="setCodeTheme('light')" class="px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1" title="Tema Editor Terang (Light Mode)">
+                <i class="fas fa-sun"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+
+    <!-- SQL Formatter Main Workspace Area (2 Cols on XL) -->
+    <div class="xl:col-span-2 flex flex-col gap-5">
+
+        <!-- Formatter Toolbar & Options Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+                <!-- Dialect Selector -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                        <i class="fas fa-server text-indigo-500"></i> Dialek SQL
+                    </label>
+                    <select id="sql-dialect" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all cursor-pointer">
+                        <option value="sql" selected>Standard SQL (ANSI)</option>
+                        <option value="postgresql">PostgreSQL</option>
+                        <option value="mysql">MySQL</option>
+                        <option value="mariadb">MariaDB</option>
+                        <option value="sqlite">SQLite</option>
+                        <option value="tsql">SQL Server (T-SQL)</option>
+                        <option value="plsql">Oracle (PL/SQL)</option>
+                        <option value="bigquery">Google BigQuery</option>
+                        <option value="snowflake">Snowflake</option>
+                        <option value="redshift">Amazon Redshift</option>
+                        <option value="spark">Spark SQL</option>
+                        <option value="db2">IBM DB2</option>
+                        <option value="trino">Trino / Presto</option>
+                        <option value="n1ql">Couchbase (N1QL)</option>
+                        <option value="singlestoredb">SingleStoreDB</option>
+                    </select>
+                </div>
+
+                <!-- Indentation -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                        <i class="fas fa-indent text-cyan-500"></i> Indentasi
+                    </label>
+                    <select id="sql-indent" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all cursor-pointer">
+                        <option value="2">2 Spasi</option>
+                        <option value="4" selected>4 Spasi</option>
+                        <option value="8">8 Spasi</option>
+                        <option value="tab">Tab (\t)</option>
+                    </select>
+                </div>
+
+                <!-- Keyword Casing -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                        <i class="fas fa-font text-amber-500"></i> Keyword Case
+                    </label>
+                    <select id="sql-casing" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all cursor-pointer">
+                        <option value="upper" selected>UPPERCASE (SELECT, WHERE)</option>
+                        <option value="lower">lowercase (select, where)</option>
+                        <option value="preserve">Pertahankan Asli</option>
+                    </select>
+                </div>
+
+                <!-- Sample Queries -->
+                <div>
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                        <i class="fas fa-file-code text-emerald-500"></i> Contoh Template
+                    </label>
+                    <select id="sql-samples" onchange="loadSampleQuery(this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-indigo-700 bg-indigo-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all cursor-pointer">
+                        <option value="">-- Pilih Contoh Query --</option>
+                        <option value="join_aggregate">1. SELECT JOIN, Group By & Subquery</option>
+                        <option value="cte_window">2. CTE (WITH) & Window Function</option>
+                        <option value="ddl_table">3. DDL CREATE TABLE & Indexes</option>
+                        <option value="dml_upsert">4. DML INSERT & ON CONFLICT</option>
+                        <option value="transaction">5. Multi-Statement Transaction</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Action Buttons Row -->
+            <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" onclick="formatSql()" id="btn-format"
+                            class="flex items-center gap-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold px-4 py-2.5 rounded-xl shadow-md hover:shadow-lg transition-all active:scale-95 cursor-pointer">
+                        <i class="fas fa-wand-magic-sparkles"></i>
+                        <span>Beautify SQL</span>
+                        <span class="text-[10px] bg-white/20 px-1.5 py-0.5 rounded ml-0.5 hidden sm:inline">Ctrl + Enter</span>
+                    </button>
+                    <button type="button" onclick="minifySql()" id="btn-minify"
+                            class="flex items-center gap-1.5 bg-cyan-500 hover:bg-cyan-600 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer">
+                        <i class="fas fa-compress-alt"></i>
+                        <span>Minify / Compact</span>
+                    </button>
+                    <button type="button" onclick="validateSql()" id="btn-validate"
+                            class="flex items-center gap-1.5 bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-bold px-3.5 py-2.5 rounded-xl shadow-sm transition-all active:scale-95 cursor-pointer">
+                        <i class="fas fa-check-double"></i>
+                        <span>Validasi</span>
+                    </button>
+                </div>
+
+                <div class="flex items-center gap-2 flex-wrap">
+                    <button type="button" onclick="copySqlOutput()" id="btn-copy"
+                            class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2.5 rounded-xl transition-all cursor-pointer">
+                        <i class="fas fa-copy text-indigo-500"></i>
+                        <span>Salin Hasil</span>
+                    </button>
+                    <button type="button" onclick="downloadSqlFile()" id="btn-download"
+                            class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold px-3 py-2.5 rounded-xl transition-all cursor-pointer" title="Unduh kueri ke file .sql">
+                        <i class="fas fa-download text-emerald-500"></i>
+                        <span>Download .sql</span>
+                    </button>
+                    <button type="button" onclick="clearSqlEditor()"
+                            class="flex items-center gap-1.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold px-3 py-2.5 rounded-xl transition-all cursor-pointer">
+                        <i class="fas fa-trash-alt"></i>
+                        <span>Clear</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Status Notification Banner -->
+        <div id="status-banner" class="hidden px-4 py-3 rounded-2xl text-xs font-semibold flex items-center justify-between gap-2 transition-all"></div>
+
+        <!-- Editor Work Area (Dual Panes: Split or Stacked) -->
+        <div id="editor-panes" class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+            <!-- INPUT PANE -->
+            <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 flex flex-col overflow-hidden">
+                <div class="px-4 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-indigo-500"></div>
+                        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Input Raw SQL</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                        <span id="input-stats">0 karakter • 0 baris</span>
+                    </div>
+                </div>
+                <div class="p-3 flex-1 flex flex-col">
+                    <textarea id="sql-input" rows="18" placeholder="-- Paste query SQL Anda di sini...&#10;&#10;SELECT u.id, u.full_name, COUNT(t.id) AS total_tasks&#10;FROM AspNetUsers u&#10;LEFT JOIN Tasks t ON u.id = t.assigned_user_id&#10;WHERE t.status != 'Done'&#10;GROUP BY u.id, u.full_name&#10;ORDER BY total_tasks DESC;&#10;"
+                              class="code-font w-full flex-1 p-3.5 rounded-xl border border-slate-200 text-xs leading-relaxed text-slate-800 bg-slate-900/5 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all resize-y"></textarea>
+                </div>
+            </div>
+
+            <!-- OUTPUT PANE -->
+            <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 flex flex-col overflow-hidden">
+                <div class="px-4 py-3 bg-slate-50/80 border-b border-slate-100 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <div class="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                        <span class="text-xs font-bold text-slate-700 uppercase tracking-wider">Formatted Output</span>
+                        <span id="output-dialect-badge" class="px-2 py-0.5 rounded-md text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 uppercase">SQL</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-[11px] text-slate-400">
+                        <span id="output-stats">0 karakter • 0 baris</span>
+                    </div>
+                </div>
+                <div class="p-3 flex-1 flex flex-col bg-slate-900 rounded-b-2xl overflow-hidden sql-output-container">
+                    <pre class="flex-1 overflow-auto"><code id="sql-output-code" class="language-sql hljs">-- Hasil query yang rapi dan terformat akan tampil di sini...</code></pre>
+                </div>
+            </div>
+        </div>
+
+        <!-- Metrics & Performance Bar -->
+        <div id="metrics-bar" class="hidden bg-white rounded-2xl shadow-sm border border-slate-200/80 p-3.5 flex items-center justify-between flex-wrap gap-3 text-xs text-slate-600">
+            <div class="flex items-center gap-4 flex-wrap">
+                <div class="flex items-center gap-1.5">
+                    <i class="fas fa-clock text-indigo-500"></i>
+                    <span>Waktu Proses: <strong id="metric-time" class="text-slate-800">0 ms</strong></span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <i class="fas fa-weight-hanging text-cyan-500"></i>
+                    <span>Ukuran: <strong id="metric-size-orig" class="text-slate-800">0 B</strong> &rarr; <strong id="metric-size-fmt" class="text-emerald-600">0 B</strong></span>
+                </div>
+                <div id="metric-ratio-box" class="flex items-center gap-1.5">
+                    <i class="fas fa-percentage text-amber-500"></i>
+                    <span>Rasio Kompresi: <strong id="metric-ratio" class="text-indigo-600">0%</strong></span>
+                </div>
+            </div>
+            <div class="text-[11px] text-slate-400 font-medium">
+                Dual Engine: Client-Side (sql-formatter) &amp; Server-Side fallback
+            </div>
+        </div>
+
+        <!-- Save Snippet to Database Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-4">
+            <h4 class="text-xs font-bold text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-1.5">
+                <i class="fas fa-bookmark text-amber-500"></i> Simpan Snippet Kueri SQL ke Riwayat Proyek
+            </h4>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div class="md:col-span-1">
+                    <input type="text" id="save-sql-name" placeholder="Judul Snippet (mis. Analisis Penjualan Q3)"
+                           class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                </div>
+                <div class="md:col-span-1">
+                    <select id="save-sql-task" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                        <option value="">-- Hubungkan ke Tugas (Opsional) --</option>
+                        @foreach (var t in tasks)
+                        {
+                            <option value="@t.Id">#@t.Id - @t.Title</option>
+                        }
+                    </select>
+                </div>
+                <div class="md:col-span-1 flex items-center">
+                    <button type="button" onclick="saveSqlSnippet()"
+                            class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-sm hover:shadow transition-all active:scale-95 cursor-pointer">
+                        <i class="fas fa-save"></i>
+                        <span>Simpan Snippet SQL</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Right Sidebar: Saved SQL Snippets & History -->
+    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden flex flex-col">
+        <div class="p-4 border-b border-slate-100 bg-slate-50/50 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <div class="w-8 h-8 rounded-xl bg-amber-100 text-amber-700 flex items-center justify-center text-xs font-bold">
+                    <i class="fas fa-history"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-slate-800 text-sm">Riwayat Snippet SQL</h3>
+                    <p class="text-[11px] text-slate-400">Tersimpan di database lokal</p>
+                </div>
+            </div>
+            <span class="text-xs font-extrabold px-2 py-0.5 rounded-full bg-indigo-50 text-indigo-700 border border-indigo-100">@Model.Count</span>
+        </div>
+
+        <!-- History Search -->
+        <div class="p-3 border-b border-slate-100 bg-white">
+            <div class="relative">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="history-search" oninput="filterHistoryList(this.value)" placeholder="Cari nama kueri..."
+                       class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400">
+            </div>
+        </div>
+
+        <!-- History Items List -->
+        <div id="history-container" class="divide-y divide-slate-100 max-h-[720px] overflow-y-auto flex-1">
+            @if (!Model.Any())
+            {
+                <div class="p-8 text-center" id="empty-history-notice">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-100 text-slate-400 flex items-center justify-center mx-auto mb-3 text-lg">
+                        <i class="fas fa-database"></i>
+                    </div>
+                    <p class="text-slate-600 text-xs font-bold">Belum ada snippet tersimpan</p>
+                    <p class="text-slate-400 text-[11px] mt-1">Format kueri SQL dan klik "Simpan Snippet" untuk menyimpan ke riwayat.</p>
+                </div>
+            }
+            else
+            {
+                @foreach (var item in Model)
+                {
+                    <div class="p-3.5 hover:bg-indigo-50/40 transition-colors group history-item" data-name="@item.Name.ToLowerInvariant()">
+                        <div class="flex items-start justify-between gap-2">
+                            <div class="min-w-0 flex-1 cursor-pointer" onclick="loadHistoryItem(@item.Id)">
+                                <div class="flex items-center gap-1.5">
+                                    <p class="text-xs font-bold text-slate-800 truncate group-hover:text-indigo-600 transition-colors">@item.Name</p>
+                                    <span class="px-1.5 py-0.2 rounded text-[9px] font-bold bg-slate-100 text-slate-600 uppercase border border-slate-200">@(string.IsNullOrEmpty(item.Dialect) ? "SQL" : item.Dialect)</span>
+                                </div>
+                                <p class="text-[10px] text-slate-400 mt-0.5 flex items-center gap-1">
+                                    <i class="far fa-clock text-[9px]"></i>
+                                    @item.CreatedAt.ToString("dd MMM yyyy HH:mm")
+                                </p>
+                                @if (item.Task != null)
+                                {
+                                    <div class="inline-flex items-center gap-1 text-[10px] text-indigo-600 font-medium bg-indigo-50 px-1.5 py-0.5 rounded mt-1 border border-indigo-100">
+                                        <i class="fas fa-tasks text-[9px]"></i>
+                                        <span class="truncate max-w-[150px]">@item.Task.Title</span>
+                                    </div>
+                                }
+                                <p class="text-[11px] text-slate-400 font-mono truncate mt-1 bg-slate-50 p-1 rounded border border-slate-100">
+                                    @(item.Content.Length > 60 ? item.Content.Substring(0, 60) + "..." : item.Content)
+                                </p>
+                            </div>
+                            <div class="flex items-center gap-1 flex-shrink-0">
+                                <button type="button" onclick="quickCopyHistory(@item.Id)" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-indigo-600 p-1 text-xs transition-all" title="Salin Kueri">
+                                    <i class="fas fa-copy"></i>
+                                </button>
+                                <button type="button" onclick="deleteHistoryItem(@item.Id)" class="opacity-0 group-hover:opacity-100 text-slate-400 hover:text-red-600 p-1 text-xs transition-all" title="Hapus Snippet">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                }
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <!-- SQL Formatter JS CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/sql-formatter@15.3.1/dist/sql-formatter.min.js"></script>
+    <!-- Highlight.js JS CDN -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/languages/sql.min.js"></script>
+
+    <script>
+        const inputEl = document.getElementById('sql-input');
+        const outputCodeEl = document.getElementById('sql-output-code');
+        const dialectEl = document.getElementById('sql-dialect');
+        const indentEl = document.getElementById('sql-indent');
+        const casingEl = document.getElementById('sql-casing');
+        const statusBanner = document.getElementById('status-banner');
+        const outputDialectBadge = document.getElementById('output-dialect-badge');
+
+        let lastFormattedSql = '';
+
+        // Preset Sample SQL Queries
+        const sampleQueries = {
+            join_aggregate: `-- Analisis Produktivitas Tugas & Pengguna\nSELECT \n  u.id AS user_id, \n  u.full_name AS team_member, \n  p.name AS project_name, \n  COUNT(t.id) AS total_tasks, \n  SUM(CASE WHEN t.status = 'Done' THEN 1 ELSE 0 END) AS completed_tasks, \n  ROUND(AVG(t.progress), 2) AS avg_progress_percent \nFROM AspNetUsers u \nINNER JOIN Tasks t ON u.id = t.assigned_user_id \nINNER JOIN Projects p ON t.project_id = p.id \nWHERE t.created_at >= '2026-01-01' \nGROUP BY u.id, u.full_name, p.name \nHAVING COUNT(t.id) > 2 \nORDER BY completed_tasks DESC, avg_progress_percent DESC;`,
+            
+            cte_window: `-- Perhitungan Ranking & Lead Time dengan CTE dan Window Functions\nWITH TaskMetrics AS (\n  SELECT \n    t.id, \n    t.title, \n    t.project_id, \n    t.priority, \n    t.status, \n    t.due_date, \n    ROW_NUMBER() OVER (PARTITION BY t.project_id ORDER BY t.priority DESC, t.due_date ASC) AS priority_rank, \n    DENSE_RANK() OVER (ORDER BY t.due_date ASC) AS overall_urgency_rank \n  FROM Tasks t \n  WHERE t.status != 'Done'\n)\nSELECT \n  tm.id, \n  tm.title, \n  tm.priority, \n  tm.priority_rank, \n  p.name AS project_name \nFROM TaskMetrics tm \nJOIN Projects p ON tm.project_id = p.id \nWHERE tm.priority_rank <= 5 \nORDER BY p.name, tm.priority_rank ASC;`,
+            
+            ddl_table: `-- Skema Tabel Audit dan Log Aktivitas\nCREATE TABLE AuditTrails (\n  id INTEGER PRIMARY KEY AUTOINCREMENT,\n  user_id NVARCHAR(450) NOT NULL,\n  action_type NVARCHAR(50) NOT NULL,\n  table_name NVARCHAR(100) NOT NULL,\n  record_id NVARCHAR(100) NULL,\n  old_values TEXT NULL,\n  new_values TEXT NULL,\n  ip_address NVARCHAR(45) NULL,\n  created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,\n  CONSTRAINT fk_audit_user FOREIGN KEY (user_id) REFERENCES AspNetUsers(id) ON DELETE CASCADE\n);\n\nCREATE INDEX idx_audit_user_action ON AuditTrails (user_id, action_type);\nCREATE INDEX idx_audit_created ON AuditTrails (created_at DESC);`,
+            
+            dml_upsert: `-- Batch Insert dengan Penanganan Duplikasi\nINSERT INTO SystemSettings (key, value, description, updated_at)\nVALUES \n  ('ThemeMode', 'Dark', 'Pengaturan tema aplikasi default', '2026-09-03 17:00:00'),\n  ('AutoBackupHour', '23', 'Jam pelaksanaan backup basis data', '2026-09-03 17:00:00'),\n  ('MaxUploadMB', '50', 'Batas maksimal ukuran file lampiran', '2026-09-03 17:00:00')\nON CONFLICT (key) DO UPDATE SET\n  value = EXCLUDED.value,\n  updated_at = CURRENT_TIMESTAMP;`,
+            
+            transaction: `-- Multi-Statement Transaction untuk Penutupan Proyek & Arsip Tugas\nBEGIN TRANSACTION;\n\nUPDATE Projects \nSET status = 'Completed', deadline = CURRENT_TIMESTAMP \nWHERE id = 101;\n\nUPDATE Tasks \nSET status = 'Done', progress = 100, solution = 'Proyek telah selesai dan diverifikasi QA' \nWHERE project_id = 101 AND status != 'Done';\n\nINSERT INTO AuditLogs (action, details, created_at) \nVALUES ('PROJECT_CLOSED', 'Proyek #101 ditutup otomatis dengan seluruh sub-tugasnya.', CURRENT_TIMESTAMP);\n\nCOMMIT;`
+        };
+
+        function loadSampleQuery(key) {
+            if (!key || !sampleQueries[key]) return;
+            inputEl.value = sampleQueries[key];
+            updateInputStats();
+            formatSql();
+        }
+
+        function showStatus(msg, type) {
+            statusBanner.className = `px-4 py-3 rounded-2xl text-xs font-semibold flex items-center justify-between gap-2 transition-all ${
+                type === 'success' ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' :
+                type === 'error' ? 'bg-red-50 text-red-800 border border-red-200' :
+                'bg-indigo-50 text-indigo-800 border border-indigo-200'
+            }`;
+            statusBanner.innerHTML = `
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-${type === 'success' ? 'check-circle text-emerald-600' : type === 'error' ? 'triangle-exclamation text-red-600' : 'info-circle text-indigo-600'}"></i>
+                    <span>${msg}</span>
+                </div>
+                <button type="button" onclick="this.parentElement.classList.add('hidden')" class="text-slate-400 hover:text-slate-600 p-1">
+                    <i class="fas fa-times"></i>
+                </button>
+            `;
+            statusBanner.classList.remove('hidden');
+        }
+
+        function updateInputStats() {
+            const val = inputEl.value;
+            const chars = val.length;
+            const lines = val ? val.split('\n').length : 0;
+            document.getElementById('input-stats').textContent = `${chars.toLocaleString()} karakter • ${lines.toLocaleString()} baris`;
+        }
+
+        function updateOutputStats(formattedText) {
+            const chars = formattedText.length;
+            const lines = formattedText ? formattedText.split('\n').length : 0;
+            document.getElementById('output-stats').textContent = `${chars.toLocaleString()} karakter • ${lines.toLocaleString()} baris`;
+        }
+
+        inputEl.addEventListener('input', updateInputStats);
+
+        // Core Beautifier / Formatter
+        async function formatSql() {
+            const content = inputEl.value.trim();
+            if (!content) {
+                showStatus('Masukkan query SQL terlebih dahulu pada kotak editor input.', 'error');
+                return;
+            }
+
+            const dialect = dialectEl.value;
+            const indentVal = indentEl.value;
+            const casingVal = casingEl.value;
+            const useTabs = indentVal === 'tab';
+            const indentSize = useTabs ? 2 : parseInt(indentVal, 10);
+
+            outputDialectBadge.textContent = dialect.toUpperCase();
+
+            const startTime = performance.now();
+            let formatted = '';
+            let usedServer = false;
+
+            // 1. Try client-side formatting with sql-formatter library
+            try {
+                if (typeof window.sqlFormatter !== 'undefined' && typeof window.sqlFormatter.format === 'function') {
+                    const options = {
+                        language: dialect === 'sqlite' ? 'sqlite' :
+                                  dialect === 'tsql' ? 'transactsql' :
+                                  dialect === 'plsql' ? 'plsql' :
+                                  dialect === 'postgresql' ? 'postgresql' :
+                                  dialect === 'mysql' ? 'mysql' :
+                                  dialect === 'mariadb' ? 'mariadb' :
+                                  dialect === 'bigquery' ? 'bigquery' :
+                                  dialect === 'snowflake' ? 'snowflake' :
+                                  dialect === 'redshift' ? 'redshift' :
+                                  dialect === 'spark' ? 'spark' :
+                                  dialect === 'db2' ? 'db2' :
+                                  dialect === 'trino' ? 'trino' :
+                                  dialect === 'n1ql' ? 'n1ql' :
+                                  dialect === 'singlestoredb' ? 'singlestoredb' : 'sql',
+                        tabWidth: indentSize,
+                        useTabs: useTabs,
+                        keywordCase: casingVal === 'upper' ? 'upper' : casingVal === 'lower' ? 'lower' : 'preserve',
+                        linesBetweenQueries: 1
+                    };
+                    formatted = window.sqlFormatter.format(content, options);
+                }
+            } catch (err) {
+                console.warn('Client sqlFormatter error, falling back to server-side engine:', err);
+            }
+
+            // 2. Fallback to server-side engine if needed
+            if (!formatted) {
+                try {
+                    const res = await fetch('/SqlTools/Format', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            content: content,
+                            dialect: dialect,
+                            indentSize: indentSize,
+                            useTabs: useTabs,
+                            keywordCase: casingVal,
+                            linesBetweenQueries: 1
+                        })
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        formatted = data.result;
+                        usedServer = true;
+                    } else {
+                        showStatus(data.error || 'Format SQL gagal.', 'error');
+                        return;
+                    }
+                } catch (ex) {
+                    showStatus('Koneksi format gagal: ' + ex.message, 'error');
+                    return;
+                }
+            }
+
+            const duration = Math.round(performance.now() - startTime);
+            lastFormattedSql = formatted;
+
+            // Render with highlight.js
+            outputCodeEl.textContent = formatted;
+            outputCodeEl.className = `language-sql hljs`;
+            if (typeof hljs !== 'undefined') {
+                hljs.highlightElement(outputCodeEl);
+            }
+
+            updateOutputStats(formatted);
+
+            // Metrics Update
+            const origBytes = new Blob([content]).size;
+            const fmtBytes = new Blob([formatted]).size;
+            document.getElementById('metric-time').textContent = `${duration} ms (${usedServer ? 'Server' : 'Client'})`;
+            document.getElementById('metric-size-orig').textContent = formatBytes(origBytes);
+            document.getElementById('metric-size-fmt').textContent = formatBytes(fmtBytes);
+            document.getElementById('metric-ratio-box').classList.add('hidden');
+            document.getElementById('metrics-bar').classList.remove('hidden');
+
+            showStatus(`SQL berhasil diformat rapi dengan dialek ${dialect.toUpperCase()} (${duration} ms).`, 'success');
+        }
+
+        // Minify / Compact SQL
+        async function minifySql() {
+            const content = inputEl.value.trim();
+            if (!content) {
+                showStatus('Masukkan query SQL terlebih dahulu untuk diminifikasi.', 'error');
+                return;
+            }
+
+            const startTime = performance.now();
+            try {
+                const res = await fetch('/SqlTools/Minify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const duration = Math.round(performance.now() - startTime);
+                    lastFormattedSql = data.result;
+                    outputCodeEl.textContent = data.result;
+                    outputCodeEl.className = 'language-sql hljs';
+                    if (typeof hljs !== 'undefined') {
+                        hljs.highlightElement(outputCodeEl);
+                    }
+                    updateOutputStats(data.result);
+
+                    document.getElementById('metric-time').textContent = `${duration} ms`;
+                    document.getElementById('metric-size-orig').textContent = formatBytes(data.originalSize);
+                    document.getElementById('metric-size-fmt').textContent = formatBytes(data.minifiedSize);
+                    document.getElementById('metric-ratio').textContent = `${data.compressionRatio}%`;
+                    document.getElementById('metric-ratio-box').classList.remove('hidden');
+                    document.getElementById('metrics-bar').classList.remove('hidden');
+
+                    showStatus(`SQL berhasil diminifikasi! Ukuran terkompresi sebesar ${data.compressionRatio}%.`, 'success');
+                } else {
+                    showStatus(data.error || 'Minify SQL gagal.', 'error');
+                }
+            } catch (ex) {
+                showStatus('Koneksi minify gagal: ' + ex.message, 'error');
+            }
+        }
+
+        // Validate Syntax
+        async function validateSql() {
+            const content = inputEl.value.trim();
+            if (!content) {
+                showStatus('Masukkan query SQL terlebih dahulu untuk divalidasi.', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/SqlTools/Validate', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ content, dialect: dialectEl.value })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStatus('✅ ' + data.message, 'success');
+                } else {
+                    showStatus('❌ ' + (data.error || 'Sintaks tidak valid') + (data.line ? ` (Baris: ${data.line})` : ''), 'error');
+                }
+            } catch (ex) {
+                showStatus('Validasi gagal: ' + ex.message, 'error');
+            }
+        }
+
+        // Copy Result
+        function copySqlOutput() {
+            const text = lastFormattedSql || outputCodeEl.textContent || inputEl.value;
+            if (!text || text.startsWith('-- Hasil')) {
+                showStatus('Tidak ada kueri untuk disalin.', 'error');
+                return;
+            }
+            navigator.clipboard.writeText(text).then(() => {
+                showStatus('Hasil kueri SQL berhasil disalin ke clipboard!', 'success');
+                if (typeof SwalToast === 'function') {
+                    SwalToast.fire({ icon: 'success', title: 'SQL disalin ke clipboard' });
+                }
+            }).catch(() => {
+                showStatus('Gagal menyalin ke clipboard.', 'error');
+            });
+        }
+
+        // Download as .sql File
+        function downloadSqlFile() {
+            const text = lastFormattedSql || outputCodeEl.textContent || inputEl.value;
+            if (!text || text.startsWith('-- Hasil')) {
+                showStatus('Tidak ada kueri untuk diunduh.', 'error');
+                return;
+            }
+            const dialect = dialectEl.value || 'sql';
+            const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `query_${dialect}_${new Date().toISOString().slice(0, 10)}.sql`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            showStatus('File kueri .sql berhasil diunduh.', 'success');
+        }
+
+        // Clear All
+        function clearSqlEditor() {
+            inputEl.value = '';
+            lastFormattedSql = '';
+            outputCodeEl.textContent = '-- Hasil query yang rapi dan terformat akan tampil di sini...';
+            outputCodeEl.className = 'language-sql hljs';
+            updateInputStats();
+            updateOutputStats('');
+            document.getElementById('metrics-bar').classList.add('hidden');
+            statusBanner.classList.add('hidden');
+        }
+
+        // Save to Database
+        async function saveSqlSnippet() {
+            const content = lastFormattedSql || inputEl.value.trim();
+            const name = document.getElementById('save-sql-name').value.trim();
+            const taskIdVal = document.getElementById('save-sql-task').value;
+            const taskId = taskIdVal ? parseInt(taskIdVal, 10) : null;
+            const dialect = dialectEl.value;
+
+            if (!content || content.startsWith('-- Hasil')) {
+                showStatus('Tidak ada konten SQL untuk disimpan.', 'error');
+                return;
+            }
+
+            try {
+                const res = await fetch('/SqlTools/Save', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        name: name || `SQL ${dialect.toUpperCase()} ${new Date().toLocaleDateString()}`,
+                        content: content,
+                        dialect: dialect,
+                        taskId: taskId
+                    })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showStatus('Snippet SQL berhasil disimpan ke riwayat database!', 'success');
+                    document.getElementById('save-sql-name').value = '';
+                    setTimeout(() => location.reload(), 800);
+                } else {
+                    showStatus(data.error || 'Gagal menyimpan snippet SQL.', 'error');
+                }
+            } catch (ex) {
+                showStatus('Koneksi simpan gagal: ' + ex.message, 'error');
+            }
+        }
+
+        // Load History Item
+        async function loadHistoryItem(id) {
+            try {
+                const res = await fetch(`/SqlTools/GetHistory/${id}`);
+                const data = await res.json();
+                if (data.success) {
+                    inputEl.value = data.content;
+                    if (data.dialect) dialectEl.value = data.dialect;
+                    document.getElementById('save-sql-name').value = data.name;
+                    if (data.taskId) document.getElementById('save-sql-task').value = data.taskId;
+                    updateInputStats();
+                    formatSql();
+                    showStatus(`Snippet '${data.name}' berhasil dimuat dari riwayat.`, 'info');
+                } else {
+                    showStatus('Gagal memuat snippet riwayat.', 'error');
+                }
+            } catch (ex) {
+                showStatus('Gagal memuat riwayat: ' + ex.message, 'error');
+            }
+        }
+
+        // Quick Copy History
+        async function quickCopyHistory(id) {
+            try {
+                const res = await fetch(`/SqlTools/GetHistory/${id}`);
+                const data = await res.json();
+                if (data.success && data.content) {
+                    await navigator.clipboard.writeText(data.content);
+                    showStatus(`Snippet '${data.name}' berhasil disalin ke clipboard!`, 'success');
+                }
+            } catch (e) {
+                showStatus('Gagal menyalin: ' + e.message, 'error');
+            }
+        }
+
+        // Delete History Item
+        async function deleteHistoryItem(id) {
+            const confirmed = typeof SwalConfirm === 'function'
+                ? await SwalConfirm({
+                    title: 'Hapus Snippet SQL?',
+                    text: 'Apakah Anda yakin ingin menghapus snippet kueri ini dari riwayat?',
+                    icon: 'warning',
+                    confirmButtonText: '<i class="fas fa-trash-alt mr-1.5"></i>Ya, Hapus',
+                    cancelButtonText: 'Batal',
+                    isDanger: true
+                })
+                : confirm('Hapus snippet SQL ini?');
+
+            if (!confirmed) return;
+
+            try {
+                const res = await fetch(`/SqlTools/Delete/${id}`, { method: 'POST' });
+                const data = await res.json();
+                if (data.success) {
+                    showStatus('Snippet SQL berhasil dihapus.', 'success');
+                    setTimeout(() => location.reload(), 600);
+                }
+            } catch (e) {
+                showStatus('Gagal menghapus: ' + e.message, 'error');
+            }
+        }
+
+        // Filter History List
+        function filterHistoryList(query) {
+            const q = query.toLowerCase().trim();
+            const items = document.querySelectorAll('.history-item');
+            let visibleCount = 0;
+            items.forEach(item => {
+                const name = item.getAttribute('data-name') || '';
+                if (!q || name.includes(q)) {
+                    item.classList.remove('hidden');
+                    visibleCount++;
+                } else {
+                    item.classList.add('hidden');
+                }
+            });
+        }
+
+        // Layout Toggle: Split vs Stacked
+        function setLayoutMode(mode) {
+            const panes = document.getElementById('editor-panes');
+            const btnSplit = document.getElementById('btn-layout-split');
+            const btnStacked = document.getElementById('btn-layout-stacked');
+
+            if (mode === 'stacked') {
+                panes.className = 'grid grid-cols-1 gap-4';
+                btnStacked.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-xs transition-all flex items-center gap-1.5';
+                btnSplit.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5';
+            } else {
+                panes.className = 'grid grid-cols-1 lg:grid-cols-2 gap-4';
+                btnSplit.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-indigo-600 text-white shadow-xs transition-all flex items-center gap-1.5';
+                btnStacked.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1.5';
+            }
+            localStorage.setItem('sql_layout_mode', mode);
+        }
+
+        // Code Theme Toggle: Dark vs Light
+        function setCodeTheme(theme) {
+            const darkCss = document.getElementById('hljs-dark-theme');
+            const lightCss = document.getElementById('hljs-light-theme');
+            const btnDark = document.getElementById('btn-theme-dark');
+            const btnLight = document.getElementById('btn-theme-light');
+
+            if (theme === 'light') {
+                darkCss.disabled = true;
+                lightCss.disabled = false;
+                btnLight.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 text-amber-300 shadow-xs transition-all flex items-center gap-1';
+                btnDark.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1';
+            } else {
+                darkCss.disabled = false;
+                lightCss.disabled = true;
+                btnDark.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-700 text-indigo-300 shadow-xs transition-all flex items-center gap-1';
+                btnLight.className = 'px-3 py-1.5 rounded-lg text-xs font-semibold text-slate-400 hover:text-white transition-all flex items-center gap-1';
+            }
+            localStorage.setItem('sql_code_theme', theme);
+        }
+
+        function formatBytes(bytes) {
+            if (bytes === 0) return '0 B';
+            const k = 1024;
+            const sizes = ['B', 'KB', 'MB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+        }
+
+        // Keyboard Shortcut: Ctrl + Enter to Beautify
+        document.getElementById('sql-input').addEventListener('keydown', function (e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                e.preventDefault();
+                formatSql();
+            }
+        });
+
+        // Initialize state on load
+        document.addEventListener('DOMContentLoaded', () => {
+            const savedLayout = localStorage.getItem('sql_layout_mode');
+            if (savedLayout) setLayoutMode(savedLayout);
+
+            const savedTheme = localStorage.getItem('sql_code_theme');
+            if (savedTheme) setCodeTheme(savedTheme);
+
+            updateInputStats();
+
+            // If input is empty, load the first sample query by default for a lively preview
+            if (!inputEl.value.trim()) {
+                inputEl.value = sampleQueries.join_aggregate;
+                updateInputStats();
+                formatSql();
+            }
+        });
+    </script>
+}

@@ -381,6 +381,7 @@ namespace TrackerKerja.Controllers.Api
                 { "Calendar", new List<string> { "GET /api/calendar/events" } },
                 { "ImportExport", new List<string> { "GET /api/import/template", "POST /api/import/preview", "POST /api/import/execute", "GET /api/import/export-arms" } },
                 { "JsonTools", new List<string> { "POST /api/json-tools/format", "POST /api/json-tools/minify", "POST /api/json-tools/validate", "POST /api/json-tools/save", "GET /api/json-tools/history", "GET /api/json-tools/history/{id}", "DELETE /api/json-tools/history/{id}" } },
+                { "SqlTools", new List<string> { "POST /api/sql-tools/format", "POST /api/sql-tools/minify", "POST /api/sql-tools/validate", "POST /api/sql-tools/save", "GET /api/sql-tools/history", "GET /api/sql-tools/history/{id}", "DELETE /api/sql-tools/history/{id}" } },
                 { "Notifications", new List<string> { "GET /api/notifications", "POST /api/notifications/{id}/read", "POST /api/notifications/read-all" } },
                 { "Dashboard", new List<string> { "GET /api/dashboard/summary", "POST /api/dashboard/sync" } },
                 { "Reports", new List<string> { "GET /api/reports/dashboard", "GET /api/reports/chart-data", "GET /api/reports/members-workload", "GET /api/reports/gantt" } },

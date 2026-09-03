@@ -63,23 +63,17 @@
                                 disabled>
                             <i class="fas fa-upload mr-2"></i>Upload & Preview File
                         </button>
-                        <a href="/Import/ArmsTemplate"
-                           class="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-4 py-3 rounded-xl border border-indigo-200 transition-colors text-xs"
-                           title="Download Template Format ARMS (19 Kolom)">
-                            <i class="fas fa-file-excel text-indigo-600"></i>
-                            <span>Template ARMS</span>
-                        </a>
                         <a href="/Import/Template"
-                           class="flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 font-semibold px-4 py-3 rounded-xl border border-emerald-200 transition-colors text-xs"
-                           title="Download Template Standar">
-                            <i class="fas fa-download text-emerald-500"></i>
-                            <span>Template Standar</span>
+                           class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-3 rounded-xl shadow-sm transition-all text-xs"
+                           title="Download Template Format Tracker (21 Kolom Standar)">
+                            <i class="fas fa-file-excel"></i>
+                            <span>Download Template Excel (21 Kolom)</span>
                         </a>
                         <a href="/Task/ExportArmsExcel"
                            class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-3 rounded-xl border border-slate-300 transition-colors text-xs"
-                           title="Export Semua Task ke Format ARMS Excel">
+                           title="Export Semua Task ke Format Tracker 21 Kolom">
                             <i class="fas fa-file-export text-slate-700"></i>
-                            <span>Export Data ke ARMS</span>
+                            <span>Export Data ke Excel</span>
                         </a>
                     </div>
                 </form>
@@ -87,41 +81,58 @@
         </div>
 
         <!-- Format Guide -->
-        <div class="bg-white rounded-2xl shadow-sm border border-amber-100 p-5">
-            <h4 class="font-bold text-slate-800 flex items-center gap-2 mb-4">
-                <i class="fas fa-info-circle text-amber-500"></i>
-                Format Kolom Excel
-            </h4>
-            <div class="overflow-x-auto">
-                <table class="w-full text-sm">
+        <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-5">
+            <div class="flex items-center justify-between mb-4">
+                <h4 class="font-bold text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-table-list text-indigo-600"></i>
+                    Spesifikasi Format Kolom Excel (Proposed 21 Kolom)
+                </h4>
+                <span class="text-xs bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-full border border-indigo-100">Standar 21 Kolom</span>
+            </div>
+            <div class="overflow-x-auto max-h-96">
+                <table class="w-full text-xs">
                     <thead>
-                        <tr class="border-b border-slate-100 bg-slate-50">
-                            <th class="text-left text-xs font-semibold text-slate-500 px-3 py-2">Kolom</th>
-                            <th class="text-left text-xs font-semibold text-slate-500 px-3 py-2">Format / Nilai</th>
-                            <th class="text-center text-xs font-semibold text-slate-500 px-3 py-2">Wajib</th>
+                        <tr class="border-b border-slate-100 bg-slate-50 sticky top-0">
+                            <th class="text-left font-bold text-slate-600 px-3 py-2">#</th>
+                            <th class="text-left font-bold text-slate-600 px-3 py-2">Nama Kolom (Header)</th>
+                            <th class="text-left font-bold text-slate-600 px-3 py-2">Keterangan / Nilai</th>
+                            <th class="text-center font-bold text-slate-600 px-3 py-2">Wajib</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-50">
                         @{
                             var cols = new[]
                             {
-                                ("Nama Task", "Teks bebas", true),
-                                ("Kategori", "Backend / Frontend / API REST / Database / DevOps / Testing", false),
-                                ("Nama Project", "Nama proyek (baru akan dibuat otomatis)", false),
-                                ("PIC", "Email (contoh: haviz.indra@elistec.com) atau Nama Lengkap tim", false),
-                                ("Prioritas", "Low / Medium / High / Critical", false),
-                                ("Status", "Todo / InProgress / Done", false),
-                                ("Tanggal Mulai", "DD/MM/YYYY atau YYYY-MM-DD", false),
-                                ("Tanggal Berakhir", "DD/MM/YYYY atau YYYY-MM-DD", false),
-                                ("Deadline", "DD/MM/YYYY atau YYYY-MM-DD", false)
+                                (1, "project_name", "Nama proyek (dibuat otomatis jika baru)", false),
+                                (2, "requirement_code", "Kode requirement / BRD / TSD", false),
+                                (3, "title", "Judul tugas / task", true),
+                                (4, "status", "TODO / IN_PROGRESS / DONE / TESTING", false),
+                                (5, "priority", "LOW / MEDIUM / HIGH / CRITICAL", false),
+                                (6, "jenis_task", "Kategori (NEW_APP, ENHANCEMENT, BUGFIX, dll)", false),
+                                (7, "module_name", "Nama modul / milestone (TCES, TICS, Auth, dll)", false),
+                                (8, "bug_type", "Tipe isu / bug (Feature, Bug, Task, Enhancement)", false),
+                                (9, "progress", "0 s/d 100 (Done otomatis diset 100%)", false),
+                                (10, "start_date", "Tanggal mulai (YYYY-MM-DD atau Excel date)", false),
+                                (11, "due_date", "Tenggat waktu (deadline)", false),
+                                (12, "completed_date", "Tanggal selesai aktual", false),
+                                (13, "developer_emails", "Email PIC Dev (bisa dipisah ';' jika banyak)", false),
+                                (14, "ba_emails", "Email Business Analyst", false),
+                                (15, "infra_emails", "Email Tim DevOps / IT Infra", false),
+                                (16, "master_data_emails", "Email Tim Master Data", false),
+                                (17, "tester_emails", "Email Tim QA / Tester", false),
+                                (18, "tw_emails", "Email Tim Technical Writer", false),
+                                (19, "kendala", "Catatan blocker / kendala pengerjaan", false),
+                                (20, "solusi", "Solusi teknis / rencana perbaikan", false),
+                                (21, "Notes Tracker", "Catatan tambahan / deskripsi tugas", false)
                             };
-                            foreach (var (name, format, required) in cols)
+                            foreach (var (idx, name, format, required) in cols)
                             {
-                                <tr class="hover:bg-slate-50">
-                                    <td class="px-3 py-2 font-medium text-slate-700">@name</td>
-                                    <td class="px-3 py-2 text-slate-500 font-mono text-xs">@format</td>
+                                <tr class="hover:bg-indigo-50/20">
+                                    <td class="px-3 py-2 font-mono text-slate-400">@idx</td>
+                                    <td class="px-3 py-2 font-mono font-semibold text-indigo-700">@name</td>
+                                    <td class="px-3 py-2 text-slate-600">@format</td>
                                     <td class="px-3 py-2 text-center">
-                                        @if (required) { <span class="text-red-500 font-bold">✓</span> }
+                                        @if (required) { <span class="text-rose-600 font-bold">✓</span> }
                                         else { <span class="text-slate-300">—</span> }
                                     </td>
                                 </tr>

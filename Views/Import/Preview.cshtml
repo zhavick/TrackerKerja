@@ -132,6 +132,32 @@
                             </td>
                             <td class="px-4 py-3">
                                 <p class="font-semibold text-slate-800 text-sm">@row.Title</p>
+                                <div class="flex flex-wrap gap-1.5 mt-1">
+                                    @if (!string.IsNullOrEmpty(row.Requirement))
+                                    {
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-bold bg-indigo-50 text-indigo-700 px-1.5 py-0.5 rounded border border-indigo-100">
+                                            <i class="fas fa-bookmark text-[9px]"></i> @row.Requirement
+                                        </span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(row.ModuleName))
+                                    {
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold bg-slate-100 text-slate-700 px-1.5 py-0.5 rounded">
+                                            <i class="fas fa-cubes text-[9px]"></i> @row.ModuleName
+                                        </span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(row.Obstacle))
+                                    {
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold bg-red-50 text-red-600 px-1.5 py-0.5 rounded" title="Kendala: @row.Obstacle">
+                                            <i class="fas fa-exclamation-triangle text-[9px]"></i> Kendala
+                                        </span>
+                                    }
+                                    @if (!string.IsNullOrEmpty(row.Solution))
+                                    {
+                                        <span class="inline-flex items-center gap-1 text-[10px] font-semibold bg-emerald-50 text-emerald-600 px-1.5 py-0.5 rounded" title="Solusi: @row.Solution">
+                                            <i class="fas fa-lightbulb text-[9px]"></i> Solusi
+                                        </span>
+                                    }
+                                </div>
                                 @if (!string.IsNullOrEmpty(row.ErrorMessage))
                                 {
                                     <p class="text-xs text-red-600 mt-0.5"><i class="fas fa-times-circle mr-1"></i>@row.ErrorMessage</p>

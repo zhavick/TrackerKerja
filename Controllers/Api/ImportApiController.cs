@@ -31,32 +31,41 @@ namespace TrackerKerja.Controllers.Api
         public IActionResult DownloadTemplate()
         {
             using var wb = new XLWorkbook();
-            var ws = wb.Worksheets.Add("Template Import Task");
+            var ws = wb.Worksheets.Add("Sheet1");
 
-            var headers = new[] { "Nama Task", "Kategori", "Nama Project", "PIC", "Prioritas", "Status", "Tanggal Mulai", "Tanggal Berakhir", "Deadline" };
+            var headers = new[]
+            {
+                "project_name", "requirement_code", "title", "status", "priority",
+                "jenis_task", "module_name", "bug_type", "progress", "start_date",
+                "due_date", "completed_date", "developer_emails", "ba_emails", "infra_emails",
+                "master_data_emails", "tester_emails", "tw_emails", "kendala", "solusi",
+                "Notes Tracker"
+            };
+
             for (int i = 0; i < headers.Length; i++)
             {
                 var cell = ws.Cell(1, i + 1);
                 cell.Value = headers[i];
                 cell.Style.Font.Bold = true;
                 cell.Style.Font.FontColor = XLColor.White;
-                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#6366F1");
-                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#4F46E5");
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                cell.Style.Border.OutsideBorderColor = XLColor.FromHtml("#3730A3");
             }
 
             var samples = new object[,]
             {
-                { "Buat halaman login dan integrasi UI", "Frontend", "Work Tracker Pro", "haviz.indra@elistec.com", "High", "Todo", "2026-08-19", "2026-08-25", "2026-08-25" },
-                { "Setup database EF Core & SQLite", "Database", "Work Tracker Pro", "Iqbal.ali@elistec.com", "Medium", "InProgress", "2026-08-19", "2026-08-22", "2026-08-22" },
-                { "Testing endpoint REST API Webhook", "API / REST", "REST API Integration", "glenn.hakim@elistec.com", "Low", "Todo", "2026-08-20", "", "2026-08-30" },
-                { "Review dokumentasi dan validasi QA", "Testing", "Work Tracker Pro", "heni.rahayu@elistec.com", "Medium", "Done", "2026-08-15", "2026-08-18", "2026-08-18" }
+                { "Integrasi TCES TICS", "TSD-001", "Checking & Testing Product, Scheming & premium class TICS vs Mass Product", "IN_PROGRESS", "HIGH", "ENHANCEMENT", "TCES", "Feature", 40, "2026-08-10", "2026-08-25", "", "haviz.indra@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "", "Menunggu sinkronisasi", "Koordinasi lead", "Sprint 4 Target" },
+                { "Integrasi TCES TICS", "TSD-002", "Melakukan Deployment ke Server Staging & Smoke Testing", "DONE", "HIGH", "NEW_APP", "TCES", "Task", 100, "2026-08-10", "2026-08-18", "2026-08-18", "haviz.indra@elistec.com", "syafix.said@elistec.com", "mohammad.danang@elistec.com", "", "heni.rahayu@elistec.com", "", "", "", "Deployed successfully" }
             };
 
             for (int r = 0; r < samples.GetLength(0); r++)
             {
                 for (int c = 0; c < samples.GetLength(1); c++)
                 {
-                    ws.Cell(r + 2, c + 1).Value = samples[r, c].ToString();
+                    ws.Cell(r + 2, c + 1).Value = samples[r, c]?.ToString() ?? "";
                 }
             }
 
@@ -66,7 +75,7 @@ namespace TrackerKerja.Controllers.Api
             wb.SaveAs(stream);
             var content = stream.ToArray();
 
-            return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Template_Import_Task.xlsx");
+            return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Template_Import_Task_21Kolom.xlsx");
         }
 
         /// <summary>
@@ -104,27 +113,72 @@ namespace TrackerKerja.Controllers.Api
                 }
 
                 var rowCount = ws.LastRowUsed()?.RowNumber() ?? 0;
+                var h1 = ws.Cell(1, 1).GetString()?.Trim().ToLower() ?? "";
+                var h2 = ws.Cell(1, 2).GetString()?.Trim().ToLower() ?? "";
+                var h13 = ws.Cell(1, 13).GetString()?.Trim().ToLower() ?? "";
+
+                bool isProposed21 = h1.Contains("project_name") || h2.Contains("requirement_code") || h13.Contains("developer_emails") || (h1.Contains("project") && ws.Cell(1, 3).GetString().ToLower().Contains("title"));
+
                 for (int r = 2; r <= rowCount; r++)
                 {
                     var row = ws.Row(r);
-                    var title = row.Cell(1).GetString()?.Trim();
-                    if (string.IsNullOrWhiteSpace(title)) continue;
+                    string? title = null;
+                    string? cat = null;
+                    string? proj = null;
+                    string? pic = null;
+                    string? priority = null;
+                    string? status = null;
+                    string? start = null;
+                    string? end = null;
+                    string? deadline = null;
+                    int progress = 0;
+                    string? obstacle = null;
+                    string? solution = null;
+                    string? moduleName = null;
+                    string? requirement = null;
+                    string? notesTracker = null;
 
-                    var cat = row.Cell(2).GetString()?.Trim();
-                    var proj = row.Cell(3).GetString()?.Trim();
-                    var pic = row.Cell(4).GetString()?.Trim();
-                    var priority = row.Cell(5).GetString()?.Trim();
-                    var status = row.Cell(6).GetString()?.Trim();
-                    var start = row.Cell(7).GetString()?.Trim();
-                    var end = row.Cell(8).GetString()?.Trim();
-                    var deadline = row.Cell(9).GetString()?.Trim();
+                    if (isProposed21)
+                    {
+                        proj = row.Cell(1).GetString()?.Trim();
+                        requirement = row.Cell(2).GetString()?.Trim();
+                        title = row.Cell(3).GetString()?.Trim();
+                        status = row.Cell(4).GetString()?.Trim();
+                        priority = row.Cell(5).GetString()?.Trim();
+                        cat = row.Cell(6).GetString()?.Trim();
+                        moduleName = row.Cell(7).GetString()?.Trim();
+                        var rawProgress = row.Cell(9).GetString()?.Trim().Replace("%", "");
+                        if (int.TryParse(rawProgress, out var pVal)) progress = Math.Clamp(pVal, 0, 100);
+                        start = row.Cell(10).GetString()?.Trim();
+                        deadline = row.Cell(11).GetString()?.Trim();
+                        end = row.Cell(12).GetString()?.Trim();
+                        pic = row.Cell(13).GetString()?.Trim();
+                        obstacle = row.Cell(19).GetString()?.Trim();
+                        solution = row.Cell(20).GetString()?.Trim();
+                        notesTracker = row.Cell(21).GetString()?.Trim();
+                    }
+                    else
+                    {
+                        title = row.Cell(1).GetString()?.Trim();
+                        cat = row.Cell(2).GetString()?.Trim();
+                        proj = row.Cell(3).GetString()?.Trim();
+                        pic = row.Cell(4).GetString()?.Trim();
+                        priority = row.Cell(5).GetString()?.Trim();
+                        status = row.Cell(6).GetString()?.Trim();
+                        start = row.Cell(7).GetString()?.Trim();
+                        end = row.Cell(8).GetString()?.Trim();
+                        deadline = row.Cell(9).GetString()?.Trim();
+                    }
+
+                    if (string.IsNullOrWhiteSpace(title)) continue;
 
                     string? matchedUserId = null;
                     if (!string.IsNullOrWhiteSpace(pic))
                     {
+                        var primaryEmail = pic.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault();
                         var u = allUsers.FirstOrDefault(u =>
-                            (u.Email != null && u.Email.Equals(pic, StringComparison.OrdinalIgnoreCase)) ||
-                            u.FullName.Equals(pic, StringComparison.OrdinalIgnoreCase));
+                            (!string.IsNullOrEmpty(u.Email) && u.Email.Equals(primaryEmail, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrEmpty(u.FullName) && u.FullName.Equals(primaryEmail, StringComparison.OrdinalIgnoreCase)));
                         if (u != null) matchedUserId = u.Id;
                     }
 
@@ -139,8 +193,16 @@ namespace TrackerKerja.Controllers.Api
                         AssigneeUserId = matchedUserId,
                         Priority = string.IsNullOrWhiteSpace(priority) ? "Medium" : priority,
                         Status = string.IsNullOrWhiteSpace(status) ? "Todo" : status,
+                        Progress = progress,
                         StartDate = start,
-                        Deadline = string.IsNullOrWhiteSpace(deadline) ? end : deadline
+                        Deadline = string.IsNullOrWhiteSpace(deadline) ? end : deadline,
+                        EndDate = end,
+                        Milestone = !string.IsNullOrWhiteSpace(moduleName) ? moduleName : requirement,
+                        Requirement = requirement,
+                        ModuleName = moduleName,
+                        Obstacle = obstacle,
+                        Solution = solution,
+                        NotesTracker = notesTracker
                     });
                 }
             }
@@ -217,6 +279,7 @@ namespace TrackerKerja.Controllers.Api
                 var task = new WorkTask
                 {
                     Title = r.Title.Trim(),
+                    Description = !string.IsNullOrWhiteSpace(r.NotesTracker) ? r.NotesTracker.Trim() : null,
                     ProjectId = projId,
                     CategoryId = catId,
                     AssignedToUserId = !string.IsNullOrWhiteSpace(r.AssigneeUserId) ? r.AssigneeUserId : dto.DefaultAssigneeId,
@@ -226,6 +289,8 @@ namespace TrackerKerja.Controllers.Api
                     StartDate = parsedStart,
                     DueDate = parsedDue,
                     Milestone = string.IsNullOrWhiteSpace(r.Milestone) ? "Implementation" : r.Milestone.Trim(),
+                    Obstacle = r.Obstacle,
+                    Solution = r.Solution,
                     CreatedAt = DateTime.Now,
                     UpdatedAt = DateTime.Now
                 };

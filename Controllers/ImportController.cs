@@ -32,70 +32,107 @@ namespace TrackerKerja.Controllers
             return View(logs);
         }
 
-        // ── DOWNLOAD TEMPLATE ────────────────────────────────────
+        // ── DOWNLOAD TEMPLATE (PROPOSED 21-COLUMN STANDARD FORMAT) ──
         [HttpGet]
         public IActionResult Template()
         {
             using var wb = new XLWorkbook();
-            var ws = wb.Worksheets.Add("Template Import Task");
+            var ws = wb.Worksheets.Add("Sheet1");
 
-            // Header row
-            var headers = new[] { "Nama Task", "Kategori", "Nama Project", "PIC", "Prioritas", "Status", "Tanggal Mulai", "Tanggal Berakhir", "Deadline" };
+            // Row 1: Exact 21 headers matching Proposed Import Format Tracker.xlsx
+            var headers = new[]
+            {
+                "project_name", "requirement_code", "title", "status", "priority",
+                "jenis_task", "module_name", "bug_type", "progress", "start_date",
+                "due_date", "completed_date", "developer_emails", "ba_emails", "infra_emails",
+                "master_data_emails", "tester_emails", "tw_emails", "kendala", "solusi",
+                "Notes Tracker"
+            };
+
             for (int i = 0; i < headers.Length; i++)
             {
                 var cell = ws.Cell(1, i + 1);
                 cell.Value = headers[i];
                 cell.Style.Font.Bold = true;
                 cell.Style.Font.FontColor = XLColor.White;
-                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#6366F1");
-                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Center;
+                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#4F46E5"); // Indigo
+                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
+                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
+                cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                cell.Style.Border.OutsideBorderColor = XLColor.FromHtml("#3730A3");
             }
 
-            // Sample data rows with PIC email
+            // Sample rows matching user proposed standard
             var samples = new object[,]
             {
-                { "Buat halaman login dan integrasi UI", "Frontend", "Work Tracker Pro", "haviz.indra@elistec.com", "High", "Todo", "2026-08-19", "2026-08-25", "2026-08-25" },
-                { "Setup database EF Core & SQLite", "Database", "Work Tracker Pro", "Iqbal.ali@elistec.com", "Medium", "InProgress", "2026-08-19", "2026-08-22", "2026-08-22" },
-                { "Testing endpoint REST API Webhook", "API / REST", "REST API Integration", "glenn.hakim@elistec.com", "Low", "Todo", "2026-08-20", "", "2026-08-30" },
-                { "Review dokumentasi dan validasi QA", "Testing", "Work Tracker Pro", "heni.rahayu@elistec.com", "Medium", "Done", "2026-08-15", "2026-08-18", "2026-08-18" }
+                { "Integrasi TCES TICS", "TSD-001", "Checking & Testing Product, Scheming & premium class TICS vs Mass Product", "IN_PROGRESS", "HIGH", "ENHANCEMENT", "TCES", "Feature", 40, "2026-08-10", "2026-08-25", "", "haviz.indra@elistec.com;athallah.bariq@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "nanda.putri@elistec.com", "Menunggu sinkronisasi skema data", "Koordinasi dengan lead backend", "Sprint 4 Target" },
+                { "Integrasi TCES TICS", "TSD-002", "Melakukan Deployment ke Server Staging & Smoke Testing", "DONE", "HIGH", "NEW_APP", "TCES", "Task", 100, "2026-08-10", "2026-08-18", "2026-08-18", "haviz.indra@elistec.com", "syafix.said@elistec.com", "mohammad.danang@elistec.com", "", "heni.rahayu@elistec.com", "", "", "", "Deployed successfully" },
+                { "Pengembangan Mass Product Retail", "BRD-004", "Pembuatan Test Case untuk Pengujian End-to-End TFire dan Travela", "TODO", "MEDIUM", "NEW_APP", "Mass Product", "Feature", 0, "2026-08-20", "2026-08-30", "", "glenn.hakim@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "", "Dokumen requirement belum final", "Follow up ke tim bisnis", "Priority QA item" }
             };
 
             for (int r = 0; r < samples.GetLength(0); r++)
             {
                 for (int c = 0; c < samples.GetLength(1); c++)
                 {
-                    ws.Cell(r + 2, c + 1).Value = samples[r, c].ToString();
+                    var cell = ws.Cell(r + 2, c + 1);
+                    cell.Value = samples[r, c]?.ToString() ?? "";
+                    cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+                    cell.Style.Border.OutsideBorderColor = XLColor.FromHtml("#E2E8F0");
                 }
             }
 
-            // Info sheet
-            var info = wb.Worksheets.Add("Petunjuk");
-            info.Cell(1, 1).Value = "PETUNJUK PENGISIAN TEMPLATE IMPORT TASK";
+            ws.Columns().AdjustToContents(10, 50);
+
+            // Petunjuk Sheet
+            var info = wb.Worksheets.Add("Petunjuk Pengisian");
+            info.Cell(1, 1).Value = "PETUNJUK PENGISIAN TEMPLATE IMPORT TASK (21 KOLOM)";
             info.Cell(1, 1).Style.Font.Bold = true;
             info.Cell(1, 1).Style.Font.FontSize = 14;
 
             var notes = new[]
             {
-                "Kolom 'Nama Task' WAJIB diisi.",
-                "Kategori: Backend / Frontend / API / REST / Database / DevOps / Testing (kosong = tanpa kategori)",
-                "Nama Project: Nama project terkait (jika project belum ada di sistem, akan dibuat otomatis)",
-                "PIC: Isi dengan Email pengguna terdaftar (misal: haviz.indra@elistec.com, glenn.hakim@elistec.com) atau Nama Lengkap pengguna. Kolom ini digunakan untuk mengatur/menugaskan PIC ke task terkait. (kosong = belum ditugaskan)",
-                "Prioritas: Low / Medium / High / Critical (kosong = Medium)",
-                "Status: Todo / InProgress / Done (kosong = Todo)",
-                "Format tanggal yang didukung: YYYY-MM-DD (2026-08-19), DD/MM/YYYY (19/08/2026), DD-MM-YYYY, atau format Tanggal Excel asli.",
-                "Baris pertama (header) tidak dihitung sebagai data."
+                "1. project_name: Nama proyek terkait (otomatis dibuat jika belum ada di sistem).",
+                "2. requirement_code: Kode requirement / BRD / TSD (opsional).",
+                "3. title: Judul nama task (WAJIB diisi).",
+                "4. status: Status pengerjaan (TODO / IN_PROGRESS / DONE / TESTING).",
+                "5. priority: Tingkat prioritas (LOW / MEDIUM / HIGH / CRITICAL). Default: MEDIUM.",
+                "6. jenis_task: Kategori / tipe task (NEW_APP, ENHANCEMENT, BUGFIX, MAINTENANCE, dll).",
+                "7. module_name: Nama modul / milestone (misal: TCES, TICS, Policy, Auth, dll).",
+                "8. bug_type: Tipe isu / bug (Feature, Bug, Task, Enhancement).",
+                "9. progress: Nilai persentase kemajuan (0 s/d 100). Status DONE otomatis 100%.",
+                "10. start_date: Tanggal mulai pengerjaan (format YYYY-MM-DD atau format tanggal Excel).",
+                "11. due_date: Batas tenggat waktu penyelesaian (deadline).",
+                "12. completed_date: Tanggal selesai aktual (opsional).",
+                "13. developer_emails: Email PIC Developer (dapat dipisah tanda ';' jika lebih dari 1 email).",
+                "14. ba_emails: Email Business Analyst terkait.",
+                "15. infra_emails: Email Tim DevOps / IT Infra terkait.",
+                "16. master_data_emails: Email Tim Master Data terkait.",
+                "17. tester_emails: Email Tim QA / Tester.",
+                "18. tw_emails: Email Tim Technical Writer.",
+                "19. kendala: Catatan hambatan / blocker selama pengerjaan.",
+                "20. solusi: Solusi teknis atau tindak lanjut atas kendala.",
+                "21. Notes Tracker: Catatan tambahan atau deskripsi aktivitas pengerjaan."
             };
-            for (int i = 0; i < notes.Length; i++)
-                info.Cell(i + 3, 1).Value = notes[i];
 
-            ws.Columns().AdjustToContents();
+            for (int i = 0; i < notes.Length; i++)
+            {
+                info.Cell(i + 3, 1).Value = notes[i];
+            }
+            info.Columns().AdjustToContents();
 
             using var stream = new MemoryStream();
             wb.SaveAs(stream);
             stream.Position = 0;
             return File(stream.ToArray(),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "Template_Import_Task.xlsx");
+                "Template_Import_Task_21Kolom.xlsx");
+        }
+
+        // ── DOWNLOAD ARMS TEMPLATE ──────────────────────────────
+        [HttpGet]
+        public IActionResult ArmsTemplate()
+        {
+            return Template();
         }
 
         // ── HELPER: EXTRACT DATE STRING FROM CLOSEDXML CELL ──────
@@ -180,66 +217,6 @@ namespace TrackerKerja.Controllers
             return null;
         }
 
-        // ── DOWNLOAD ARMS TEMPLATE ──────────────────────────────
-        [HttpGet]
-        public IActionResult ArmsTemplate()
-        {
-            using var wb = new XLWorkbook();
-            var ws = wb.Worksheets.Add("Sheet1");
-
-            // Row 1: Header names matching ARMS standard (21 columns)
-            var headers = new[]
-            {
-                "Task Code", "Project", "Requirement", "Title", "Status", "Priority",
-                "Jenis Task", "Module", "Tipe Bugs", "Progress", "Start Date",
-                "Due Date", "Completed Date", "Developer", "BA Emails", "Infra Emails",
-                "Master Data Emails", "Tester Emails", "Kendala", "Solusi", "Created At"
-            };
-
-            for (int i = 0; i < headers.Length; i++)
-            {
-                var cell = ws.Cell(1, i + 1);
-                cell.Value = headers[i];
-                cell.Style.Font.Bold = true;
-                cell.Style.Font.FontColor = XLColor.Black;
-                cell.Style.Fill.BackgroundColor = XLColor.FromHtml("#F1F5F9");
-                cell.Style.Alignment.Horizontal = XLAlignmentHorizontalValues.Left;
-                cell.Style.Alignment.Vertical = XLAlignmentVerticalValues.Center;
-                cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-                cell.Style.Border.OutsideBorderColor = XLColor.FromHtml("#CBD5E1");
-            }
-
-            // Sample rows matching user screenshot
-            var samples = new object[,]
-            {
-                { "TSK-0855", "Integrasi TCES TICS", "", "Pengecekan Data Transaksi dan Log Audit", "IN_PROGRESS", "HIGH", "ENHANCEMENT", "TCES", "", 10, "2026-08-10", "2026-08-20", "", "haviz.indra@elistec.com", "syafix.said@elistec.com;athallah.bariq@elistec.com", "", "", "mohammad.danang@elistec.com", "Menambah validasi response header", "Update service handler dan sinkronisasi", "2026-08-19 16:46:17" },
-                { "TSK-0852", "Integrasi TCES TICS", "", "Melakukan Deployment ke Server Staging", "DONE", "HIGH", "NEW_APP", "TCES", "", 100, "2026-08-10", "2026-08-18", "2026-08-18", "haviz.indra@elistec.com", "syafix.said@elistec.com;athallah.bariq@elistec.com", "", "", "mohammad.danang@elistec.com", "", "", "2026-08-19 16:36:59" },
-                { "TSK-0835", "Pengembangan Massal", "TSD-001", "Pengujian Fitur Policy Automation", "IN_PROGRESS", "MEDIUM", "NEW_APP", "Policy Automation", "", 40, "2026-08-10", "2026-08-25", "", "glenn.hakim@elistec.com", "syafix.said@elistec.com", "", "", "mohammad.danang@elistec.com", "Review performa webhook", "Pembuatan batch processor", "2026-08-18 16:38:44" }
-            };
-
-            for (int r = 0; r < samples.GetLength(0); r++)
-            {
-                for (int c = 0; c < samples.GetLength(1); c++)
-                {
-                    ws.Cell(r + 2, c + 1).Value = samples[r, c]?.ToString() ?? "";
-                }
-            }
-
-            var range = ws.Range(1, 1, samples.GetLength(0) + 1, headers.Length);
-            range.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
-            range.Style.Border.InsideBorder = XLBorderStyleValues.Thin;
-            range.Style.Border.OutsideBorderColor = XLColor.FromHtml("#CBD5E1");
-            range.Style.Border.InsideBorderColor = XLColor.FromHtml("#E2E8F0");
-            ws.Columns().AdjustToContents(8, 50);
-
-            using var stream = new MemoryStream();
-            wb.SaveAs(stream);
-            stream.Position = 0;
-            return File(stream.ToArray(),
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "Template_Import_ARMS.xlsx");
-        }
-
         // ── UPLOAD & PREVIEW ────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
@@ -282,10 +259,20 @@ namespace TrackerKerja.Controllers
                 var h2 = ws.Cell(1, 2).GetString().Trim().ToLower();
                 var h3 = ws.Cell(1, 3).GetString().Trim().ToLower();
                 var h4 = ws.Cell(1, 4).GetString().Trim().ToLower();
+                var h13 = ws.Cell(1, 13).GetString().Trim().ToLower();
 
-                bool isArms21 = h1.Contains("task code") || h1.Contains("task_code") || (h2.Contains("project") && h4.Contains("title"));
-                bool isArms19 = !isArms21 && (h1.Contains("project_name") || h2.Contains("requirement") || h3.Contains("title") || ws.Cell(1, 13).GetString().ToLower().Contains("developer"));
-                bool hasPicColumn = !isArms21 && !isArms19 && (h4.Contains("pic") || h4.Contains("penugasan") || h4.Contains("pengguna") || h4.Contains("assign") || ws.ColumnsUsed().Count() >= 9);
+                // Format 1: Proposed 21-Column Format (project_name, requirement_code, title, status, priority, ...)
+                bool isProposed21 = h1.Contains("project_name") || h2.Contains("requirement_code") || h13.Contains("developer_emails") || (h1.Contains("project") && h3.Contains("title"));
+                // Format 2: ARMS 21-Column with Task Code at col 1
+                bool isArms21WithTaskCode = !isProposed21 && (h1.Contains("task code") || h1.Contains("task_code") || (h2.Contains("project") && h4.Contains("title")));
+                // Format 3: Legacy 9-Column Format
+                bool hasPicColumn = !isProposed21 && !isArms21WithTaskCode && (h4.Contains("pic") || h4.Contains("penugasan") || h4.Contains("pengguna") || h4.Contains("assign") || ws.ColumnsUsed().Count() >= 9);
+
+                if (rows.Count == 0)
+                {
+                    TempData["Error"] = "File Excel tidak memiliki baris data (hanya berisi header). Silakan isi data tugas mulai dari baris ke-2.";
+                    return RedirectToAction("Index");
+                }
 
                 result.TotalRows = rows.Count;
 
@@ -294,9 +281,65 @@ namespace TrackerKerja.Controllers
                     var rowNum = row.RowNumber();
                     var preview = new ImportPreviewRow { RowNumber = rowNum };
 
-                    if (isArms21)
+                    if (isProposed21)
                     {
-                        // ARMS 21-Column Format (Matching uploaded screenshot)
+                        // ── PROPOSED 21-COLUMN STANDARD FORMAT ──────────────────
+                        preview.Project = row.Cell(1).GetString().Trim();
+                        preview.Requirement = row.Cell(2).GetString().Trim();
+                        preview.Title = row.Cell(3).GetString().Trim();
+
+                        var rawStatus = row.Cell(4).GetString().Trim().ToUpper();
+                        preview.Status = rawStatus switch
+                        {
+                            "DONE" or "SELESAI" => "Done",
+                            "IN_PROGRESS" or "INPROGRESS" or "PROGRESS" => "InProgress",
+                            "OVERDUE" => "Overdue",
+                            _ => "Todo"
+                        };
+
+                        var rawPriority = row.Cell(5).GetString().Trim().ToUpper();
+                        preview.Priority = rawPriority switch
+                        {
+                            "CRITICAL" => "Critical",
+                            "HIGH" => "High",
+                            "LOW" => "Low",
+                            _ => "Medium"
+                        };
+
+                        var jenisTask = row.Cell(6).GetString().Trim();
+                        var moduleName = row.Cell(7).GetString().Trim();
+                        preview.Category = !string.IsNullOrEmpty(jenisTask) ? jenisTask : (!string.IsNullOrEmpty(moduleName) ? moduleName : null);
+                        preview.ModuleName = moduleName;
+                        preview.BugType = row.Cell(8).GetString().Trim();
+
+                        var rawProgress = row.Cell(9).GetString().Trim().Replace("%", "");
+                        if (int.TryParse(rawProgress, out var pVal)) preview.Progress = Math.Clamp(pVal, 0, 100);
+
+                        preview.StartDate = ExtractDateString(row.Cell(10));
+                        preview.Deadline = ExtractDateString(row.Cell(11));
+                        preview.EndDate = ExtractDateString(row.Cell(12));
+
+                        preview.DeveloperEmails = row.Cell(13).GetString().Trim();
+                        preview.BaEmails = row.Cell(14).GetString().Trim();
+                        preview.InfraEmails = row.Cell(15).GetString().Trim();
+                        preview.MasterDataEmails = row.Cell(16).GetString().Trim();
+                        preview.TesterEmails = row.Cell(17).GetString().Trim();
+                        preview.TwEmails = row.Cell(18).GetString().Trim();
+
+                        preview.Obstacle = row.Cell(19).GetString().Trim(); // kendala
+                        preview.Solution = row.Cell(20).GetString().Trim(); // solusi
+                        preview.NotesTracker = row.Cell(21).GetString().Trim(); // Notes Tracker
+
+                        // Extract primary PIC from developer_emails (supports semicolon or comma separation)
+                        if (!string.IsNullOrEmpty(preview.DeveloperEmails))
+                        {
+                            var firstDev = preview.DeveloperEmails.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault();
+                            preview.Assignee = firstDev;
+                        }
+                    }
+                    else if (isArms21WithTaskCode)
+                    {
+                        // ── ARMS 21-COLUMN FORMAT WITH TASK CODE ────────────────
                         preview.Project = row.Cell(2).GetString().Trim();
                         preview.Requirement = row.Cell(3).GetString().Trim();
                         preview.Title = row.Cell(4).GetString().Trim();
@@ -304,7 +347,7 @@ namespace TrackerKerja.Controllers
                         var rawStatus = row.Cell(5).GetString().Trim().ToUpper();
                         preview.Status = rawStatus switch
                         {
-                            "DONE" => "Done",
+                            "DONE" or "SELESAI" => "Done",
                             "IN_PROGRESS" or "INPROGRESS" => "InProgress",
                             "OVERDUE" => "Overdue",
                             _ => "Todo"
@@ -321,7 +364,9 @@ namespace TrackerKerja.Controllers
 
                         var jenisTask = row.Cell(7).GetString().Trim();
                         var moduleName = row.Cell(8).GetString().Trim();
-                        preview.Category = !string.IsNullOrEmpty(moduleName) ? moduleName : (!string.IsNullOrEmpty(jenisTask) ? jenisTask : null);
+                        preview.Category = !string.IsNullOrEmpty(jenisTask) ? jenisTask : (!string.IsNullOrEmpty(moduleName) ? moduleName : null);
+                        preview.ModuleName = moduleName;
+                        preview.BugType = row.Cell(9).GetString().Trim();
 
                         var rawProgress = row.Cell(10).GetString().Trim().Replace("%", "");
                         if (int.TryParse(rawProgress, out var pVal)) preview.Progress = Math.Clamp(pVal, 0, 100);
@@ -329,51 +374,26 @@ namespace TrackerKerja.Controllers
                         preview.StartDate = ExtractDateString(row.Cell(11));
                         preview.Deadline = ExtractDateString(row.Cell(12));
                         preview.EndDate = ExtractDateString(row.Cell(13));
-                        preview.Assignee = row.Cell(14).GetString().Trim(); // developer email
+
+                        preview.DeveloperEmails = row.Cell(14).GetString().Trim();
+                        preview.BaEmails = row.Cell(15).GetString().Trim();
+                        preview.InfraEmails = row.Cell(16).GetString().Trim();
+                        preview.MasterDataEmails = row.Cell(17).GetString().Trim();
+                        preview.TesterEmails = row.Cell(18).GetString().Trim();
+
                         preview.Obstacle = row.Cell(19).GetString().Trim(); // kendala
                         preview.Solution = row.Cell(20).GetString().Trim(); // solusi
-                    }
-                    else if (isArms19)
-                    {
-                        // ARMS 19-Column Format (snake_case)
-                        preview.Project = row.Cell(1).GetString().Trim();
-                        preview.Requirement = row.Cell(2).GetString().Trim();
-                        preview.Title = row.Cell(3).GetString().Trim();
+                        preview.NotesTracker = row.Cell(21).GetString().Trim();
 
-                        var rawStatus = row.Cell(4).GetString().Trim().ToUpper();
-                        preview.Status = rawStatus switch
+                        if (!string.IsNullOrEmpty(preview.DeveloperEmails))
                         {
-                            "DONE" => "Done",
-                            "IN_PROGRESS" or "INPROGRESS" => "InProgress",
-                            "OVERDUE" => "Overdue",
-                            _ => "Todo"
-                        };
-
-                        var rawPriority = row.Cell(5).GetString().Trim().ToUpper();
-                        preview.Priority = rawPriority switch
-                        {
-                            "CRITICAL" => "Critical",
-                            "HIGH" => "High",
-                            "LOW" => "Low",
-                            _ => "Medium"
-                        };
-
-                        var jenisTask = row.Cell(6).GetString().Trim();
-                        var moduleName = row.Cell(7).GetString().Trim();
-                        preview.Category = !string.IsNullOrEmpty(moduleName) ? moduleName : (!string.IsNullOrEmpty(jenisTask) ? jenisTask : null);
-
-                        var rawProgress = row.Cell(9).GetString().Trim().Replace("%", "");
-                        if (int.TryParse(rawProgress, out var pVal)) preview.Progress = Math.Clamp(pVal, 0, 100);
-
-                        preview.StartDate = ExtractDateString(row.Cell(10));
-                        preview.Deadline = ExtractDateString(row.Cell(11));
-                        preview.EndDate = ExtractDateString(row.Cell(12));
-                        preview.Assignee = row.Cell(13).GetString().Trim(); // developer email
-                        preview.Obstacle = row.Cell(18).GetString().Trim(); // kendala
-                        preview.Solution = row.Cell(19).GetString().Trim(); // solusi
+                            var firstDev = preview.DeveloperEmails.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault();
+                            preview.Assignee = firstDev;
+                        }
                     }
                     else if (hasPicColumn)
                     {
+                        // ── LEGACY 9-COLUMN FORMAT WITH PIC ─────────────────────
                         preview.Title = row.Cell(1).GetString().Trim();
                         preview.Category = row.Cell(2).GetString().Trim();
                         preview.Project = row.Cell(3).GetString().Trim();
@@ -386,10 +406,10 @@ namespace TrackerKerja.Controllers
                     }
                     else
                     {
+                        // ── LEGACY 8-COLUMN FORMAT WITHOUT PIC ──────────────────
                         preview.Title = row.Cell(1).GetString().Trim();
                         preview.Category = row.Cell(2).GetString().Trim();
                         preview.Project = row.Cell(3).GetString().Trim();
-                        preview.Assignee = string.Empty;
                         preview.Priority = row.Cell(4).GetString().Trim();
                         preview.Status = row.Cell(5).GetString().Trim();
                         preview.StartDate = ExtractDateString(row.Cell(6));
@@ -491,8 +511,24 @@ namespace TrackerKerja.Controllers
         // ── CONFIRM & SAVE ────────────────────────────────────
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Confirm(Dictionary<int, string>? rowAssignees)
+        public async Task<IActionResult> Confirm()
         {
+            var rowAssignees = new Dictionary<int, string>();
+            if (Request.HasFormContentType)
+            {
+                foreach (var key in Request.Form.Keys)
+                {
+                    if (key.StartsWith("rowAssignees[", StringComparison.OrdinalIgnoreCase) && key.EndsWith("]"))
+                    {
+                        var inner = key.Substring(13, key.Length - 14);
+                        if (int.TryParse(inner, out var rowNum))
+                        {
+                            rowAssignees[rowNum] = Request.Form[key].ToString();
+                        }
+                    }
+                }
+            }
+
             var json = HttpContext.Session.GetString("ImportPreview");
             if (string.IsNullOrEmpty(json))
             {
@@ -606,9 +642,22 @@ namespace TrackerKerja.Controllers
                         parentTaskId = parentMatch?.Id;
                     }
 
+                    // Build tags from roles / metadata if present
+                    var tagList = new List<string>();
+                    if (!string.IsNullOrWhiteSpace(row.BugType)) tagList.Add(row.BugType.Trim());
+                    if (!string.IsNullOrWhiteSpace(row.BaEmails)) tagList.Add($"BA:{row.BaEmails.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(row.TesterEmails)) tagList.Add($"QA:{row.TesterEmails.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(row.InfraEmails)) tagList.Add($"Infra:{row.InfraEmails.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(row.MasterDataEmails)) tagList.Add($"MD:{row.MasterDataEmails.Trim()}");
+                    if (!string.IsNullOrWhiteSpace(row.TwEmails)) tagList.Add($"TW:{row.TwEmails.Trim()}");
+
+                    var milestone = !string.IsNullOrWhiteSpace(row.ModuleName) ? row.ModuleName.Trim() : (!string.IsNullOrWhiteSpace(row.Requirement) ? row.Requirement.Trim() : "Implementation");
+                    var description = !string.IsNullOrWhiteSpace(row.NotesTracker) ? row.NotesTracker.Trim() : null;
+
                     var task = new WorkTask
                     {
                         Title = row.Title,
+                        Description = description,
                         ProjectId = project?.Id,
                         CategoryId = category?.Id,
                         AssignedToUserId = assignedToUserId,
@@ -620,6 +669,8 @@ namespace TrackerKerja.Controllers
                         DueDate = parsedDeadline ?? parsedEnd,
                         Obstacle = row.Obstacle,
                         Solution = row.Solution,
+                        Milestone = milestone,
+                        Tags = tagList.Any() ? System.Text.Json.JsonSerializer.Serialize(tagList) : null,
                         CreatedAt = DateTime.Now,
                         UpdatedAt = DateTime.Now
                     };

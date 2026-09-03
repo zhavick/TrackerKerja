@@ -805,7 +805,20 @@ namespace TrackerKerja.ViewModels
         public int Progress { get; set; } = 0;
         public string? StartDate { get; set; }
         public string? Deadline { get; set; }
+        public string? EndDate { get; set; }
         public string? Milestone { get; set; }
+        public string? Requirement { get; set; }
+        public string? ModuleName { get; set; }
+        public string? BugType { get; set; }
+        public string? DeveloperEmails { get; set; }
+        public string? BaEmails { get; set; }
+        public string? InfraEmails { get; set; }
+        public string? MasterDataEmails { get; set; }
+        public string? TesterEmails { get; set; }
+        public string? TwEmails { get; set; }
+        public string? Obstacle { get; set; }
+        public string? Solution { get; set; }
+        public string? NotesTracker { get; set; }
         public string? ErrorMessage { get; set; }
         public string? WarningMessage { get; set; }
     }

@@ -16,17 +16,20 @@ namespace TrackerKerja.Controllers
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
         private readonly UserManager<AppUser> _userManager;
+        private readonly Services.IDatabaseExportService _exportService;
 
         public ConfigurationController(
             AppDbContext db,
             IConfiguration config,
             IWebHostEnvironment env,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            Services.IDatabaseExportService exportService)
         {
             _db = db;
             _config = config;
             _env = env;
             _userManager = userManager;
+            _exportService = exportService;
         }
 
         public async Task<IActionResult> Index()
@@ -236,6 +239,60 @@ namespace TrackerKerja.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // ── EXPORT DATABASE FILE (.DB) ──────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> ExportDatabaseFile()
+        {
+            try
+            {
+                var bytes = await _exportService.GetDatabaseBinarySnapshotAsync();
+                var fileName = $"TrackerKerja_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+                return File(bytes, "application/x-sqlite3", fileName);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Gagal mengekspor file database: {ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // ── EXPORT SQL SCRIPT (DDL & DATA .SQL) ─────────────────
+        [HttpGet]
+        public async Task<IActionResult> ExportSqlScript()
+        {
+            try
+            {
+                var sql = await _exportService.GenerateFullSqlDumpAsync();
+                var bytes = System.Text.Encoding.UTF8.GetBytes(sql);
+                var fileName = $"TrackerKerja_Dump_{DateTime.Now:yyyyMMdd_HHmmss}.sql";
+                return File(bytes, "application/sql", fileName);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Gagal mengekspor SQL Script: {ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
+        }
+
+        // ── SQL PREVIEW API ────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> GetSqlPreview()
+        {
+            try
+            {
+                var sql = await _exportService.GenerateFullSqlDumpAsync();
+                var preview = sql.Length > 12000 
+                    ? sql.Substring(0, 12000) + "\n\n-- ... [Sisa data script dipotong untuk pratinjau cepat. Silakan klik 'Unduh SQL Script (.sql)' untuk mengunduh berkas lengkap] ..." 
+                    : sql;
+
+                return Json(new { success = true, preview, totalLength = sql.Length });
+            }
+            catch (Exception ex)
+            {
+                return Json(new { success = false, message = ex.Message });
+            }
         }
 
         #region Helpers

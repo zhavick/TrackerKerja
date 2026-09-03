@@ -69,6 +69,7 @@ builder.Services.AddDbContext<AppDbContext>(options =>
 
 // Add Gamification Service
 builder.Services.AddScoped<IGamificationService, GamificationService>();
+builder.Services.AddScoped<IDatabaseExportService, DatabaseExportService>();
 
 // Add session support (for Import preview)
 builder.Services.AddSession(options =>

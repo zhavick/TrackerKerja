@@ -54,6 +54,7 @@
     - 11.1 [Kategori, Prioritas, dan Status](#111-kategori-prioritas-dan-status)
     - 11.2 [Milestone SDLC Waterfall](#112-milestone-sdlc-waterfall)
     - 11.3 [Master Hari Libur Nasional & Cuti Bersama](#113-master-hari-libur-nasional--cuti-bersama)
+    - 11.4 [Konfigurasi Sistem & Backup/Export Database (.db & .sql)](#114-konfigurasi-sistem--backupexport-database-db--sql)
 12. [Tips & Pertanyaan Umum (FAQ)](#12-tips--pertanyaan-umum-faq)
 
 ---
@@ -357,6 +358,15 @@ Khusus untuk peran **Administrator**, menu **Master Data** (`/MasterData`) digun
 - Mencatat daftar tanggal hari libur nasional dan cuti bersama resmi.
 - Data hari libur ini terintegrasi secara otomatis dengan modul **Export Timesheet Excel**, sehingga pada saat laporan diekspor, sistem akan mengenali dan menandai hari libur tersebut secara akurat.
 - Tersedia tombol cepat **Seed Hari Libur Nasional** untuk memuat daftar hari libur resmi tahun berjalan secara otomatis.
+
+### 11.4 Konfigurasi Sistem & Backup/Export Database (.db & .sql)
+Menu **Konfigurasi Sistem & Database** (`/Configuration`) menyediakan kontrol penuh bagi Administrator untuk:
+- **Global Base URL**: Mengatur URL domain aktif aplikasi untuk integrasi REST API, Swagger UI, dan Webhook.
+- **Export File Database (.db)**: Mengunduh berkas biner SQLite (`.db`) utuh untuk pencadangan offline (*full binary backup*) atau pemindahan (*migration*) ke server lain.
+- **Export Script SQL (DDL & Data .sql)**: Mengunduh skrip SQL komprehensif yang berisi pernyataan pembuatan skema tabel (`CREATE TABLE`), indeks, dan seluruh baris kueri data (`INSERT INTO`) yang siap diimpor/direstore ke sistem database manapun.
+- **Live Preview Script SQL**: Meninjau sintaks DDL skema database secara langsung melalui jendela pratinjau interaktif lengkap dengan fitur salin ke clipboard (*Copy*).
+- **Shrink / Kompresi Database (VACUUM)**: Mengoptimalkan dan mengklaim kembali ruang kosong file SQLite setelah penghapusan data.
+- **Reset Database**: Fitur pemeliharaan untuk mereset log transaksi atau melakukan *factory reset* data dengan pengamanan kode konfirmasi.
 
 ---
 

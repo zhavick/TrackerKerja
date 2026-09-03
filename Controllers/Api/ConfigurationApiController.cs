@@ -18,17 +18,20 @@ namespace TrackerKerja.Controllers.Api
         private readonly IConfiguration _config;
         private readonly IWebHostEnvironment _env;
         private readonly UserManager<AppUser> _userManager;
+        private readonly Services.IDatabaseExportService _exportService;
 
         public ConfigurationApiController(
             AppDbContext db,
             IConfiguration config,
             IWebHostEnvironment env,
-            UserManager<AppUser> userManager)
+            UserManager<AppUser> userManager,
+            Services.IDatabaseExportService exportService)
         {
             _db = db;
             _config = config;
             _env = env;
             _userManager = userManager;
+            _exportService = exportService;
         }
 
         /// <summary>
@@ -382,7 +385,7 @@ namespace TrackerKerja.Controllers.Api
                 { "Dashboard", new List<string> { "GET /api/dashboard/summary", "POST /api/dashboard/sync" } },
                 { "Reports", new List<string> { "GET /api/reports/dashboard", "GET /api/reports/chart-data", "GET /api/reports/members-workload", "GET /api/reports/gantt" } },
                 { "AuditTrail", new List<string> { "GET /api/audit-trail", "GET /api/audit-trail/{id}", "GET /api/audit-trail/stats", "GET /api/audit-trail/export-csv", "DELETE /api/audit-trail/clear" } },
-                { "Configuration", new List<string> { "GET /api/configuration/base-url", "PUT /api/configuration/base-url", "GET /api/configuration/database-capacity", "POST /api/configuration/shrink-database", "POST /api/configuration/reset-database", "GET /api/configuration/api-doc-summary" } }
+                { "Configuration", new List<string> { "GET /api/configuration/base-url", "PUT /api/configuration/base-url", "GET /api/configuration/database-capacity", "POST /api/configuration/shrink-database", "POST /api/configuration/reset-database", "GET /api/configuration/api-doc-summary", "GET /api/configuration/export-database-file", "GET /api/configuration/export-sql-script" } }
             };
 
             var total = modules.Values.Sum(v => v.Count);
@@ -399,6 +402,45 @@ namespace TrackerKerja.Controllers.Api
             };
 
             return Ok(ApiResponse<ApiDocSummaryDto>.Ok(dto, "Informasi dokumentasi API berhasil diambil."));
+        }
+
+        /// <summary>
+        /// Mengunduh cadangan snapshot file biner SQLite (.db) secara langsung (GET /api/configuration/export-database-file)
+        /// </summary>
+        [HttpGet("export-database-file")]
+        [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ExportDatabaseFile()
+        {
+            try
+            {
+                var bytes = await _exportService.GetDatabaseBinarySnapshotAsync();
+                var fileName = $"TrackerKerja_Backup_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+                return File(bytes, "application/x-sqlite3", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<object>.Fail($"Gagal mengekspor file database: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Mengunduh skrip dump SQL lengkap (DDL Skema Tabel &amp; Data INSERT) (GET /api/configuration/export-sql-script)
+        /// </summary>
+        [HttpGet("export-sql-script")]
+        [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ExportSqlScript()
+        {
+            try
+            {
+                var sql = await _exportService.GenerateFullSqlDumpAsync();
+                var bytes = System.Text.Encoding.UTF8.GetBytes(sql);
+                var fileName = $"TrackerKerja_Dump_{DateTime.Now:yyyyMMdd_HHmmss}.sql";
+                return File(bytes, "application/sql", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<object>.Fail($"Gagal mengekspor SQL script: {ex.Message}"));
+            }
         }
 
         #region Helpers

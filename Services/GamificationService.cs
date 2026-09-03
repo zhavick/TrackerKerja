@@ -32,7 +32,7 @@ namespace TrackerKerja.Services
             
             var totalWorkSeconds = await _db.Sessions
                 .Where(s => s.UserId == userId)
-                .SumAsync(s => (long?)s.DurationSeconds) ?? 0;
+                .SumAsync(s => (long?)s.Duration) ?? 0;
             var totalHours = totalWorkSeconds / 3600.0;
 
             var totalNotesCount = await _db.Notes.CountAsync(n => n.AuthorUserId == userId);
@@ -121,7 +121,7 @@ namespace TrackerKerja.Services
             var totalTasksCount = await _db.Tasks.CountAsync(t => t.AssignedToUserId == userId);
             var totalWorkSeconds = await _db.Sessions
                 .Where(s => s.UserId == userId)
-                .SumAsync(s => (long?)s.DurationSeconds) ?? 0;
+                .SumAsync(s => (long?)s.Duration) ?? 0;
             var totalHours = (int)Math.Floor(totalWorkSeconds / 3600.0);
             var totalNotesCount = await _db.Notes.CountAsync(n => n.AuthorUserId == userId);
 

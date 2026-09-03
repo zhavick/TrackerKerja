@@ -27,6 +27,12 @@ namespace TrackerKerja.ViewModels
 
         // Detailed session logs
         public List<WorkSession> RecentSessions { get; set; } = new();
+
+        // Timesheet Cut-off Reminder (Tgl 25 setiap bulan)
+        public bool IsApproachingCutoff { get; set; }
+        public int CutoffDaysLeft { get; set; }
+        public DateTime CutoffDate { get; set; }
+        public List<WorkTask> TasksMissingTimesheet { get; set; } = new();
     }
 
     public class TimesheetTaskRowDto

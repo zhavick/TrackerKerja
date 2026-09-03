@@ -1,0 +1,72 @@
+@{
+    ViewData["Title"] = "Buku Panduan Pengguna (User Guide)";
+}
+
+@section Styles {
+    <style>
+        @@media print {
+            body { background: white !important; font-size: 12pt !important; }
+            .no-print, header, aside, #sidebar, #sidebar-timer, .not-for-print { display: none !important; }
+            .user-guide-doc { margin: 0 !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; }
+            .user-guide-doc section { page-break-inside: avoid; border: 1px solid #e2e8f0 !important; margin-bottom: 20px !important; }
+        }
+    </style>
+}
+
+<div class="max-w-6xl mx-auto space-y-6 pb-12">
+
+    <!-- Sticky Header Actions Bar (No Print) -->
+    <div class="sticky top-0 z-20 bg-white/95 backdrop-blur-md rounded-2xl p-4 border border-slate-200/80 shadow-md flex flex-wrap items-center justify-between gap-3 no-print">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500 text-white flex items-center justify-center font-bold shadow-md shadow-amber-500/30">
+                <i class="fas fa-book-open text-lg"></i>
+            </div>
+            <div>
+                <h1 class="font-extrabold text-slate-800 text-base md:text-lg leading-tight">Panduan Pengguna TrackerKerja</h1>
+                <p class="text-xs text-slate-400">Tata cara praktis penggunaan fitur kerja & pelaporan</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2 flex-wrap">
+            <!-- Search Box in Guide -->
+            <div class="relative min-w-[180px] sm:min-w-[220px]">
+                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                <input type="text" id="guideSearchInput" onkeyup="filterGuideTopics()" placeholder="Cari topik panduan..."
+                       class="w-full pl-8 pr-3 py-1.5 rounded-xl border border-slate-200 text-xs focus:outline-none focus:ring-2 focus:ring-amber-400 transition-all">
+            </div>
+
+            <!-- Print / Save as PDF Button -->
+            <button type="button" onclick="window.print()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-md shadow-indigo-600/30 transition-all flex items-center gap-2 cursor-pointer">
+                <i class="fas fa-print"></i>
+                <span>Cetak / Simpan PDF</span>
+            </button>
+
+            <!-- Back to Dashboard -->
+            <a href="/" class="px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5">
+                <i class="fas fa-arrow-left"></i>
+                <span class="hidden sm:inline">Dashboard</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Render Partial Content -->
+    @await Html.PartialAsync("_UserGuideContent")
+
+</div>
+
+@section Scripts {
+    <script>
+        function filterGuideTopics() {
+            const input = document.getElementById('guideSearchInput').value.toLowerCase();
+            const sections = document.querySelectorAll('#user-guide-article section');
+            sections.forEach(sec => {
+                const text = sec.innerText.toLowerCase();
+                if (text.includes(input)) {
+                    sec.style.display = '';
+                } else {
+                    sec.style.display = 'none';
+                }
+            });
+        }
+    </script>
+}

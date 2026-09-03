@@ -34,6 +34,7 @@ namespace TrackerKerja.Controllers
             var query = _db.Tasks
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToUser)
+                .Include(t => t.Sessions)
                 .AsQueryable();
 
             if (!isAdmin)
@@ -50,6 +51,7 @@ namespace TrackerKerja.Controllers
                 .Select(t => new
                 {
                     id = t.Id,
+                    taskCode = t.TaskCode,
                     title = t.Title,
                     projectName = t.Project?.Name ?? "Tanpa Proyek",
                     dueDateFormatted = t.DueDate?.ToString("dd MMM yyyy"),
@@ -68,6 +70,7 @@ namespace TrackerKerja.Controllers
                 .Select(t => new
                 {
                     id = t.Id,
+                    taskCode = t.TaskCode,
                     title = t.Title,
                     projectName = t.Project?.Name ?? "Tanpa Proyek",
                     dueDateFormatted = t.DueDate?.ToString("dd MMM yyyy") ?? "—",
@@ -85,6 +88,7 @@ namespace TrackerKerja.Controllers
                 .Select(t => new
                 {
                     id = t.Id,
+                    taskCode = t.TaskCode,
                     title = t.Title,
                     projectName = t.Project?.Name ?? "Tanpa Proyek",
                     dueDateFormatted = t.DueDate?.ToString("dd MMM yyyy") ?? "—",
@@ -94,7 +98,32 @@ namespace TrackerKerja.Controllers
                 .Take(10)
                 .ToList();
 
-            var totalAlerts = dueDateTasks.Count(d => d.isOverdue) + dueDateTasks.Count + inProgressTasks.Count;
+            // 4. Timesheet Reminders (Mendekati tanggal 25 setiap bulannya: tanggal 18 s/d 25)
+            var isApproachingCutoff = now.Day >= 18 && now.Day <= 25;
+            var cutoffDaysLeft = Math.Max(0, 25 - now.Day);
+            var timesheetMissingTasks = tasks
+                .Where(t => t.Status != Models.TaskStatus.Done && (t.Sessions == null || !t.Sessions.Any(s => s.Duration > 0)))
+                .OrderByDescending(t => t.Priority)
+                .ThenByDescending(t => t.UpdatedAt)
+                .Select(t => new
+                {
+                    id = t.Id,
+                    taskCode = t.TaskCode,
+                    title = t.Title,
+                    projectName = t.Project?.Name ?? "Tanpa Proyek",
+                    dueDateFormatted = t.DueDate?.ToString("dd MMM yyyy") ?? "—",
+                    status = t.Status.ToString(),
+                    priority = t.Priority.ToString(),
+                    progress = t.Progress,
+                    assignedTo = t.AssignedToUser?.FullName ?? "Belum Ditugaskan"
+                })
+                .Take(10)
+                .ToList();
+
+            var totalAlerts = dueDateTasks.Count(d => d.isOverdue) 
+                            + dueDateTasks.Count 
+                            + inProgressTasks.Count 
+                            + (isApproachingCutoff ? timesheetMissingTasks.Count : 0);
 
             return Json(new
             {
@@ -103,9 +132,13 @@ namespace TrackerKerja.Controllers
                 dueDateCount = dueDateTasks.Count,
                 inProgressCount = inProgressTasks.Count,
                 todoCount = todoTasks.Count,
+                timesheetCount = timesheetMissingTasks.Count,
+                isApproachingCutoff,
+                cutoffDaysLeft,
                 dueDateTasks,
                 inProgressTasks,
-                todoTasks
+                todoTasks,
+                timesheetTasks = timesheetMissingTasks
             });
         }
     }

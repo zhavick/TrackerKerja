@@ -1,585 +1,358 @@
-# Work Tracker Pro (TrackerKerja) — User Guide
+# Buku Panduan Pengguna (User Guide)
+# Work Tracker Pro (TrackerKerja)
 
-> **Version**: 3.1 (Docker & Enterprise Cloud Edition)  
-> **Platform**: Web Application (ASP.NET Core 8.0 MVC / REST API / Docker Container)  
-> **Repository**: [https://github.com/zhavick/TrackerKerja.git](https://github.com/zhavick/TrackerKerja.git)  
-> **Last Updated**: August 31, 2026
-
----
-
-## Table of Contents
-
-1. [Introduction](#1-introduction)
-2. [Getting Started & Deployment](#2-getting-started--deployment)
-   - [2.1 System Requirements](#21-system-requirements)
-   - [2.2 Running with Docker & Docker Compose (Recommended)](#22-running-with-docker--docker-compose-recommended)
-   - [2.3 Running with .NET 8.0 SDK / Standalone Binary](#23-running-with-net-80-sdk--standalone-binary)
-   - [2.4 GitHub Repository & Synchronization](#24-github-repository--synchronization)
-   - [2.5 Login & Default Credentials](#25-login--default-credentials)
-   - [2.6 User Interface Overview](#26-user-interface-overview)
-3. [Themes & Appearance (16 Themes)](#3-themes--appearance)
-4. [Dashboard & Quick Metrics](#4-dashboard--quick-metrics)
-5. [Task Management](#5-task-management)
-   - [5.1 Task List View & Advanced Search](#51-task-list-view--advanced-search)
-   - [5.2 Creating a Task](#52-creating-a-task)
-   - [5.3 Editing a Task & Permission Hierarchy](#53-editing-a-task--permission-hierarchy)
-   - [5.4 Task Progress (0–100%) & Status Auto-Sync](#54-task-progress-0100--status-auto-sync)
-   - [5.5 Parent / Child Task (Sub-tasks)](#55-parent--child-task-sub-tasks)
-   - [5.6 Obstacles & Technical Solutions Logging](#56-obstacles--technical-solutions-logging)
-   - [5.7 Bulk Actions (Delete & Filtered Export)](#57-bulk-actions-delete--filtered-export)
-   - [5.8 Exporting Tasks to Excel with Period Filter](#58-exporting-tasks-to-excel-with-period-filter)
-6. [Interactive Kanban Board](#6-interactive-kanban-board)
-   - [6.1 Drag & Drop Workflow](#61-drag--drop-workflow)
-   - [6.2 Mobile Segmented Column Switcher](#62-mobile-segmented-column-switcher)
-7. [Projects & Milestones](#7-projects--milestones)
-8. [Timesheet & Work Sessions](#8-timesheet--work-sessions)
-   - [8.1 Recording Work Time (Live Timer & Manual Entry)](#81-recording-work-time-live-timer--manual-entry)
-   - [8.2 Concurrent Multi-Timer per User](#82-concurrent-multi-timer-per-user)
-   - [8.3 Exporting Personal Timesheet Report (.xlsx)](#83-exporting-personal-timesheet-report-xlsx)
-9. [Notes & Documentation (Quill.js Rich-Text)](#9-notes--documentation-quilljs-rich-text)
-   - [9.1 Creating & Formatting Notes](#91-creating--formatting-notes)
-   - [9.2 Multi-File Attachments in User Directory](#92-multi-file-attachments-in-user-directory)
-   - [9.3 Note Pinning & Standalone vs Task Notes](#93-note-pinning--standalone-vs-task-notes)
-10. [Calendar & Timeline](#10-calendar--timeline)
-11. [Reports & Analytics (Gantt Chart & Workload)](#11-reports--analytics-gantt-chart--workload)
-12. [Members & Team Management](#12-members--team-management)
-    - [12.1 Member Cards & Contribution Metrics](#121-member-cards--contribution-metrics)
-    - [12.2 Admin Functions & Account Management](#122-admin-functions--account-management)
-    - [12.3 Admin Instant Password Reset](#123-admin-instant-password-reset)
-13. [Import & Export Excel Enterprise](#13-import--export-excel-enterprise)
-    - [13.1 Standard 9-Column Import with Bulk PIC Reassignment](#131-standard-9-column-import-with-bulk-pic-reassignment)
-    - [13.2 ARMS Enterprise 21-Column Export & Import](#132-arms-enterprise-21-column-export--import)
-14. [JSON Tools (Developer Utilities)](#14-json-tools-developer-utilities)
-15. [Audit Trail & Activity Logging](#15-audit-trail--activity-logging)
-16. [Master Data Management](#16-master-data-management)
-17. [System Configuration & Database Maintenance](#17-system-configuration--database-maintenance)
-18. [RESTful API, Swagger UI & Postman](#18-restful-api-swagger-ui--postman)
-19. [Role-Based Access Control (RBAC) & Privileges](#19-role-based-access-control-rbac--privileges)
-20. [Mobile & Responsive UI Experience](#20-mobile--responsive-ui-experience)
-21. [User Account & Profile Settings](#21-user-account--profile-settings)
-22. [Tips & Best Practices](#22-tips--best-practices)
-23. [Troubleshooting & FAQ](#23-troubleshooting--faq)
-24. [Appendix A - Data Model Quick Reference](#appendix-a--data-model-quick-reference)
-25. [Appendix B - ARMS Export Format (21 Columns)](#appendix-b--arms-export-format-21-columns)
-26. [Appendix C - Export Period Filter Parameters](#appendix-c--export-period-filter-parameters)
+> **Versi Aplikasi**: 3.2 (Enterprise Edition)  
+> **Target Pengguna**: Seluruh Karyawan, System Analyst, Developer, QA, Technical Writer, Project Lead, dan Administrator  
+> **Terakhir Diperbarui**: September 2026  
 
 ---
 
-## 1. Introduction
+## Daftar Isi Panduan
 
-**Work Tracker Pro** (TrackerKerja) is an enterprise work tracking, timesheet recording, technical documentation, and team analytics platform built on **ASP.NET Core 8.0 MVC & Web API** with **SQLite EF Core**, **ClosedXML spreadsheet engine**, **Tailwind CSS**, and **Docker containerization**.
-
-### Key Feature Matrix
-
-| Feature | Capability & Implementation |
-|---|---|
-| **Task Management** | Full hierarchy (parent-child), obstacles/solutions log, 0-100% slider, priority badges |
-| **Kanban Board** | Touch-friendly drag-and-drop powered by SortableJS, mobile column tab switcher |
-| **Timesheet** | Real-time timers, **concurrent active multi-timer per user**, manual session entry |
-| **Personal Timesheet Excel** | Multi-sheet ClosedXML export with employee metadata, sessions, and `=SUM()` formulas |
-| **Documentation & Notes** | Quill.js rich text editor, multi-file attachments in `wwwroot/uploads/notes/{username}/` |
-| **Team Management** | Member cards, performance charts, and **Admin Direct Password Reset** |
-| **Excel Interoperability** | Standard 9-col template + ARMS 21-col enterprise export/import with period filter |
-| **Reports & Analytics** | Interactive Chart.js charts, project distribution, team workload, and Gantt timeline |
-| **Calendar** | FullCalendar integration with date range, assignee, and project filtering |
-| **Developer Tools** | JSON formatter, minifier, validator, history snippets, and test payloads |
-| **Audit Trail** | Global action filter logging controller actions, durations, status codes, and user IP |
-| **Master Data** | Admin-managed SDLC Waterfall Milestones, Priorities, Statuses, and Categories |
-| **REST API & Swagger** | 70+ OpenAPI/Swagger-documented endpoints with Postman Collection & Environment |
-| **Themes & Styling** | 16 instant themes (10 light + 6 dark OLED/matrix) via dynamic CSS custom tokens |
-| **Docker Support** | Multi-stage Dockerfile, Docker Compose, volume persistence (`./db_data`, `./uploads`) |
-
----
-
-## 2. Getting Started & Deployment
-
-### 2.1 System Requirements
-
-| Requirement | Docker Environment | Native .NET Environment |
-|---|---|---|
-| **Engine** | Docker Desktop 20+ / Docker Engine + Compose v2 | .NET 8.0 SDK or ASP.NET Core Runtime |
-| **Memory** | Minimum 1 GB RAM (2 GB recommended) | Minimum 512 MB RAM |
-| **Storage** | 500 MB free disk space | 200 MB free disk space |
-| **Browser** | Chrome 110+, Firefox 110+, Edge 110+, Safari 16+ | Chrome 110+, Firefox 110+, Edge 110+, Safari 16+ |
-| **OS** | Windows 10/11, macOS, Ubuntu/Debian Linux | Windows, macOS, Linux |
-
----
-
-### 2.2 Running with Docker & Docker Compose (Recommended)
-
-Docker is the quickest and cleanest way to run TrackerKerja in Production or local testing:
-
-```bash
-# 1. Start the container in background
-docker compose up -d --build
-
-# 2. Check container status
-docker compose ps
-
-# 3. View live logs
-docker compose logs -f trackerkerja
-
-# 4. Stop the container
-docker compose down
-```
-
-#### Windows PowerShell Helper Script:
-```powershell
-# Copy local database & uploads to persistent Docker volumes
-.\docker-run.ps1 init-data
-
-# Build and start container
-.\docker-run.ps1 up
-
-# View live streaming logs
-.\docker-run.ps1 logs
-
-# Restart container
-.\docker-run.ps1 restart
-
-# Stop container
-.\docker-run.ps1 down
-```
-
-> **Data Persistence**: Database is stored in `./db_data/trackerkerja.db` and uploaded files in `./uploads/`. Data will NOT be lost when containers are recreated or updated.
+1. [Pengenalan & Memulai Aplikasi](#1-pengenalan--memulai-aplikasi)
+   - 1.1 [Halaman Masuk (Login)](#11-halaman-masuk-login)
+   - 1.2 [Tata Letak Antarmuka & Navigasi](#12-tata-letak-antarmuka--navigasi)
+   - 1.3 [Kustomisasi Tema & Tampilan (16 Pilihan Tema)](#13-kustomisasi-tema--tampilan-16-pilihan-tema)
+2. [Dashboard & Ringkasan Kinerja](#2-dashboard--ringkasan-kinerja)
+   - 2.1 [Kartu Metrik & Statistik Pribadi](#21-kartu-metrik--statistik-pribadi)
+   - 2.2 [Pemberitahuan & Notifikasi Lonceng](#22-pemberitahuan--notifikasi-lonceng)
+   - 2.3 [Distribusi Tugas & Beban Kerja Proyek](#23-distribusi-tugas--beban-kerja-proyek)
+3. [Modul Task (Manajemen Tugas Kerja)](#3-modul-task-manajemen-tugas-kerja)
+   - 3.1 [Membuat Tugas Baru](#31-membuat-tugas-baru)
+   - 3.2 [Daftar Tugas & Filter Pencarian Cepat](#32-daftar-tugas--filter-pencarian-cepat)
+   - 3.3 [Memperbarui Status & Slider Kemajuan (0–100%)](#33-memperbarui-status--slider-kemajuan-0100)
+   - 3.4 [Sub-Task (Hierarki Tugas Induk & Anak)](#34-sub-task-hierarki-tugas-induk--anak)
+   - 3.5 [Mencatat Kendala (Obstacle) & Solusi Teknis](#35-mencatat-kendala-obstacle--solusi-teknis)
+   - 3.6 [Papan Kanban Interaktif (Geser & Letakkan)](#36-papan-kanban-interaktif-geser--letakkan)
+4. [Modul Project (Manajemen Proyek)](#4-modul-project-manajemen-proyek)
+   - 4.1 [Membuat & Mengelola Proyek](#41-membuat--mengelola-proyek)
+   - 4.2 [Memantau Linimasa, Tenggat Waktu & Progres Proyek](#42-memantau-linimasa-tenggat-waktu--progres-proyek)
+5. [Modul Timesheet & Pelacakan Jam Kerja](#5-modul-timesheet--pelacakan-jam-kerja)
+   - 5.1 [Pencatatan Jam Otomatis (Live Timer / Clock In & Clock Out)](#51-pencatatan-jam-otomatis-live-timer--clock-in--clock-out)
+   - 5.2 [Penggunaan Multi-Timer Bersamaan](#52-penggunaan-multi-timer-bersamaan)
+   - 5.3 [Pencatatan Jam Kerja Manual](#53-pencatatan-jam-kerja-manual)
+   - 5.4 [Notifikasi Pengingat Pengisian Timesheet (Cut-Off Tanggal 25)](#54-notifikasi-pengingat-pengisian-timesheet-cut-off-tanggal-25)
+   - 5.5 [Export Laporan Excel Timesheet Resmi (Format Standar Elistec)](#55-export-laporan-excel-timesheet-resmi-format-standar-elistec)
+6. [Modul JSON Payload & Alat Bantu Pengujian API](#6-modul-json-payload--alat-bantu-pengujian-api)
+   - 6.1 [Merapikan Format JSON (Beautify / Pretty-Print)](#61-merapikan-format-json-beautify--pretty-print)
+   - 6.2 [Pemeriksaan & Validasi Sintaks JSON](#62-pemeriksaan--validasi-sintaks-json)
+   - 6.3 [Memampatkan JSON (Minify)](#63-memampatkan-json-minify)
+   - 6.4 [Menyimpan & Mengelola Template Payload Pengujian](#64-menyimpan--mengelola-template-payload-pengujian)
+7. [Modul Catatan Kerja & Dokumentasi (Notes)](#7-modul-catatan-kerja--dokumentasi-notes)
+   - 7.1 [Membuat Catatan dengan Rich-Text Editor](#71-membuat-catatan-dengan-rich-text-editor)
+   - 7.2 [Menyematkan Catatan Penting (Pin Note)](#72-menyematkan-catatan-penting-pin-note)
+   - 7.3 [Menghubungkan Catatan ke Tugas atau Proyek](#73-menghubungkan-catatan-ke-tugas-atau-proyek)
+   - 7.4 [Mengunggah Berkas Lampiran](#74-mengunggah-berkas-lampiran)
+8. [Modul Kalender Kerja & Jadwal](#8-modul-kalender-kerja--jadwal)
+9. [Modul Laporan & Analitik Kinerja](#9-modul-laporan--analitik-kinerja)
+10. [Modul Anggota Tim & Gamifikasi Prestasi](#10-modul-anggota-tim--gamifikasi-prestasi)
+    - 10.1 [Profil Pengguna & Level Pengalaman](#101-profil-pengguna--level-pengalaman)
+    - 10.2 [Koleksi Badge Penghargaan](#102-koleksi-badge-penghargaan)
+    - 10.3 [Manajemen Pengguna oleh Administrator](#103-manajemen-pengguna-oleh-administrator)
+11. [Modul Master Data](#11-modul-master-data)
+    - 11.1 [Kategori, Prioritas, dan Status](#111-kategori-prioritas-dan-status)
+    - 11.2 [Milestone SDLC Waterfall](#112-milestone-sdlc-waterfall)
+    - 11.3 [Master Hari Libur Nasional & Cuti Bersama](#113-master-hari-libur-nasional--cuti-bersama)
+12. [Tips & Pertanyaan Umum (FAQ)](#12-tips--pertanyaan-umum-faq)
 
 ---
 
-### 2.3 Running with .NET 8.0 SDK / Standalone Binary
+## 1. Pengenalan & Memulai Aplikasi
 
-#### Option A: Local Development
-```bash
-dotnet run --urls=http://localhost:5000
-```
+**Work Tracker Pro (TrackerKerja)** adalah aplikasi manajemen pekerjaan terpadu yang dirancang untuk mempermudah tim dalam merencanakan tugas, mencatat waktu kerja secara akurat (*timesheet*), mendokumentasikan kendala dan solusi teknis, mengelola pengujian payload data, serta menghasilkan laporan kerja siap pakai untuk kebutuhan operasional maupun pelaporan manajemen.
 
-#### Option B: Standalone Release Build
-```bash
-dotnet publish -c Release -o ./publish
-cd publish
-dotnet TrackerKerja.dll --urls=http://localhost:5000
-```
+### 1.1 Halaman Masuk (Login)
+1. Buka peramban web dan akses alamat aplikasi TrackerKerja.
+2. Masukkan **Alamat Email** dan **Kata Sandi (Password)** Anda yang telah terdaftar.
+3. Beri tanda centang pada opsi **Ingat Saya (Remember Me)** jika Anda ingin sesi login tetap tersimpan hingga 7 hari pada perangkat pribadi Anda.
+4. Klik tombol **Masuk (Login)** untuk masuk ke Dashboard utama.
 
-Open your browser and navigate to: **`http://localhost:5000`**
+> 💡 **Informasi Akun Default**:
+> - Akun Admin: `admin@trackerkerja.com`
+> - Kata sandi standar pengguna baru dapat diatur oleh Administrator atau diubah secara mandiri pada menu Profil.
 
----
+### 1.2 Tata Letak Antarmuka & Navigasi
+- **Bilah Samping (Sidebar)**: Berisi menu navigasi utama aplikasi (Dashboard, Tugas, Kanban, Proyek, Timesheet, JSON Tools, Catatan, Kalender, Laporan, Anggota Tim, dan Master Data).
+- **Bilah Atas (Topbar)**: Berisi judul halaman aktif, kotak pencarian global, tombol aksi cepat (Tugas Baru, Import Excel), tombol **Panduan Pengguna**, lonceng notifikasi, serta menu profil akun.
+- **Panel Timer Samping**: Menampilkan daftar sesi kerja yang sedang berjalan secara *real-time* dan dapat dikontrol kapan saja.
 
-### 2.4 GitHub Repository & Synchronization
-
-Official Repository: 👉 **[https://github.com/zhavick/TrackerKerja.git](https://github.com/zhavick/TrackerKerja.git)**
-
-To push updates to GitHub using a Personal Access Token (PAT):
-```powershell
-# Run the automated push assistant
-.\git-push.ps1
-```
+### 1.3 Kustomisasi Tema & Tampilan (16 Pilihan Tema)
+Aplikasi menyediakan 16 pilihan tema warna yang dapat dipilih sesuai preferensi kenyamanan mata Anda:
+1. Klik avatar profil Anda di pojok kanan atas atau buka menu **Profil Akun**.
+2. Pilih palet tema yang diinginkan (tersedia tema bernuansa *Light Mode* seperti Indigo Modern, Emerald Green, Rose Coral, Amber Sunset, Ocean Breeze, hingga tema *Dark Mode* seperti Dark OLED, Matrix Cyber, Midnight Purple, dan Slate Pro).
+3. Tampilan aplikasi akan berubah secara instan tanpa perlu memuat ulang halaman.
 
 ---
 
-### 2.5 Login & Default Credentials
+## 2. Dashboard & Ringkasan Kinerja
 
-On the login screen (`/Account/Login`):
-1. Enter your registered **Email Address**
-2. Enter your **Password**
-3. Optionally check **Remember Me** for a 7-day persistent session
-4. Click **Masuk (Login)**
+Halaman Dashboard merupakan pusat informasi terpadu yang menyajikan ikhtisar aktivitas dan produktivitas Anda.
 
-#### Pre-seeded Default Accounts:
+### 2.1 Kartu Metrik & Statistik Pribadi
+- **Total Tugas**: Menampilkan jumlah seluruh tugas yang ditugaskan kepada Anda.
+- **Tugas Sedang Dikerjakan (In Progress)**: Jumlah tugas yang saat ini aktif dalam proses pengerjaan.
+- **Tugas Selesai (Done)**: Jumlah tugas yang telah tuntas dikerjakan.
+- **Tenggat Terlewat (Overdue)**: Peringatan visual untuk tugas yang melewati batas tanggal selesai namun belum berstatus *Done*.
+- **Jam Kerja Hari Ini**: Akumulasi durasi waktu kerja yang telah Anda catat pada hari ini.
 
-| Email | Default Password | Role | Job Title |
-| :--- | :--- | :--- | :--- |
-| `admin@trackerkerja.com` | `Admin123!` | Administrator | System Administrator |
-| `glenn.hakim@elistec.com` | `Password123!` | User | Project Lead |
-| `heni.rahayu@elistec.com` | `Password123!` | User | QA & Product Specialist |
-| `haviz.indra@elistec.com` | `Password123!` | User | Frontend Developer |
-| `Iqbal.ali@elistec.com` | `Password123!` | User | Backend Developer |
-| `mohammad.danang@elistec.com` | `Password123!` | User | DevOps Engineer |
-| `syafix.said@elistec.com` | `Password123!` | User | System Analyst *(Elevated Edit Permissions)* |
-| `nanda.putri@elistec.com` | `Password123!` | User | Technical Writer *(Elevated Edit Permissions)* |
-| `athallah.bariq@elistec.com` | `Password123!` | User | Fullstack Developer |
+### 2.2 Pemberitahuan & Notifikasi Lonceng
+Klik ikon **Lonceng Notifikasi** pada bilah atas untuk melihat panel pemberitahuan cerdas:
+- **Tab Semua**: Seluruh pemberitahuan sistem.
+- **Tab Overdue**: Tugas-tugas yang telah melewati tenggat waktu agar segera diselesaikan.
+- **Tab Mendekati Deadline**: Tugas yang memiliki batas waktu dalam 2–3 hari ke depan.
+- **Tab Timesheet (Pengingat Cut-Off)**: Menampilkan daftar tugas aktif yang belum memiliki catatan jam kerja (*timesheet*), terutama saat mendekati periode cut-off bulanan tanggal 25.
 
----
-
-### 2.6 User Interface Overview
-
-- **Desktop Sidebar Navigation**: Fixed left-side navigation with collapsible sections and active module badges.
-- **Top Header Bar**: Search bar, Notification bell with unread indicator, Instant Theme Switcher dropdown, and User Profile Menu.
-- **Floating Mobile Bottom Bar**: 5 key touch buttons (*Home*, *Tasks*, *+ Quick Add*, *Projects*, *Menu Drawer*).
-- **Off-Canvas Navigation Drawer**: Full responsive menu on mobile with backdrop blur.
+### 2.3 Distribusi Tugas & Beban Kerja Proyek
+Menampilkan grafik diagram lingkaran (*doughnut chart*) dan grafik batang interaktif untuk melihat sebaran tugas per proyek, persentase penyelesaian, serta ringkasan aktivitas terbaru tim.
 
 ---
 
-## 3. Themes & Appearance
+## 3. Modul Task (Manajemen Tugas Kerja)
 
-Work Tracker Pro provides **16 distinct theme palettes** (10 Light & 6 Dark modes) powered by native CSS design tokens.
+Modul Tugas adalah inti pengelolaan pekerjaan sehari-hari.
 
-### Dark Modes (6 Themes)
-- **Midnight OLED** (`#6366F1` + `#38BDF8`): Deep pure black for battery efficiency and high-end OLED displays.
-- **Cyberpunk Synthwave** (`#F43F5E` + `#06B6D4`): Neon fuchsia and electric cyan on obsidian dark backdrop.
-- **Emerald Matrix** (`#10B981` + `#34D399`): Dark slate background with terminal hacker green highlights.
-- **Dracula Eclipse** (`#A855F7` + `#EC4899`): Midnight purple with vibrant pastel pink accents.
-- **Abyssal Ocean** (`#38BDF8` + `#3B82F6`): Deep navy blue ocean with luminous sapphire highlights.
-- **Solar Ember** (`#F97316` + `#F59E0B`): Charcoal dark with radiant flame orange & warm gold.
+### 3.1 Membuat Tugas Baru
+1. Klik tombol **+ Tugas Baru** pada bilah atas atau di halaman Daftar Tugas (`/Task`).
+2. Isi formulir pembuatan tugas:
+   - **Judul Tugas**: Nama ringkas aktivitas pekerjaan (contoh: *Pembuatan Dokumen FSD Integrasi API*).
+   - **Kode Tugas (Task Code)**: Dihasilkan otomatis oleh sistem (contoh: `TSK-0732`).
+   - **Proyek**: Pilih proyek yang menaungi tugas ini.
+   - **Kategori**: Pilih kategori kerja (misal: *System Analysis*, *Frontend*, *Backend*, *Quality Assurance*, dll).
+   - **Tingkat Prioritas**: Pilih *Low*, *Medium*, *High*, atau *Critical*.
+   - **Milestone SDLC**: Pilih tahapan siklus kerja (misal: *Requirement & BRD*, *FSD & TSD*, *Development*, *Testing & QA*, *UAT & Deployment*).
+   - **Penanggung Jawab (PIC / Assigned To)**: Tentukan anggota tim yang bertugas.
+   - **Tanggal Mulai & Tenggat Waktu (Due Date)**: Tentukan batas waktu pengerjaan.
+   - **Deskripsi Detail**: Uraikan ruang lingkup dan instruksi tugas.
+3. Klik tombol **Simpan Tugas**.
 
-### Light Modes (10 Themes)
-- **Indigo Nebula** (Default): Indigo violet with clean modern aesthetics.
-- **Emerald Forest**: Calming natural greens for high-focus working environments.
-- **Ocean Azure**: Fresh corporate blue palette.
-- **Sunset Crimson**: Warm crimson and orange tones.
-- **Cyberpunk Neon**: High contrast neon pink/cyan.
-- **Royal Amethyst**: Regal purple and soft violet.
-- **Amber Gold**: Classic golden warmth.
-- **Slate Minimalist**: Ultra clean monochrome greyscale.
-- **Nordic Teal**: Scandinavian teal and soft slate.
-- **Midnight Titanium**: Titanium metallic silver accents.
+### 3.2 Daftar Tugas & Filter Pencarian Cepat
+Pada halaman `/Task`, Anda dapat memfilter tugas berdasarkan:
+- Pencarian kata kunci pada judul atau kode tugas.
+- Filter berdasarkan **Proyek**.
+- Filter berdasarkan **Status** (*Todo*, *In Progress*, *Done*).
+- Filter berdasarkan **Prioritas** dan **Penanggung Jawab (PIC)**.
+- Opsi sorting berdasarkan tanggal terbaru, prioritas tertinggi, atau tenggat waktu terdekat.
 
----
+### 3.3 Memperbarui Status & Slider Kemajuan (0–100%)
+Setiap tugas dilengkapi dengan slider persentase kemajuan (*progress bar*):
+- Menggeser progress ke angka **1–99%** secara otomatis mengubah status tugas menjadi **In Progress**.
+- Menggeser progress ke angka **100%** secara otomatis mengubah status tugas menjadi **Done (Selesai)**.
+- Sebaliknya, mengubah status langsung ke *Done* akan otomatis mengisi progress menjadi 100%.
 
-## 4. Dashboard & Quick Metrics
+### 3.4 Sub-Task (Hierarki Tugas Induk & Anak)
+Untuk memecah tugas besar menjadi bagian-bagian kecil:
+1. Buka detail tugas utama (tugas induk / *parent task*).
+2. Pada bagian **Sub-Tasks**, klik **Tambah Sub-Task**.
+3. Masukkan judul dan PIC sub-task.
+4. Kemajuan tugas induk akan mencerminkan rata-rata penyelesaian seluruh sub-task di bawahnya.
 
-The Dashboard (`/Home/Index` or `/`) provides real-time visibility into operations:
+### 3.5 Mencatat Kendala (Obstacle) & Solusi Teknis
+Fitur ini sangat berguna untuk mencatat hambatan (*blocker*) selama pengerjaan:
+1. Buka form Edit Tugas atau Detail Tugas.
+2. Isi kolom **Kendala / Hambatan (Obstacle)** (contoh: *Menunggu akses credential database server development*).
+3. Isi kolom **Solusi / Tindak Lanjut (Solution)** (contoh: *Koordinasi dengan tim IT Infra via tiket permintaan akses*).
+4. Catatan kendala dan solusi akan tampil dengan kartu informasi khusus berwarna peringatan agar mudah ditinjau saat rapat berkala.
 
-1. **Top Metric Cards**: Total Tasks, In Progress, Completed (Done), and Overdue Tasks with trend badges.
-2. **Project Distribution Progress Bars**: Percentage completion per active project.
-3. **Task Activity Chart (7 Days)**: Daily breakdown of tasks created vs completed.
-4. **Recent Work Items**: Quick links to active tasks with PIC avatar, milestone badge, and priority pill.
-
----
-
-## 5. Task Management
-
-### 5.1 Task List View & Advanced Search
-Navigate to **Tasks** (`/Task`).
-- Filter by **Status** (*Todo, InProgress, Review, Done, Overdue*).
-- Filter by **Priority** (*Low, Medium, High, Critical*).
-- Filter by **Project**, **PIC Assignee**, and **Milestone SDLC**.
-- Full-text search across Title, Description, Obstacles, and Solutions.
-
-### 5.2 Creating a Task
-Click **+ Add Task** (`/Task/Create`) and complete the fields:
-- **Title** (Required): Clear, descriptive task name.
-- **Project & Category**: Organization and work classification.
-- **Assignee (PIC)**: Assign to team member.
-- **Parent Task**: Optional parent task to establish sub-task hierarchy.
-- **Priority & Status**: Priority level and initial Kanban state.
-- **Progress Slider (0–100%)**: Visual slider with quick 25% step presets.
-- **Milestone SDLC**: Choose from Waterfall phases (*Requirement Analysis*, *System Design*, *Implementation*, *Testing & QA*, *Deployment*, *Maintenance*).
-- **Obstacle & Solution**: Document technical blockers and fixes.
-
-### 5.3 Editing a Task & Permission Hierarchy
-- **Administrators**: Can edit and delete any task in the system.
-- **System Analysts & Technical Writers**: Elevated permission to edit all tasks and start timers on any task.
-- **Team Members (Users)**: Can edit tasks assigned to themselves.
-
-### 5.4 Task Progress (0–100%) & Status Auto-Sync
-- Setting progress to **100%** automatically transitions the task status to **Done**.
-- Marking status as **Done** automatically sets the progress slider to **100%**.
-- Selecting progress between **1% and 99%** transitions status from *Todo* to *InProgress*.
-
-### 5.5 Parent / Child Task (Sub-tasks)
-- Link granular technical sub-tasks under a high-level user story / parent feature.
-- Sub-tasks display indented under their parent with a visual link icon.
-
-### 5.6 Obstacles & Technical Solutions Logging
-- **Obstacle**: Record root cause, error message, or operational impediment.
-- **Solution**: Record code fix, architecture change, or troubleshooting step.
-- Persisted in database and included in ARMS Excel exports for sprint retrospectives.
-
-### 5.7 Bulk Actions (Delete & Filtered Export)
-- Check multiple checkboxes in the task list.
-- Click **Delete Selected** to bulk remove tasks (permissions respected).
-- Click **Export Selected** to download an Excel sheet with only the chosen items.
-
-### 5.8 Exporting Tasks to Excel with Period Filter
-Export tasks by clicking **Export Excel** with customizable options:
-- **Period Filter**: *Today*, *Yesterday*, *Last 7 Days*, *Last 30 Days*, *This Month*, *Last Month*, or *Custom Date Range*.
-- **Format Selection**: Standard (9 Columns) or ARMS Enterprise (21 Columns).
-- **Project & Priority Filter**: Isolate specific project scopes.
+### 3.6 Papan Kanban Interaktif (Geser & Letakkan)
+Buka menu **Kanban** (`/Kanban`) untuk visualisasi alur kerja bergaya kartu:
+- Tiga kolom utama: **To Do (Belum Dimulai)**, **In Progress (Sedang Dikerjakan)**, dan **Done (Selesai)**.
+- **Drag & Drop**: Cukup klik dan tahan kartu tugas, lalu geser ke kolom status yang diinginkan. Status tugas di database akan otomatis diperbarui.
+- **Tampilan Mobile**: Pada layar ponsel, tersedia tombol tab pintar di bagian atas untuk berpindah antar kolom secara cepat dan rapi.
 
 ---
 
-## 6. Interactive Kanban Board
+## 4. Modul Project (Manajemen Proyek)
 
-Navigate to **Kanban** (`/Task/Kanban`).
+### 4.1 Membuat & Mengelola Proyek
+1. Buka menu **Proyek** (`/Project`).
+2. Klik tombol **+ Proyek Baru**.
+3. Masukkan **Nama Proyek**, **Deskripsi**, **Warna Identitas Proyek** (digunakan sebagai label pada kartu tugas), dan **Batas Akhir Proyek (Deadline)**.
+4. Klik **Simpan Proyek**.
 
-### 6.1 Drag & Drop Workflow
-- Drag cards smoothly between columns: **Todo** ➡️ **InProgress** ➡️ **Review** ➡️ **Done**.
-- Status updates persist instantly to SQLite via AJAX without page reloads.
-
-### 6.2 Mobile Segmented Column Switcher
-On smartphones, instead of squishing columns horizontally, a segmented tab switcher (`📋 Todo`, `🔄 In Progress`, `🔍 Review`, `✅ Done`) lets you switch columns with one thumb tap.
-
----
-
-## 7. Projects & Milestones
-
-Navigate to **Projects** (`/Project`).
-- Create and organize multi-month project deliverables with deadlines.
-- Track overall aggregate completion percentage calculated from child tasks.
-- Associate Waterfall SDLC milestones with individual task items.
+### 4.2 Memantau Linimasa, Tenggat Waktu & Progres Proyek
+- Setiap kartu proyek menampilkan persentase penyelesaian keseluruhan tugas, rasio tugas selesai vs total tugas, dan status ketercapaian target waktu (*On Track* atau *At Risk*).
+- Mengklik salah satu proyek akan membuka halaman khusus proyek yang menyajikan seluruh tugas, timesheet, catatan, dan linimasa yang berkaitan langsung dengan proyek tersebut.
 
 ---
 
-## 8. Timesheet & Work Sessions
+## 5. Modul Timesheet & Pelacakan Jam Kerja
 
-Navigate to **Timesheet** (`/Timesheet`).
+Modul Timesheet mencatat waktu aktual yang dihabiskan untuk menyelesaikan setiap tugas secara transparan dan akurat.
 
-### 8.1 Recording Work Time (Live Timer & Manual Entry)
-- **Live Timer**: Click the **Play (Start)** button on any assigned task card to start tracking time.
-- **Stop Timer**: Click the **Square (Stop)** button to finalize the session, compute duration, and save to SQLite.
-- **Manual Session Entry**: Add completed past sessions with custom start time, end time, and session notes.
+### 5.1 Pencatatan Jam Otomatis (Live Timer / Clock In & Clock Out)
+1. Buka menu **Timesheet** atau buka kartu tugas apa saja.
+2. Klik tombol **Mulai Timer (Clock In)** berwarna hijau pada tugas yang akan dikerjakan.
+3. Timer akan berjalan secara *real-time*. Durasi waktu yang berjalan dapat dilihat di panel samping maupun di bagian atas layar.
+4. Setelah selesai bekerja, klik tombol **Hentikan Timer (Clock Out)** berwarna merah.
+5. Anda dapat menambahkan catatan ringkas mengenai pekerjaan yang telah diselesaikan pada sesi tersebut. Sistem akan otomatis menghitung total durasi dalam jam dan detik.
 
-### 8.2 Concurrent Multi-Timer per User
-- Users can run timers on **multiple tasks simultaneously** (e.g. running a long test build on Task A while actively writing code on Task B).
-- The REST API endpoint `GET /api/timesheets/active-timers` synchronizes all currently running timers for the logged-in user in real-time.
+### 5.2 Penggunaan Multi-Timer Bersamaan
+Aplikasi mendukung **Multi-Timer Aktif** per pengguna:
+- Jika Anda sedang mengerjakan tugas analisis sekaligus melakukan pemantauan deployment tugas lain, Anda dapat menjalankan timer untuk masing-masing tugas tersebut.
+- Seluruh timer yang aktif akan tercatat secara independen dan dapat dihentikan satu per satu.
 
-### 8.3 Exporting Personal Timesheet Report (.xlsx)
-Click **Export Timesheet Personal** (`/Timesheet/ExportPersonalExcel`):
-- **Sheet 1 ("Timesheet Personal")**: Employee Name, Job Title, Period, detailed table of dates, tasks, durations in hours, and automated `=SUM(...)` formulas.
-- **Sheet 2 ("Rekap per Proyek")**: Summary breakdown showing total hours and percentage time contribution per project.
-- **Data Privacy**: Non-admin users are strictly restricted to downloading only their own timesheet sessions.
+### 5.3 Pencatatan Jam Kerja Manual
+Jika Anda lupa menyalakan timer saat bekerja:
+1. Buka menu **Timesheet** (`/Timesheet`).
+2. Klik tombol **+ Tambah Jam Kerja Manual**.
+3. Pilih **Tugas**, **Tanggal Kerja**, **Jam Mulai**, **Jam Selesai** (atau input langsung durasi dalam jam/menit), serta isi **Catatan Aktivitas**.
+4. Klik **Simpan Sesi**.
 
----
+### 5.4 Notifikasi Pengingat Pengisian Timesheet (Cut-Off Tanggal 25)
+Untuk memastikan seluruh data jam kerja bulanan lengkap sebelum batas pelaporan:
+- **Periode Cut-Off**: Jatuh pada **tanggal 25 setiap bulannya**.
+- **Jendela Pengingat**: Mulai tanggal **18 hingga 25 setiap bulan**, sistem otomatis memindai seluruh tugas aktif yang ditugaskan kepada Anda namun **belum memiliki catatan jam kerja (0 jam)**.
+- **Pemberitahuan**: Lonceng notifikasi pada topbar dan banner peringatan di halaman Timesheet akan menyala, menampilkan daftar tugas yang belum diisi jam kerjanya beserta tombol cepat *Isi Timesheet*.
 
-## 9. Notes & Documentation (Quill.js Rich-Text)
+### 5.5 Export Laporan Excel Timesheet Resmi (Format Standar Elistec)
+Aplikasi dilengkapi fitur ekspor berkas spreadsheet Excel profesional yang dirancang khusus sesuai format resmi laporan timesheet:
+1. Buka menu **Timesheet** (`/Timesheet`).
+2. Klik tombol **Export Timesheet Personal (Excel)**.
+3. Pilih rentang tanggal (tersedia preset *Bulan Ini*, *Bulan Lalu*, *Minggu Ini*, atau rentang tanggal kustom).
+4. Klik **Download Excel**.
 
-Navigate to **Notes** (`/Note`).
-
-### 9.1 Creating & Formatting Notes
-- Full WYSIWYG rich text editor with headings, bold, italics, code blocks, lists, blockquotes, and tables.
-- Choose note categories: *Meeting*, *Technical*, *Architecture*, *UAT*, *Task Note*, or *General*.
-
-### 9.2 Multi-File Attachments in User Directory
-- Attach multiple images (PNG, JPG, SVG), PDFs, or documents to any note.
-- Files are safely stored and isolated in user-specific paths: `wwwroot/uploads/notes/{username}/`.
-- Download or preview attachments with 1 click.
-
-### 9.3 Note Pinning & Standalone vs Task Notes
-- **Pinned Notes**: Toggle pin to keep critical reference notes at the top of the dashboard.
-- **Linked Notes**: Associate notes directly with a specific task ID for context.
-
----
-
-## 10. Calendar & Timeline
-
-Navigate to **Calendar** (`/Calendar`).
-- Interactive monthly, weekly, and daily timeline view powered by FullCalendar.
-- Filter calendar events by project, assignee, or priority.
-- Click any task event to open the task details modal directly.
-
----
-
-## 11. Reports & Analytics (Gantt Chart & Workload)
-
-Navigate to **Reports** (`/Report`).
-- **Team Workload Breakdown**: Bar chart showing hours logged and tasks assigned per team member.
-- **Status & Priority Distribution**: Doughnut charts displaying workload health.
-- **Gantt Chart**: Visual timeline showing project deadlines, start dates, and milestones.
+> 📄 **Karakteristik Format Laporan Timesheet Excel**:
+> - **Header Perusahaan**: Menampilkan judul *ELISTEC - Timesheet*, nama karyawan, total durasi dalam *Man-Days (MD)*, nama klien, dan nama proyek.
+> - **Struktur Kolom Standar (A–O)**:
+>   `Issue Key` | `Issue Summary` | `Hours` | `MD (=Hours/8)` | `Work Date` | `Username` | `Full Name` | `Period` | `Project Name` | `Project Name` | `Client` | `Activity Type` | `Working Place (WFO/WFH)` | `Clock In` | `Clock Out`
+> - **Aturan Tanggal Lengkap (Tidak Ada Tanggal yang Di-skip)**: Seluruh hari dalam rentang periode (dari tanggal 1 hingga akhir periode) tetap dicantumkan secara runtut.
+> - **Penandaan Hari Libur Otomatis**: Hari libur nasional yang terdaftar di Master Data akan otomatis ditandai dengan keterangan (contoh: *Hari Libur Nasional : Kemerdekaan RI*).
+> - **Penandaan Akhir Pekan**: Hari Sabtu dan Minggu ditampilkan dengan baris penanda hari.
+> - **Formula Excel Aktif**: Menggunakan formula dinamis `=C{baris}/8` untuk konversi Man-Days, serta `=SUM(...)` pada baris Total di bagian bawah.
+> - **Blok Tanda Tangan**: Dilengkapi area pengesahan *Mengetahui* lengkap dengan nama karyawan dan lead/atasan.
 
 ---
 
-## 12. Members & Team Management
+## 6. Modul JSON Payload & Alat Bantu Pengujian API
 
-Navigate to **Members** (`/Member`).
+Modul JSON Tools (`/JsonTools`) disediakan khusus untuk memudahkan tim (khususnya System Analyst, Backend Developer, dan QA) dalam mengolah data payload JSON saat pengujian integrasi sistem.
 
-### 12.1 Member Cards & Contribution Metrics
-- View all registered team members, their job titles, avatar badges, and email addresses.
-- View total assigned tasks, completed tasks, and total logged timesheet hours.
+### 6.1 Merapikan Format JSON (Beautify / Pretty-Print)
+- Tempel teks JSON yang panjang atau tidak beraturan ke dalam kotak editor input.
+- Klik tombol **Format JSON**.
+- Sistem akan merapikan indentasi baris menjadi struktur bertingkat yang sangat mudah dibaca.
 
-### 12.2 Admin Functions & Account Management
-- Only **Administrators** can create new user accounts, edit roles, or lock/unlock accounts.
+### 6.2 Pemeriksaan & Validasi Sintaks JSON
+- Klik tombol **Validasi JSON**.
+- Sistem akan memverifikasi apakah format tanda kurung, koma, tanda kutip, dan tipe data sudah sesuai dengan standar JSON.
+- Jika terdapat kesalahan, sistem akan menandai lokasi baris dan karakter yang tidak valid beserta penjelasan perbaikannya.
 
-### 12.3 Admin Instant Password Reset
-- Administrators can directly reset any member's password without needing old credentials or email confirmation.
-- Accessible via Web UI button on member detail/edit pages or via REST API:
-  `POST /api/members/{id}/reset-password` with `{ "newPassword": "NewPassword123!" }`.
+### 6.3 Memampatkan JSON (Minify)
+- Klik tombol **Minify JSON**.
+- Sistem akan menghapus seluruh spasi dan karakter baris baru (*newline*) yang tidak diperlukan sehingga ukuran teks payload menjadi sekecil mungkin, siap ditempelkan ke dalam parameter pengujian API.
 
----
-
-## 13. Import & Export Excel Enterprise
-
-Navigate to **Import / Export** (`/Import`).
-
-### 13.1 Standard 9-Column Import with Bulk PIC Reassignment
-- Download official Excel template (`/Import/DownloadTemplate`).
-- Upload `.xlsx` file to inspect the **Interactive Preview Table**.
-- Use **Assign All PIC** to bulk assign all imported tasks to a specific team member before confirming.
-
-### 13.2 ARMS Enterprise 21-Column Export & Import
-- Compatible with enterprise banking & enterprise management ARMS specifications.
-- Maps 21 columns including SDLC Milestones, Parent IDs, Obstacles, Solutions, and logged hours.
+### 6.4 Menyimpan & Mengelola Template Payload Pengujian
+- Anda dapat memberi nama dan menyimpan potongan (*snippet*) JSON pengujian yang sering digunakan ke dalam daftar template.
+- Template yang tersimpan dapat dimuat kembali kapan saja hanya dengan 1 kali klik.
 
 ---
 
-## 14. JSON Tools (Developer Utilities)
+## 7. Modul Catatan Kerja & Dokumentasi (Notes)
 
-Navigate to **JSON Tools** (`/JsonTools`).
-- **Format / Pretty-Print**: Beautify JSON payloads with 2-space indentation.
-- **Minify**: Compress JSON for production payload delivery.
-- **Validate**: Instant syntax validation with clear line error highlighting.
-- **History Snippets**: Save frequently used JSON payloads into SQLite for quick retrieval.
+Modul Catatan (`/Note`) berfungsi sebagai repositori dokumentasi teknis, rangkuman rapat (*minutes of meeting*), hasil analisis, dan catatan referensi harian.
 
----
+### 7.1 Membuat Catatan dengan Rich-Text Editor
+1. Buka menu **Catatan** dan klik **+ Buat Catatan Baru**.
+2. Masukkan **Judul Catatan**.
+3. Gunakan bilah alat editor (*Quill.js Rich-Text*) untuk memformat tulisan:
+   - Teks tebal (*Bold*), miring (*Italic*), garis bawah (*Underline*), dan coret (*Strikethrough*).
+   - Judul tingkatan (*Heading 1, Heading 2, Heading 3*).
+   - Daftar berpoin (*Bullet list*) dan bernomor (*Numbered list*).
+   - Blok kutipan (*Blockquote*) dan blok kode program (*Code Block*).
+   - Penyisipan tautan link web dan tabel data.
+4. Pilih warna latar belakang kartu catatan untuk mempermudah identifikasi visual.
 
-## 15. Audit Trail & Activity Logging
+### 7.2 Menyematkan Catatan Penting (Pin Note)
+- Beri tanda centang pada opsi **Sematkan Catatan (Pin Note)** atau klik ikon jarum pin pada kartu catatan.
+- Catatan yang disematkan akan selalu berada di posisi paling atas halaman sehingga tidak terlewatkan.
 
-Navigate to **Audit Trail** (`/AuditTrail`).
-- Powered by `AuditLogActionFilter` registered globally across all controllers.
-- Logs User ID, Email, Controller, Action Name, HTTP Method, URL Path, Status Code, Duration (ms), and Timestamp.
-- Filter logs by date range, user, or status code; export audit logs to CSV.
+### 7.3 Menghubungkan Catatan ke Tugas atau Proyek
+- Anda dapat mengaitkan catatan dengan **Tugas Tertentu** atau **Proyek Tertentu**.
+- Catatan yang terhubung akan otomatis tampil pada tab dokumentasi di halaman rincian tugas dan proyek tersebut.
 
----
-
-## 16. Master Data Management
-
-Navigate to **Master Data** (`/MasterData`) *(Admin Only)*.
-- **Priorities**: Customize priority names, colors, icons, and order.
-- **Statuses**: Configure workflow statuses and specify which status represents the terminal *Done* state.
-- **Milestones**: Manage Waterfall SDLC Milestones (*Requirement*, *Design*, *Implementation*, *Testing*, *Deployment*, *Maintenance*).
-- **Categories**: Create and manage work categories.
-
----
-
-## 17. System Configuration & Database Maintenance
-
-Navigate to **Configuration** (`/Configuration`) *(Admin Only)*.
-- **Global Base URL**: Set global URL for API responses, webhooks, and Swagger.
-- **Database Capacity & Shrink (VACUUM)**: Reclaim SQLite storage space and defragment database tables.
-- **Storage Statistics**: View total uploaded attachment size and counts.
+### 7.4 Mengunggah Berkas Lampiran
+- Anda dapat melampirkan berkas dokumen (PDF, Word, Excel, gambar PNG/JPG, diagram arsitektur) ke dalam catatan.
+- Berkas yang diunggah tersimpan secara rapi dan dapat diunduh kembali oleh rekan tim yang memiliki akses.
 
 ---
 
-## 18. RESTful API, Swagger UI & Postman
+## 8. Modul Kalender Kerja & Jadwal
 
-Work Tracker Pro includes a complete **OpenAPI 3.0 REST API** accessible at `http://localhost:5000/swagger`.
-
-### API Module Overview (70+ Endpoints)
-
-| API Controller | Route Prefix | Main Features |
-| :--- | :--- | :--- |
-| **AuthApiController** | `/api/auth` | Login, Logout, Profile, Change Password, Refresh |
-| **TasksApiController** | `/api/tasks` | Full CRUD, Status, Kanban feed, Bulk Delete, Sessions |
-| **ProjectsApiController** | `/api/projects` | CRUD, Task list per project, Summary metrics |
-| **NotesApiController** | `/api/notes` | CRUD, Pin toggle, Multi-file uploads, Categories |
-| **TimesheetsApiController** | `/api/timesheets` | CRUD, Start/Stop timer, **Active timers** (`/active-timers`) |
-| **MembersApiController** | `/api/members` | List, Details, **Admin Password Reset** (`/{id}/reset-password`) |
-| **CalendarApiController** | `/api/calendar` | Event feed with project/assignee filters |
-| **ReportsApiController** | `/api/reports` | Dashboard summary, Chart data, Workload, Gantt |
-| **MasterDataApiController** | `/api/master-data` | Priorities, Statuses, Milestones, Categories |
-| **ConfigurationApiController**| `/api/configuration`| System settings, Base URL, DB Shrink |
-| **NotificationsApiController**| `/api/notifications`| User alerts, Mark read, Mark all read |
-
-### Standard JSON Response Structure
-```json
-{
-  "success": true,
-  "message": "Operation completed successfully",
-  "data": { },
-  "errors": null,
-  "timestamp": "2026-08-31T09:00:00Z"
-}
-```
-
-### Postman Files
-- `TrackerKerja_Postman_Collection.json`
-- `TrackerKerja_Postman_Environment.json`
+Buka menu **Kalender** (`/Calendar`) untuk melihat persebaran jadwal kerja:
+- **Tampilan Fleksibel**: Pilihan tampilan Bulanan (*Month*), Mingguan (*Week*), Harian (*Day*), atau Daftar Agenda (*List View*).
+- **Warna Indikator**: Setiap tugas diwarnai sesuai dengan warna proyek atau statusnya.
+- **Interaksi Klik**: Mengklik salah satu jadwal pada kalender akan langsung membuka jendela ringkasan detail tugas dan tautan untuk mengedit.
 
 ---
 
-## 19. Role-Based Access Control (RBAC) & Privileges
+## 9. Modul Laporan & Analitik Kinerja
 
-| Action / Module | Admin | System Analyst | Technical Writer | Regular User |
-| :--- | :---: | :---: | :---: | :---: |
-| **Dashboard & Kanban** | ✅ | ✅ | ✅ | ✅ |
-| **Create Tasks** | ✅ | ✅ | ✅ | ✅ |
-| **Edit Own Tasks** | ✅ | ✅ | ✅ | ✅ |
-| **Edit Others' Tasks** | ✅ | ✅ | ✅ | ❌ |
-| **Start Timer on Others' Tasks** | ✅ | ✅ | ✅ | ❌ |
-| **Run Multi-Timer Concurrently**| ✅ | ✅ | ✅ | ✅ |
-| **Export Personal Timesheet** | ✅ | ✅ | ✅ | ✅ |
-| **Delete Own Tasks** | ✅ | ✅ | ✅ | ✅ |
-| **Delete Others' Tasks** | ✅ | ❌ | ❌ | ❌ |
-| **Export Tasks (Standard/ARMS)**| ✅ | ✅ | ✅ | ✅ |
-| **Create / Edit Projects** | ✅ | ❌ | ❌ | ❌ |
-| **Manage Members** | ✅ | ❌ | ❌ | ❌ |
-| **Admin Password Reset** | ✅ | ❌ | ❌ | ❌ |
-| **Master Data & Config** | ✅ | ❌ | ❌ | ❌ |
-| **Audit Trail Logs** | ✅ | ❌ | ❌ | ❌ |
+Buka menu **Laporan** (`/Report`) untuk evaluasi produktivitas berkala:
+- **Grafik Distribusi Jam Kerja**: Rekapitulasi perbandingan total jam kerja yang dicurahkan pada setiap proyek.
+- **Matriks Beban Kerja Tim (Workload Matrix)**: Memantau jumlah tugas aktif per anggota tim untuk memastikan pembagian kerja seimbang.
+- **Linimasa Gantt**: Menampilkan durasi dan urutan pengerjaan tugas dari awal hingga selesai dalam bentuk diagram batang linimasa.
+- **Ekspor Laporan**: Fasilitas ekspor data rekapitulasi ke format Excel untuk kebutuhan laporan pertanggungjawaban mingguan/bulanan.
 
 ---
 
-## 20. Mobile & Responsive UI Experience
+## 10. Modul Anggota Tim & Gamifikasi Prestasi
 
-- **Off-Canvas Drawer**: Tap the top hamburger or bottom Menu button to open the full navigation drawer.
-- **Glassmorphic Bottom Bar**: Floating bottom navigation bar on mobile with quick action buttons.
-- **Safe Area Inset Support**: Designed with CSS environment variables (`env(safe-area-inset-bottom)`) for modern notch and bezel-less displays.
+Buka menu **Anggota Tim** (`/Member`) untuk melihat rekan kerja dan kontribusinya.
 
----
+### 10.1 Profil Pengguna & Level Pengalaman
+- Setiap anggota tim memiliki kartu profil yang mencantumkan nama, jabatan (*Job Title*), total tugas yang diselesaikan, akumulasi jam kerja, dan level kontribusi (*Experience Level*).
 
-## 21. User Account & Profile Settings
+### 10.2 Koleksi Badge Penghargaan
+Aplikasi mengapresiasi pencapaian kerja anggota tim melalui lencana (*Badge*) prestasi:
+- **Badge Otomatis**: Diberikan oleh sistem secara otomatis saat pengguna mencapai tonggak tertentu (misal: *First Task Master*, *Centurion 100 Jam Kerja*, *Top Contributor*, *Master Documenter*, dll).
+- **Badge Khusus / Manual**: Administrator dapat memberikan lencana penghargaan khusus atas kinerja istimewa anggota tim.
+- Anggota dapat memilih salah satu badge favorit untuk ditampilkan sebagai lencana utama (*Featured Badge*) pada profilnya.
 
-Navigate to **Profile** (`/Account/Profile`):
-- Update Full Name, Job Title, Phone Number, and Avatar Color.
-- Upload a custom Profile Picture (stored in `wwwroot/uploads/avatars/`).
-- Change password with confirmation.
-
----
-
-## 22. Tips & Best Practices
-
-1. **Use Select2 Searchable Dropdowns**: Type keywords to quickly select Projects, Assignees, or Parent Tasks.
-2. **Use Obstacle & Solution Fields**: Document technical hurdles and how they were solved for team retrospectives.
-3. **Regular SQLite Shrink**: Run **Configuration > Shrink Database** monthly to keep database file size compact.
-4. **Multi-Timer Usage**: Run independent timers across concurrent tasks without worrying about session collisions.
-5. **Periodic Timesheet Exports**: Export personal timesheet Excel reports every Friday for billing and reporting.
+### 10.3 Manajemen Pengguna oleh Administrator
+Khusus untuk pengguna dengan peran **Admin**:
+- **Menambah Anggota Baru**: Mengisi form pendaftaran anggota tim baru dengan email dan jabatan.
+- **Ubah Kata Sandi Instan (Direct Password Reset)**: Admin dapat membantu mereset kata sandi anggota tim yang lupa password secara langsung tanpa memerlukan tautan email.
+- **Menonaktifkan Pengguna (Inactivate)**: Menonaktifkan akun anggota yang sudah tidak bertugas. Akun yang berstatus *Inactive* otomatis disembunyikan dari statistik aktif Dashboard agar data analitik tetap relevan dan rapi.
+- **Menghapus Pengguna Tanpa Tugas**: Admin dapat menghapus data akun pengguna jika akun tersebut belum memiliki riwayat tugas atau catatan jam kerja sama sekali (0 tasks & 0 sessions). Jika akun telah memiliki tugas terkait, sistem akan menyarankan tindakan nonaktifkan (*inactivate*) untuk menjaga keutuhan riwayat data.
 
 ---
 
-## 23. Troubleshooting & FAQ
+## 11. Modul Master Data
 
-| Problem | Cause & Solution |
-| :--- | :--- |
-| **Docker Port 5000 Already in Use** | Change port mapping in `docker-compose.yml` to `"5050:5000"`, then run `docker compose up -d`. |
-| **File Upload Fails** | Ensure the upload file is under 10MB and permissions on `./uploads/` directory allow write access. |
-| **Access Denied (403)** | Your user role or job title lacks permission for this action. Contact an Administrator. |
-| **Swagger UI Page Blank** | Ensure `TrackerKerja.xml` XML documentation file is present alongside the build binary. |
-| **Forgot Password** | Ask an Administrator to use the **Reset Password** button in the Members module. |
-| **Container Database Reset** | Ensure your Docker Compose volume is mounted to `./db_data:/app/data` to persist data. |
+Khusus untuk peran **Administrator**, menu **Master Data** (`/MasterData`) digunakan untuk mengatur konfigurasi dasar aplikasi:
 
----
+### 11.1 Kategori, Prioritas, dan Status
+- Menambah, mengubah, dan menghapus daftar kategori tugas beserta warna labelnya.
+- Menyesuaikan tingkatan prioritas (*Critical, High, Medium, Low*) dan urutan tampilannya.
+- Mengatur alur status kerja (*To Do, In Progress, Done, Testing, On Hold*).
 
-## Appendix A – Data Model Quick Reference
+### 11.2 Milestone SDLC Waterfall
+- Mengatur tahapan siklus pengembangan perangkat lunak (misal: *BRD, FSD, TSD, Development, QA Testing, UAT, Deployment*).
 
-- **WorkTask**: `Id`, `Title`, `Description`, `ProjectId`, `CategoryId`, `AssignedToUserId`, `ParentTaskId`, `Priority`, `Status`, `Progress`, `Obstacle`, `Solution`, `StartDate`, `DueDate`, `Milestone`, `Tags`
-- **Project**: `Id`, `Name`, `Description`, `Color`, `Status`, `Deadline`, `CreatedAt`
-- **WorkSession**: `Id`, `TaskId`, `UserId`, `StartTime`, `EndTime`, `Duration`, `Notes`
-- **WorkNote**: `Id`, `Title`, `ContentHtml`, `Category`, `Color`, `IsPinned`, `AuthorUserId`, `TaskId`, `CreatedAt`, `UpdatedAt`
-- **NoteAttachment**: `Id`, `NoteId`, `FileName`, `FilePath`, `FileSize`, `ContentType`, `FileExtension`, `UploadedAt`, `UploadedByUserId`
-- **AppUser**: `Id`, `FullName`, `Email`, `JobTitle`, `AvatarColor`, `ProfilePictureUrl`, `CreatedAt`
-- **AuditLog**: `Id`, `UserId`, `UserEmail`, `ControllerName`, `ActionName`, `HttpMethod`, `Path`, `StatusCode`, `DurationMs`, `Timestamp`
-- **MasterMilestone**: `Id`, `Name`, `Phase`, `Color`, `Icon`, `OrderIndex`, `Description`, `IsDefault`
-- **MasterPriority**: `Id`, `Name`, `Color`, `Icon`, `OrderIndex`, `Description`, `IsDefault`
-- **MasterStatus**: `Id`, `Name`, `Color`, `IsDoneState`, `OrderIndex`, `Description`, `IsDefault`
+### 11.3 Master Hari Libur Nasional & Cuti Bersama
+- Mencatat daftar tanggal hari libur nasional dan cuti bersama resmi.
+- Data hari libur ini terintegrasi secara otomatis dengan modul **Export Timesheet Excel**, sehingga pada saat laporan diekspor, sistem akan mengenali dan menandai hari libur tersebut secara akurat.
+- Tersedia tombol cepat **Seed Hari Libur Nasional** untuk memuat daftar hari libur resmi tahun berjalan secara otomatis.
 
 ---
 
-## Appendix B – ARMS Export Format (21 Columns)
+## 12. Tips & Pertanyaan Umum (FAQ)
 
-1. `No` | 2. `Task ID` | 3. `Parent Task ID` | 4. `Module / Sub-Module` | 5. `Task Name` | 6. `PIC (Name)` | 7. `PIC (Email)` | 8. `Category` | 9. `Priority` | 10. `Status` | 11. `Progress (%)` | 12. `Milestone SDLC` | 13. `Obstacle / Kendala` | 14. `Solution / Solusi` | 15. `Tags` | 16. `Project Name` | 17. `Start Date` | 18. `End Date (Due Date)` | 19. `Total Sessions` | 20. `Total Duration (Hours)` | 21. `Created At`
+### Q1: Bagaimana cara mencetak atau menyimpan panduan ini ke format PDF?
+> **Jawaban**: Klik tombol **📖 Panduan** pada bilah atas aplikasi, lalu klik tombol **🖨️ Cetak / Simpan PDF**. Pada jendela print peramban, pilih tujuan printer sebagai **Save as PDF (Simpan sebagai PDF)** dan klik **Save**.
+
+### Q2: Mengapa saya mendapatkan notifikasi pengingat Timesheet menjelang tanggal 25?
+> **Jawaban**: Notifikasi tersebut merupakan pengingat otomatis bagi Anda yang memiliki tugas aktif namun belum mengisi catatan jam kerja (*timesheet*). Hal ini bertujuan agar seluruh jam kerja bulan berjalan terekam lengkap sebelum batas cut-off bulanan tanggal 25.
+
+### Q3: Apakah saya bisa menjalankan timer untuk lebih dari satu tugas sekaligus?
+> **Jawaban**: Ya. TrackerKerja mendukung multi-timer. Anda dapat menekan tombol *Clock In* pada beberapa tugas berbeda dan seluruh sesi waktu akan dicatat secara akurat.
+
+### Q4: Apa yang harus dilakukan jika saya lupa mencatat jam kerja kemarin?
+> **Jawaban**: Buka menu Timesheet, klik tombol **+ Tambah Jam Kerja Manual**, pilih tugas yang Anda kerjakan, lalu masukkan tanggal kemarin beserta jam mulai dan selesainya.
+
+### Q5: Bagaimana cara melampirkan berkas dokumen pada catatan kerja?
+> **Jawaban**: Buka menu Catatan (`/Note`), buat catatan baru atau edit catatan yang ada, lalu pada bagian *Lampiran Berkas*, pilih dokumen (PDF, gambar, spreadsheet) yang ingin diunggah dari komputer Anda.
 
 ---
 
-## Appendix C – Export Period Filter Parameters
-
-| `period` Value | Date Range Resolved |
-| :--- | :--- |
-| `today` | Current calendar day from 00:00 to 23:59 |
-| `yesterday` | Previous full calendar day |
-| `last7days` | Last 7 calendar days from today |
-| `last30days` | Last 30 calendar days from today |
-| `this_month` | From the 1st of current month to current date |
-| `last_month` | Full previous calendar month |
-| *(custom)* | Provide `startDate=YYYY-MM-DD` and `endDate=YYYY-MM-DD` |
-
----
-
-*Work Tracker Pro User Guide — Version 3.1 | August 31, 2026 | TrackerKerja Engineering Team*
+*(Buku Panduan Pengguna Work Tracker Pro — Diterbitkan untuk Efisiensi & Transparansi Kerja Tim)*

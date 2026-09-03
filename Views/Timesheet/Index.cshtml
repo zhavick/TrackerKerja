@@ -84,6 +84,54 @@
     </div>
 </div>
 
+@if (Model.IsApproachingCutoff && Model.TasksMissingTimesheet.Any())
+{
+    <!-- Cut-off Timesheet Reminder Banner (Tgl 25) -->
+    <div class="mb-6 p-4 rounded-3xl bg-gradient-to-r from-amber-500/10 via-orange-500/10 to-amber-500/5 border border-amber-200/90 shadow-sm animate-fadeIn">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-base shadow-sm shadow-amber-200 flex-shrink-0 animate-pulse">
+                    <i class="fas fa-bell"></i>
+                </div>
+                <div>
+                    <h4 class="text-xs sm:text-sm font-black text-amber-900 flex items-center gap-2">
+                        <span>Peringatan Cut-Off Timesheet Bulanan (Tgl 25)</span>
+                        <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full @(Model.CutoffDaysLeft <= 2 ? "bg-red-500 text-white" : "bg-amber-100 text-amber-800")">
+                            @(Model.CutoffDaysLeft == 0 ? "Hari ini Batas Akhir!" : $"Sisa {Model.CutoffDaysLeft} Hari")
+                        </span>
+                    </h4>
+                    <p class="text-[11px] text-amber-800/80 font-medium mt-0.5">
+                        Terdapat <strong>@Model.TasksMissingTimesheet.Count tugas aktif</strong> yang belum memiliki catatan jam kerja/timesheet. Segera lengkapi sebelum batas cut-off.
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button type="button" onclick="openQuickLogModal()" class="w-full sm:w-auto flex items-center justify-center gap-1.5 px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-600 text-white text-xs font-bold shadow-xs transition-all cursor-pointer">
+                    <i class="fas fa-clock"></i>
+                    <span>Isi Jam Sekarang</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- Quick Chips of Missing Tasks -->
+        <div class="mt-3 pt-3 border-t border-amber-200/60 flex flex-wrap items-center gap-1.5">
+            <span class="text-[10px] font-bold text-amber-900/70 mr-1">Tugas Belum Terisi:</span>
+            @foreach (var missingTask in Model.TasksMissingTimesheet.Take(6))
+            {
+                <a href="/Task/Edit/@missingTask.Id" class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl bg-white hover:bg-amber-50 text-[10px] font-bold text-slate-700 border border-amber-200 shadow-2xs transition-all group" title="Buka Tugas @missingTask.Title">
+                    <span class="text-amber-600 font-extrabold">@missingTask.TaskCode</span>
+                    <span class="truncate max-w-[140px] group-hover:text-indigo-600">@missingTask.Title</span>
+                    <i class="fas fa-arrow-right text-[8px] text-slate-400 group-hover:text-indigo-500"></i>
+                </a>
+            }
+            @if (Model.TasksMissingTimesheet.Count > 6)
+            {
+                <span class="text-[10px] font-bold text-amber-700">+@(Model.TasksMissingTimesheet.Count - 6) lainnya</span>
+            }
+        </div>
+    </div>
+}
+
 <!-- Filters Bar -->
 <div class="bg-white rounded-3xl p-4 border border-slate-200/80 shadow-xs mb-6">
     <form method="get" action="/Timesheet" class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">

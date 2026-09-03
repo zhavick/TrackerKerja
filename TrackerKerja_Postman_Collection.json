@@ -2971,6 +2971,12 @@
                   "value": "",
                   "description": "Filter ID pengguna (opsional jika dipanggil oleh admin)",
                   "disabled": true
+                },
+                {
+                  "key": "forceCheckTimesheet",
+                  "value": "true",
+                  "description": "Paksa pengecekan pengingat cut-off timesheet tanggal 25 (opsional untuk simulasi/testing)",
+                  "disabled": true
                 }
               ],
               "variable": null

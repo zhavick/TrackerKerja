@@ -130,7 +130,7 @@ namespace TrackerKerja.Controllers
             var totalTasks = await _db.Tasks.CountAsync(t => t.AssignedToUserId == user.Id);
             var doneTasks = await _db.Tasks.CountAsync(t => t.AssignedToUserId == user.Id && t.Status == Models.TaskStatus.Done);
             var totalProjects = await _db.Projects.CountAsync();
-            var totalSeconds = await _db.Sessions.Where(s => s.UserId == user.Id && s.EndTime != null).SumAsync(s => (long?)s.DurationSeconds) ?? 0;
+            var totalSeconds = await _db.Sessions.Where(s => s.UserId == user.Id && s.EndTime != null).SumAsync(s => (long?)s.Duration) ?? 0;
 
             var gamification = await _gamificationService.GetGamificationStatsAsync(user.Id);
 

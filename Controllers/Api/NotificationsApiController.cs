@@ -29,9 +29,10 @@ namespace TrackerKerja.Controllers.Api
         /// Mengambil daftar seluruh notifikasi dan peringatan aktif pengguna (GET /api/notifications)
         /// </summary>
         /// <param name="userId">Filter ID pengguna (opsional jika dipanggil oleh admin)</param>
+        /// <param name="forceCheckTimesheet">Paksa pengecekan pengingat cut-off timesheet tanggal 25 (opsional untuk simulasi/testing)</param>
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<NotificationsSummaryDto>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetNotifications([FromQuery] string? userId)
+        public async Task<IActionResult> GetNotifications([FromQuery] string? userId, [FromQuery] bool? forceCheckTimesheet = null)
         {
             var targetUserId = userId;
             if (string.IsNullOrWhiteSpace(targetUserId))
@@ -46,6 +47,7 @@ namespace TrackerKerja.Controllers.Api
             var query = _db.Tasks
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToUser)
+                .Include(t => t.Sessions)
                 .AsNoTracking()
                 .AsQueryable();
 
@@ -92,7 +94,31 @@ namespace TrackerKerja.Controllers.Api
                 });
             }
 
-            // 3. In Progress Active
+            // 3. Timesheet Cut-Off Reminders (Mendekati tanggal 25 setiap bulannya: tanggal 18 s/d 25)
+            var isApproachingCutoff = (now.Day >= 18 && now.Day <= 25) || forceCheckTimesheet == true;
+            if (isApproachingCutoff)
+            {
+                var daysLeft = Math.Max(0, 25 - now.Day);
+                var daysLeftText = daysLeft == 0 ? "Hari ini batas akhir cut-off!" : $"Sisa {daysLeft} hari menuju cut-off";
+                var timesheetMissingTasks = tasks.Where(t => t.Status != ModelTaskStatus.Done && (t.Sessions == null || !t.Sessions.Any(s => s.Duration > 0)));
+
+                foreach (var t in timesheetMissingTasks)
+                {
+                    notifications.Add(new NotificationResponseDto
+                    {
+                        Id = $"timesheet-{t.Id}",
+                        Type = "timesheet_reminder",
+                        Title = $"Kebutuhan Timesheet: [{t.TaskCode}] {t.Title}",
+                        Message = $"Mendekati cut-off timesheet tanggal 25 ({daysLeftText}). Tugas belum memiliki catatan jam kerja/timesheet. Segera perbarui jam kerja Anda.",
+                        Url = $"/Timesheet",
+                        Timestamp = t.UpdatedAt,
+                        IsRead = false,
+                        Severity = daysLeft <= 2 ? "danger" : "warning"
+                    });
+                }
+            }
+
+            // 4. In Progress Active
             var inProgress = tasks.Where(t => t.Status == ModelTaskStatus.InProgress).Take(5);
             foreach (var t in inProgress)
             {

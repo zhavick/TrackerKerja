@@ -66,7 +66,10 @@ namespace TrackerKerja.Controllers
             var sessions = await query.OrderByDescending(s => s.StartTime).ToListAsync();
 
             // Load tasks assigned to the user for quick modal
-            var userTasksQuery = _db.Tasks.AsQueryable();
+            var userTasksQuery = _db.Tasks
+                .Include(t => t.Project)
+                .Include(t => t.Sessions)
+                .AsQueryable();
             if (!isAdmin || (!string.IsNullOrEmpty(memberId) && memberId != "all"))
             {
                 var targetUserId = !string.IsNullOrEmpty(memberId) ? memberId : currentUser?.Id;
@@ -129,6 +132,15 @@ namespace TrackerKerja.Controllers
             viewModel.TotalWeekHours = Math.Round(viewModel.DayTotals.Sum(), 2);
             viewModel.TotalSessionsCount = sessions.Count;
             viewModel.ActiveTasksCount = viewModel.TaskRows.Count;
+
+            // Cut-off timesheet reminder (Tgl 25 setiap bulannya)
+            var now = DateTime.Now;
+            viewModel.IsApproachingCutoff = now.Day >= 18 && now.Day <= 25;
+            viewModel.CutoffDaysLeft = Math.Max(0, 25 - now.Day);
+            viewModel.CutoffDate = new DateTime(now.Year, now.Month, 25);
+            viewModel.TasksMissingTimesheet = viewModel.UserTasks
+                .Where(t => t.Status != Models.TaskStatus.Done && (t.Sessions == null || !t.Sessions.Any(s => s.Duration > 0)))
+                .ToList();
 
             return View(viewModel);
         }

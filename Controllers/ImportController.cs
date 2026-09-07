@@ -32,21 +32,21 @@ namespace TrackerKerja.Controllers
             return View(logs);
         }
 
-        // ── DOWNLOAD TEMPLATE (PROPOSED 21-COLUMN STANDARD FORMAT) ──
+        // ── DOWNLOAD TEMPLATE (PROPOSED 22-COLUMN STANDARD FORMAT WITH PIC) ──
         [HttpGet]
         public IActionResult Template()
         {
             using var wb = new XLWorkbook();
             var ws = wb.Worksheets.Add("Sheet1");
 
-            // Row 1: Exact 21 headers matching Proposed Import Format Tracker.xlsx
+            // Row 1: Exact 22 headers matching Proposed Import Format Tracker.xlsx + PIC column at the end
             var headers = new[]
             {
                 "project_name", "requirement_code", "title", "status", "priority",
                 "jenis_task", "module_name", "bug_type", "progress", "start_date",
                 "due_date", "completed_date", "developer_emails", "ba_emails", "infra_emails",
                 "master_data_emails", "tester_emails", "tw_emails", "kendala", "solusi",
-                "Notes Tracker"
+                "Notes Tracker", "PIC"
             };
 
             for (int i = 0; i < headers.Length; i++)
@@ -62,12 +62,12 @@ namespace TrackerKerja.Controllers
                 cell.Style.Border.OutsideBorderColor = XLColor.FromHtml("#3730A3");
             }
 
-            // Sample rows matching user proposed standard
+            // Sample rows matching standard format with PIC at the end
             var samples = new object[,]
             {
-                { "Integrasi TCES TICS", "TSD-001", "Checking & Testing Product, Scheming & premium class TICS vs Mass Product", "IN_PROGRESS", "HIGH", "ENHANCEMENT", "TCES", "Feature", 40, "2026-08-10", "2026-08-25", "", "haviz.indra@elistec.com;athallah.bariq@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "nanda.putri@elistec.com", "Menunggu sinkronisasi skema data", "Koordinasi dengan lead backend", "Sprint 4 Target" },
-                { "Integrasi TCES TICS", "TSD-002", "Melakukan Deployment ke Server Staging & Smoke Testing", "DONE", "HIGH", "NEW_APP", "TCES", "Task", 100, "2026-08-10", "2026-08-18", "2026-08-18", "haviz.indra@elistec.com", "syafix.said@elistec.com", "mohammad.danang@elistec.com", "", "heni.rahayu@elistec.com", "", "", "", "Deployed successfully" },
-                { "Pengembangan Mass Product Retail", "BRD-004", "Pembuatan Test Case untuk Pengujian End-to-End TFire dan Travela", "TODO", "MEDIUM", "NEW_APP", "Mass Product", "Feature", 0, "2026-08-20", "2026-08-30", "", "glenn.hakim@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "", "Dokumen requirement belum final", "Follow up ke tim bisnis", "Priority QA item" }
+                { "Integrasi TCES TICS", "TSD-001", "Checking & Testing Product, Scheming & premium class TICS vs Mass Product", "IN_PROGRESS", "HIGH", "ENHANCEMENT", "TCES", "Feature", 40, "2026-08-10", "2026-08-25", "", "haviz.indra@elistec.com;athallah.bariq@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "nanda.putri@elistec.com", "Menunggu sinkronisasi skema data", "Koordinasi dengan lead backend", "Sprint 4 Target", "haviz.indra@elistec.com" },
+                { "Integrasi TCES TICS", "TSD-002", "Melakukan Deployment ke Server Staging & Smoke Testing", "DONE", "HIGH", "NEW_APP", "TCES", "Task", 100, "2026-08-10", "2026-08-18", "2026-08-18", "haviz.indra@elistec.com", "syafix.said@elistec.com", "mohammad.danang@elistec.com", "", "heni.rahayu@elistec.com", "", "", "", "Deployed successfully", "haviz.indra@elistec.com" },
+                { "Pengembangan Mass Product Retail", "BRD-004", "Pembuatan Test Case untuk Pengujian End-to-End TFire dan Travela", "TODO", "MEDIUM", "NEW_APP", "Mass Product", "Feature", 0, "2026-08-20", "2026-08-30", "", "glenn.hakim@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "", "Dokumen requirement belum final", "Follow up ke tim bisnis", "Priority QA item", "glenn.hakim@elistec.com" }
             };
 
             for (int r = 0; r < samples.GetLength(0); r++)
@@ -85,7 +85,7 @@ namespace TrackerKerja.Controllers
 
             // Petunjuk Sheet
             var info = wb.Worksheets.Add("Petunjuk Pengisian");
-            info.Cell(1, 1).Value = "PETUNJUK PENGISIAN TEMPLATE IMPORT TASK (21 KOLOM)";
+            info.Cell(1, 1).Value = "PETUNJUK PENGISIAN TEMPLATE IMPORT TASK (22 KOLOM STANDAR)";
             info.Cell(1, 1).Style.Font.Bold = true;
             info.Cell(1, 1).Style.Font.FontSize = 14;
 
@@ -111,7 +111,8 @@ namespace TrackerKerja.Controllers
                 "18. tw_emails: Email Tim Technical Writer.",
                 "19. kendala: Catatan hambatan / blocker selama pengerjaan.",
                 "20. solusi: Solusi teknis atau tindak lanjut atas kendala.",
-                "21. Notes Tracker: Catatan tambahan atau deskripsi aktivitas pengerjaan."
+                "21. Notes Tracker: Catatan tambahan atau deskripsi aktivitas pengerjaan.",
+                "22. PIC: Nama lengkap, username, atau email penanggung jawab (PIC) utama task untuk otomatis mem-binding (menugaskan) task ke person/user di sistem."
             };
 
             for (int i = 0; i < notes.Length; i++)
@@ -125,7 +126,7 @@ namespace TrackerKerja.Controllers
             stream.Position = 0;
             return File(stream.ToArray(),
                 "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-                "Template_Import_Task_21Kolom.xlsx");
+                "Template_Import_Task_22Kolom.xlsx");
         }
 
         // ── DOWNLOAD ARMS TEMPLATE ──────────────────────────────
@@ -254,6 +255,18 @@ namespace TrackerKerja.Controllers
 
                 var users = await _db.Users.ToListAsync();
                 
+                // Build dynamic header column index lookup
+                var colMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                var lastCol = ws.LastColumnUsed()?.ColumnNumber() ?? 0;
+                for (int c = 1; c <= lastCol; c++)
+                {
+                    var hText = ws.Cell(1, c).GetString().Trim();
+                    if (!string.IsNullOrEmpty(hText) && !colMap.ContainsKey(hText))
+                    {
+                        colMap[hText] = c;
+                    }
+                }
+
                 // Detect header structure
                 var h1 = ws.Cell(1, 1).GetString().Trim().ToLower();
                 var h2 = ws.Cell(1, 2).GetString().Trim().ToLower();
@@ -261,12 +274,12 @@ namespace TrackerKerja.Controllers
                 var h4 = ws.Cell(1, 4).GetString().Trim().ToLower();
                 var h13 = ws.Cell(1, 13).GetString().Trim().ToLower();
 
-                // Format 1: Proposed 21-Column Format (project_name, requirement_code, title, status, priority, ...)
-                bool isProposed21 = h1.Contains("project_name") || h2.Contains("requirement_code") || h13.Contains("developer_emails") || (h1.Contains("project") && h3.Contains("title"));
+                // Format 1: Proposed 21/22-Column Format (project_name, requirement_code, title, status, priority, ...)
+                bool isProposedFormat = h1.Contains("project_name") || h2.Contains("requirement_code") || h13.Contains("developer_emails") || (h1.Contains("project") && h3.Contains("title"));
                 // Format 2: ARMS 21-Column with Task Code at col 1
-                bool isArms21WithTaskCode = !isProposed21 && (h1.Contains("task code") || h1.Contains("task_code") || (h2.Contains("project") && h4.Contains("title")));
+                bool isArms21WithTaskCode = !isProposedFormat && (h1.Contains("task code") || h1.Contains("task_code") || (h2.Contains("project") && h4.Contains("title")));
                 // Format 3: Legacy 9-Column Format
-                bool hasPicColumn = !isProposed21 && !isArms21WithTaskCode && (h4.Contains("pic") || h4.Contains("penugasan") || h4.Contains("pengguna") || h4.Contains("assign") || ws.ColumnsUsed().Count() >= 9);
+                bool hasPicColumn = !isProposedFormat && !isArms21WithTaskCode && (h4.Contains("pic") || h4.Contains("penugasan") || h4.Contains("pengguna") || h4.Contains("assign") || ws.ColumnsUsed().Count() >= 9);
 
                 if (rows.Count == 0)
                 {
@@ -280,10 +293,11 @@ namespace TrackerKerja.Controllers
                 {
                     var rowNum = row.RowNumber();
                     var preview = new ImportPreviewRow { RowNumber = rowNum };
+                    string rawPic = string.Empty;
 
-                    if (isProposed21)
+                    if (isProposedFormat)
                     {
-                        // ── PROPOSED 21-COLUMN STANDARD FORMAT ──────────────────
+                        // ── PROPOSED 21/22-COLUMN STANDARD FORMAT ──────────────────
                         preview.Project = row.Cell(1).GetString().Trim();
                         preview.Requirement = row.Cell(2).GetString().Trim();
                         preview.Title = row.Cell(3).GetString().Trim();
@@ -330,12 +344,24 @@ namespace TrackerKerja.Controllers
                         preview.Solution = row.Cell(20).GetString().Trim(); // solusi
                         preview.NotesTracker = row.Cell(21).GetString().Trim(); // Notes Tracker
 
-                        // Extract primary PIC from developer_emails (supports semicolon or comma separation)
-                        if (!string.IsNullOrEmpty(preview.DeveloperEmails))
+                        // Extract PIC from Column 22 (or mapped 'PIC' header column)
+                        if (colMap.TryGetValue("PIC", out var picColIdx))
                         {
-                            var firstDev = preview.DeveloperEmails.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault();
-                            preview.Assignee = firstDev;
+                            rawPic = row.Cell(picColIdx).GetString().Trim();
                         }
+                        else if ((row.LastCellUsed()?.Address.ColumnNumber ?? 0) >= 22)
+                        {
+                            rawPic = row.Cell(22).GetString().Trim();
+                        }
+
+                        // Fallback to developer_emails if PIC is not specified
+                        if (string.IsNullOrEmpty(rawPic) && !string.IsNullOrEmpty(preview.DeveloperEmails))
+                        {
+                            rawPic = preview.DeveloperEmails.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault() ?? string.Empty;
+                        }
+
+                        preview.Pic = rawPic;
+                        preview.Assignee = rawPic;
                     }
                     else if (isArms21WithTaskCode)
                     {
@@ -385,11 +411,17 @@ namespace TrackerKerja.Controllers
                         preview.Solution = row.Cell(20).GetString().Trim(); // solusi
                         preview.NotesTracker = row.Cell(21).GetString().Trim();
 
-                        if (!string.IsNullOrEmpty(preview.DeveloperEmails))
+                        if (colMap.TryGetValue("PIC", out var picColIdx))
                         {
-                            var firstDev = preview.DeveloperEmails.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault();
-                            preview.Assignee = firstDev;
+                            rawPic = row.Cell(picColIdx).GetString().Trim();
                         }
+                        else if (!string.IsNullOrEmpty(preview.DeveloperEmails))
+                        {
+                            rawPic = preview.DeveloperEmails.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault() ?? string.Empty;
+                        }
+
+                        preview.Pic = rawPic;
+                        preview.Assignee = rawPic;
                     }
                     else if (hasPicColumn)
                     {
@@ -397,7 +429,9 @@ namespace TrackerKerja.Controllers
                         preview.Title = row.Cell(1).GetString().Trim();
                         preview.Category = row.Cell(2).GetString().Trim();
                         preview.Project = row.Cell(3).GetString().Trim();
-                        preview.Assignee = row.Cell(4).GetString().Trim();
+                        rawPic = row.Cell(4).GetString().Trim();
+                        preview.Pic = rawPic;
+                        preview.Assignee = rawPic;
                         preview.Priority = row.Cell(5).GetString().Trim();
                         preview.Status = row.Cell(6).GetString().Trim();
                         preview.StartDate = ExtractDateString(row.Cell(7));
@@ -455,13 +489,24 @@ namespace TrackerKerja.Controllers
                             warnings.Add("Status tidak valid → diset ke Todo");
                         }
 
-                        // Validate Assignee if provided
-                        if (!string.IsNullOrEmpty(preview.Assignee))
+                        // Robust PIC / Assignee Person Binding
+                        if (!string.IsNullOrEmpty(rawPic))
                         {
+                            var cleanPic = rawPic.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault() ?? rawPic;
+
                             var matched = users.FirstOrDefault(u =>
-                                (!string.IsNullOrEmpty(u.Email) && u.Email.Equals(preview.Assignee, StringComparison.OrdinalIgnoreCase)) ||
-                                (!string.IsNullOrEmpty(u.FullName) && u.FullName.Equals(preview.Assignee, StringComparison.OrdinalIgnoreCase)) ||
-                                (!string.IsNullOrEmpty(u.UserName) && u.UserName.Equals(preview.Assignee, StringComparison.OrdinalIgnoreCase)));
+                                (!string.IsNullOrEmpty(u.Email) && u.Email.Equals(cleanPic, StringComparison.OrdinalIgnoreCase)) ||
+                                (!string.IsNullOrEmpty(u.FullName) && u.FullName.Equals(cleanPic, StringComparison.OrdinalIgnoreCase)) ||
+                                (!string.IsNullOrEmpty(u.UserName) && u.UserName.Equals(cleanPic, StringComparison.OrdinalIgnoreCase)));
+
+                            if (matched == null)
+                            {
+                                // Substring / partial name matching fallback
+                                matched = users.FirstOrDefault(u =>
+                                    (!string.IsNullOrEmpty(u.Email) && (u.Email.StartsWith(cleanPic, StringComparison.OrdinalIgnoreCase) || cleanPic.Contains(u.Email, StringComparison.OrdinalIgnoreCase))) ||
+                                    (!string.IsNullOrEmpty(u.FullName) && (u.FullName.Contains(cleanPic, StringComparison.OrdinalIgnoreCase) || cleanPic.Contains(u.FullName, StringComparison.OrdinalIgnoreCase))));
+                            }
+
                             if (matched != null)
                             {
                                 preview.AssigneeUserId = matched.Id;
@@ -469,7 +514,7 @@ namespace TrackerKerja.Controllers
                             }
                             else
                             {
-                                warnings.Add($"PIC '{preview.Assignee}' tidak terdaftar di sistem");
+                                warnings.Add($"PIC '{rawPic}' belum terdaftar di sistem (dapat dipilih pada dropdown pratinjau)");
                             }
                         }
 
@@ -605,12 +650,14 @@ namespace TrackerKerja.Controllers
                     {
                         assignedToUserId = row.AssigneeUserId;
                     }
-                    else if (!string.IsNullOrWhiteSpace(row.Assignee))
+                    else if (!string.IsNullOrWhiteSpace(row.Assignee) || !string.IsNullOrWhiteSpace(row.Pic))
                     {
+                        var targetPic = !string.IsNullOrWhiteSpace(row.Assignee) ? row.Assignee : row.Pic!;
+                        var cleanPic = targetPic.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault() ?? targetPic;
                         var targetUser = await _db.Users.FirstOrDefaultAsync(u =>
-                            (u.Email != null && u.Email.ToLower() == row.Assignee.ToLower()) ||
-                            (u.FullName != null && u.FullName.ToLower() == row.Assignee.ToLower()) ||
-                            (u.UserName != null && u.UserName.ToLower() == row.Assignee.ToLower()));
+                            (u.Email != null && u.Email.ToLower() == cleanPic.ToLower()) ||
+                            (u.FullName != null && u.FullName.ToLower() == cleanPic.ToLower()) ||
+                            (u.UserName != null && u.UserName.ToLower() == cleanPic.ToLower()));
                         assignedToUserId = targetUser?.Id;
                     }
 

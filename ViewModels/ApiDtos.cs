@@ -819,6 +819,7 @@ namespace TrackerKerja.ViewModels
         public string? Obstacle { get; set; }
         public string? Solution { get; set; }
         public string? NotesTracker { get; set; }
+        public string? Pic { get; set; }
         public string? ErrorMessage { get; set; }
         public string? WarningMessage { get; set; }
     }

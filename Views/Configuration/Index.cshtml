@@ -1,40 +1,46 @@
 @{
-    ViewData["Title"] = "Konfigurasi Sistem & Database";
+    ViewData["Title"] = "Konfigurasi Sistem, Database & Sinkronisasi Host";
     var baseUrl = ViewBag.GlobalBaseUrl as string ?? "http://localhost:5000";
     var tableStats = ViewBag.TableStats as Dictionary<string, int> ?? new Dictionary<string, int>();
+    var syncSettings = ViewBag.SyncSettings as TrackerKerja.ViewModels.SyncSettingsDto ?? new TrackerKerja.ViewModels.SyncSettingsDto();
+    var hostSyncTargetUrl = ViewBag.HostSyncTargetUrl as string ?? "http://localhost:5000";
+    var hostSyncApiKey = ViewBag.HostSyncApiKey as string ?? "TK-SYNC-SECRET-KEY-2026";
+    var hostSyncRole = ViewBag.HostSyncRole as string ?? "child";
+    var lastSyncAt = ViewBag.LastSyncAt as DateTime?;
+    var lastSyncStatus = ViewBag.LastSyncStatus as string;
 }
 
 <!-- Page Header -->
 <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6">
     <div>
         <div class="flex items-center gap-2.5">
-            <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-md">
-                <i class="fas fa-cogs text-sm"></i>
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 flex items-center justify-center text-white shadow-md">
+                <i class="fas fa-network-wired text-sm"></i>
             </div>
             <div>
-                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Konfigurasi Sistem & Database</h1>
-                <p class="text-xs text-slate-500 font-medium">Setting Global URL Base, pemeliharaan kapasitas SQLite, dan dokumentasi REST API</p>
+                <h1 class="text-2xl font-black text-slate-800 tracking-tight">Konfigurasi Sistem &amp; Sinkronisasi Host</h1>
+                <p class="text-xs text-slate-500 font-medium">Pengaturan Sinkronisasi Host Induk (Local Server &amp; Cloud), Global Base URL, dan Pemeliharaan Database</p>
             </div>
         </div>
     </div>
     <div class="flex items-center gap-2.5 flex-wrap">
+        <a href="/Configuration/ExportSyncSql"
+           class="flex items-center gap-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white text-xs font-bold px-3.5 py-2.5 rounded-2xl shadow-sm transition-all"
+           title="Unduh Naskah SQL Sinkronisasi untuk Host Induk (.sql)">
+            <i class="fas fa-file-export"></i>
+            <span>Export SQL Sync</span>
+        </a>
         <a href="/Configuration/ExportDatabaseFile"
            class="flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold px-3.5 py-2.5 rounded-2xl border border-emerald-200 shadow-xs transition-all"
            title="Unduh Snapshot File SQLite (.db)">
             <i class="fas fa-database text-emerald-600"></i>
             <span>Export .db</span>
         </a>
-        <a href="/Configuration/ExportSqlScript"
-           class="flex items-center gap-2 bg-cyan-50 hover:bg-cyan-100 text-cyan-700 text-xs font-bold px-3.5 py-2.5 rounded-2xl border border-cyan-200 shadow-xs transition-all"
-           title="Unduh Skrip SQL DDL & Data (.sql)">
-            <i class="fas fa-file-code text-cyan-600"></i>
-            <span>Export .sql</span>
-        </a>
         <a href="/swagger" target="_blank"
            class="flex items-center gap-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold px-3.5 py-2.5 rounded-2xl border border-indigo-200 shadow-xs transition-all"
            title="Buka Swagger API Documentation">
             <i class="fas fa-code text-indigo-500"></i>
-            <span>Swagger API Doc</span>
+            <span>Swagger API</span>
         </a>
         <a href="/AuditTrail"
            class="flex items-center gap-2 bg-amber-50 hover:bg-amber-100 text-amber-700 text-xs font-bold px-3.5 py-2.5 rounded-2xl border border-amber-200 shadow-xs transition-all"
@@ -67,6 +73,285 @@
     </div>
 }
 
+<!-- ========================================================================= -->
+<!-- 1. FEATURED SECTION: SINKRONISASI MULTI-INSTANCE & HOST INDUK -->
+<!-- ========================================================================= -->
+<div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-7 text-white shadow-xl border border-indigo-500/20 mb-8 relative overflow-hidden">
+    <!-- Decorative background elements -->
+    <div class="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
+    <div class="absolute -left-16 -top-16 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none"></div>
+
+    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-5 border-b border-slate-700/60 relative z-10">
+        <div class="flex items-center gap-3.5">
+            <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-xl text-white shadow-lg shadow-cyan-500/20">
+                <i class="fas fa-sync-alt animate-spin-slow"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2.5">
+                    <h2 class="text-lg font-black tracking-tight text-white">Sinkronisasi Host Induk &amp; Cabang</h2>
+                    <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
+                        <i class="fas fa-cloud text-[9px] text-cyan-400"></i> Multi-Location Ready
+                    </span>
+                </div>
+                <p class="text-xs text-slate-300 mt-0.5">
+                    Sinkronisasi data terpusat antara aplikasi berjalan (Child / <code class="text-cyan-300 font-mono bg-indigo-900/60 px-1 py-0.2 rounded">https://tracker.saidilmuna.space/</code>) dan Host Induk Server Lokal
+                </p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-2">
+            <button type="button" onclick="testHostIndukConnection()" id="btn-ping-host"
+                    class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer">
+                <i class="fas fa-plug text-cyan-400" id="ping-icon"></i>
+                <span id="ping-text">Test Koneksi Host</span>
+            </button>
+            <span id="ping-status-badge" class="hidden text-xs font-bold px-3 py-1.5 rounded-xl"></span>
+        </div>
+    </div>
+
+    <!-- Sync Mode Tabs -->
+    <div class="mt-5">
+        <div class="flex items-center gap-2 p-1 bg-slate-800/80 rounded-2xl max-w-fit border border-slate-700/60 mb-5">
+            <button type="button" onclick="switchSyncTab('tab-online')" id="tab-btn-online"
+                    class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-md cursor-pointer">
+                <i class="fas fa-bolt text-amber-300"></i>
+                <span>1. Mode Online API (Push ke Host)</span>
+            </button>
+            <button type="button" onclick="switchSyncTab('tab-manual-export')" id="tab-btn-manual-export"
+                    class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white cursor-pointer">
+                <i class="fas fa-file-export text-cyan-400"></i>
+                <span>2. Ekspor Manual SQL</span>
+            </button>
+            <button type="button" onclick="switchSyncTab('tab-host-receiver')" id="tab-btn-host-receiver"
+                    class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white cursor-pointer">
+                <i class="fas fa-server text-emerald-400"></i>
+                <span>3. Host Induk (Impor &amp; Bersihkan)</span>
+            </button>
+        </div>
+
+        <!-- TAB 1: ONLINE API SYNC (SUBMIT KE HOST INDUK) -->
+        <div id="tab-online" class="space-y-5">
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
+                <!-- Host Settings Form (Left: 7 Cols) -->
+                <div class="lg:col-span-7 bg-slate-800/50 rounded-2xl p-5 border border-slate-700/60 space-y-4">
+                    <form method="post" asp-action="UpdateSyncSettings" asp-controller="Configuration" id="form-sync-settings" class="space-y-4">
+                        @Html.AntiForgeryToken()
+
+                        <div class="flex items-center justify-between">
+                            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fas fa-cogs text-indigo-400"></i> Konfigurasi Target Host Induk &amp; Keamanan
+                            </h3>
+                            <span class="text-[11px] text-slate-400">Role: <span class="text-cyan-300 font-bold uppercase">@hostSyncRole</span></span>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-300 mb-1">
+                                Target Host Induk URL (Alamat Server Lokal / Endpoint Induk)
+                            </label>
+                            <div class="relative">
+                                <i class="fas fa-network-wired absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="url" id="syncHostUrlInput" name="TargetHostUrl" value="@hostSyncTargetUrl" required
+                                       placeholder="http://192.168.1.100:5000 atau https://host-induk-anda.com"
+                                       class="w-full pl-9 pr-3 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1">
+                                Alamat server Host Induk yang menjalankan REST API penerima sinkronisasi (<code class="text-cyan-400">/api/sync/receive</code>).
+                            </p>
+                        </div>
+
+                        <div>
+                            <div class="flex items-center justify-between mb-1">
+                                <label class="block text-xs font-bold text-slate-300">
+                                    Secret API Key Sinkronisasi (Shared Token)
+                                </label>
+                                <div class="flex items-center gap-2">
+                                    <button type="button" onclick="generateRandomApiKey()" class="text-[11px] text-cyan-400 hover:text-cyan-300 font-semibold cursor-pointer">
+                                        <i class="fas fa-dice mr-1"></i>Acak Kunci
+                                    </button>
+                                    <button type="button" onclick="copyApiKey()" class="text-[11px] text-slate-400 hover:text-white font-semibold cursor-pointer">
+                                        <i class="fas fa-copy mr-1"></i>Salin
+                                    </button>
+                                </div>
+                            </div>
+                            <div class="relative">
+                                <i class="fas fa-key absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                <input type="password" id="syncApiKeyInput" name="ApiKey" value="@hostSyncApiKey" required
+                                       placeholder="TK-SYNC-SECRET-KEY-..."
+                                       class="w-full pl-9 pr-10 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                                <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer">
+                                    <i class="fas fa-eye" id="toggle-key-icon"></i>
+                                </button>
+                            </div>
+                            <p class="text-[11px] text-slate-400 mt-1">
+                                Token rahasia ini harus <strong>sama persis</strong> antara child aplikasi dan Host Induk sebagai otorisasi keamanan.
+                            </p>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-700/60">
+                            <input type="hidden" name="Role" value="@hostSyncRole" id="syncRoleInput" />
+                            <div class="text-[11px] text-slate-400">
+                                @if (lastSyncAt.HasValue)
+                                {
+                                    <span>Sync Terakhir: <strong class="text-cyan-300">@lastSyncAt.Value.ToString("dd MMM yyyy HH:mm:ss")</strong></span>
+                                }
+                                else
+                                {
+                                    <span>Belum pernah melakukan sinkronisasi API</span>
+                                }
+                            </div>
+                            <button type="submit" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer">
+                                <i class="fas fa-save mr-1.5 text-indigo-400"></i>Simpan Konfigurasi
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Submit / Push Action Card (Right: 5 Cols) -->
+                <div class="lg:col-span-5 bg-gradient-to-br from-indigo-900/70 to-purple-900/70 rounded-2xl p-5 border border-indigo-500/30 flex flex-col justify-between">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-indigo-500/30 mb-3">
+                            <span class="text-xs font-black uppercase tracking-wider text-indigo-200 flex items-center gap-1.5">
+                                <i class="fas fa-paper-plane text-cyan-400"></i> Submit ke Host Induk
+                            </span>
+                            <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                        </div>
+                        <p class="text-xs text-slate-200 leading-relaxed mb-4">
+                            Kirim seluruh rekaman tugas, sesi timesheet, proyek, kategori, catatan, dan log pengguna saat ini langsung ke server Host Induk melalui API terenkripsi.
+                        </p>
+
+                        <div class="space-y-2.5 mb-4 bg-slate-900/60 rounded-xl p-3 border border-slate-800 text-xs">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" id="pushCleanBeforeSync" checked class="rounded text-indigo-500 focus:ring-indigo-400">
+                                <span class="text-slate-200 font-medium text-[11px]">Bersihkan data lama di Host Induk (Clean Slate)</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" id="pushBackupBeforeSync" checked class="rounded text-indigo-500 focus:ring-indigo-400">
+                                <span class="text-slate-200 font-medium text-[11px]">Buat backup snapshot di Host sebelum proses</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div>
+                        @if (!string.IsNullOrEmpty(lastSyncStatus))
+                        {
+                            <div class="p-2.5 bg-slate-900/80 rounded-xl border border-slate-800 text-[11px] text-slate-300 mb-3 flex items-start gap-2">
+                                <i class="fas fa-info-circle text-cyan-400 mt-0.5"></i>
+                                <div class="truncate">@lastSyncStatus</div>
+                            </div>
+                        }
+
+                        <button type="button" onclick="executeOnlinePushSync()" id="btn-push-sync"
+                                class="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-extrabold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer">
+                            <i class="fas fa-cloud-upload-alt text-base"></i>
+                            <span>Kirim &amp; Sinkronkan ke Host Induk Sekarang</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 2: EKSPOR MANUAL SQL (FALLBACK JIKA OFFLINE / BEDA JARINGAN) -->
+        <div id="tab-manual-export" class="hidden space-y-4">
+            <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/60">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-lg">
+                            <i class="fas fa-file-code"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-white">Ekspor Naskah SQL Sinkronisasi (.sql)</h3>
+                            <p class="text-xs text-slate-400">Mode manual bila server lokal tidak dapat diakses langsung oleh internet publik</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
+                        Offline Fallback
+                    </span>
+                </div>
+
+                <p class="text-xs text-slate-300 leading-relaxed mb-5 max-w-3xl">
+                    Jika server lokal Host Induk berada di balik router/firewall kantor tanpa IP Publik atau VPN, unduh file naskah SQL sinkronisasi dari instance online ini (<code class="text-cyan-300 font-mono">tracker.saidilmuna.space</code>), lalu buka menu <strong>"Host Induk (Impor &amp; Bersihkan)"</strong> di server lokal Anda untuk mengunggah file ini.
+                </p>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+                    <a href="/Configuration/ExportSyncSql?cleanBeforeSync=true"
+                       class="flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold py-3 px-4 rounded-xl shadow-md transition-all cursor-pointer">
+                        <i class="fas fa-download"></i>
+                        <span>Unduh SQL Sync (Clean Slate)</span>
+                    </a>
+                    <a href="/Configuration/ExportSyncSql?cleanBeforeSync=false"
+                       class="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 text-xs font-bold py-3 px-4 rounded-xl transition-all cursor-pointer">
+                        <i class="fas fa-copy"></i>
+                        <span>Unduh SQL Sync (Merge / Upsert)</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: HOST INDUK RECEIVER (UNGGAH FILE SQL & BERSIHKAN DATA) -->
+        <div id="tab-host-receiver" class="hidden space-y-4">
+            <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/60">
+                <div class="flex items-start justify-between gap-4 mb-4">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
+                            <i class="fas fa-server"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-bold text-white">Panel Penerima Host Induk (Impor File SQL &amp; Pembersihan)</h3>
+                            <p class="text-xs text-slate-400">Jalankan di server Host Induk untuk mengeksekusi paket sinkronisasi dari child application</p>
+                        </div>
+                    </div>
+                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                        Host Receiver
+                    </span>
+                </div>
+
+                <form method="post" asp-action="UploadAndSyncSql" asp-controller="Configuration" enctype="multipart/form-data" id="form-upload-sql-sync" class="space-y-4">
+                    @Html.AntiForgeryToken()
+
+                    <!-- File Dropzone Input -->
+                    <div class="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-2xl p-6 text-center transition-all bg-slate-900/60 cursor-pointer"
+                         onclick="document.getElementById('sqlFileInput').click()">
+                        <i class="fas fa-cloud-upload-alt text-3xl text-emerald-400 mb-2"></i>
+                        <h4 class="text-xs font-bold text-slate-200" id="sqlFileLabel">Pilih atau Drag &amp; Drop berkas paket SQL (.sql) dari Child</h4>
+                        <p class="text-[11px] text-slate-400 mt-1">Mendukung berkas dump SQL hasil ekspor dari aplikasi Work Tracker Pro</p>
+                        <input type="file" id="sqlFileInput" name="sqlFile" accept=".sql" class="hidden" onchange="handleSqlFileSelect(this)" required>
+                    </div>
+
+                    <!-- Options Checkbox -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-xs">
+                        <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" name="cleanBeforeSync" value="true" checked class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-400">
+                            <div>
+                                <span class="text-slate-200 font-bold block">1. Bersihkan Data Lama (Clean Slate)</span>
+                                <span class="text-slate-400 text-[11px]">Membersihkan data transaksi lama di Host Induk sebelum menerapkan naskah SQL.</span>
+                            </div>
+                        </label>
+
+                        <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                            <input type="checkbox" name="backupBeforeSync" value="true" checked class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-400">
+                            <div>
+                                <span class="text-slate-200 font-bold block">2. Buat Snapshot Backup (.db)</span>
+                                <span class="text-slate-400 text-[11px]">Membuat salinan cadangan otomatis di folder backups/ sebelum eksekusi dimulai.</span>
+                            </div>
+                        </label>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-3 pt-2">
+                        <button type="submit" id="btn-submit-upload-sql" disabled
+                                class="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow-md transition-all cursor-pointer">
+                            <i class="fas fa-play"></i>
+                            <span>Jalankan Sinkronisasi File SQL</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- 2. MAIN GRID: GLOBAL BASE URL & DATABASE CAPACITY / MAINTENANCE -->
+<!-- ========================================================================= -->
 <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
     <!-- LEFT COLUMN: Global Base URL & API Doc (2 Cols) -->
@@ -151,7 +436,7 @@
                         <i class="fas fa-book-open"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-slate-800">Dokumentasi REST API & Swagger</h3>
+                        <h3 class="font-bold text-sm text-slate-800">Dokumentasi REST API &amp; Swagger</h3>
                         <p class="text-xs text-slate-400">Spesifikasi OpenAPI 3.0 interaktif untuk seluruh modul sistem</p>
                     </div>
                 </div>
@@ -167,22 +452,22 @@
                 <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Tasks</span>
                     <span class="text-xs font-mono font-bold text-indigo-600">/api/tasks</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD & Summary</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD &amp; Summary</span>
                 </div>
                 <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Projects</span>
                     <span class="text-xs font-mono font-bold text-amber-600">/api/projects</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD & Proyeksi</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD &amp; Proyeksi</span>
                 </div>
                 <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Notes</span>
-                    <span class="text-xs font-mono font-bold text-violet-600">/api/notes</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD & Pin Toggle</span>
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Sync</span>
+                    <span class="text-xs font-mono font-bold text-cyan-600">/api/sync</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Ping, Push &amp; Receive</span>
                 </div>
                 <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Timesheets</span>
                     <span class="text-xs font-mono font-bold text-emerald-600">/api/timesheets</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Live Timer & Logs</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Live Timer &amp; Logs</span>
                 </div>
                 <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Members</span>
@@ -192,17 +477,17 @@
                 <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Reports</span>
                     <span class="text-xs font-mono font-bold text-blue-600">/api/reports</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Gantt & Dashboard</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Gantt &amp; Dashboard</span>
                 </div>
                 <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Audit</span>
                     <span class="text-xs font-mono font-bold text-rose-600">/api/audit-trail</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Logs & Pembersihan</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Logs &amp; Pembersihan</span>
                 </div>
                 <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
                     <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Configuration</span>
                     <span class="text-xs font-mono font-bold text-indigo-600">/api/configuration</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">DB Shrink & Settings</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">DB Shrink &amp; Settings</span>
                 </div>
             </div>
 
@@ -231,7 +516,7 @@
                         <i class="fas fa-file-export"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-slate-800">Backup & Export Database</h3>
+                        <h3 class="font-bold text-sm text-slate-800">Backup &amp; Export Database</h3>
                         <p class="text-xs text-slate-400">Unduh snapshot biner (.db) atau skrip SQL (.sql)</p>
                     </div>
                 </div>
@@ -239,10 +524,6 @@
                     <i class="fas fa-shield-alt text-emerald-500 text-[10px]"></i> SQLite Ready
                 </span>
             </div>
-
-            <p class="text-xs text-slate-600 leading-relaxed mb-4">
-                Fitur pencadangan data lengkap untuk kebutuhan backup rutin, disaster recovery, arsip audit, maupun migrasi lingkungan server.
-            </p>
 
             <div class="space-y-3">
                 <!-- Option 1: Binary .db file -->
@@ -253,7 +534,7 @@
                                 <i class="fas fa-database text-emerald-600 text-xs"></i> 1. File Database SQLite (.db)
                             </span>
                             <span class="text-[11px] text-slate-500 block mt-0.5">
-                                Snapshot biner utuh dari file database aktif (termasuk skema, relasi, tabel, dan data).
+                                Snapshot biner utuh dari file database aktif.
                             </span>
                         </div>
                     </div>
@@ -269,10 +550,10 @@
                     <div class="flex items-start justify-between gap-3 mb-2">
                         <div>
                             <span class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
-                                <i class="fas fa-file-code text-cyan-600 text-xs"></i> 2. Script SQL (DDL Schema & Data)
+                                <i class="fas fa-file-code text-cyan-600 text-xs"></i> 2. Script SQL (DDL Schema &amp; Data)
                             </span>
                             <span class="text-[11px] text-slate-500 block mt-0.5">
-                                Naskah SQL terstruktur berisi <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">CREATE TABLE</code>, indeks, dan kueri <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">INSERT INTO</code> untuk seluruh tabel.
+                                Naskah SQL terstruktur berisi <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">CREATE TABLE</code> dan <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">INSERT INTO</code>.
                             </span>
                         </div>
                     </div>
@@ -300,7 +581,7 @@
                 </div>
                 <div>
                     <h3 class="font-bold text-sm text-slate-800">Kapasitas Database</h3>
-                    <p class="text-xs text-slate-400">Informasi storage file SQLite & tabel</p>
+                    <p class="text-xs text-slate-400">Informasi storage file SQLite &amp; tabel</p>
                 </div>
             </div>
 
@@ -348,7 +629,7 @@
             </div>
         </div>
 
-        <!-- 4. SHRINK DATABASE (VACUUM) -->
+        <!-- 5. SHRINK DATABASE (VACUUM) -->
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
             <div class="flex items-center gap-3 pb-3 mb-3 border-b border-slate-100">
                 <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-base font-bold">
@@ -359,10 +640,6 @@
                     <p class="text-xs text-slate-400">Jalankan VACUUM untuk mengklaim ruang kosong</p>
                 </div>
             </div>
-
-            <p class="text-xs text-slate-600 leading-relaxed mb-4">
-                Operasi <strong>VACUUM</strong> mereorganisasi database SQLite untuk membersihkan ruang kosong dari data yang telah dihapus dan mengoptimalkan performa kueri.
-            </p>
 
             <form method="post" asp-action="ShrinkDatabase" asp-controller="Configuration"
                   data-confirm="Jalankan proses VACUUM pada database SQLite sekarang? Database akan dikompresi untuk mereklamasi ruang kosong dan mengoptimalkan performa."
@@ -377,7 +654,7 @@
             </form>
         </div>
 
-        <!-- 5. RESET DATABASE (MAINTENANCE) -->
+        <!-- 6. RESET DATABASE (MAINTENANCE) -->
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-rose-100">
             <div class="flex items-center gap-3 pb-3 mb-3 border-b border-slate-100">
                 <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-base font-bold">
@@ -388,10 +665,6 @@
                     <p class="text-xs text-slate-400">Pembersihan data transaksi atau factory reset</p>
                 </div>
             </div>
-
-            <p class="text-xs text-slate-500 leading-relaxed mb-4">
-                Fitur pemeliharaan sistem untuk membersihkan data lama. Tindakan ini tidak dapat dibatalkan.
-            </p>
 
             <button type="button" onclick="openResetModal()"
                     class="w-full flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-2.5 px-4 rounded-xl text-xs transition-all cursor-pointer">
@@ -440,9 +713,9 @@
                 <label class="flex items-start gap-3 p-3 rounded-2xl border border-rose-200 bg-rose-50/40 hover:bg-rose-50 cursor-pointer">
                     <input type="radio" name="mode" value="factory" class="mt-0.5 text-rose-600 focus:ring-rose-500">
                     <div>
-                        <span class="font-bold text-rose-800 block">2. Factory Reset Data Transaksi & Tugas</span>
+                        <span class="font-bold text-rose-800 block">2. Factory Reset Data Transaksi &amp; Tugas</span>
                         <span class="text-rose-600 text-[11px] block mt-0.5">
-                            Menghapus seluruh Tugas, Catatan, File Lampiran, Sesi Kerja, dan Log. Akun Pengguna & Master Data tetap ada.
+                            Menghapus seluruh Tugas, Catatan, File Lampiran, Sesi Kerja, dan Log. Akun Pengguna &amp; Master Data tetap ada.
                         </span>
                     </div>
                 </label>
@@ -481,7 +754,7 @@
                     <i class="fas fa-file-code"></i>
                 </div>
                 <div>
-                    <h3 class="text-base font-bold text-slate-800">Pratinjau SQL DDL & Skema Database</h3>
+                    <h3 class="text-base font-bold text-slate-800">Pratinjau SQL DDL &amp; Skema Database</h3>
                     <p class="text-[11px] text-slate-400" id="sql-preview-subtitle">Memuat skrip SQL dump...</p>
                 </div>
             </div>
@@ -498,7 +771,7 @@
                 <span id="sql-preview-meta" class="font-mono text-[10px]">Loading...</span>
             </div>
             <div class="flex-1 overflow-y-auto overflow-x-auto text-xs font-mono text-slate-200 pr-2 select-all">
-                <pre id="sql-preview-content" class="whitespace-pre">Sedang membaca skema database & data...</pre>
+                <pre id="sql-preview-content" class="whitespace-pre">Sedang membaca skema database &amp; data...</pre>
             </div>
         </div>
 
@@ -526,6 +799,266 @@
 @section Scripts {
 <script>
 let fullSqlText = '';
+
+// =========================================================================
+// SINKRONISASI HOST INDUK JAVASCRIPT LOGIC
+// =========================================================================
+
+function switchSyncTab(tabId) {
+    const tabs = ['tab-online', 'tab-manual-export', 'tab-host-receiver'];
+    const btns = {
+        'tab-online': 'tab-btn-online',
+        'tab-manual-export': 'tab-btn-manual-export',
+        'tab-host-receiver': 'tab-btn-host-receiver'
+    };
+
+    tabs.forEach(t => {
+        const el = document.getElementById(t);
+        const btn = document.getElementById(btns[t]);
+        if (t === tabId) {
+            el.classList.remove('hidden');
+            btn.className = 'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-md cursor-pointer';
+        } else {
+            el.classList.add('hidden');
+            btn.className = 'flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white cursor-pointer';
+        }
+    });
+}
+
+function toggleApiKeyVisibility() {
+    const input = document.getElementById('syncApiKeyInput');
+    const icon = document.getElementById('toggle-key-icon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+function generateRandomApiKey() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let rand = 'TK-SYNC-';
+    for (let i = 0; i < 16; i++) {
+        rand += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    document.getElementById('syncApiKeyInput').value = rand;
+    document.getElementById('syncApiKeyInput').type = 'text';
+    document.getElementById('toggle-key-icon').className = 'fas fa-eye-slash';
+    if (typeof SwalAlert === 'function') {
+        SwalAlert('Key Baru Dibuat', 'Secret API Key baru berhasil digenerate. Jangan lupa klik "Simpan Konfigurasi"!', 'info');
+    }
+}
+
+function copyApiKey() {
+    const val = document.getElementById('syncApiKeyInput').value;
+    navigator.clipboard.writeText(val).then(() => {
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Tersalin', 'Secret API Key berhasil disalin ke clipboard!', 'success');
+        } else {
+            alert('Secret API Key disalin!');
+        }
+    });
+}
+
+async function testHostIndukConnection() {
+    const hostUrl = document.getElementById('syncHostUrlInput').value.trim();
+    const apiKey = document.getElementById('syncApiKeyInput').value.trim();
+    const btn = document.getElementById('btn-ping-host');
+    const icon = document.getElementById('ping-icon');
+    const text = document.getElementById('ping-text');
+    const badge = document.getElementById('ping-status-badge');
+
+    if (!hostUrl) {
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('URL Kosong', 'Harap isi alamat Target Host Induk URL terlebih dahulu!', 'warning');
+        } else {
+            alert('Harap isi alamat Target Host Induk URL!');
+        }
+        return;
+    }
+
+    btn.disabled = true;
+    icon.className = 'fas fa-spinner fa-spin text-cyan-400';
+    text.innerText = 'Menguji...';
+    badge.className = 'hidden';
+
+    try {
+        const res = await fetch('/Configuration/TestHostConnection', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ TargetHostUrl: hostUrl, ApiKey: apiKey })
+        });
+
+        const data = await res.json();
+        btn.disabled = false;
+        icon.className = 'fas fa-plug text-cyan-400';
+        text.innerText = 'Test Koneksi Host';
+
+        badge.classList.remove('hidden');
+
+        if (data.success) {
+            badge.className = 'text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 flex items-center gap-1.5';
+            badge.innerHTML = `<i class="fas fa-check-circle"></i> Online (${data.data.databaseType || 'OK'})`;
+            
+            if (typeof SwalAlert === 'function') {
+                SwalAlert('Koneksi Sukses!', `Host Induk di <strong>${hostUrl}</strong> merespons dengan sukses!<br><br>Status: <span class="text-emerald-600 font-bold">ONLINE</span><br>Tugas di Host: <strong>${data.data.totalTasks}</strong> | Sesi: <strong>${data.data.totalSessions}</strong>`, 'success');
+            }
+        } else {
+            badge.className = 'text-xs font-bold px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1.5';
+            badge.innerHTML = `<i class="fas fa-times-circle"></i> Terputus`;
+
+            if (typeof SwalAlert === 'function') {
+                SwalAlert('Koneksi Gagal', data.message || 'Host Induk tidak dapat dijangkau.', 'error');
+            }
+        }
+    } catch (err) {
+        btn.disabled = false;
+        icon.className = 'fas fa-plug text-cyan-400';
+        text.innerText = 'Test Koneksi Host';
+        badge.classList.remove('hidden');
+        badge.className = 'text-xs font-bold px-3 py-1.5 rounded-xl bg-rose-500/20 text-rose-300 border border-rose-500/30 flex items-center gap-1.5';
+        badge.innerHTML = `<i class="fas fa-times-circle"></i> Error`;
+
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Kesalahan Jaringan', `Gagal mengirim test ping ke Host Induk: ${err.message}`, 'error');
+        }
+    }
+}
+
+function executeOnlinePushSync() {
+    const targetUrl = document.getElementById('syncHostUrlInput').value.trim();
+    const apiKey = document.getElementById('syncApiKeyInput').value.trim();
+    const cleanBefore = document.getElementById('pushCleanBeforeSync').checked;
+    const backupBefore = document.getElementById('pushBackupBeforeSync').checked;
+
+    if (!targetUrl) {
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Target Host Kosong', 'Harap isi URL Host Induk sebelum melakukan sinkronisasi.', 'warning');
+        } else {
+            alert('Harap isi URL Host Induk!');
+        }
+        return;
+    }
+
+    const confirmHtml = `
+        <div class="text-left text-xs space-y-2 mt-2">
+            <p>Anda akan mengirimkan seluruh data saat ini ke Host Induk di <strong>${targetUrl}</strong>.</p>
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                <div>• Opsi Bersihkan Data Lama di Host: <strong>${cleanBefore ? 'Ya (Clean Slate)' : 'Tidak (Merge)'}</strong></div>
+                <div>• Opsi Buat Backup di Host: <strong>${backupBefore ? 'Ya (Otomatis .db)' : 'Tidak'}</strong></div>
+            </div>
+            <p class="text-slate-500">Pastikan server Host Induk sedang aktif dan menerima koneksi API.</p>
+        </div>
+    `;
+
+    if (typeof Swal === 'function') {
+        Swal.fire({
+            title: 'Kirim Data ke Host Induk?',
+            html: confirmHtml,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#4F46E5',
+            cancelButtonColor: '#64748B',
+            confirmButtonText: '<i class="fas fa-paper-plane mr-1.5"></i>Ya, Kirim Sekarang',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                performPushSync(targetUrl, apiKey, cleanBefore, backupBefore);
+            }
+        });
+    } else {
+        if (confirm(`Kirim data ke Host Induk (${targetUrl}) sekarang?`)) {
+            performPushSync(targetUrl, apiKey, cleanBefore, backupBefore);
+        }
+    }
+}
+
+async function performPushSync(targetUrl, apiKey, cleanBefore, backupBefore) {
+    const btn = document.getElementById('btn-push-sync');
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sedang Mengirim &amp; Sinkronisasi Data...';
+
+    try {
+        const res = await fetch('/api/sync/push', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                TargetHostUrl: targetUrl,
+                ApiKey: apiKey,
+                CleanBeforeSync: cleanBefore,
+                BackupBeforeSync: backupBefore
+            })
+        });
+
+        const data = await res.json();
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+
+        if (data.success) {
+            const tableList = data.data?.affectedTables?.join(', ') || 'Tabel transaksi & master';
+            const duration = data.data?.executionDurationMs || 0;
+            const backupMsg = data.data?.backupFileName ? `<br><small class="text-slate-500">Backup Host: ${data.data.backupFileName}</small>` : '';
+
+            if (typeof Swal === 'function') {
+                Swal.fire({
+                    title: 'Sinkronisasi Berhasil!',
+                    html: `Seluruh data berhasil dikirim dan diterapkan di Host Induk dalam <strong>${duration}ms</strong>.<br><br><strong>Tabel yang diperbarui:</strong><br><span class="text-xs font-mono text-indigo-600">${tableList}</span>${backupMsg}`,
+                    icon: 'success',
+                    confirmButtonColor: '#4F46E5'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                alert(`Sinkronisasi Berhasil! Durasi: ${duration}ms.`);
+                window.location.reload();
+            }
+        } else {
+            if (typeof SwalAlert === 'function') {
+                SwalAlert('Gagal Sinkronisasi', data.message || 'Terjadi kesalahan saat memproses data di Host Induk.', 'error');
+            } else {
+                alert('Gagal Sinkronisasi: ' + data.message);
+            }
+        }
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Kesalahan Jaringan', `Gagal menghubungi Host Induk: ${err.message}`, 'error');
+        } else {
+            alert('Kesalahan Jaringan: ' + err.message);
+        }
+    }
+}
+
+function handleSqlFileSelect(input) {
+    const label = document.getElementById('sqlFileLabel');
+    const submitBtn = document.getElementById('btn-submit-upload-sql');
+    if (input.files && input.files[0]) {
+        const file = input.files[0];
+        label.innerHTML = `<span class="text-emerald-300 font-bold"><i class="fas fa-file-code mr-1"></i>${file.name}</span> (${(file.size / 1024).toFixed(1)} KB)`;
+        submitBtn.disabled = false;
+    } else {
+        label.innerText = 'Pilih atau Drag & Drop berkas paket SQL (.sql) dari Child';
+        submitBtn.disabled = true;
+    }
+}
+
+document.getElementById('form-upload-sql-sync')?.addEventListener('submit', function(e) {
+    const fileInput = document.getElementById('sqlFileInput');
+    if (!fileInput.files || !fileInput.files[0]) {
+        e.preventDefault();
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('File Belum Dipilih', 'Silakan pilih berkas SQL terlebih dahulu sebelum menjalankan sinkronisasi.', 'warning');
+        }
+    }
+});
+
+// =========================================================================
+// EXISTING BASE URL & RESET MODAL LOGIC
+// =========================================================================
 
 function detectCurrentHost() {
     const origin = window.location.origin;

@@ -39,7 +39,7 @@ namespace TrackerKerja.Controllers.Api
                 "jenis_task", "module_name", "bug_type", "progress", "start_date",
                 "due_date", "completed_date", "developer_emails", "ba_emails", "infra_emails",
                 "master_data_emails", "tester_emails", "tw_emails", "kendala", "solusi",
-                "Notes Tracker"
+                "Notes Tracker", "PIC"
             };
 
             for (int i = 0; i < headers.Length; i++)
@@ -57,8 +57,8 @@ namespace TrackerKerja.Controllers.Api
 
             var samples = new object[,]
             {
-                { "Integrasi TCES TICS", "TSD-001", "Checking & Testing Product, Scheming & premium class TICS vs Mass Product", "IN_PROGRESS", "HIGH", "ENHANCEMENT", "TCES", "Feature", 40, "2026-08-10", "2026-08-25", "", "haviz.indra@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "", "Menunggu sinkronisasi", "Koordinasi lead", "Sprint 4 Target" },
-                { "Integrasi TCES TICS", "TSD-002", "Melakukan Deployment ke Server Staging & Smoke Testing", "DONE", "HIGH", "NEW_APP", "TCES", "Task", 100, "2026-08-10", "2026-08-18", "2026-08-18", "haviz.indra@elistec.com", "syafix.said@elistec.com", "mohammad.danang@elistec.com", "", "heni.rahayu@elistec.com", "", "", "", "Deployed successfully" }
+                { "Integrasi TCES TICS", "TSD-001", "Checking & Testing Product, Scheming & premium class TICS vs Mass Product", "IN_PROGRESS", "HIGH", "ENHANCEMENT", "TCES", "Feature", 40, "2026-08-10", "2026-08-25", "", "haviz.indra@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "", "Menunggu sinkronisasi", "Koordinasi lead", "Sprint 4 Target", "haviz.indra@elistec.com" },
+                { "Integrasi TCES TICS", "TSD-002", "Melakukan Deployment ke Server Staging & Smoke Testing", "DONE", "HIGH", "NEW_APP", "TCES", "Task", 100, "2026-08-10", "2026-08-18", "2026-08-18", "haviz.indra@elistec.com", "syafix.said@elistec.com", "mohammad.danang@elistec.com", "", "heni.rahayu@elistec.com", "", "", "", "Deployed successfully", "haviz.indra@elistec.com" }
             };
 
             for (int r = 0; r < samples.GetLength(0); r++)
@@ -75,7 +75,7 @@ namespace TrackerKerja.Controllers.Api
             wb.SaveAs(stream);
             var content = stream.ToArray();
 
-            return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Template_Import_Task_21Kolom.xlsx");
+            return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "Template_Import_Task_22Kolom.xlsx");
         }
 
         /// <summary>
@@ -119,6 +119,18 @@ namespace TrackerKerja.Controllers.Api
 
                 bool isProposed21 = h1.Contains("project_name") || h2.Contains("requirement_code") || h13.Contains("developer_emails") || (h1.Contains("project") && ws.Cell(1, 3).GetString().ToLower().Contains("title"));
 
+                // Build header map
+                var colMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
+                var lastCol = ws.LastColumnUsed()?.ColumnNumber() ?? 0;
+                for (int c = 1; c <= lastCol; c++)
+                {
+                    var hText = ws.Cell(1, c).GetString().Trim();
+                    if (!string.IsNullOrEmpty(hText) && !colMap.ContainsKey(hText))
+                    {
+                        colMap[hText] = c;
+                    }
+                }
+
                 for (int r = 2; r <= rowCount; r++)
                 {
                     var row = ws.Row(r);
@@ -152,7 +164,23 @@ namespace TrackerKerja.Controllers.Api
                         start = row.Cell(10).GetString()?.Trim();
                         deadline = row.Cell(11).GetString()?.Trim();
                         end = row.Cell(12).GetString()?.Trim();
-                        pic = row.Cell(13).GetString()?.Trim();
+                        
+                        // Extract PIC from column 22 or header 'PIC'
+                        if (colMap.TryGetValue("PIC", out var pIdx))
+                        {
+                            pic = row.Cell(pIdx).GetString()?.Trim();
+                        }
+                        else if ((row.LastCellUsed()?.Address.ColumnNumber ?? 0) >= 22)
+                        {
+                            pic = row.Cell(22).GetString()?.Trim();
+                        }
+
+                        // Fallback to developer_emails (col 13) if PIC is empty
+                        if (string.IsNullOrEmpty(pic))
+                        {
+                            pic = row.Cell(13).GetString()?.Trim();
+                        }
+
                         obstacle = row.Cell(19).GetString()?.Trim();
                         solution = row.Cell(20).GetString()?.Trim();
                         notesTracker = row.Cell(21).GetString()?.Trim();
@@ -178,7 +206,8 @@ namespace TrackerKerja.Controllers.Api
                         var primaryEmail = pic.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault();
                         var u = allUsers.FirstOrDefault(u =>
                             (!string.IsNullOrEmpty(u.Email) && u.Email.Equals(primaryEmail, StringComparison.OrdinalIgnoreCase)) ||
-                            (!string.IsNullOrEmpty(u.FullName) && u.FullName.Equals(primaryEmail, StringComparison.OrdinalIgnoreCase)));
+                            (!string.IsNullOrEmpty(u.FullName) && u.FullName.Equals(primaryEmail, StringComparison.OrdinalIgnoreCase)) ||
+                            (!string.IsNullOrEmpty(u.UserName) && u.UserName.Equals(primaryEmail, StringComparison.OrdinalIgnoreCase)));
                         if (u != null) matchedUserId = u.Id;
                     }
 
@@ -190,6 +219,7 @@ namespace TrackerKerja.Controllers.Api
                         Category = string.IsNullOrWhiteSpace(cat) ? "General" : cat,
                         Project = string.IsNullOrWhiteSpace(proj) ? null : proj,
                         Assignee = string.IsNullOrWhiteSpace(pic) ? null : pic,
+                        Pic = string.IsNullOrWhiteSpace(pic) ? null : pic,
                         AssigneeUserId = matchedUserId,
                         Priority = string.IsNullOrWhiteSpace(priority) ? "Medium" : priority,
                         Status = string.IsNullOrWhiteSpace(status) ? "Todo" : status,
@@ -276,13 +306,29 @@ namespace TrackerKerja.Controllers.Api
                 DateTime? parsedDue = null;
                 if (DateTime.TryParse(r.Deadline, out var dtDue)) parsedDue = dtDue;
 
+                string? assignedUserId = r.AssigneeUserId;
+                if (string.IsNullOrWhiteSpace(assignedUserId) && (!string.IsNullOrWhiteSpace(r.Assignee) || !string.IsNullOrWhiteSpace(r.Pic)))
+                {
+                    var targetPic = !string.IsNullOrWhiteSpace(r.Assignee) ? r.Assignee : r.Pic!;
+                    var cleanPic = targetPic.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault() ?? targetPic;
+                    var u = await _db.Users.FirstOrDefaultAsync(u =>
+                        (u.Email != null && u.Email.ToLower() == cleanPic.ToLower()) ||
+                        (u.FullName != null && u.FullName.ToLower() == cleanPic.ToLower()) ||
+                        (u.UserName != null && u.UserName.ToLower() == cleanPic.ToLower()));
+                    assignedUserId = u?.Id;
+                }
+                if (string.IsNullOrWhiteSpace(assignedUserId))
+                {
+                    assignedUserId = dto.DefaultAssigneeId;
+                }
+
                 var task = new WorkTask
                 {
                     Title = r.Title.Trim(),
                     Description = !string.IsNullOrWhiteSpace(r.NotesTracker) ? r.NotesTracker.Trim() : null,
                     ProjectId = projId,
                     CategoryId = catId,
-                    AssignedToUserId = !string.IsNullOrWhiteSpace(r.AssigneeUserId) ? r.AssigneeUserId : dto.DefaultAssigneeId,
+                    AssignedToUserId = assignedUserId,
                     Priority = priorityVal,
                     Status = statusVal,
                     Progress = statusVal == ModelTaskStatus.Done ? 100 : Math.Clamp(r.Progress, 0, 100),

@@ -161,10 +161,10 @@ Buka menu **Kanban** (`/Kanban`) untuk visualisasi alur kerja bergaya kartu:
 - **Drag & Drop**: Cukup klik dan tahan kartu tugas, lalu geser ke kolom status yang diinginkan. Status tugas di database akan otomatis diperbarui.
 - **Tampilan Mobile**: Pada layar ponsel, tersedia tombol tab pintar di bagian atas untuk berpindah antar kolom secara cepat dan rapi.
 
-### 3.7 Import Data Tugas dari Excel (Format Standar 21 Kolom)
-Aplikasi mendukung impor banyak tugas sekaligus melalui berkas spreadsheet Excel `.xlsx` menggunakan format standar 21 kolom (*Proposed Tracker / Enterprise Format*):
+### 3.7 Import Data Tugas dari Excel (Format Standar 22 Kolom dengan Binding PIC)
+Aplikasi mendukung impor banyak tugas sekaligus melalui berkas spreadsheet Excel `.xlsx` menggunakan format standar 22 kolom (*Proposed Tracker / Enterprise Format*):
 1. Buka menu **Import Task** (`/Import`).
-2. Klik tombol **Download Template Excel (21 Kolom)** untuk mengunduh berkas template siap pakai.
+2. Klik tombol **Download Template Excel (22 Kolom)** untuk mengunduh berkas template siap pakai.
 3. Isi data tugas pada lembar kerja Excel mulai dari baris ke-2:
    - `project_name`: Nama proyek terkait (dibuat otomatis jika proyek belum ada).
    - `requirement_code`: Kode dokumen requirement / BRD / TSD.
@@ -176,13 +176,14 @@ Aplikasi mendukung impor banyak tugas sekaligus melalui berkas spreadsheet Excel
    - `bug_type`: Klasifikasi isu (`Feature`, `Bug`, `Task`, dll).
    - `progress`: Persentase kemajuan (0–100%).
    - `start_date` & `due_date`: Tanggal mulai dan tenggat waktu tugas.
-   - `developer_emails`: Alamat email PIC pengembang (dapat dipisah tanda `;` jika lebih dari 1 orang).
+   - `developer_emails`: Alamat email pengembang terkait (dapat dipisah tanda `;` jika lebih dari 1 orang).
    - `ba_emails`, `infra_emails`, `master_data_emails`, `tester_emails`, `tw_emails`: Alamat email pemangku kepentingan terkait.
    - `kendala` & `solusi`: Catatan hambatan dan rekomendasi penanganan teknis.
    - `Notes Tracker`: Catatan aktivitas atau deskripsi tugas.
+   - `PIC`: Nama lengkap, username, atau email PIC penanggung jawab tugas untuk otomatis mem-binding (menugaskan) task ke person/user di dalam sistem.
 4. Unggah berkas yang telah diisi pada area *Drag & Drop*.
-5. Pada halaman **Preview Data**, periksa validitas baris data dan Anda dapat mengatur ulang PIC penugasan secara interaktif jika diperlukan.
-6. Klik **Konfirmasi & Simpan ke Database** untuk menyimpan seluruh data tugas secara instan.
+5. Pada halaman **Preview Data**, sistem akan otomatis mencocokkan PIC ke akun pengguna terdaftar. Anda juga dapat mengatur ulang PIC penugasan secara interaktif jika diperlukan.
+6. Klik **Konfirmasi Import Task** untuk menyimpan seluruh data tugas secara instan.
 
 ---
 

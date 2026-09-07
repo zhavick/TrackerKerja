@@ -17,19 +17,22 @@ namespace TrackerKerja.Controllers
         private readonly IWebHostEnvironment _env;
         private readonly UserManager<AppUser> _userManager;
         private readonly Services.IDatabaseExportService _exportService;
+        private readonly Services.IDatabaseSyncService _syncService;
 
         public ConfigurationController(
             AppDbContext db,
             IConfiguration config,
             IWebHostEnvironment env,
             UserManager<AppUser> userManager,
-            Services.IDatabaseExportService exportService)
+            Services.IDatabaseExportService exportService,
+            Services.IDatabaseSyncService syncService)
         {
             _db = db;
             _config = config;
             _env = env;
             _userManager = userManager;
             _exportService = exportService;
+            _syncService = syncService;
         }
 
         public async Task<IActionResult> Index()
@@ -122,6 +125,15 @@ namespace TrackerKerja.Controllers
             // 3. API Doc info
             ViewBag.SwaggerUiUrl = $"{baseUrl}/swagger";
             ViewBag.OpenApiJsonUrl = $"{baseUrl}/swagger/v1/swagger.json";
+
+            // 4. Host Synchronization Settings
+            var syncSettings = await _syncService.GetSyncSettingsAsync();
+            ViewBag.SyncSettings = syncSettings;
+            ViewBag.HostSyncTargetUrl = syncSettings.TargetHostUrl;
+            ViewBag.HostSyncApiKey = syncSettings.ApiKey;
+            ViewBag.HostSyncRole = syncSettings.Role;
+            ViewBag.LastSyncAt = syncSettings.LastSyncAt;
+            ViewBag.LastSyncStatus = syncSettings.LastSyncStatus;
 
             return View();
         }
@@ -292,6 +304,126 @@ namespace TrackerKerja.Controllers
             catch (Exception ex)
             {
                 return Json(new { success = false, message = ex.Message });
+            }
+        }
+
+        // ── SINKRONISASI HOST INDUK ACTIONS ───────────────────
+        
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateSyncSettings(SyncSettingsDto dto)
+        {
+            if (dto == null)
+            {
+                TempData["Error"] = "Data pengaturan sinkronisasi tidak valid.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            await _syncService.SaveSyncSettingsAsync(dto);
+            TempData["Success"] = "Pengaturan Sinkronisasi Host Induk berhasil disimpan!";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PushSyncToHost(string targetUrl, string apiKey, bool cleanBeforeSync = true, bool backupBeforeSync = true)
+        {
+            if (string.IsNullOrWhiteSpace(targetUrl))
+            {
+                TempData["Error"] = "Target URL Host Induk tidak boleh kosong.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var setting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GlobalBaseUrl");
+            var sourceLabel = setting?.Value ?? $"{Request.Scheme}://{Request.Host}";
+
+            var result = await _syncService.PushSyncToHostAsync(targetUrl, apiKey, cleanBeforeSync, backupBeforeSync, sourceLabel);
+            if (result.Success)
+            {
+                TempData["Success"] = $"Sinkronisasi online berhasil dikirim ke Host Induk ({targetUrl.Trim().TrimEnd('/')})! {result.Message}";
+            }
+            else
+            {
+                TempData["Error"] = $"Gagal mengirim sinkronisasi ke Host Induk: {result.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> TestHostConnection([FromBody] SyncPushRequestDto req)
+        {
+            if (string.IsNullOrWhiteSpace(req?.TargetHostUrl))
+            {
+                return Json(new { success = false, message = "URL Host Induk tidak boleh kosong." });
+            }
+
+            var res = await _syncService.PingHostAsync(req.TargetHostUrl, req.ApiKey ?? string.Empty);
+            return Json(new
+            {
+                success = res.IsOnline,
+                message = res.Message,
+                data = res
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadAndSyncSql(IFormFile sqlFile, bool cleanBeforeSync = true, bool backupBeforeSync = true)
+        {
+            if (sqlFile == null || sqlFile.Length == 0)
+            {
+                TempData["Error"] = "Silakan pilih berkas SQL (.sql) yang valid untuk disinkronkan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (!sqlFile.FileName.EndsWith(".sql", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = "Format berkas tidak didukung. Harap unggah berkas dengan ekstensi .sql.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                string sqlContent;
+                using (var reader = new StreamReader(sqlFile.OpenReadStream()))
+                {
+                    sqlContent = await reader.ReadToEndAsync();
+                }
+
+                var result = await _syncService.ExecuteSqlSyncAsync(sqlContent, cleanBeforeSync, backupBeforeSync, $"Upload Manual '{sqlFile.FileName}'");
+                if (result.Success)
+                {
+                    var backupInfo = !string.IsNullOrEmpty(result.BackupFileName) ? $" (Backup otomatis dibuat di folder backups/{result.BackupFileName})" : "";
+                    TempData["Success"] = $"Sinkronisasi file SQL berhasil! {result.AffectedTables.Count} tabel diperbarui dalam {result.ExecutionDurationMs}ms.{backupInfo}";
+                }
+                else
+                {
+                    TempData["Error"] = $"Gagal mengeksekusi sinkronisasi file SQL: {result.Message}";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Terjadi kesalahan saat membaca file SQL: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportSyncSql([FromQuery] bool cleanBeforeSync = true)
+        {
+            try
+            {
+                var sql = await _syncService.GenerateSyncSqlDumpAsync(cleanBeforeSync);
+                var bytes = System.Text.Encoding.UTF8.GetBytes(sql);
+                var fileName = $"TrackerKerja_Sync_{DateTime.Now:yyyyMMdd_HHmmss}.sql";
+                return File(bytes, "application/sql", fileName);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Gagal mengekspor SQL Sinkronisasi: {ex.Message}";
+                return RedirectToAction(nameof(Index));
             }
         }
 

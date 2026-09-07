@@ -115,6 +115,7 @@ namespace TrackerKerja.ViewModels
         public string? TesterEmails { get; set; }
         public string? TwEmails { get; set; }
         public string? NotesTracker { get; set; }
+        public string? Pic { get; set; }
         public bool IsValid { get; set; } = true;
         public string? ErrorMessage { get; set; }
         public string? WarningMessage { get; set; }

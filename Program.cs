@@ -67,9 +67,13 @@ if (connectionString.Contains("Data Source=", StringComparison.OrdinalIgnoreCase
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlite(connectionString));
 
-// Add Gamification Service
+// Add HttpClient Factory
+builder.Services.AddHttpClient();
+
+// Add Services
 builder.Services.AddScoped<IGamificationService, GamificationService>();
 builder.Services.AddScoped<IDatabaseExportService, DatabaseExportService>();
+builder.Services.AddScoped<IDatabaseSyncService, DatabaseSyncService>();
 
 // Add session support (for Import preview)
 builder.Services.AddSession(options =>
@@ -230,6 +234,42 @@ using (var scope = app.Services.CreateScope())
             Key = "GlobalBaseUrl",
             Value = "http://localhost:5000",
             Description = "Global Base URL untuk integrasi REST API, Swagger, dan Webhook",
+            UpdatedAt = DateTime.Now
+        });
+        db.SaveChanges();
+    }
+
+    if (!db.SystemSettings.Any(s => s.Key == "HostSync_ApiKey"))
+    {
+        db.SystemSettings.Add(new SystemSetting
+        {
+            Key = "HostSync_ApiKey",
+            Value = "TK-SYNC-SECRET-" + Guid.NewGuid().ToString("N").Substring(0, 12).ToUpper(),
+            Description = "Secret API Key untuk autentikasi sinkronisasi antar instance",
+            UpdatedAt = DateTime.Now
+        });
+        db.SaveChanges();
+    }
+
+    if (!db.SystemSettings.Any(s => s.Key == "HostSync_TargetUrl"))
+    {
+        db.SystemSettings.Add(new SystemSetting
+        {
+            Key = "HostSync_TargetUrl",
+            Value = "http://localhost:5000",
+            Description = "Target URL Host Induk untuk sinkronisasi API",
+            UpdatedAt = DateTime.Now
+        });
+        db.SaveChanges();
+    }
+
+    if (!db.SystemSettings.Any(s => s.Key == "HostSync_Role"))
+    {
+        db.SystemSettings.Add(new SystemSetting
+        {
+            Key = "HostSync_Role",
+            Value = "child",
+            Description = "Peran instance: child (pengisian) atau host (induk)",
             UpdatedAt = DateTime.Now
         });
         db.SaveChanges();

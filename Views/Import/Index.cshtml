@@ -65,13 +65,13 @@
                         </button>
                         <a href="/Import/Template"
                            class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-3 rounded-xl shadow-sm transition-all text-xs"
-                           title="Download Template Format Tracker (21 Kolom Standar)">
+                           title="Download Template Format Tracker (22 Kolom Standar)">
                             <i class="fas fa-file-excel"></i>
-                            <span>Download Template Excel (21 Kolom)</span>
+                            <span>Download Template Excel (22 Kolom)</span>
                         </a>
                         <a href="/Task/ExportArmsExcel"
                            class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-3 rounded-xl border border-slate-300 transition-colors text-xs"
-                           title="Export Semua Task ke Format Tracker 21 Kolom">
+                           title="Export Semua Task ke Format Tracker 22 Kolom">
                             <i class="fas fa-file-export text-slate-700"></i>
                             <span>Export Data ke Excel</span>
                         </a>
@@ -85,9 +85,9 @@
             <div class="flex items-center justify-between mb-4">
                 <h4 class="font-bold text-slate-800 flex items-center gap-2">
                     <i class="fas fa-table-list text-indigo-600"></i>
-                    Spesifikasi Format Kolom Excel (Proposed 21 Kolom)
+                    Spesifikasi Format Kolom Excel (Standar 22 Kolom)
                 </h4>
-                <span class="text-xs bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-full border border-indigo-100">Standar 21 Kolom</span>
+                <span class="text-xs bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-full border border-indigo-100">Standar 22 Kolom (dengan PIC)</span>
             </div>
             <div class="overflow-x-auto max-h-96">
                 <table class="w-full text-xs">
@@ -123,7 +123,8 @@
                                 (18, "tw_emails", "Email Tim Technical Writer", false),
                                 (19, "kendala", "Catatan blocker / kendala pengerjaan", false),
                                 (20, "solusi", "Solusi teknis / rencana perbaikan", false),
-                                (21, "Notes Tracker", "Catatan tambahan / deskripsi tugas", false)
+                                (21, "Notes Tracker", "Catatan tambahan / deskripsi tugas", false),
+                                (22, "PIC", "Nama lengkap / Email PIC utama untuk binding person to task secara otomatis", false)
                             };
                             foreach (var (idx, name, format, required) in cols)
                             {

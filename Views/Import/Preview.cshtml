@@ -177,12 +177,19 @@
                                         @foreach (var u in users)
                                         {
                                             var isSelected = (!string.IsNullOrEmpty(row.AssigneeUserId) && row.AssigneeUserId == u.Id) ||
-                                                             (!string.IsNullOrEmpty(row.Assignee) && (row.Assignee.Equals(u.Email, StringComparison.OrdinalIgnoreCase) || row.Assignee.Equals(u.FullName, StringComparison.OrdinalIgnoreCase)));
+                                                             (!string.IsNullOrEmpty(row.Assignee) && (row.Assignee.Equals(u.Email, StringComparison.OrdinalIgnoreCase) || row.Assignee.Equals(u.FullName, StringComparison.OrdinalIgnoreCase))) ||
+                                                             (!string.IsNullOrEmpty(row.Pic) && (row.Pic.Equals(u.Email, StringComparison.OrdinalIgnoreCase) || row.Pic.Equals(u.FullName, StringComparison.OrdinalIgnoreCase)));
                                             <option value="@u.Id" selected="@(isSelected ? "selected" : null)">
                                                 @u.FullName (@(u.Email?.Split('@')[0] ?? ""))
                                             </option>
                                         }
                                     </select>
+                                    @if (!string.IsNullOrEmpty(row.Pic))
+                                    {
+                                        <div class="text-[10px] text-slate-400 mt-1 truncate" title="PIC dari File Excel: @row.Pic">
+                                            <i class="fas fa-file-excel text-emerald-500 mr-1"></i>Excel: <span class="font-medium text-slate-600">@row.Pic</span>
+                                        </div>
+                                    }
                                 }
                                 else
                                 {

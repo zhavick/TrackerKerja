@@ -386,7 +386,8 @@ namespace TrackerKerja.Controllers.Api
                 { "Dashboard", new List<string> { "GET /api/dashboard/summary", "POST /api/dashboard/sync" } },
                 { "Reports", new List<string> { "GET /api/reports/dashboard", "GET /api/reports/chart-data", "GET /api/reports/members-workload", "GET /api/reports/gantt" } },
                 { "AuditTrail", new List<string> { "GET /api/audit-trail", "GET /api/audit-trail/{id}", "GET /api/audit-trail/stats", "GET /api/audit-trail/export-csv", "DELETE /api/audit-trail/clear" } },
-                { "Configuration", new List<string> { "GET /api/configuration/base-url", "PUT /api/configuration/base-url", "GET /api/configuration/database-capacity", "POST /api/configuration/shrink-database", "POST /api/configuration/reset-database", "GET /api/configuration/api-doc-summary", "GET /api/configuration/export-database-file", "GET /api/configuration/export-sql-script" } }
+                { "Configuration", new List<string> { "GET /api/configuration/base-url", "PUT /api/configuration/base-url", "GET /api/configuration/database-capacity", "POST /api/configuration/shrink-database", "POST /api/configuration/reset-database", "GET /api/configuration/api-doc-summary", "GET /api/configuration/export-database-file", "GET /api/configuration/export-sql-script" } },
+                { "HostSync", new List<string> { "GET /api/sync/ping", "POST /api/sync/receive", "POST /api/sync/push", "POST /api/sync/import-sql", "GET /api/sync/export-sql", "GET /api/sync/settings", "PUT /api/sync/settings" } }
             };
 
             var total = modules.Values.Sum(v => v.Count);

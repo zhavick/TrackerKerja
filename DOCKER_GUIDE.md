@@ -163,9 +163,7 @@ Setelah container berjalan:
 - **Web Dashboard**: [http://localhost:5000](http://localhost:5000)
 - **Swagger REST API Docs**: [http://localhost:5000/swagger](http://localhost:5000/swagger)
 - **Postman API Spec**: Endpoint `/api/v1/...`
-- **Kredensial Default**:
-  - **Email**: `admin@trackerkerja.com`
-  - **Password**: `Admin123!`
+- **Autentikasi**: Gunakan akun email dan kata sandi yang telah didaftarkan oleh Administrator saat inisialisasi awal.
 
 ---
 

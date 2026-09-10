@@ -33,7 +33,7 @@ switch ($Action) {
             Write-Host "`n[SUCCESS] TrackerKerja is running!" -ForegroundColor Green
             Write-Host " - Web App URL : http://localhost:5000" -ForegroundColor Cyan
             Write-Host " - Swagger API : http://localhost:5000/swagger" -ForegroundColor Cyan
-            Write-Host " - Default Login: admin@trackerkerja.com / Admin123!" -ForegroundColor White
+            Write-Host " - Autentikasi : Silakan login menggunakan akun administrator terdaftar." -ForegroundColor White
         }
     }
     "down" {

@@ -24,7 +24,7 @@ case "$ACTION" in
         echo "[SUCCESS] TrackerKerja is running!"
         echo " - Web App URL : http://localhost:5000"
         echo " - Swagger API : http://localhost:5000/swagger"
-        echo " - Default Login: admin@trackerkerja.com / Admin123!"
+        echo " - Autentikasi : Silakan login menggunakan akun administrator terdaftar."
         ;;
     down)
         echo "[*] Stopping TrackerKerja container..."

@@ -1,6 +1,6 @@
 # 🚀 Work Tracker Pro (TrackerKerja)
 
-> **Enterprise Work Task Management, Multi-Timer Timesheet Tracking, Technical Documentation, & Team Performance Analytics Platform**
+> **Enterprise Work Task Management, Multi-Timer Timesheet Tracking, Attendance Management, Technical Documentation, & Team Performance Analytics Platform**
 
 [![ASP.NET Core 8.0](https://img.shields.io/badge/ASP.NET%20Core-8.0%20MVC-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Entity Framework Core](https://img.shields.io/badge/EF%20Core-SQLite-blue?logo=sqlite&logoColor=white)](https://learn.microsoft.com/ef/core/)
@@ -28,35 +28,48 @@
   - **Sheet 2 ("Rekap per Proyek")**: Alokasi jam kerja dan persentase kontribusi per proyek.
   - **Proteksi Privasi**: Pengguna hanya dapat mengakses dan mengunduh rekaman waktu miliknya sendiri.
 
-### 📋 3. Manajemen Tugas, Parenting & Kanban Board
+### 📅 3. Kalender Tugas Dinamis dengan Filter Berbasis Peran
+- **Penyaringan Berbasis Peran (RBAC)**:
+  - **Member Reguler**: Kalender secara otomatis dan ketat hanya menampilkan tugas yang ditugaskan kepada member tersebut (*Tugas Saya*).
+  - **Administrator**: Memiliki dropdown filter di header kalender untuk beralih instan antara **🌐 Semua Tugas Tim** dan **👤 Tugas Saya Sendiri**.
+- **Live Refetch Tanpa Refresh**: Pergantian filter memicu pengambilan data event FullCalendar secara asinkron tanpa memuat ulang halaman.
+- **Modal & Tooltip PIC Lengkap**: Menampilkan status, prioritas, deadline, proyek, serta nama dan avatar Penanggung Jawab (PIC).
+
+### 🕒 4. Manajemen Presensi & Absensi Kerja (Attendance)
+- **Pencatatan Kehadiran Harian**: Check-in dan Check-out harian dengan status kehadiran fleksibel (*Hadir, WFH, Sakit, Izin, Cuti, Libur, Terlambat*).
+- **Rekonsiliasi Presensi Tim**: Fasilitas pemantauan riwayat absensi bulanan untuk efisiensi evaluasi produktivitas.
+
+### 🔄 5. Sinkronisasi Multi-Instance Host Induk
+- **Online API Push**: Kemampuan mengirim dan menyinkronkan data tugas dan sesi kerja dari instance lokal ke Host Induk / Server Terpusat secara otomatis.
+- **Manual SQL Export & Import**: Ekspor skrip SQL DDL & DML komprehensif atau file biner SQLite `.db` untuk migrasi offline antar lingkungan.
+
+### 📋 6. Manajemen Tugas, Parenting & Kanban Board
 - **Hierarki Tugas**: Relasi tugas induk (*Parent Task*) dan sub-tugas (*Child Task*).
 - **Kendala & Solusi**: Kolom khusus pencatatan hambatan operasional dan solusi pemecahan teknis.
 - **Progress Interaktif 0–100%**: Slider interaktif dengan preset cepat (0%, 25%, 50%, 75%, 100%) serta sinkronisasi otomatis status *Done*.
 - **Drag & Drop Kanban**: Pembaruan status kartu secara real-time bertenaga SortableJS.
 
-### 📁 4. Dokumentasi Kerja & Penyimpanan Multi-File
+### 📁 7. Dokumentasi Kerja & Penyimpanan Multi-File
 - **Rich Text Editor**: Editor Quill.js untuk notula meeting, spesifikasi teknis, dan catatan tugas.
 - **Struktur Folder Pengguna**: Lampiran multi-file diisolasi rapi di direktori `wwwroot/uploads/notes/{username}/`.
 - **Note Pinning**: Kemampuan menyematkan catatan penting di bagian atas dashboard.
 
-### 📑 5. Ekspor & Impor Excel Enterprise
+### 📑 8. Ekspor & Impor Excel Enterprise
 - **Format Standar (9 Kolom)**: Ekspor/impor dengan fitur penugasan PIC dinamis (*bulk reassign*) dan filter periode/proyek.
 - **Format ARMS Enterprise (21 Kolom)**: Integrasi penuh dengan template Waterfall SDLC Milestone (*Requirement Analysis*, *System Design*, *Implementation*, *Testing & QA*, *Deployment*, *Maintenance*).
 
-### 👥 6. Manajemen Tim & Admin Password Reset
+### 👥 9. Manajemen Tim & Keamanan Akun
 - **Direktori Anggota**: Kartu profil tim, statistik penyelesaian tugas, dan total jam kerja.
-- **Admin Password Reset**: Administrator dapat mereset kata sandi anggota tim secara langsung dari antarmuka Web UI maupun REST API tanpa memerlukan konfirmasi email lama.
-
-### 🛡️ 7. Keamanan, RBAC & Global Audit Trail
+- **Admin Password Reset**: Administrator dapat mereset kata sandi anggota tim secara langsung dari antarmuka Web UI maupun REST API.
 - **Role-Based Access Control (RBAC)**: Pemisahan hak akses antara Administrator dan Anggota Tim (*User*).
-- **Global Audit Trail Filter**: Pencatatan otomatis setiap aksi controller ke database SQLite lengkap dengan visualisasi grafik aktivitas multi-series.
+- **Global Audit Trail Filter**: Pencatatan otomatis setiap aksi controller ke database SQLite lengkap dengan visualisasi grafik aktivitas.
 
-### 🌐 8. RESTful API & Swagger OpenAPI Documentation
-- **70+ Endpoint RESTful**: Terintegrasi penuh untuk modul Auth, Tasks, Projects, Notes, Timesheet, Members, Calendar, Reports, Master Data, System Settings, dan Notifications.
-- **Interactive Swagger UI**: Dokumentasi OpenAPI interaktif yang dapat langsung diuji pada [http://localhost:5000/swagger](http://localhost:5000/swagger).
-- **Postman Collection & Environment**: Dilengkapi berkas siap pakai `TrackerKerja_Postman_Collection.json` dan `TrackerKerja_Postman_Environment.json`.
+### 🛠️ 10. Developer Tools & RESTful API
+- **SQL Formatter & Beautifier**: Alat bantu pemformatan dan validasi sintaks SQL kueri multi-dialek.
+- **JSON Payload Tools**: Pemformatan, validasi sintaks, dan penyimpanan template payload JSON.
+- **70+ Endpoint RESTful**: Terintegrasi penuh dengan Swagger OpenAPI v3.1 interaktif ([http://localhost:5000/swagger](http://localhost:5000/swagger)) dan Postman Collection.
 
-### 🎨 9. Sistem Tema Dinamis (16 Tema)
+### 🎨 11. Sistem Tema Dinamis (16 Tema)
 - **10 Tema Terang**: *Indigo Violet*, *Oceanic Cyan*, *Emerald Forest*, *Sunset Orange*, *Rose Pink*, *Midnight Dark*, *Cyberpunk Neon*, *Royal Amethyst*, *Slate Minimal*, *Warm Amber*.
 - **6 Tema Gelap**: Terintegrasi instan dengan CSS custom tokens.
 
@@ -144,6 +157,8 @@ Untuk mengunggah kode terbaru ke GitHub menggunakan Personal Access Token (PAT):
 ```powershell
 # Jalankan script helper push
 .\git-push.ps1
+```
+
 ---
 
 ## 🌐 Endpoint & Akses Cepat

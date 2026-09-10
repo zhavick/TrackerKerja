@@ -5,14 +5,14 @@
 
 ### INFORMASI DOKUMEN
 - **Nama Aplikasi**: Work Tracker Pro (TrackerKerja)
-- **Versi Dokumen**: 3.1 (Docker & Enterprise Cloud Edition)
+- **Versi Dokumen**: 3.3 (Enterprise Multi-Instance & Attendance Edition)
 - **Status**: Disetujui & Terimplementasi Penuh (Production-Ready)
 - **Target Platform**: Web Application (ASP.NET Core 8.0 MVC / REST API / Docker Linux Container)
 - **Basis Data**: Entity Framework Core 8.0 dengan SQLite Database Engine (`/app/data/trackerkerja.db` via `./db_data` volume)
 - **Engine Spreadsheet**: ClosedXML 0.104.2 (Format ARMS 21-kolom, Template Standar 9-kolom, & Timesheet Personal)
 - **Dokumentasi REST API**: OpenAPI 3.0 via Swashbuckle Swagger UI (`/swagger`) & Postman Collection
 - **Repositori Source Code**: [https://github.com/zhavick/TrackerKerja.git](https://github.com/zhavick/TrackerKerja.git)
-- **Tanggal Rilis & Pembaruan**: 31 Agustus 2026
+- **Tanggal Rilis & Pembaruan**: 10 September 2026
 
 ---
 
@@ -29,12 +29,16 @@
    - [5.5 Modul Manajemen Tugas & Struktur Parenting](#55-modul-manajemen-tugas--struktur-parenting)
    - [5.6 Modul Kanban Board Interaktif & Mobile Segmented Switcher](#56-modul-kanban-board-interaktif--mobile-segmented-switcher)
    - [5.7 Modul Timesheet, Multi-Timer Serentak & Laporan Personal Excel (.xlsx)](#57-modul-timesheet-multi-timer-serentak--laporan-personal-excel-xlsx)
-   - [5.8 Modul Catatan & Multi-File Upload Terorganisir Folder Pengguna](#58-modul-catatan--multi-file-upload-terorganisir-folder-pengguna)
-   - [5.9 Modul Import & Export Excel (Filter Periode, Format Standar, Format ARMS)](#59-modul-import--export-excel-filter-periode-format-standar-format-arms)
-   - [5.10 Modul Anggota Tim (Member), Analitik Kontribusi & Admin Password Reset](#510-modul-anggota-tim-member-analitik-kontribusi--admin-password-reset)
-   - [5.11 Modul Audit Trail & Aktivitas Sistem](#511-modul-audit-trail--aktivitas-sistem)
-   - [5.12 Modul Master Data (Prioritas, Status & Milestone SDLC)](#512-modul-master-data-prioritas-status--milestone-sdlc)
-   - [5.13 Modul RESTful API & Swagger OpenAPI Documentation](#513-modul-restful-api--swagger-openapi-documentation)
+   - [5.8 Modul Presensi & Rekonsiliasi Absensi Tim (Attendance Management)](#58-modul-presensi--rekonsiliasi-absensi-tim-attendance-management)
+   - [5.9 Modul Catatan & Multi-File Upload Terorganisir Folder Pengguna](#59-modul-catatan--multi-file-upload-terorganisir-folder-pengguna)
+   - [5.10 Modul Import & Export Excel (Filter Periode, Format Standar, Format ARMS)](#510-modul-import--export-excel-filter-periode-format-standar-format-arms)
+   - [5.11 Modul Anggota Tim (Member), Analitik Kontribusi & Admin Password Reset](#511-modul-anggota-tim-member-analitik-kontribusi--admin-password-reset)
+   - [5.12 Modul Audit Trail & Aktivitas Sistem](#512-modul-audit-trail--aktivitas-sistem)
+   - [5.13 Modul Master Data (Prioritas, Status & Milestone SDLC)](#513-modul-master-data-prioritas-status--milestone-sdlc)
+   - [5.14 Modul Kalender Tugas Interaktif & Role-Based Scope Filter](#514-modul-kalender-tugas-interaktif--role-based-scope-filter)
+   - [5.15 Modul SQL Beautifier & Query Tools](#515-modul-sql-beautifier--query-tools)
+   - [5.16 Modul Multi-Instance Synchronization (Host Induk Sync)](#516-modul-multi-instance-synchronization-host-induk-sync)
+   - [5.17 Modul RESTful API & Swagger OpenAPI Documentation](#517-modul-restful-api--swagger-openapi-documentation)
 6. [Spesifikasi Non-Fungsional, Keamanan & Privasi Data](#6-spesifikasi-non-fungsional-keamanan--privasi-data)
 7. [Panduan Docker Containerization, Git Repository & Deployment](#7-panduan-docker-containerization-git-repository--deployment)
 
@@ -43,16 +47,19 @@
 ## 1. PENDAHULUAN & LINGKUP SISTEM
 
 ### 1.1 Latar Belakang
-**Work Tracker Pro (TrackerKerja)** adalah platform manajemen tugas kerja, pelacakan waktu (timesheet), dokumentasi teknis, dan analitik kinerja tim terintegrasi yang dirancang untuk mendukung operasional rekayasa perangkat lunak modern. Aplikasi dapat dijalankan secara mandiri (.NET runtime) maupun dikemas dalam container Docker Linux yang ringan, portable, dan siap produksi.
+**Work Tracker Pro (TrackerKerja)** adalah platform manajemen tugas kerja, pelacakan waktu (timesheet), presensi kerja (attendance), dokumentasi teknis, utilitas database/SQL, dan analitik kinerja tim terintegrasi yang dirancang untuk mendukung operasional rekayasa perangkat lunak modern. Aplikasi dapat dijalankan secara mandiri (.NET runtime) maupun dikemas dalam container Docker Linux yang ringan, portable, dan siap produksi di lingkungan on-premise maupun cloud multi-instance.
 
 ### 1.2 Tujuan Sistem
 1. **Visibilitas Operasional Penuh**: Status tugas real-time, beban kerja tim, log kendala operasional (*Obstacle*), dan solusi teknis (*Solution*).
 2. **Hierarki Tugas**: Relasi terstruktur antara tugas induk (*Parent Task*) dan sub-tugas (*Child Task*).
 3. **Pencatatan Jam Kerja & Multi-Timer**: Pelacakan jam kerja fleksibel dengan kemampuan menjalankan multi-timer serentak per user serta ekspor laporan timesheet personal Excel multi-sheet terproteksi.
-4. **Interoperabilitas Enterprise**: Pertukaran data spreadsheet format ARMS (21 kolom) dan format standar (9 kolom) dengan filter periode waktu dinamis.
-5. **Responsivitas Multi-Device**: Antarmuka adaptif dengan off-canvas drawer, glassmorphic bottom bar, dan segmented kanban column switcher pada perangkat seluler.
-6. **Ekosistem API Modern**: RESTful API lengkap (70+ endpoint) terdokumentasi OpenAPI Swagger v3.1 dan Postman Collection.
-7. **Containerization & Cloud Ready**: Siap dioperasikan via Docker Compose dengan persistensi data SQLite dan file upload.
+4. **Presensi Terintegrasi & Rekonsiliasi**: Pencatatan kehadiran harian (Check-in/Check-out, WFH, Izin, Sakit, Cuti) dengan rekapitulasi tim bagi manajemen.
+5. **Kalender Tugas dengan Kontrol Hak Akses**: Visualisasi deadline tugas dengan pembatasan hak akses berbasis peran (User hanya melihat tugas sendiri, Admin dapat memilih tugas sendiri atau seluruh tim).
+6. **Utilitas Developer Terintegrasi**: SQL Beautifier, Validator, dan Minifier mendukung 15+ dialek database tanpa memerlukan tool pihak ketiga eksternal.
+7. **Sinkronisasi Multi-Instance**: Dukungan sinkronisasi data antar node lokal ke server Host Induk terpusat secara online via REST API maupun offline via SQL Dump.
+8. **Interoperabilitas Enterprise**: Pertukaran data spreadsheet format ARMS (21 kolom) dan format standar (9 kolom) dengan filter periode waktu dinamis.
+9. **Responsivitas Multi-Device**: Antarmuka adaptif dengan off-canvas drawer, glassmorphic bottom bar, dan segmented kanban column switcher pada perangkat seluler.
+10. **Ekosistem API Modern**: RESTful API lengkap (80+ endpoint) terdokumentasi OpenAPI Swagger v3.0 dan Postman Collection.
 
 ---
 
@@ -66,8 +73,8 @@ flowchart TB
         UI_Desktop["Desktop Web Interface (Sidebar & Multi-Column Grid)"]
         UI_Mobile["Mobile & Tablet UI (Off-Canvas Drawer, Glass Bottom Nav)"]
         CSS_Engine["Dynamic Theme Engine (16 Palet Warna / CSS Custom Tokens)"]
-        JS_Libs["SortableJS / FullCalendar / Chart.js / Quill.js"]
-        API_Consumers["REST API Clients / Swagger UI / Postman"]
+        JS_Libs["SortableJS / FullCalendar / Chart.js / Quill.js / CodeMirror"]
+        API_Consumers["REST API Clients / Swagger UI / Postman / Node Sync"]
     end
 
     subgraph ContainerTier["2. APPLICATION CONTAINER TIER (DOCKER / ASP.NET CORE 8.0)"]
@@ -76,12 +83,12 @@ flowchart TB
         AuditFilter["Global AuditLogActionFilter (Audit Trail Logger)"]
         
         subgraph ControllersGroup["Controllers Layer"]
-            MVC_Controllers["MVC Controllers:\n- HomeController / TaskController / ProjectController\n- NoteController / TimesheetController / ImportController\n- MemberController / AuditTrailController / MasterDataController\n- ConfigurationController / JsonToolsController"]
-            API_Controllers["REST API Controllers (/api/*):\n- AuthApiController / TasksApiController / ProjectsApiController\n- NotesApiController / TimesheetsApiController / MembersApiController\n- CalendarApiController / ReportsApiController / MasterDataApiController\n- ConfigurationApiController / NotificationsApiController"]
+            MVC_Controllers["MVC Controllers:\n- HomeController / TaskController / ProjectController\n- NoteController / TimesheetController / AttendanceController\n- ImportController / CalendarController / SqlToolsController\n- MemberController / AuditTrailController / MasterDataController\n- ConfigurationController / JsonToolsController / UserGuideController"]
+            API_Controllers["REST API Controllers (/api/*):\n- AuthApiController / TasksApiController / ProjectsApiController\n- NotesApiController / TimesheetsApiController / AttendanceApiController\n- CalendarApiController / SqlToolsApiController / SyncApiController\n- MembersApiController / ReportsApiController / MasterDataApiController\n- ConfigurationApiController / NotificationsApiController"]
         end
 
         SwaggerEngine["Swashbuckle OpenAPI / Swagger Engine (/swagger)"]
-        Services["Domain Engines:\n- ClosedXML Spreadsheet Engine (ARMS & Timesheet)\n- User Folder Storage Engine (wwwroot/uploads)\n- Active Multi-Timer Synchronizer"]
+        Services["Domain Engines & Services:\n- ClosedXML Spreadsheet Engine (ARMS, Standard, Timesheet)\n- User Folder Storage Engine (wwwroot/uploads)\n- Active Multi-Timer Synchronizer\n- DatabaseSyncService & ExcelSyncService (Host Induk Sync)\n- Attendance & WorkHour Calculator Engine"]
         EFCore["Entity Framework Core 8.0 (AppDbContext)"]
     end
 
@@ -113,6 +120,7 @@ flowchart TB
 erDiagram
     AspNetUsers ||--o{ WorkTasks : "assigned_to"
     AspNetUsers ||--o{ WorkSessions : "logs_time"
+    AspNetUsers ||--o{ AttendanceRecords : "logs_attendance"
     AspNetUsers ||--o{ WorkNotes : "authors"
     AspNetUsers ||--o{ NoteAttachments : "uploads"
     AspNetUsers ||--o{ AuditLogs : "triggers"
@@ -178,6 +186,20 @@ erDiagram
         datetime EndTime
         int Duration
         string Notes
+    }
+
+    AttendanceRecords {
+        int Id PK
+        string UserId FK
+        datetime Date
+        datetime CheckInTime
+        datetime CheckOutTime
+        string Status
+        int WorkHoursMinutes
+        string Notes
+        string Location
+        datetime CreatedAt
+        datetime UpdatedAt
     }
 
     WorkNotes {
@@ -257,11 +279,16 @@ erDiagram
 | Modul / Operasi | Administrator | System Analyst | Technical Writer | User Biasa |
 | :--- | :---: | :---: | :---: | :---: |
 | **Login, Profil & Dashboard** | ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
-| **Buat Tugas Baru** | ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
-| **Ubah Tugas Sendiri** | ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
+| **Buat & Ubah Tugas Sendiri** | ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
 | **Ubah Tugas Anggota Lain** | ✅ Akses Penuh | ✅ Akses *(Elevated)* | ✅ Akses *(Elevated)* | ❌ Dilarang |
 | **Mulai Timer pada Tugas Lain**| ✅ Akses Penuh | ✅ Akses *(Elevated)* | ✅ Akses *(Elevated)* | ❌ Dilarang |
 | **Multi-Timer Serentak Sendiri**| ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
+| **Presensi Mandiri (Check-in/out)**| ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
+| **Rekonsiliasi Presensi Tim**| ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
+| **Filter Kalender: Semua Tim**| ✅ Akses Penuh | ❌ Terkunci Mandiri | ❌ Terkunci Mandiri | ❌ Terkunci Mandiri |
+| **Filter Kalender: Tugas Sendiri**| ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
+| **SQL Beautifier & Query Tools**| ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
+| **Multi-Instance Host Induk Sync**| ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
 | **Ekspor Timesheet Personal** | ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
 | **Hapus Tugas Sendiri** | ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
 | **Hapus Tugas Orang Lain** | ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
@@ -312,35 +339,82 @@ erDiagram
   - **Sheet 2 ("Rekap per Proyek")**: Ringkasan alokasi waktu dan persentase kontribusi per proyek.
   - **Proteksi Privasi**: Non-admin hanya dapat mengunduh rekaman waktu miliknya sendiri.
 
-### 5.8 Modul Catatan & Multi-File Upload Terorganisir Folder Pengguna
+### 5.8 Modul Presensi & Rekonsiliasi Absensi Tim (Attendance Management)
+- **Pencatatan Mandiri Karyawan**:
+  - Tombol **Check In** dan **Check Out** dengan live timer durasi kerja harian.
+  - Pilihan status kehadiran: `Hadir`, `WFH (Work From Home)`, `Sakit`, `Izin`, `Cuti`, `Libur`, dan `Terlambat`.
+  - Input catatan aktivitas harian dan informasi lokasi kerja.
+- **Rekonsiliasi Tim untuk Administrator**:
+  - Tampilan kalender kehadiran bulanan per anggota tim.
+  - Form koreksi jam kerja, status absensi, dan penambahan rekaman presensi manual.
+  - REST API endpoint terpadu: `GET/POST /api/attendance/today`, `POST /api/attendance/check-in`, `POST /api/attendance/check-out`, `GET /api/attendance/monthly`.
+
+### 5.9 Modul Catatan & Multi-File Upload Terorganisir Folder Pengguna
 - Editor teks kaya WYSIWYG bertenaga **Quill.js**.
 - Lampiran berkas multi-file diisolasi rapi pada folder `wwwroot/uploads/notes/{username}/`.
 - Format penamaan file fisik unik `{yyyyMMdd_HHmmss}_{GUID8}_{CleanFileName}.ext`.
 
-### 5.9 Modul Import & Export Excel (Filter Periode, Format Standar, Format ARMS)
+### 5.10 Modul Import & Export Excel (Filter Periode, Format Standar, Format ARMS)
 - **Format Standar (9 Kolom)**: Fitur wizard preview interaktif dan penugasan PIC massal (*Bulk Assign*).
 - **Format ARMS Enterprise (21 Kolom)**: Ekspor dan impor tugas berstandar enterprise dengan pemetaan SDLC Waterfall Milestone.
 
-### 5.10 Modul Anggota Tim (Member), Analitik Kontribusi & Admin Password Reset
+### 5.11 Modul Anggota Tim (Member), Analitik Kontribusi & Admin Password Reset
 - Kartu direktori anggota dengan grafik kontribusi dan jam kerja.
 - **Admin Direct Password Reset**: Administrator dapat mereset kata sandi anggota tim secara langsung via Web UI atau REST API `POST /api/members/{id}/reset-password`.
 
-### 5.11 Modul Audit Trail & Aktivitas Sistem
+### 5.12 Modul Audit Trail & Aktivitas Sistem
 - Pencatatan otomatis seluruh aktivitas controller via `AuditLogActionFilter`.
 - Visualisasi grafik multi-series tren aktivitas dan ekspor audit log ke CSV.
 
-### 5.12 Modul Master Data (Prioritas, Status & Milestone SDLC)
+### 5.13 Modul Master Data (Prioritas, Status & Milestone SDLC)
 - Pengelolaan referensi Master Prioritas, Master Status, Kategori, dan Master Milestone SDLC Waterfall (*Requirement Analysis*, *System Design*, *Implementation*, *Testing & QA*, *Deployment*, *Maintenance*).
 
-### 5.13 Modul RESTful API & Swagger OpenAPI Documentation
-- 70+ endpoint RESTful dengan respons terstandarisasi JSON:
+### 5.14 Modul Kalender Tugas Interaktif & Role-Based Scope Filter
+- Antarmuka kalender visual bertenaga **FullCalendar v6** dengan tampilan Bulan (*Month*), Minggu (*Week*), dan Hari (*Day*).
+- **Kontrol Akses Berbasis Peran (RBAC Scoping)**:
+  - **Member Biasa**: Otomatis dikunci pada cakupan *Tugas Saya* (`filter=mine`). Hanya menampilkan tugas yang ditugaskan ke pengguna yang sedang aktif.
+  - **Administrator**: Memiliki dropdown pemilih filter live (*Real-time Scope Switcher*) di toolbar kalender:
+    1. **Semua Tugas Tim** (`filter=all`): Menampilkan seluruh penugasan tim dengan badge nama PIC dan avatar.
+    2. **Tugas Saya Sendiri** (`filter=mine`): Menyaring tampilan kalender khusus tugas milik Administrator yang sedang aktif.
+- **Interaksi & Detail Tugas**:
+  - Klik pada event kalender membuka modal rincian tugas: Judul, Proyek, Kategori, PIC (Nama & Avatar), Prioritas, Status, Milestone, Rentang Tanggal, serta Tombol Aksi Cepat (*Lihat Detail* / *Edit Tugas*).
+  - Integrasi API Endpoint: `GET /api/calendar/events?start={date}&end={date}&filter={mine|all}`.
+
+### 5.15 Modul SQL Beautifier & Query Tools
+- Modul pemformat dan validasi kueri SQL mandiri terintegrasi di dalam aplikasi tanpa ketergantungan tool pihak ketiga.
+- **15+ Dialek Database yang Didukung**:
+  - *Standard SQL*, *PostgreSQL*, *MySQL*, *SQL Server (T-SQL)*, *Oracle PL/SQL*, *SQLite*, *BigQuery*, *Snowflake*, *Redshift*, *IBM DB2*, *MariaDB*, *CockroachDB*, *Couchbase N1QL*, *Spark SQL*, *Trino / Presto*.
+- **Fitur Utama**:
+  - **Beautify / Format**: Indentasi terstruktur, pengaturan format huruf besar/kecil kata kunci (*Keywords Uppercase/Lowercase/Preserve*), dan posisi tanda koma (*Comma Start/End*).
+  - **Minify SQL**: Mengompres kueri menjadi satu baris efisien untuk integrasi script atau konfigurasi.
+  - **Syntax Validator**: Memeriksa pasangan tanda kurung, struktur klausa (`SELECT`, `FROM`, `WHERE`, `GROUP BY`, `ORDER BY`), dan tanda kutip literal.
+  - **Aksi Cepat**: Copy ke Clipboard, Download file `.sql`, Clear buffer, dan Sample Query Loader.
+- **REST API Endpoints**:
+  - `POST /api/sqltools/format`
+  - `POST /api/sqltools/minify`
+  - `POST /api/sqltools/validate`
+
+### 5.16 Modul Multi-Instance Synchronization (Host Induk Sync)
+- Menghubungkan beberapa instance TrackerKerja terdistribusi (misalnya laptop tim lokal atau cabang) ke satu **Server Host Induk** terpusat.
+- **Dua Metode Sinkronisasi**:
+  1. **Metode 1: REST API Sync (Online Otomatis)**:
+     - Push data terenkripsi via HTTP/HTTPS ke endpoint `/api/sync/push` di server Host Induk.
+     - Menggunakan autentikasi berbasis **API Secret Key**.
+     - Opsi *Allow Untrusted SSL Certificates* untuk sertifikat internal/self-signed.
+     - Mendukung entitas: *Users*, *Projects*, *Categories*, *Tasks*, *Sessions*, *Notes*, *Attachments*, *Attendance*, dan *Master Data*.
+  2. **Metode 2: Manual SQL Dump (Offline / Air-Gapped)**:
+     - **Export SQL Dump**: Menghasilkan script SQL DML lengkap berisi data transaksi yang dapat diunduh.
+     - **Import SQL Dump**: Mengunggah dan mengeksekusi script SQL ke dalam database lokal atau Host Induk dengan mode transaksi aman (*Rollback on error*).
+
+### 5.17 Modul RESTful API & Swagger OpenAPI Documentation
+- 80+ endpoint RESTful dengan respons terstandarisasi JSON:
 ```json
 {
   "success": true,
   "message": "Operation description",
   "data": { },
   "errors": null,
-  "timestamp": "2026-08-31T09:00:00Z"
+  "timestamp": "2026-09-10T09:00:00Z"
 }
 ```
 - Swagger UI interaktif di `/swagger` dan berkas Postman Collection & Environment.
@@ -357,7 +431,7 @@ erDiagram
 5. **Data Protection & Secret Handling**: Enkripsi cookie session dan token autentikasi.
 
 ### 6.2 Performa & Keandalan
-1. **Index Optimization**: Indeks database pada `Tasks.ProjectId`, `Tasks.AssignedToUserId`, `Tasks.ParentTaskId`, dan `AuditLogs.Timestamp`.
+1. **Index Optimization**: Indeks database pada `Tasks.ProjectId`, `Tasks.AssignedToUserId`, `Tasks.ParentTaskId`, `AttendanceRecords.UserId`, `AttendanceRecords.Date`, dan `AuditLogs.Timestamp`.
 2. **Efisiensi File Streaming**: Endpoint download berkas menggunakan `PhysicalFileResult` stream native ASP.NET Core.
 3. **SQLite Database Compaction**: Fitur *Shrink Database (VACUUM)* untuk menjaga ukuran file basis data tetap ringkas.
 

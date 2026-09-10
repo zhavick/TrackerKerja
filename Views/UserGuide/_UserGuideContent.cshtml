@@ -9,10 +9,10 @@
                     <i class="fas fa-book-reader"></i> BUKU PANDUAN PENGGUNA RESMI
                 </div>
                 <h1 class="text-2xl md:text-4xl font-extrabold text-white tracking-tight print:text-black">Work Tracker Pro (TrackerKerja)</h1>
-                <p class="text-indigo-200 text-sm md:text-base mt-1.5 print:text-slate-600">Panduan Lengkap Tata Cara Penggunaan Fitur Kerja, Pencatatan Timesheet, Manajemen Proyek, dan Dokumentasi.</p>
+                <p class="text-indigo-200 text-sm md:text-base mt-1.5 print:text-slate-600">Panduan Lengkap Tata Cara Penggunaan Fitur Kerja, Pencatatan Timesheet, Presensi, Kalender, dan Dokumentasi.</p>
             </div>
             <div class="flex md:flex-col items-end justify-between gap-2 border-t md:border-t-0 md:border-l border-white/20 pt-3 md:pt-0 md:pl-6 text-xs text-indigo-200 print:text-slate-600">
-                <div><strong class="text-white print:text-black">Versi:</strong> 3.2 Enterprise</div>
+                <div><strong class="text-white print:text-black">Versi:</strong> 3.3 Enterprise</div>
                 <div><strong class="text-white print:text-black">Pembaruan:</strong> September 2026</div>
                 <div><strong class="text-white print:text-black">Sifat:</strong> Panduan Operasional Tim</div>
             </div>
@@ -20,42 +20,54 @@
     </div>
 
     <!-- Quick Jump Module Cards -->
-    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 no-print">
-        <a href="#guide-task" class="p-3 rounded-2xl bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/70 transition-all text-center group">
-            <div class="w-8 h-8 mx-auto rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm mb-1.5 shadow-sm group-hover:scale-110 transition-transform">
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-8 gap-2.5 no-print">
+        <a href="#guide-task" class="p-2.5 rounded-2xl bg-indigo-50/80 hover:bg-indigo-100 border border-indigo-200/70 transition-all text-center group">
+            <div class="w-7 h-7 mx-auto rounded-xl bg-indigo-600 text-white flex items-center justify-center text-xs mb-1 shadow-sm group-hover:scale-110 transition-transform">
                 <i class="fas fa-tasks"></i>
             </div>
-            <span class="text-xs font-bold text-slate-800 block">Tugas (Task)</span>
+            <span class="text-[11px] font-bold text-slate-800 block">Tugas</span>
         </a>
-        <a href="#guide-project" class="p-3 rounded-2xl bg-purple-50/80 hover:bg-purple-100 border border-purple-200/70 transition-all text-center group">
-            <div class="w-8 h-8 mx-auto rounded-xl bg-purple-600 text-white flex items-center justify-center text-sm mb-1.5 shadow-sm group-hover:scale-110 transition-transform">
+        <a href="#guide-project" class="p-2.5 rounded-2xl bg-purple-50/80 hover:bg-purple-100 border border-purple-200/70 transition-all text-center group">
+            <div class="w-7 h-7 mx-auto rounded-xl bg-purple-600 text-white flex items-center justify-center text-xs mb-1 shadow-sm group-hover:scale-110 transition-transform">
                 <i class="fas fa-project-diagram"></i>
             </div>
-            <span class="text-xs font-bold text-slate-800 block">Proyek</span>
+            <span class="text-[11px] font-bold text-slate-800 block">Proyek</span>
         </a>
-        <a href="#guide-timesheet" class="p-3 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/70 transition-all text-center group">
-            <div class="w-8 h-8 mx-auto rounded-xl bg-emerald-600 text-white flex items-center justify-center text-sm mb-1.5 shadow-sm group-hover:scale-110 transition-transform">
+        <a href="#guide-timesheet" class="p-2.5 rounded-2xl bg-emerald-50/80 hover:bg-emerald-100 border border-emerald-200/70 transition-all text-center group">
+            <div class="w-7 h-7 mx-auto rounded-xl bg-emerald-600 text-white flex items-center justify-center text-xs mb-1 shadow-sm group-hover:scale-110 transition-transform">
                 <i class="fas fa-clock"></i>
             </div>
-            <span class="text-xs font-bold text-slate-800 block">Timesheet</span>
+            <span class="text-[11px] font-bold text-slate-800 block">Timesheet</span>
         </a>
-        <a href="#guide-json" class="p-3 rounded-2xl bg-amber-50/80 hover:bg-amber-100 border border-amber-200/70 transition-all text-center group">
-            <div class="w-8 h-8 mx-auto rounded-xl bg-amber-600 text-white flex items-center justify-center text-sm mb-1.5 shadow-sm group-hover:scale-110 transition-transform">
-                <i class="fas fa-code"></i>
+        <a href="#guide-attendance" class="p-2.5 rounded-2xl bg-teal-50/80 hover:bg-teal-100 border border-teal-200/70 transition-all text-center group">
+            <div class="w-7 h-7 mx-auto rounded-xl bg-teal-600 text-white flex items-center justify-center text-xs mb-1 shadow-sm group-hover:scale-110 transition-transform">
+                <i class="fas fa-calendar-check"></i>
             </div>
-            <span class="text-xs font-bold text-slate-800 block">JSON Payload</span>
+            <span class="text-[11px] font-bold text-slate-800 block">Absensi</span>
         </a>
-        <a href="#guide-notes" class="p-3 rounded-2xl bg-sky-50/80 hover:bg-sky-100 border border-sky-200/70 transition-all text-center group">
-            <div class="w-8 h-8 mx-auto rounded-xl bg-sky-600 text-white flex items-center justify-center text-sm mb-1.5 shadow-sm group-hover:scale-110 transition-transform">
+        <a href="#guide-calendar" class="p-2.5 rounded-2xl bg-fuchsia-50/80 hover:bg-fuchsia-100 border border-fuchsia-200/70 transition-all text-center group">
+            <div class="w-7 h-7 mx-auto rounded-xl bg-fuchsia-600 text-white flex items-center justify-center text-xs mb-1 shadow-sm group-hover:scale-110 transition-transform">
+                <i class="fas fa-calendar-alt"></i>
+            </div>
+            <span class="text-[11px] font-bold text-slate-800 block">Kalender</span>
+        </a>
+        <a href="#guide-notes" class="p-2.5 rounded-2xl bg-sky-50/80 hover:bg-sky-100 border border-sky-200/70 transition-all text-center group">
+            <div class="w-7 h-7 mx-auto rounded-xl bg-sky-600 text-white flex items-center justify-center text-xs mb-1 shadow-sm group-hover:scale-110 transition-transform">
                 <i class="fas fa-sticky-note"></i>
             </div>
-            <span class="text-xs font-bold text-slate-800 block">Catatan (Notes)</span>
+            <span class="text-[11px] font-bold text-slate-800 block">Catatan</span>
         </a>
-        <a href="#guide-master" class="p-3 rounded-2xl bg-rose-50/80 hover:bg-rose-100 border border-rose-200/70 transition-all text-center group">
-            <div class="w-8 h-8 mx-auto rounded-xl bg-rose-600 text-white flex items-center justify-center text-sm mb-1.5 shadow-sm group-hover:scale-110 transition-transform">
+        <a href="#guide-tools" class="p-2.5 rounded-2xl bg-amber-50/80 hover:bg-amber-100 border border-amber-200/70 transition-all text-center group">
+            <div class="w-7 h-7 mx-auto rounded-xl bg-amber-600 text-white flex items-center justify-center text-xs mb-1 shadow-sm group-hover:scale-110 transition-transform">
+                <i class="fas fa-code"></i>
+            </div>
+            <span class="text-[11px] font-bold text-slate-800 block">Tools Dev</span>
+        </a>
+        <a href="#guide-master" class="p-2.5 rounded-2xl bg-rose-50/80 hover:bg-rose-100 border border-rose-200/70 transition-all text-center group">
+            <div class="w-7 h-7 mx-auto rounded-xl bg-rose-600 text-white flex items-center justify-center text-xs mb-1 shadow-sm group-hover:scale-110 transition-transform">
                 <i class="fas fa-sliders-h"></i>
             </div>
-            <span class="text-xs font-bold text-slate-800 block">Master Data</span>
+            <span class="text-[11px] font-bold text-slate-800 block">Master</span>
         </a>
     </div>
 
@@ -72,7 +84,7 @@
         </div>
 
         <p class="text-sm">
-            <strong>Work Tracker Pro</strong> adalah aplikasi manajemen pekerjaan harian dan pelaporan jam kerja (*timesheet*) yang dirancang untuk seluruh anggota tim agar dapat merencanakan tugas, mencatat waktu kerja, mendokumentasikan kendala dan solusi, serta menghasilkan laporan timesheet resmi siap pakai.
+            <strong>Work Tracker Pro</strong> adalah platform manajemen pekerjaan terpadu, pencatatan waktu (*timesheet*), presensi kehadiran, pelacakan kendala dan solusi teknis, serta kalender kerja tim.
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
@@ -82,7 +94,7 @@
                 </h3>
                 <ol class="text-xs text-slate-600 space-y-1.5 list-decimal pl-4">
                     <li>Buka aplikasi melalui peramban web (Chrome, Edge, Safari, Firefox).</li>
-                    <li>Ketikkan <strong>Email</strong> dan <strong>Kata Sandi</strong> yang telah didaftarkan.</li>
+                    <li>Ketikkan <strong>Email</strong> dan <strong>Kata Sandi</strong> yang telah didaftarkan oleh Administrator.</li>
                     <li>Centang opsi <em>Ingat Saya</em> jika menggunakan komputer pribadi.</li>
                     <li>Klik tombol <strong>Masuk (Login)</strong>.</li>
                 </ol>
@@ -93,7 +105,7 @@
                     <i class="fas fa-palette text-purple-500"></i> Pilihan Tema Tampilan (16 Tema)
                 </h3>
                 <p class="text-xs text-slate-600">
-                    Aplikasi menyediakan 16 tema warna (Mode Terang & Mode Gelap OLED/Matrix). Anda dapat memilih tema favorit pada menu <strong>Profil Akun</strong> di pojok kanan atas untuk kenyamanan bekerja.
+                    Aplikasi menyediakan 16 pilihan tema warna (Light Mode dan Dark Mode). Anda dapat memilih tema favorit pada menu <strong>Profil Akun</strong> di pojok kanan atas untuk kenyamanan bekerja.
                 </p>
             </div>
         </div>
@@ -120,9 +132,9 @@
                     <li>Klik tombol <strong>+ Tugas Baru</strong> pada bilah atas atau di halaman menu <em>Tugas</em>.</li>
                     <li>Isi <strong>Judul Tugas</strong> (contoh: <em>Analisis Kebutuhan API Endpoint Pembayaran</em>).</li>
                     <li>Pilih <strong>Proyek</strong> dan <strong>Kategori Kerja</strong> yang sesuai.</li>
-                    <li>Tentukan <strong>Tingkat Prioritas</strong> (<em>Low, Medium, High, Critical</em>) dan <strong>Milestone SDLC</strong> (<em>BRD, FSD/TSD, Development, Testing, Deployment</em>).</li>
+                    <li>Tentukan <strong>Tingkat Prioritas</strong> (<em>Low, Medium, High, Critical</em>) dan <strong>Milestone SDLC</strong> (<em>Requirement Analysis, System Design, Implementation, Testing & QA, Deployment</em>).</li>
                     <li>Pilih <strong>Penanggung Jawab (PIC)</strong> serta tentukan <strong>Tenggat Waktu (Due Date)</strong>.</li>
-                    <li>Klik tombol <strong>Simpan Tugas</strong>. Sistem akan otomatis memberikan kode tugas unik (misal: <code>TSK-0732</code>).</li>
+                    <li>Klik tombol <strong>Simpan Tugas</strong>. Sistem akan otomatis memberikan kode unik (misal: <code>TSK-0732</code>).</li>
                 </ol>
             </div>
 
@@ -143,7 +155,7 @@
                         <i class="fas fa-exclamation-triangle text-rose-500"></i> Pencatatan Kendala & Solusi
                     </h3>
                     <p class="text-xs text-slate-600">
-                        Jika terdapat hambatan (*blocker*) dalam pengerjaan tugas, catat pada kolom <strong>Kendala (Obstacle)</strong> dan <strong>Solusi (Solution)</strong>. Hal ini mempermudah pelaporan saat rapat evaluasi sprint.
+                        Jika terdapat hambatan (*blocker*) dalam pengerjaan tugas, catat pada kolom <strong>Kendala (Obstacle)</strong> dan <strong>Solusi (Solution)</strong> untuk kemudahan evaluasi rapat sprint.
                     </p>
                 </div>
             </div>
@@ -154,16 +166,16 @@
                         <i class="fas fa-columns text-purple-500"></i> Papan Kanban Interaktif
                     </h3>
                     <p class="text-xs text-slate-600">
-                        Buka menu <strong>Kanban</strong> untuk memantau tugas dalam bentuk kartu visual. Anda cukup melakukan <em>Drag & Drop</em> kartu tugas antar kolom status (To Do, In Progress, Done) secara instan.
+                        Buka menu <strong>Kanban</strong> untuk memantau tugas dalam bentuk kartu visual. Cukup lakukan <em>Drag & Drop</em> kartu tugas antar kolom status (To Do, In Progress, Done) secara instan.
                     </p>
                 </div>
 
                 <div class="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-200/80 space-y-2">
                     <h3 class="font-bold text-indigo-900 text-sm flex items-center gap-2">
-                        <i class="fas fa-file-excel text-emerald-600"></i> Import Data Tugas Excel (22 Kolom dengan PIC)
+                        <i class="fas fa-file-excel text-emerald-600"></i> Import Data Tugas Excel (22 Kolom)
                     </h3>
                     <p class="text-xs text-slate-600">
-                        Buka menu <strong>Import Task</strong> (`/Import`) &gt; <strong>Download Template Excel (22 Kolom)</strong>. Isi data tugas lengkap (proyek, judul, prioritas, status, PIC penugasan person to task, pemangku kepentingan BA/Infra/Tester, kendala, solusi, dan notes) lalu unggah untuk pratinjau dan simpan sekaligus ke sistem.
+                        Buka menu <strong>Import Task</strong> (`/Import`) > <strong>Download Template Excel (22 Kolom)</strong>. Isi data tugas lengkap (proyek, judul, prioritas, status, PIC penugasan, stakeholder, kendala, solusi, dan notes) lalu unggah untuk import instan.
                     </p>
                 </div>
             </div>
@@ -183,9 +195,6 @@
         </div>
 
         <div class="space-y-4 text-sm">
-            <p class="text-xs text-slate-600">
-                Menu <strong>Proyek</strong> (`/Project`) digunakan untuk mengelompokkan tugas-tugas dalam satu payung kerja.
-            </p>
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div class="p-3.5 rounded-2xl bg-purple-50/50 border border-purple-100">
                     <span class="font-bold text-purple-900 text-xs block mb-1">1. Buat Proyek Baru</span>
@@ -204,7 +213,7 @@
     </section>
 
     <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- 4. MODUL TIMESHEET & TRACKING JAM KERJA                 -->
+    <!-- 4. MODUL TIMESHEET & PELACAKAN JAM KERJA                 -->
     <!-- ═══════════════════════════════════════════════════════ -->
     <section id="guide-timesheet" class="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4 print:border-0 print:p-2">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
@@ -224,8 +233,8 @@
                     <ol class="text-xs text-slate-700 space-y-1.5 list-decimal pl-4">
                         <li>Buka menu <strong>Timesheet</strong> atau halaman tugas.</li>
                         <li>Klik tombol <strong>Mulai Timer</strong> pada tugas yang dikerjakan.</li>
-                        <li>Timer akan aktif berjalan di panel samping. Aplikasi mendukung <strong>Multi-Timer Bersamaan</strong> jika Anda mengerjakan lebih dari 1 tugas.</li>
-                        <li>Klik <strong>Hentikan Timer</strong> saat selesai, lalu masukkan catatan ringkas aktivitas kerja Anda.</li>
+                        <li>Timer akan aktif berjalan di panel samping. Aplikasi mendukung <strong>Multi-Timer Bersamaan</strong>.</li>
+                        <li>Klik <strong>Hentikan Timer</strong> saat selesai dan masukkan catatan ringkas aktivitas.</li>
                     </ol>
                 </div>
 
@@ -234,12 +243,11 @@
                         <i class="fas fa-edit text-indigo-500"></i> Input Jam Kerja Manual
                     </h3>
                     <p class="text-xs text-slate-600">
-                        Jika lupa menyalakan timer, klik tombol <strong>+ Tambah Jam Kerja Manual</strong> pada menu Timesheet, lalu pilih tugas, tentukan tanggal serta jam mulai dan selesainya.
+                        Jika lupa menyalakan timer, klik tombol <strong>+ Tambah Jam Kerja Manual</strong> pada menu Timesheet, lalu tentukan tugas, tanggal, jam mulai dan selesainya.
                     </p>
                 </div>
             </div>
 
-            <!-- Cut-off Alert & Excel Export Box -->
             <div class="p-5 rounded-2xl bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-200 space-y-3">
                 <div class="flex items-center gap-2 text-amber-900 font-bold text-sm">
                     <i class="fas fa-bell text-amber-600 text-base"></i>
@@ -248,29 +256,11 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-700">
                     <div>
                         <strong class="text-amber-900 block mb-1">⏰ Pengingat Cut-Off Bulanan:</strong>
-                        Setiap tanggal <strong>18 s/d 25</strong> setiap bulan, sistem otomatis memeriksa seluruh tugas aktif Anda. Jika terdapat tugas yang belum memiliki jam kerja (0 jam), sistem akan memunculkan peringatan pada lonceng notifikasi dan halaman Timesheet.
+                        Setiap tanggal <strong>18 s/d 25</strong> setiap bulan, sistem otomatis memeriksa seluruh tugas aktif Anda. Jika terdapat tugas yang belum memiliki jam kerja (0 jam), sistem memunculkan peringatan pada lonceng notifikasi dan halaman Timesheet.
                     </div>
                     <div>
                         <strong class="text-amber-900 block mb-1">📊 Export Excel Format Resmi Elistec:</strong>
-                        Klik tombol <strong>Export Timesheet Personal</strong>. File Excel yang diunduh mencakup seluruh hari dalam rentang periode (hari tanpa task tidak di-skip), penandaan otomatis Hari Libur Nasional dari Master Data, hari Sabtu/Minggu, serta formula perhitungan Man-Days (MD) dan area pengesahan tanda tangan.
-                    </div>
-                </div>
-            </div>
-
-            <!-- Attendance & Leaves Supplementary Guide -->
-            <div class="p-5 rounded-2xl bg-gradient-to-r from-teal-50 to-emerald-50 border border-teal-200 space-y-3">
-                <div class="flex items-center gap-2 text-teal-950 font-bold text-sm">
-                    <i class="fas fa-clipboard-user text-teal-600 text-base"></i>
-                    <span>Modul Presensi, Jam Kedatangan & Kelola Cuti (Pelengkap Timesheet)</span>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-700">
-                    <div>
-                        <strong class="text-teal-950 block mb-1">🏢 Jam Masuk (Clock-In) & Jam Pulang (Clock-Out):</strong>
-                        Gunakan menu <strong>Presensi & Cuti</strong> untuk mencatat jam kedatangan dan jam pulang kantor/remote harian dengan 1-klik, serta memilih lokasi kerja (WFO / WFH / Dinas Luar). Catatan ini terpisah dari jam per task dan berfungsi sebagai bukti kehadiran resmi.
-                    </div>
-                    <div>
-                        <strong class="text-teal-950 block mb-1">🏖️ Cuti & Izin Terintegrasi Timesheet:</strong>
-                        Ajukan cuti tahunan, izin sakit, atau dinas luar untuk rentang tanggal tertentu. Informasi kehadiran dan cuti ini secara otomatis disematkan pada <strong>Matriks Mingguan Timesheet</strong> dan <strong>Laporan Excel Sheet 3</strong> sebagai kelengkapan informasi.
+                        Klik tombol <strong>Export Timesheet Personal</strong>. File Excel yang diunduh mencakup seluruh hari dalam rentang periode (hari tanpa task tidak di-skip), penandaan otomatis Hari Libur Nasional dari Master Data, hari Sabtu/Minggu, formula Man-Days (MD), serta area tanda tangan.
                     </div>
                 </div>
             </div>
@@ -278,101 +268,153 @@
     </section>
 
     <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- 5. MODUL JSON PAYLOAD TOOLS                            -->
+    <!-- 5. MODUL ABSENSI & PRESENSI KERJA                       -->
     <!-- ═══════════════════════════════════════════════════════ -->
-    <section id="guide-json" class="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4 print:border-0 print:p-2">
+    <section id="guide-attendance" class="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4 print:border-0 print:p-2">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-            <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black text-base shadow-xs">5</div>
+            <div class="w-10 h-10 rounded-2xl bg-teal-50 text-teal-600 flex items-center justify-center font-black text-base shadow-xs">5</div>
             <div>
-                <h2 class="text-xl font-black text-slate-900">Modul JSON Payload & Alat Bantu Pengujian</h2>
-                <p class="text-xs text-slate-400">Merapikan, memvalidasi, memampatkan, dan menyimpan template payload pengujian API</p>
+                <h2 class="text-xl font-black text-slate-900">Modul Absensi & Presensi Kerja (Attendance)</h2>
+                <p class="text-xs text-slate-400">Pencatatan check-in harian, pemilihan status kerja (WFO/WFH/Izin), dan rekapitulasi kehadiran</p>
             </div>
         </div>
 
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-xs">
-            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <span class="font-bold text-slate-800 block mb-1">1. Format (Beautify)</span>
-                <p class="text-slate-600">Merapikan teks JSON yang rapat menjadi format bertingkat dengan indentasi rapi dan mudah dibaca.</p>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-700">
+            <div class="p-4 rounded-2xl bg-teal-50/50 border border-teal-100 space-y-1.5">
+                <h3 class="font-bold text-teal-950 text-sm">🏢 Check In & Check Out</h3>
+                <p>Mencatat jam kedatangan dan jam pulang kerja harian secara presisi dengan 1-klik sebagai bukti kehadiran resmi.</p>
             </div>
-            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <span class="font-bold text-slate-800 block mb-1">2. Validasi Sintaks</span>
-                <p class="text-slate-600">Memeriksa kelengkapan tanda kurung, koma, dan kutip untuk memastikan data JSON valid dan tidak error.</p>
+            <div class="p-4 rounded-2xl bg-teal-50/50 border border-teal-100 space-y-1.5">
+                <h3 class="font-bold text-teal-950 text-sm">🏠 Status Kerja Fleksibel</h3>
+                <p>Pilih status kehadiran: Hadir (WFO), WFH (Work From Home), Izin, Sakit, Cuti Tahunan, atau Libur.</p>
             </div>
-            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <span class="font-bold text-slate-800 block mb-1">3. Minify (Kompresi)</span>
-                <p class="text-slate-600">Menghapus seluruh spasi berlebih untuk menghasilkan string payload satu baris yang siap diuji ke API.</p>
-            </div>
-            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <span class="font-bold text-slate-800 block mb-1">4. Simpan Template</span>
-                <p class="text-slate-600">Menyimpan kumpulan contoh payload pengujian yang sering digunakan agar dapat dipanggil kembali secara instan.</p>
+            <div class="p-4 rounded-2xl bg-teal-50/50 border border-teal-100 space-y-1.5">
+                <h3 class="font-bold text-teal-950 text-sm">📈 Rekapitulasi Tim</h3>
+                <p>Admin dapat memantau tabel rekap kehadiran bulanan seluruh anggota tim secara transparan dan mudah dievaluasi.</p>
             </div>
         </div>
     </section>
 
     <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- 6. MODUL CATATAN KERJA (NOTES)                         -->
+    <!-- 6. MODUL KALENDER KERJA (CALENDAR)                     -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section id="guide-calendar" class="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4 print:border-0 print:p-2">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+            <div class="w-10 h-10 rounded-2xl bg-fuchsia-50 text-fuchsia-600 flex items-center justify-center font-black text-base shadow-xs">6</div>
+            <div>
+                <h2 class="text-xl font-black text-slate-900">Modul Kalender Kerja & Jadwal (Calendar)</h2>
+                <p class="text-xs text-slate-400">Visualisasi jadwal tugas FullCalendar dengan filter berbasis peran (RBAC) dan rincian PIC</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-700">
+            <div class="p-4 rounded-2xl bg-fuchsia-50/50 border border-fuchsia-100 space-y-2">
+                <h3 class="font-bold text-fuchsia-950 text-sm flex items-center gap-2">
+                    <i class="fas fa-filter text-fuchsia-600"></i> Penyaringan Berbasis Peran
+                </h3>
+                <ul class="space-y-1.5 list-disc pl-4 text-slate-600">
+                    <li><strong>Member Biasa</strong>: Kalender otomatis menyaring dan hanya menampilkan tugas milik member yang sedang login (*Tugas Saya*).</li>
+                    <li><strong>Administrator</strong>: Disediakan dropdown filter untuk beralih antara <strong>🌐 Semua Tugas Tim</strong> dan <strong>👤 Tugas Saya Sendiri</strong> tanpa reload halaman.</li>
+                </ul>
+            </div>
+
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
+                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fas fa-user-circle text-indigo-500"></i> Detail PIC & Deteksi Overlap
+                </h3>
+                <p class="text-slate-600">
+                    Mengklik tugas pada kalender membuka popup detail yang menyajikan status, prioritas, deadline, proyek, serta nama dan avatar PIC penanggung jawab tugas. Sistem juga memberikan peringatan jika terdeteksi tugas dengan jadwal yang beririsan.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 7. MODUL CATATAN KERJA (NOTES)                         -->
     <!-- ═══════════════════════════════════════════════════════ -->
     <section id="guide-notes" class="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4 print:border-0 print:p-2">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-            <div class="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center font-black text-base shadow-xs">6</div>
+            <div class="w-10 h-10 rounded-2xl bg-sky-50 text-sky-600 flex items-center justify-center font-black text-base shadow-xs">7</div>
             <div>
                 <h2 class="text-xl font-black text-slate-900">Modul Catatan Kerja & Dokumentasi (Notes)</h2>
                 <p class="text-xs text-slate-400">Pencatatan notula rapat, dokumentasi teknis, pin note, dan lampiran berkas</p>
             </div>
         </div>
 
-        <div class="space-y-3 text-xs text-slate-700">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
-                <div class="p-4 rounded-2xl bg-sky-50/50 border border-sky-100">
-                    <strong class="font-bold text-sky-950 block mb-1">📝 Rich-Text Formatting</strong>
-                    Dukungan penulisan lengkap: teks tebal, miring, daftar poin/nomor, blok kode program, tabel, dan warna latar belakang catatan.
-                </div>
-                <div class="p-4 rounded-2xl bg-sky-50/50 border border-sky-100">
-                    <strong class="font-bold text-sky-950 block mb-1">📌 Pin Catatan Penting</strong>
-                    Sematkan catatan prioritas tinggi dengan fitur <em>Pin</em> agar selalu berada di posisi teratas halaman.
-                </div>
-                <div class="p-4 rounded-2xl bg-sky-50/50 border border-sky-100">
-                    <strong class="font-bold text-sky-950 block mb-1">📎 Tautkan ke Tugas & Lampiran</strong>
-                    Hubungkan catatan ke tugas atau proyek tertentu, serta unggah berkas lampiran (PDF, gambar, dokumen analisis).
-                </div>
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3 text-xs text-slate-700">
+            <div class="p-4 rounded-2xl bg-sky-50/50 border border-sky-100">
+                <strong class="font-bold text-sky-950 block mb-1">📝 Rich-Text Formatting</strong>
+                Teks tebal, miring, daftar poin/nomor, blok kode program, tabel, dan warna latar belakang kartu catatan.
+            </div>
+            <div class="p-4 rounded-2xl bg-sky-50/50 border border-sky-100">
+                <strong class="font-bold text-sky-950 block mb-1">📌 Pin Catatan Penting</strong>
+                Sematkan catatan prioritas tinggi dengan fitur <em>Pin</em> agar selalu berada di posisi paling atas halaman.
+            </div>
+            <div class="p-4 rounded-2xl bg-sky-50/50 border border-sky-100">
+                <strong class="font-bold text-sky-950 block mb-1">📎 Tautkan ke Tugas & Lampiran</strong>
+                Hubungkan catatan ke tugas atau proyek, serta unggah berkas lampiran (PDF, Word, Excel, gambar).
             </div>
         </div>
     </section>
 
     <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- 7. MODUL MASTER DATA (ADMINISTRATOR)                   -->
+    <!-- 8. MODUL DEVELOPER TOOLS (JSON & SQL BEAUTIFIER)        -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <section id="guide-tools" class="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4 print:border-0 print:p-2">
+        <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
+            <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-black text-base shadow-xs">8</div>
+            <div>
+                <h2 class="text-xl font-black text-slate-900">Modul Developer Tools (JSON & SQL Tools)</h2>
+                <p class="text-xs text-slate-400">Format, validasi, dan minifikasi payload JSON serta kueri SQL 15+ database engine</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs text-slate-700">
+            <div class="p-4 rounded-2xl bg-amber-50/50 border border-amber-100 space-y-2">
+                <h3 class="font-bold text-amber-950 text-sm">📦 JSON Payload Tools</h3>
+                <p>Merapikan (Beautify), memvalidasi sintaks kurung/koma, memampatkan (Minify), dan menyimpan template payload pengujian API.</p>
+            </div>
+            <div class="p-4 rounded-2xl bg-amber-50/50 border border-amber-100 space-y-2">
+                <h3 class="font-bold text-amber-950 text-sm">🗄️ SQL Beautifier & Formatter</h3>
+                <p>Mendukung 15+ dialek SQL (PostgreSQL, MySQL, SQLite, Oracle, BigQuery, SQL Server). Mendukung format instan via <strong>Ctrl + Enter</strong> dan minifikasi kueri.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 9. MODUL MASTER DATA & SINKRONISASI                     -->
     <!-- ═══════════════════════════════════════════════════════ -->
     <section id="guide-master" class="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4 print:border-0 print:p-2">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-            <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-black text-base shadow-xs">7</div>
+            <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-black text-base shadow-xs">9</div>
             <div>
-                <h2 class="text-xl font-black text-slate-900">Modul Master Data (Pengaturan Sistem)</h2>
-                <p class="text-xs text-slate-400">Pengaturan kategori, prioritas, status kerja, milestone SDLC, dan hari libur</p>
+                <h2 class="text-xl font-black text-slate-900">Modul Master Data, Sinkronisasi & Backup</h2>
+                <p class="text-xs text-slate-400">Pengaturan kategori, milestone SDLC, hari libur, sinkronisasi multi-instance, dan backup database</p>
             </div>
         </div>
 
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs text-slate-700">
             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
-                <h3 class="font-bold text-slate-800 text-sm">🏷️ Kategori, Prioritas & Milestone</h3>
-                <p>Admin dapat menambah kategori tugas, mengatur tingkatan prioritas, serta menyusun tahapan milestone SDLC (*Requirement, FSD, Development, QA, Deployment*).</p>
+                <h3 class="font-bold text-slate-800 text-sm">🏷️ Kategori & Milestone</h3>
+                <p>Admin dapat mengelola kategori tugas, tingkatan prioritas, serta tahapan milestone SDLC Waterfall.</p>
             </div>
             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
-                <h3 class="font-bold text-slate-800 text-sm">🏖️ Master Hari Libur Nasional</h3>
-                <p>Kelola kalender hari libur nasional dan cuti bersama resmi. Data ini otomatis digunakan saat mengekspor laporan timesheet agar hari libur terdeteksi dengan tepat.</p>
+                <h3 class="font-bold text-slate-800 text-sm">🔄 Sinkronisasi Host Induk</h3>
+                <p>Kirim dan sinkronkan data tugas lokal ke Host Induk secara online via REST API Push atau manual SQL dump.</p>
             </div>
             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
-                <h3 class="font-bold text-slate-800 text-sm">💾 Backup & Export Database</h3>
-                <p>Menu <strong>Konfigurasi</strong> (`/Configuration`) menyediakan unduhan snapshot file SQLite (<code>.db</code>), naskah script SQL DDL & Data (<code>.sql</code>), serta live preview schema.</p>
+                <h3 class="font-bold text-slate-800 text-sm">💾 Backup Database (.db & .sql)</h3>
+                <p>Unduh file database biner SQLite (<code>.db</code>) utuh atau skrip SQL DDL & DML (<code>.sql</code>) untuk pencadangan aman.</p>
             </div>
         </div>
     </section>
 
     <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- 8. TIPS & PERTANYAAN UMUM (FAQ)                        -->
+    <!-- 10. TIPS & PERTANYAAN UMUM (FAQ)                       -->
     <!-- ═══════════════════════════════════════════════════════ -->
     <section id="guide-faq" class="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4 print:border-0 print:p-2">
         <div class="flex items-center gap-3 pb-3 border-b border-slate-100">
-            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-black text-base shadow-xs">8</div>
+            <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-black text-base shadow-xs">10</div>
             <div>
                 <h2 class="text-xl font-black text-slate-900">Pertanyaan Umum (FAQ) & Tips Singkat</h2>
                 <p class="text-xs text-slate-400">Solusi cepat atas pertanyaan yang sering diajukan</p>
@@ -386,13 +428,13 @@
             </div>
 
             <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <strong class="text-slate-800 block mb-1">Q: Mengapa saya tidak bisa menghapus anggota tim tertentu?</strong>
-                <p class="text-slate-600">Pengguna yang telah memiliki riwayat tugas atau catatan jam kerja tidak dapat dihapus untuk melindungi integritas data pelaporan. Gunakan opsi <em>Nonaktifkan (Inactivate)</em> akun; pengguna yang nonaktif otomatis disembunyikan dari Dashboard.</p>
+                <strong class="text-slate-800 block mb-1">Q: Mengapa di Kalender saya hanya melihat tugas milik saya sendiri?</strong>
+                <p class="text-slate-600">Untuk anggota tim reguler, kalender secara default disaring khusus untuk tugas yang ditugaskan kepada Anda agar Anda dapat fokus pada jadwal kerja pribadi. Administrator memiliki opsi dropdown untuk melihat tugas seluruh tim.</p>
             </div>
 
             <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <strong class="text-slate-800 block mb-1">Q: Apakah saya bisa memindahkan tugas langsung di papan Kanban?</strong>
-                <p class="text-slate-600">Ya, cukup tahan dan geser kartu tugas dari kolom To Do ke In Progress atau Done. Status tugas akan langsung diperbarui.</p>
+                <strong class="text-slate-800 block mb-1">Q: Mengapa saya tidak bisa menghapus anggota tim tertentu?</strong>
+                <p class="text-slate-600">Pengguna yang telah memiliki riwayat tugas atau catatan jam kerja tidak dapat dihapus untuk melindungi integritas data pelaporan. Gunakan opsi <em>Nonaktifkan (Inactivate)</em> akun; pengguna yang nonaktif otomatis disembunyikan dari Dashboard.</p>
             </div>
         </div>
     </section>

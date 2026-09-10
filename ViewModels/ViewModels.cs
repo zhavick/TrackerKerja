@@ -150,6 +150,8 @@ namespace TrackerKerja.ViewModels
         public string Status { get; set; } = string.Empty;
         public string Priority { get; set; } = string.Empty;
         public string? ProjectName { get; set; }
+        public string? AssigneeName { get; set; }
+        public string? AssigneeAvatar { get; set; }
         public string Url { get; set; } = string.Empty;
     }
 

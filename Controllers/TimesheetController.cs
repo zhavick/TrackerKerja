@@ -88,9 +88,51 @@ namespace TrackerKerja.Controllers
                 RecentSessions = sessions
             };
 
+            // Load Attendance & Leaves for the week as supplementary information
+            var targetMemberId = !string.IsNullOrEmpty(memberId) && memberId != "all" ? memberId : currentUser?.Id;
+            var userAttendances = new List<AttendanceRecord>();
+            if (!string.IsNullOrEmpty(targetMemberId))
+            {
+                userAttendances = await _db.Attendances
+                    .Where(a => a.UserId == targetMemberId && a.Date >= weekStart.Date && a.Date <= weekStart.AddDays(6).Date)
+                    .ToListAsync();
+            }
+
             for (int i = 0; i < 7; i++)
             {
-                viewModel.DayDates[i] = weekStart.AddDays(i);
+                var currentDay = weekStart.AddDays(i).Date;
+                viewModel.DayDates[i] = currentDay;
+
+                var att = userAttendances.FirstOrDefault(a => a.Date.Date == currentDay);
+                if (att != null)
+                {
+                    viewModel.DailyAttendances[i] = new AttendanceDailySummaryDto
+                    {
+                        Date = currentDay,
+                        HasRecord = true,
+                        RecordId = att.Id,
+                        Type = att.Type,
+                        TypeDisplayName = att.TypeDisplayName,
+                        WorkLocation = att.WorkLocation,
+                        ClockIn = att.ClockIn,
+                        ClockOut = att.ClockOut,
+                        TotalHours = att.TotalHours,
+                        LeaveReason = att.LeaveReason,
+                        Notes = att.Notes,
+                        BadgeColorClass = att.TypeBadgeColor,
+                        IconClass = att.TypeIcon
+                    };
+                }
+                else
+                {
+                    viewModel.DailyAttendances[i] = new AttendanceDailySummaryDto
+                    {
+                        Date = currentDay,
+                        HasRecord = false,
+                        BadgeColorClass = "bg-slate-50 text-slate-400 border-slate-200",
+                        IconClass = "fa-clock"
+                    };
+                }
             }
 
             // Group sessions by Task
@@ -300,6 +342,12 @@ namespace TrackerKerja.Controllers
             }
 
             var sessions = await query.OrderBy(s => s.StartTime).ToListAsync();
+
+            // Query attendances in the period for supplementary timesheet info
+            var attendances = await _db.Attendances
+                .Where(a => a.UserId == currentUser.Id && a.Date >= start.Date && a.Date <= end.Date)
+                .OrderBy(a => a.Date)
+                .ToListAsync();
 
             using var wb = new ClosedXML.Excel.XLWorkbook();
 
@@ -687,6 +735,184 @@ namespace TrackerKerja.Controllers
             wsSummary.Column(3).Width = 15;
             wsSummary.Column(4).Width = 20;
             wsSummary.Column(5).Width = 24;
+
+            // ══════════════════════════════════════════════════════
+            // SHEET 3: REKAP PRESENSI & CUTI (KELENGKAPAN INFORMASI)
+            // ══════════════════════════════════════════════════════
+            var wsAtt = wb.Worksheets.Add("Presensi & Cuti");
+            wsAtt.ShowGridLines = true;
+
+            // 1. Header Banner
+            wsAtt.Range("A1:I1").Merge();
+            var attTitle = wsAtt.Cell("A1");
+            attTitle.Value = "REKAPITULASI PRESENSI & CUTI (KELENGKAPAN TIMESHEET)";
+            attTitle.Style.Font.Bold = true;
+            attTitle.Style.Font.FontSize = 14;
+            attTitle.Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+            attTitle.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromArgb(49, 46, 129);
+            attTitle.Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+            attTitle.Style.Alignment.Vertical = ClosedXML.Excel.XLAlignmentVerticalValues.Center;
+            wsAtt.Row(1).Height = 32;
+
+            wsAtt.Range("A2:I2").Merge();
+            var attSub = wsAtt.Cell("A2");
+            attSub.Value = $"Karyawan: {currentUser.FullName} | Periode: {start:dd MMM yyyy} s/d {end:dd MMM yyyy} • Data Pendukung Timesheet";
+            attSub.Style.Font.Italic = true;
+            attSub.Style.Font.FontSize = 10;
+            attSub.Style.Font.FontColor = ClosedXML.Excel.XLColor.FromArgb(224, 231, 255);
+            attSub.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromArgb(67, 56, 202);
+            attSub.Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+            wsAtt.Row(2).Height = 20;
+
+            // 2. Summary Info
+            var attPresentCount = attendances.Count(a => a.Type == AttendanceType.Present);
+            var attWfoCount = attendances.Count(a => a.Type == AttendanceType.Present && a.WorkLocation == WorkLocationType.WFO);
+            var attWfhCount = attendances.Count(a => a.Type == AttendanceType.Present && a.WorkLocation == WorkLocationType.WFH);
+            var attLeaveCount = attendances.Count(a => a.Type == AttendanceType.Leave);
+            var attSickCount = attendances.Count(a => a.Type == AttendanceType.Sick);
+            var attPermCount = attendances.Count(a => a.Type == AttendanceType.Permission || a.Type == AttendanceType.BusinessTrip);
+            var attTotalHours = Math.Round(attendances.Where(a => a.Type == AttendanceType.Present).Sum(a => a.TotalHours), 2);
+
+            wsAtt.Cell("A4").Value = "Total Hari Hadir:";
+            wsAtt.Cell("A4").Style.Font.Bold = true;
+            wsAtt.Cell("B4").Value = $"{attPresentCount} Hari (WFO: {attWfoCount}, WFH: {attWfhCount})";
+            wsAtt.Range("B4:C4").Merge();
+
+            wsAtt.Cell("D4").Value = "Total Jam Hadir Kantor:";
+            wsAtt.Cell("D4").Style.Font.Bold = true;
+            wsAtt.Cell("E4").Value = $"{attTotalHours:F2} Jam";
+
+            wsAtt.Cell("F4").Value = "Cuti / Izin / Sakit:";
+            wsAtt.Cell("F4").Style.Font.Bold = true;
+            wsAtt.Cell("G4").Value = $"Cuti: {attLeaveCount} | Sakit: {attSickCount} | Izin: {attPermCount}";
+            wsAtt.Range("G4:I4").Merge();
+
+            var attMetaRange = wsAtt.Range("A4:I4");
+            attMetaRange.Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+            attMetaRange.Style.Border.OutsideBorderColor = ClosedXML.Excel.XLColor.FromArgb(199, 210, 254);
+            attMetaRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromArgb(248, 250, 252);
+            attMetaRange.Style.Font.FontSize = 10;
+
+            // 3. Table Column Headers (Row 6)
+            var attHeaders = new[]
+            {
+                "No",                      // A
+                "Tanggal",                 // B
+                "Hari",                    // C
+                "Status Kehadiran / Cuti", // D
+                "Lokasi",                  // E
+                "Jam Masuk",               // F
+                "Jam Pulang",              // G
+                "Jam Hadir Kantor",        // H
+                "Keterangan / Alasan Cuti" // I
+            };
+
+            const int attHRow = 6;
+            wsAtt.Row(attHRow).Height = 25;
+            for (int i = 0; i < attHeaders.Length; i++)
+            {
+                var cell = wsAtt.Cell(attHRow, i + 1);
+                cell.Value = attHeaders[i];
+                cell.Style.Font.Bold = true;
+                cell.Style.Font.FontSize = 10;
+                cell.Style.Font.FontColor = ClosedXML.Excel.XLColor.White;
+                cell.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromArgb(67, 56, 202);
+                cell.Style.Alignment.Horizontal = (i == 0 || i == 1 || i == 2 || i == 3 || i == 4 || i == 5 || i == 6)
+                    ? ClosedXML.Excel.XLAlignmentHorizontalValues.Center
+                    : (i == 7 ? ClosedXML.Excel.XLAlignmentHorizontalValues.Right : ClosedXML.Excel.XLAlignmentHorizontalValues.Left);
+                cell.Style.Alignment.Vertical = ClosedXML.Excel.XLAlignmentVerticalValues.Center;
+                cell.Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+            }
+
+            // 4. Data Rows
+            int attRow = 7;
+            int attNo = 1;
+
+            if (!attendances.Any())
+            {
+                wsAtt.Range(attRow, 1, attRow, attHeaders.Length).Merge();
+                var empCell = wsAtt.Cell(attRow, 1);
+                empCell.Value = "Tidak ada rekaman data presensi atau cuti pada periode ini.";
+                empCell.Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+                empCell.Style.Font.Italic = true;
+                empCell.Style.Font.FontColor = ClosedXML.Excel.XLColor.FromArgb(148, 163, 184);
+                attRow++;
+            }
+            else
+            {
+                foreach (var a in attendances)
+                {
+                    wsAtt.Cell(attRow, 1).Value = attNo;
+                    wsAtt.Cell(attRow, 2).Value = a.Date.ToString("yyyy-MM-dd");
+                    wsAtt.Cell(attRow, 3).Value = dayNamesIndo[(int)a.Date.DayOfWeek];
+                    wsAtt.Cell(attRow, 4).Value = a.TypeDisplayName;
+                    wsAtt.Cell(attRow, 5).Value = a.Type == AttendanceType.Present ? a.WorkLocation.ToString() : "-";
+                    wsAtt.Cell(attRow, 6).Value = a.ClockIn.HasValue ? a.ClockIn.Value.ToString("HH:mm:ss") : "-";
+                    wsAtt.Cell(attRow, 7).Value = a.ClockOut.HasValue ? a.ClockOut.Value.ToString("HH:mm:ss") : "-";
+
+                    var hCell = wsAtt.Cell(attRow, 8);
+                    hCell.Value = a.TotalHours;
+                    hCell.Style.NumberFormat.Format = "#,##0.00";
+
+                    wsAtt.Cell(attRow, 9).Value = string.IsNullOrEmpty(a.Notes) ? (string.IsNullOrEmpty(a.LeaveReason) ? "-" : a.LeaveReason) : a.Notes;
+
+                    wsAtt.Cell(attRow, 1).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+                    wsAtt.Cell(attRow, 2).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+                    wsAtt.Cell(attRow, 3).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+                    wsAtt.Cell(attRow, 4).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+                    wsAtt.Cell(attRow, 5).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+                    wsAtt.Cell(attRow, 6).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+                    wsAtt.Cell(attRow, 7).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Center;
+                    wsAtt.Cell(attRow, 8).Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Right;
+
+                    var aRowRange = wsAtt.Range(attRow, 1, attRow, attHeaders.Length);
+                    aRowRange.Style.Font.FontSize = 9.5;
+                    aRowRange.Style.Border.OutsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+                    aRowRange.Style.Border.InsideBorder = ClosedXML.Excel.XLBorderStyleValues.Thin;
+                    aRowRange.Style.Border.OutsideBorderColor = ClosedXML.Excel.XLColor.FromArgb(226, 232, 240);
+                    aRowRange.Style.Border.InsideBorderColor = ClosedXML.Excel.XLColor.FromArgb(226, 232, 240);
+
+                    if (attNo % 2 == 0) aRowRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromArgb(248, 250, 252);
+                    wsAtt.Row(attRow).Height = 21;
+
+                    attNo++;
+                    attRow++;
+                }
+
+                // Total Row
+                int lastAttRow = attRow - 1;
+                wsAtt.Range(attRow, 1, attRow, 7).Merge();
+                var attTotLabel = wsAtt.Cell(attRow, 1);
+                attTotLabel.Value = "TOTAL JAM KEHADIRAN KANTOR";
+                attTotLabel.Style.Font.Bold = true;
+                attTotLabel.Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Right;
+
+                var attTotFormula = wsAtt.Cell(attRow, 8);
+                attTotFormula.FormulaA1 = $"SUM(H7:H{lastAttRow})";
+                attTotFormula.Style.Font.Bold = true;
+                attTotFormula.Style.NumberFormat.Format = "#,##0.00";
+                attTotFormula.Style.Alignment.Horizontal = ClosedXML.Excel.XLAlignmentHorizontalValues.Right;
+
+                var attTotRange = wsAtt.Range(attRow, 1, attRow, attHeaders.Length);
+                attTotRange.Style.Fill.BackgroundColor = ClosedXML.Excel.XLColor.FromArgb(238, 242, 255);
+                attTotRange.Style.Font.FontColor = ClosedXML.Excel.XLColor.FromArgb(49, 46, 129);
+                attTotRange.Style.Border.TopBorder = ClosedXML.Excel.XLBorderStyleValues.Medium;
+                attTotRange.Style.Border.TopBorderColor = ClosedXML.Excel.XLColor.FromArgb(67, 56, 202);
+                attTotRange.Style.Border.BottomBorder = ClosedXML.Excel.XLBorderStyleValues.Double;
+                attTotRange.Style.Border.BottomBorderColor = ClosedXML.Excel.XLColor.FromArgb(67, 56, 202);
+                wsAtt.Row(attRow).Height = 24;
+            }
+
+            wsAtt.Columns().AdjustToContents();
+            wsAtt.Column(1).Width = 6;
+            wsAtt.Column(2).Width = 14;
+            wsAtt.Column(3).Width = 12;
+            wsAtt.Column(4).Width = 24;
+            wsAtt.Column(5).Width = 12;
+            wsAtt.Column(6).Width = 14;
+            wsAtt.Column(7).Width = 14;
+            wsAtt.Column(8).Width = 18;
+            wsAtt.Column(9).Width = 30;
 
             using var stream = new MemoryStream();
             wb.SaveAs(stream);

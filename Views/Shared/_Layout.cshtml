@@ -177,6 +177,11 @@
                 <span class="text-sm font-medium">Kalender</span>
             </a>
 
+            <a href="/Attendance" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Attendance" ? "active" : "")">
+                <i class="fas fa-clipboard-user w-5 text-center text-teal-500"></i>
+                <span class="text-sm font-medium">Presensi & Cuti</span>
+            </a>
+
             <a href="/Timesheet" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Timesheet" ? "active" : "")">
                 <i class="fas fa-user-clock w-5 text-center text-emerald-500"></i>
                 <span class="text-sm font-medium">Timesheet</span>

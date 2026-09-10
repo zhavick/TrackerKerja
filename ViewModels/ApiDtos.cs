@@ -794,6 +794,7 @@ namespace TrackerKerja.ViewModels
     public class ImportPreviewRowDto
     {
         public int RowNumber { get; set; }
+        public string SheetName { get; set; } = string.Empty;
         public bool IsValid { get; set; } = true;
         public string Title { get; set; } = string.Empty;
         public string? Category { get; set; }
@@ -822,15 +823,37 @@ namespace TrackerKerja.ViewModels
         public string? Pic { get; set; }
         public string? ErrorMessage { get; set; }
         public string? WarningMessage { get; set; }
+
+        // Diff & Sync Metadata
+        public string ActionType { get; set; } = "INSERT"; // "INSERT", "UPDATE", "UNCHANGED", "ERROR"
+        public int? ExistingTaskId { get; set; }
+        public List<string> ChangedFields { get; set; } = new();
     }
 
     public class ImportPreviewResponseDto
     {
         public string FileName { get; set; } = string.Empty;
+        public string SourceType { get; set; } = "Upload"; // "Upload", "Link", "LocalFile"
+        public string? SourceUrl { get; set; }
         public int TotalRows { get; set; }
         public int SuccessRows { get; set; }
         public int FailedRows { get; set; }
+        public int InsertCount { get; set; }
+        public int UpdateCount { get; set; }
+        public int UnchangedCount { get; set; }
+        public List<string> ProcessedSheets { get; set; } = new();
         public List<ImportPreviewRowDto> Rows { get; set; } = new();
+    }
+
+    public class SyncUrlRequestDto
+    {
+        [Required(ErrorMessage = "URL tautan Excel wajib diisi.")]
+        public string Url { get; set; } = string.Empty;
+    }
+
+    public class SyncLocalRequestDto
+    {
+        public string? FilePath { get; set; }
     }
 
     public class ExecuteImportRequestDto
@@ -845,9 +868,12 @@ namespace TrackerKerja.ViewModels
     public class ExecuteImportResponseDto
     {
         public int ImportedCount { get; set; }
+        public int UpdatedCount { get; set; }
+        public int UnchangedCount { get; set; }
         public int SkippedCount { get; set; }
         public List<int> CreatedTaskIds { get; set; } = new();
         public string Message { get; set; } = string.Empty;
+        public List<string> Errors { get; set; } = new();
     }
     #endregion
 
@@ -1109,6 +1135,57 @@ namespace TrackerKerja.ViewModels
         public string? Notes { get; set; }
         public bool IsRunning { get; set; }
         public string? UserName { get; set; }
+    }
+    #endregion
+
+    #region Attendance DTOs
+    public class AttendanceResponseDto
+    {
+        public int Id { get; set; }
+        public string UserId { get; set; } = string.Empty;
+        public string? UserName { get; set; }
+        public string? UserFullName { get; set; }
+        public DateTime Date { get; set; }
+        public string Type { get; set; } = string.Empty;
+        public string TypeDisplayName { get; set; } = string.Empty;
+        public string WorkLocation { get; set; } = string.Empty;
+        public DateTime? ClockIn { get; set; }
+        public DateTime? ClockOut { get; set; }
+        public double TotalHours { get; set; }
+        public string DurationFormatted { get; set; } = "0j 0m";
+        public string? LeaveReason { get; set; }
+        public string? Notes { get; set; }
+        public string Status { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
+    }
+
+    public class ClockInApiRequestDto
+    {
+        public string? WorkLocation { get; set; } = "WFO"; // WFO, WFH, Dinas, Remote
+        public string? Notes { get; set; }
+    }
+
+    public class ClockOutApiRequestDto
+    {
+        public string? Notes { get; set; }
+    }
+
+    public class LeaveApiRequestDto
+    {
+        public string? UserId { get; set; }
+
+        [Required]
+        public DateTime StartDate { get; set; }
+
+        [Required]
+        public DateTime EndDate { get; set; }
+
+        public AttendanceType Type { get; set; } = AttendanceType.Leave;
+
+        [Required]
+        public string LeaveReason { get; set; } = "Cuti Tahunan";
+
+        public string? Notes { get; set; }
     }
     #endregion
 }

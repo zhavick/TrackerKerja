@@ -1,36 +1,169 @@
 @model List<TrackerKerja.Models.ImportLog>
 @{
-    ViewData["Title"] = "Import Task dari Excel";
+    ViewData["Title"] = "Import & Sinkronisasi Task dari Excel";
+    var defaultPath = (string?)ViewBag.DefaultLocalPath ?? @"C:\Users\WAHANA 24\Downloads\Task Tracker - Update (1).xlsx";
+    var localFileExists = (bool?)ViewBag.LocalFileExists ?? false;
 }
 
 <!-- Alert notifications -->
 @if (TempData["Success"] != null)
 {
-    <div id="success-alert" class="mb-5 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 animate-pulse">
-        <i class="fas fa-check-circle text-emerald-500 text-xl"></i>
-        <p class="text-emerald-700 font-semibold">@TempData["Success"]</p>
+    <div id="success-alert" class="mb-5 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center justify-between shadow-xs">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-emerald-100 flex items-center justify-center shrink-0">
+                <i class="fas fa-check-circle text-emerald-600 text-lg"></i>
+            </div>
+            <div>
+                <p class="text-emerald-900 font-bold text-sm">Berhasil!</p>
+                <p class="text-emerald-700 text-xs">@TempData["Success"]</p>
+            </div>
+        </div>
+        <button type="button" onclick="this.parentElement.remove()" class="text-emerald-400 hover:text-emerald-700 text-sm">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
 }
 @if (TempData["Error"] != null)
 {
-    <div class="mb-5 p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3">
-        <i class="fas fa-times-circle text-red-500 text-xl"></i>
-        <p class="text-red-700 font-semibold">@TempData["Error"]</p>
+    <div class="mb-5 p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between shadow-xs">
+        <div class="flex items-center gap-3">
+            <div class="w-9 h-9 rounded-xl bg-rose-100 flex items-center justify-center shrink-0">
+                <i class="fas fa-exclamation-triangle text-rose-600 text-lg"></i>
+            </div>
+            <div>
+                <p class="text-rose-900 font-bold text-sm">Perhatian</p>
+                <p class="text-rose-700 text-xs leading-relaxed">@TempData["Error"]</p>
+            </div>
+        </div>
+        <button type="button" onclick="this.parentElement.remove()" class="text-rose-400 hover:text-rose-700 text-sm">
+            <i class="fas fa-times"></i>
+        </button>
     </div>
 }
 
-<div class="grid grid-cols-1 xl:grid-cols-3 gap-5">
+<!-- Header Banner -->
+<div class="bg-gradient-to-r from-indigo-600 via-indigo-700 to-purple-700 rounded-3xl p-6 md:p-8 text-white shadow-xl shadow-indigo-200/50 mb-6 relative overflow-hidden">
+    <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-white/10 rounded-full blur-2xl pointer-events-none"></div>
+    <div class="absolute right-20 top-0 w-32 h-32 bg-purple-400/20 rounded-full blur-xl pointer-events-none"></div>
+    
+    <div class="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
+        <div>
+            <div class="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide uppercase mb-3 border border-white/20">
+                <i class="fas fa-sync-alt text-amber-300 animate-spin-slow"></i>
+                <span>Smart Multi-Sheet Sync Engine v3.1</span>
+            </div>
+            <h1 class="text-2xl md:text-3xl font-black tracking-tight">Import & Sinkronisasi Data Excel</h1>
+            <p class="text-indigo-100 text-sm mt-1 max-w-2xl">
+                Sinkronkan seluruh pekerjaan tim dari file Excel multi-sheet. Mendukung impor via tautan link (dengan fallback otomatis), upload file utuh, dan pembaruan otomatis (Case 1: Update tugas yang ada, Case 2: Tambah tugas baru).
+            </p>
+        </div>
+        <div class="flex items-center gap-2 flex-wrap">
+            <a href="/Import/Template" class="inline-flex items-center gap-2 bg-white/15 hover:bg-white/25 text-white text-xs font-bold px-4 py-2.5 rounded-xl backdrop-blur-md border border-white/20 transition-all shadow-xs">
+                <i class="fas fa-file-download text-amber-300"></i> Download Template
+            </a>
+            <a href="/Task/ExportArmsExcel" class="inline-flex items-center gap-2 bg-white text-indigo-900 hover:bg-indigo-50 text-xs font-bold px-4 py-2.5 rounded-xl shadow-md transition-all">
+                <i class="fas fa-file-export text-indigo-600"></i> Export Data Aktif
+            </a>
+        </div>
+    </div>
+</div>
 
-    <!-- Upload Section -->
-    <div class="xl:col-span-2">
+<div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
 
-        <!-- Upload Card -->
-        <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden mb-5">
-            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-5">
-                <h3 class="text-white font-bold text-lg flex items-center gap-2">
-                    <i class="fas fa-file-excel"></i> Upload File Excel
-                </h3>
-                <p class="text-indigo-200 text-sm mt-1">Upload file .xlsx atau .xls yang berisi daftar task Anda</p>
+    <!-- Main Import Section (2 Columns) -->
+    <div class="xl:col-span-2 space-y-6">
+
+        <!-- Navigation Tabs -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-2 flex items-center gap-2">
+            <button type="button" onclick="switchTab('tab-link')" id="btn-tab-link" class="tab-btn flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 bg-indigo-600 text-white shadow-sm">
+                <i class="fas fa-link"></i>
+                <span>1. Import dari Link / URL</span>
+            </button>
+            <button type="button" onclick="switchTab('tab-upload')" id="btn-tab-upload" class="tab-btn flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
+                <i class="fas fa-file-excel"></i>
+                <span>2. Upload File Excel Utuh</span>
+            </button>
+            <button type="button" onclick="switchTab('tab-local')" id="btn-tab-local" class="tab-btn flex-1 py-3 px-4 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-2 text-slate-600 hover:text-indigo-600 hover:bg-slate-50">
+                <i class="fas fa-bolt text-amber-500"></i>
+                <span>3. Sync File Server</span>
+            </button>
+        </div>
+
+        <!-- ── TAB 1: IMPORT DARI LINK / URL ───────────────────────── -->
+        <div id="tab-link" class="tab-content bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-50 flex items-center justify-center text-indigo-600">
+                        <i class="fas fa-cloud-download-alt text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Metode 1: Import Semua Sheet dari Tautan / Link</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Dukung Google Sheets, OneDrive, Dropbox, atau Direct XLSX URL</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6">
+                <form method="post" action="/Import/ImportFromUrl" id="url-form">
+                    @Html.AntiForgeryToken()
+
+                    <div class="mb-4">
+                        <label for="url-input" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                            Masukkan URL / Link File Spreadsheet (.xlsx atau Google Sheets)
+                        </label>
+                        <div class="relative">
+                            <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-slate-400">
+                                <i class="fas fa-globe"></i>
+                            </div>
+                            <input type="url" id="url-input" name="url" required
+                                   placeholder="https://docs.google.com/spreadsheets/d/.../edit atau https://example.com/tracker.xlsx"
+                                   class="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all text-slate-800">
+                        </div>
+                        <p class="text-[11px] text-slate-500 mt-2 flex items-center gap-1.5">
+                            <i class="fas fa-info-circle text-indigo-500"></i>
+                            Link Google Sheets otomatis dikonversikan ke tautan ekspor spreadsheet XLSX multi-sheet.
+                        </p>
+                    </div>
+
+                    <!-- Friendly Fallback Alert Box -->
+                    <div class="mb-5 p-4 rounded-xl bg-amber-50/70 border border-amber-200 text-xs text-amber-900 flex items-start gap-3">
+                        <i class="fas fa-shield-alt text-amber-600 text-base mt-0.5 shrink-0"></i>
+                        <div>
+                            <span class="font-bold">Ketentuan & Otomasi Fallback:</span>
+                            <p class="text-amber-800 mt-0.5 leading-relaxed">
+                                Pastikan link telah diatur ke akses <em>"Siapa saja yang memiliki tautan"</em> (Anyone with link). 
+                                <strong>Jika link gagal dibuka atau memerlukan autentikasi login</strong>, sistem otomatis mengarahkan Anda menggunakan <strong>Metode 2 (Upload File Excel Utuh)</strong> di bawah.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="flex items-center gap-3">
+                        <button type="submit" id="btn-submit-url"
+                                class="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs py-3 px-6 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2">
+                            <i class="fas fa-search-plus"></i>
+                            <span>Analisis & Import dari Link</span>
+                        </button>
+                        <button type="button" onclick="switchTab('tab-upload')"
+                                class="bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold py-3 px-4 rounded-xl transition-all">
+                            <i class="fas fa-arrow-right text-slate-400 mr-1"></i> Gunakan Upload File (Metode 2)
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ── TAB 2: UPLOAD FILE EXCEL UTUH ───────────────────────── -->
+        <div id="tab-upload" class="tab-content hidden bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 bg-slate-50/50">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 flex items-center justify-center text-emerald-600">
+                        <i class="fas fa-file-upload text-lg"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Metode 2: Upload Semua Sheet dari File Excel Utuh</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Unggah file .xlsx yang berisikan seluruh sheet task pekerjaan anggota tim</p>
+                    </div>
+                </div>
             </div>
 
             <div class="p-6">
@@ -39,152 +172,257 @@
 
                     <!-- Drag & Drop Zone -->
                     <div id="drop-zone"
-                         class="border-2 border-dashed border-indigo-300 rounded-2xl p-10 text-center cursor-pointer hover:border-indigo-500 hover:bg-indigo-50/30 transition-all mb-5"
+                         class="border-2 border-dashed border-indigo-200 hover:border-indigo-500 rounded-2xl p-8 text-center cursor-pointer bg-slate-50/50 hover:bg-indigo-50/30 transition-all mb-5"
                          onclick="document.getElementById('file-input').click()">
                         <div id="drop-content">
-                            <div class="w-16 h-16 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-4">
-                                <i class="fas fa-cloud-upload-alt text-indigo-400 text-3xl"></i>
+                            <div class="w-14 h-14 rounded-2xl bg-indigo-50 flex items-center justify-center mx-auto mb-3 text-indigo-500">
+                                <i class="fas fa-cloud-upload-alt text-2xl"></i>
                             </div>
-                            <p class="text-slate-600 font-semibold text-base">Klik atau drag & drop file Excel di sini</p>
-                            <p class="text-slate-400 text-sm mt-1">Format: .xlsx atau .xls (Max 10MB)</p>
+                            <p class="text-slate-700 font-bold text-sm">Klik atau drag & drop file Excel di sini</p>
+                            <p class="text-slate-400 text-xs mt-1">Mendukung format multi-sheet .xlsx atau .xls (Maks 25MB)</p>
+                            <div class="mt-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-semibold">
+                                <i class="fas fa-layer-group text-emerald-500"></i> Membaca seluruh sheet pekerjaan otomatis
+                            </div>
                         </div>
                         <div id="file-selected" class="hidden">
-                            <i class="fas fa-file-excel text-emerald-500 text-4xl mb-3"></i>
-                            <p id="file-name" class="text-emerald-700 font-bold text-base"></p>
-                            <p id="file-size" class="text-slate-400 text-sm mt-1"></p>
+                            <div class="w-14 h-14 rounded-2xl bg-emerald-50 flex items-center justify-center mx-auto mb-2 text-emerald-600">
+                                <i class="fas fa-file-excel text-2xl"></i>
+                            </div>
+                            <p id="file-name" class="text-emerald-800 font-bold text-sm"></p>
+                            <p id="file-size" class="text-slate-400 text-xs mt-0.5"></p>
                         </div>
                     </div>
 
                     <input type="file" id="file-input" name="file" accept=".xlsx,.xls" class="hidden" onchange="fileSelected(event)">
 
-                    <div class="flex gap-2 flex-wrap">
+                    <div class="flex gap-2 flex-wrap items-center">
                         <button type="submit" id="btn-upload"
-                                class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 px-4 rounded-xl hover:shadow-lg transition-all disabled:opacity-50 text-xs"
+                                class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-6 rounded-xl shadow-md transition-all disabled:opacity-50 text-xs cursor-pointer flex items-center gap-2"
                                 disabled>
-                            <i class="fas fa-upload mr-2"></i>Upload & Preview File
+                            <i class="fas fa-file-import"></i>
+                            <span>Upload & Analisis Semua Sheet</span>
                         </button>
                         <a href="/Import/Template"
-                           class="flex items-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-4 py-3 rounded-xl shadow-sm transition-all text-xs"
-                           title="Download Template Format Tracker (22 Kolom Standar)">
-                            <i class="fas fa-file-excel"></i>
-                            <span>Download Template Excel (22 Kolom)</span>
-                        </a>
-                        <a href="/Task/ExportArmsExcel"
-                           class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold px-4 py-3 rounded-xl border border-slate-300 transition-colors text-xs"
-                           title="Export Semua Task ke Format Tracker 22 Kolom">
-                            <i class="fas fa-file-export text-slate-700"></i>
-                            <span>Export Data ke Excel</span>
+                           class="flex items-center gap-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold px-4 py-3 rounded-xl transition-all text-xs"
+                           title="Download Template Format Tracker 22 Kolom">
+                            <i class="fas fa-download text-slate-500"></i>
+                            <span>Template 22 Kolom</span>
                         </a>
                     </div>
                 </form>
             </div>
         </div>
 
-        <!-- Format Guide -->
-        <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-5">
-            <div class="flex items-center justify-between mb-4">
-                <h4 class="font-bold text-slate-800 flex items-center gap-2">
-                    <i class="fas fa-table-list text-indigo-600"></i>
-                    Spesifikasi Format Kolom Excel (Standar 22 Kolom)
-                </h4>
-                <span class="text-xs bg-indigo-50 text-indigo-700 font-bold px-2.5 py-1 rounded-full border border-indigo-100">Standar 22 Kolom (dengan PIC)</span>
-            </div>
-            <div class="overflow-x-auto max-h-96">
-                <table class="w-full text-xs">
-                    <thead>
-                        <tr class="border-b border-slate-100 bg-slate-50 sticky top-0">
-                            <th class="text-left font-bold text-slate-600 px-3 py-2">#</th>
-                            <th class="text-left font-bold text-slate-600 px-3 py-2">Nama Kolom (Header)</th>
-                            <th class="text-left font-bold text-slate-600 px-3 py-2">Keterangan / Nilai</th>
-                            <th class="text-center font-bold text-slate-600 px-3 py-2">Wajib</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-slate-50">
-                        @{
-                            var cols = new[]
-                            {
-                                (1, "project_name", "Nama proyek (dibuat otomatis jika baru)", false),
-                                (2, "requirement_code", "Kode requirement / BRD / TSD", false),
-                                (3, "title", "Judul tugas / task", true),
-                                (4, "status", "TODO / IN_PROGRESS / DONE / TESTING", false),
-                                (5, "priority", "LOW / MEDIUM / HIGH / CRITICAL", false),
-                                (6, "jenis_task", "Kategori (NEW_APP, ENHANCEMENT, BUGFIX, dll)", false),
-                                (7, "module_name", "Nama modul / milestone (TCES, TICS, Auth, dll)", false),
-                                (8, "bug_type", "Tipe isu / bug (Feature, Bug, Task, Enhancement)", false),
-                                (9, "progress", "0 s/d 100 (Done otomatis diset 100%)", false),
-                                (10, "start_date", "Tanggal mulai (YYYY-MM-DD atau Excel date)", false),
-                                (11, "due_date", "Tenggat waktu (deadline)", false),
-                                (12, "completed_date", "Tanggal selesai aktual", false),
-                                (13, "developer_emails", "Email PIC Dev (bisa dipisah ';' jika banyak)", false),
-                                (14, "ba_emails", "Email Business Analyst", false),
-                                (15, "infra_emails", "Email Tim DevOps / IT Infra", false),
-                                (16, "master_data_emails", "Email Tim Master Data", false),
-                                (17, "tester_emails", "Email Tim QA / Tester", false),
-                                (18, "tw_emails", "Email Tim Technical Writer", false),
-                                (19, "kendala", "Catatan blocker / kendala pengerjaan", false),
-                                (20, "solusi", "Solusi teknis / rencana perbaikan", false),
-                                (21, "Notes Tracker", "Catatan tambahan / deskripsi tugas", false),
-                                (22, "PIC", "Nama lengkap / Email PIC utama untuk binding person to task secara otomatis", false)
-                            };
-                            foreach (var (idx, name, format, required) in cols)
-                            {
-                                <tr class="hover:bg-indigo-50/20">
-                                    <td class="px-3 py-2 font-mono text-slate-400">@idx</td>
-                                    <td class="px-3 py-2 font-mono font-semibold text-indigo-700">@name</td>
-                                    <td class="px-3 py-2 text-slate-600">@format</td>
-                                    <td class="px-3 py-2 text-center">
-                                        @if (required) { <span class="text-rose-600 font-bold">✓</span> }
-                                        else { <span class="text-slate-300">—</span> }
-                                    </td>
-                                </tr>
-                            }
-                        }
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Import History -->
-    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-        <div class="p-5 border-b border-slate-100">
-            <h3 class="font-bold text-slate-800 flex items-center gap-2">
-                <i class="fas fa-history text-indigo-400"></i> Riwayat Import
-            </h3>
-        </div>
-
-        @if (!Model.Any())
-        {
-            <div class="p-10 text-center text-slate-400">
-                <i class="fas fa-clock text-4xl text-slate-200 mb-3 block"></i>
-                <p class="text-sm">Belum ada riwayat import</p>
-            </div>
-        }
-        else
-        {
-            <div class="divide-y divide-slate-50">
-                @foreach (var log in Model)
-                {
-                    <div class="p-4">
-                        <p class="text-sm font-semibold text-slate-700 truncate" title="@log.FileName">@log.FileName</p>
-                        <div class="flex items-center gap-3 mt-2">
-                            <span class="text-xs text-emerald-600 font-semibold bg-emerald-50 px-2 py-0.5 rounded-full">✓ @log.SuccessRows</span>
-                            @if (log.FailedRows > 0)
-                            {
-                                <span class="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded-full">✗ @log.FailedRows</span>
-                            }
-                            <span class="text-xs text-slate-400">@log.TotalRows baris</span>
-                        </div>
-                        <p class="text-xs text-slate-400 mt-1">@log.ImportedAt.ToString("dd MMM yyyy HH:mm") @(log.ImportedBy != null ? $"• {log.ImportedBy}" : "")</p>
+        <!-- ── TAB 3: SINKRONISASI FILE LOKAL SERVER ────────────────── -->
+        <div id="tab-local" class="tab-content hidden bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+            <div class="p-6 border-b border-slate-100 bg-amber-50/40">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-amber-700">
+                        <i class="fas fa-bolt text-lg"></i>
                     </div>
-                }
+                    <div>
+                        <h3 class="font-bold text-slate-800 text-base">Metode 3: Sinkronisasi Langsung File Server Lokal</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Membaca file Excel yang tersimpan di direktori server untuk sinkronisasi instan</p>
+                    </div>
+                </div>
             </div>
-        }
+
+            <div class="p-6">
+                <!-- Status File Badge -->
+                <div class="mb-5 p-4 rounded-2xl @(localFileExists ? "bg-emerald-50 border border-emerald-200" : "bg-amber-50 border border-amber-200") flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-xl @(localFileExists ? "bg-emerald-100 text-emerald-700" : "bg-amber-100 text-amber-700") flex items-center justify-center font-bold">
+                            <i class="fas @(localFileExists ? "fa-check" : "fa-exclamation")"></i>
+                        </div>
+                        <div>
+                            <p class="font-bold text-xs @(localFileExists ? "text-emerald-900" : "text-amber-900")">
+                                Status File Target: @(localFileExists ? "Ditemukan & Siap Disinkronkan" : "File Belum Terdeteksi")
+                            </p>
+                            <p class="text-[11px] @(localFileExists ? "text-emerald-700" : "text-amber-700") font-mono mt-0.5 truncate max-w-lg" title="@defaultPath">
+                                @defaultPath
+                            </p>
+                        </div>
+                    </div>
+                    @if (localFileExists)
+                    {
+                        <span class="px-2.5 py-1 bg-emerald-600 text-white rounded-full text-[10px] font-bold uppercase tracking-wider">
+                            Ready
+                        </span>
+                    }
+                </div>
+
+                <form method="post" action="/Import/SyncLocalFile">
+                    @Html.AntiForgeryToken()
+                    
+                    <div class="mb-4">
+                        <label for="file-path-input" class="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
+                            Lokasi Path File Excel di Server
+                        </label>
+                        <input type="text" id="file-path-input" name="filePath" value="@defaultPath"
+                               class="w-full px-4 py-3 bg-slate-50 border border-slate-300 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-amber-500 focus:bg-white transition-all text-slate-800">
+                    </div>
+
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <button type="submit"
+                                class="bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-bold text-xs py-3 px-6 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2">
+                            <i class="fas fa-search"></i>
+                            <span>Pratinjau Analisis Multi-Sheet</span>
+                        </button>
+
+                        <button type="submit" formaction="/Import/QuickSyncServerFile"
+                                class="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold text-xs py-3 px-6 rounded-xl shadow-md transition-all cursor-pointer flex items-center gap-2">
+                            <i class="fas fa-bolt"></i>
+                            <span>⚡ 1-Klik Sinkronkan Sekarang</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Logic & Features Breakdown Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 p-6">
+            <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2 mb-4">
+                <i class="fas fa-cogs text-indigo-600"></i>
+                Aturan & Logika Sinkronisasi Otomatis
+            </h4>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                <div class="p-4 rounded-xl bg-blue-50/60 border border-blue-100 space-y-1.5">
+                    <span class="font-bold text-blue-900 flex items-center gap-1.5">
+                        <i class="fas fa-sync text-blue-600"></i> CASE 1: Pembaruan Otomatis (Update)
+                    </span>
+                    <p class="text-blue-800 leading-relaxed text-[11px]">
+                        Jika judul task dan proyek sudah ada di database dan terdapat perubahan status, progress, deadline, kendala, solusi, atau PIC, maka data diupdate secara otomatis tanpa membuat duplikat.
+                    </p>
+                </div>
+
+                <div class="p-4 rounded-xl bg-emerald-50/60 border border-emerald-100 space-y-1.5">
+                    <span class="font-bold text-emerald-900 flex items-center gap-1.5">
+                        <i class="fas fa-plus-circle text-emerald-600"></i> CASE 2: Penambahan Baru (Insert)
+                    </span>
+                    <p class="text-emerald-800 leading-relaxed text-[11px]">
+                        Jika task belum pernah ada di database, sistem secara otomatis menambahkan tugas baru lengkap beserta proyek, modul milestone, prioritas, tanggal, dan PIC terkait.
+                    </p>
+                </div>
+
+                <div class="p-4 rounded-xl bg-purple-50/60 border border-purple-100 space-y-1.5">
+                    <span class="font-bold text-purple-900 flex items-center gap-1.5">
+                        <i class="fas fa-user-check text-purple-600"></i> Resolusi PIC Pintar (Smart Binding)
+                    </span>
+                    <p class="text-purple-800 leading-relaxed text-[11px]">
+                        Jika nama PIC di baris tidak ditemukan, sistem otomatis mengambil dari sheet <strong>Master_Data</strong> atau nama sheet pekerjaan (misal: <em>Integrasi TCES TICS (Syafix)</em> &rarr; Syafix Said).
+                    </p>
+                </div>
+
+                <div class="p-4 rounded-xl bg-amber-50/60 border border-amber-100 space-y-1.5">
+                    <span class="font-bold text-amber-900 flex items-center gap-1.5">
+                        <i class="fas fa-layer-group text-amber-600"></i> Dukungan Multi-Sheet Terpadu
+                    </span>
+                    <p class="text-amber-800 leading-relaxed text-[11px]">
+                        Membaca seluruh sheet anggota tim (Syafix, Haviz, Danang, Atha, Iqbal, Glenn, Heni, dsb.) dalam satu kali proses tanpa perlu memisahkan file.
+                    </p>
+                </div>
+            </div>
+        </div>
+
     </div>
+
+    <!-- Right Column: Import History -->
+    <div class="space-y-6">
+
+        <!-- History Card -->
+        <div class="bg-white rounded-2xl shadow-sm border border-slate-200/80 overflow-hidden">
+            <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+                <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                    <i class="fas fa-history text-indigo-500"></i> Riwayat Sinkronisasi
+                </h3>
+                <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full">
+                    @Model.Count entri
+                </span>
+            </div>
+
+            @if (!Model.Any())
+            {
+                <div class="p-10 text-center text-slate-400">
+                    <div class="w-12 h-12 rounded-2xl bg-slate-50 flex items-center justify-center mx-auto mb-2 text-slate-300">
+                        <i class="fas fa-clock text-xl"></i>
+                    </div>
+                    <p class="text-xs font-semibold text-slate-600">Belum ada riwayat import</p>
+                    <p class="text-[11px] text-slate-400 mt-0.5">Lakukan import pertama Anda melalui tab di samping.</p>
+                </div>
+            }
+            else
+            {
+                <div class="divide-y divide-slate-100 max-h-[500px] overflow-y-auto">
+                    @foreach (var log in Model)
+                    {
+                        <div class="p-4 hover:bg-slate-50/70 transition-colors">
+                            <p class="text-xs font-bold text-slate-800 truncate" title="@log.FileName">
+                                @log.FileName
+                            </p>
+                            <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+                                <span class="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                                    <i class="fas fa-check mr-0.5"></i> @log.SuccessRows berhasil
+                                </span>
+                                @if (log.FailedRows > 0)
+                                {
+                                    <span class="text-[10px] text-rose-700 font-bold bg-rose-50 px-2 py-0.5 rounded-full border border-rose-200">
+                                        <i class="fas fa-times mr-0.5"></i> @log.FailedRows gagal
+                                    </span>
+                                }
+                                <span class="text-[10px] text-slate-400">
+                                    @log.TotalRows baris
+                                </span>
+                            </div>
+                            <div class="flex items-center justify-between text-[10px] text-slate-400 mt-2">
+                                <span>@log.ImportedAt.ToString("dd MMM yyyy HH:mm")</span>
+                                <span class="truncate max-w-[120px]" title="@log.ImportedBy">@(log.ImportedBy ?? "System")</span>
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- Quick Help Card -->
+        <div class="bg-indigo-50/50 rounded-2xl border border-indigo-100 p-5">
+            <h4 class="font-bold text-indigo-900 text-xs flex items-center gap-1.5 mb-2">
+                <i class="fas fa-question-circle text-indigo-600"></i> Bantuan Cepat
+            </h4>
+            <ul class="text-[11px] text-indigo-800/80 space-y-1.5 list-disc pl-4">
+                <li>Untuk Google Sheets: Bagikan tautan spreadsheet dengan hak akses <em>Anyone with link can view</em>.</li>
+                <li>Nama sheet dapat memuat nama PIC (contoh: <code>Project ABC (Danang)</code>).</li>
+                <li>Gunakan tombol <strong>Download Template</strong> untuk melihat struktur 22 kolom standar.</li>
+            </ul>
+        </div>
+
+    </div>
+
 </div>
 
 @section Scripts {
 <script>
+function switchTab(tabId) {
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-600', 'hover:text-indigo-600', 'hover:bg-slate-50');
+    });
+
+    const targetTab = document.getElementById(tabId);
+    if (targetTab) targetTab.classList.remove('hidden');
+
+    let btnId = 'btn-tab-link';
+    if (tabId === 'tab-upload') btnId = 'btn-tab-upload';
+    if (tabId === 'tab-local') btnId = 'btn-tab-local';
+
+    const activeBtn = document.getElementById(btnId);
+    if (activeBtn) {
+        activeBtn.classList.remove('text-slate-600', 'hover:text-indigo-600', 'hover:bg-slate-50');
+        activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+    }
+}
+
 const dropZone = document.getElementById('drop-zone');
 const fileInput = document.getElementById('file-input');
 const btnUpload = document.getElementById('btn-upload');
@@ -195,31 +433,39 @@ function fileSelected(e) {
     document.getElementById('drop-content').classList.add('hidden');
     document.getElementById('file-selected').classList.remove('hidden');
     document.getElementById('file-name').textContent = file.name;
-    document.getElementById('file-size').textContent = (file.size / 1024).toFixed(1) + ' KB';
+    document.getElementById('file-size').textContent = (file.size / (1024 * 1024) > 1 
+        ? (file.size / (1024 * 1024)).toFixed(2) + ' MB' 
+        : (file.size / 1024).toFixed(1) + ' KB');
     btnUpload.disabled = false;
     dropZone.classList.add('border-emerald-400', 'bg-emerald-50/30');
-    dropZone.classList.remove('border-indigo-300');
+    dropZone.classList.remove('border-indigo-200');
 }
 
-dropZone.addEventListener('dragover', e => {
-    e.preventDefault();
-    dropZone.classList.add('border-indigo-500', 'bg-indigo-50/30');
-});
-dropZone.addEventListener('dragleave', () => {
-    dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/30');
-});
-dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    const dt = new DataTransfer();
-    dt.items.add(e.dataTransfer.files[0]);
-    fileInput.files = dt.files;
-    fileInput.dispatchEvent(new Event('change'));
-});
+if (dropZone) {
+    dropZone.addEventListener('dragover', e => {
+        e.preventDefault();
+        dropZone.classList.add('border-indigo-500', 'bg-indigo-50/30');
+    });
+    dropZone.addEventListener('dragleave', () => {
+        dropZone.classList.remove('border-indigo-500', 'bg-indigo-50/30');
+    });
+    dropZone.addEventListener('drop', e => {
+        e.preventDefault();
+        const dt = new DataTransfer();
+        dt.items.add(e.dataTransfer.files[0]);
+        fileInput.files = dt.files;
+        fileInput.dispatchEvent(new Event('change'));
+    });
+}
 
 // Auto-hide success alert
 setTimeout(() => {
     const alert = document.getElementById('success-alert');
-    if (alert) alert.style.opacity = '0', alert.style.transition = '1s', setTimeout(() => alert.remove(), 1000);
-}, 4000);
+    if (alert) {
+        alert.style.opacity = '0';
+        alert.style.transition = '0.5s';
+        setTimeout(() => alert.remove(), 500);
+    }
+}, 5000);
 </script>
 }

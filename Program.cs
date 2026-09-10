@@ -74,6 +74,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddScoped<IGamificationService, GamificationService>();
 builder.Services.AddScoped<IDatabaseExportService, DatabaseExportService>();
 builder.Services.AddScoped<IDatabaseSyncService, DatabaseSyncService>();
+builder.Services.AddScoped<IExcelSyncService, ExcelSyncService>();
 
 // Add session support (for Import preview)
 builder.Services.AddSession(options =>
@@ -225,6 +226,30 @@ using (var scope = app.Services.CreateScope())
                 Description TEXT NULL,
                 UpdatedAt TEXT NOT NULL
             );");
+    } catch { }
+
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS Attendances (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId TEXT NOT NULL,
+                Date TEXT NOT NULL,
+                Type INTEGER NOT NULL DEFAULT 1,
+                WorkLocation INTEGER NOT NULL DEFAULT 1,
+                ClockIn TEXT NULL,
+                ClockOut TEXT NULL,
+                TotalHours REAL NOT NULL DEFAULT 0,
+                LeaveReason TEXT NULL,
+                Notes TEXT NULL,
+                Status INTEGER NOT NULL DEFAULT 1,
+                ApprovedByUserId TEXT NULL,
+                CreatedAt TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL,
+                FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id) ON DELETE CASCADE,
+                FOREIGN KEY (ApprovedByUserId) REFERENCES AspNetUsers(Id) ON DELETE SET NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_Attendances_UserId_Date ON Attendances (UserId, Date);");
     } catch { }
 
     if (!db.SystemSettings.Any(s => s.Key == "GlobalBaseUrl"))
@@ -473,6 +498,97 @@ using (var scope = app.Services.CreateScope())
             }
         );
         await db.SaveChangesAsync();
+    }
+
+    // 5. Seed sample Attendances & Leaves
+    if (!await db.Attendances.AnyAsync())
+    {
+        var glennUser = await userManager.FindByEmailAsync("glenn.hakim@elistec.com");
+        var adminUser = await userManager.FindByEmailAsync("admin@trackerkerja.com");
+        var targetUser = glennUser ?? adminUser;
+
+        if (targetUser != null)
+        {
+            var today = DateTime.Today;
+            // Monday of this week
+            int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
+            var mon = today.AddDays(-1 * diff).Date;
+
+            db.Attendances.AddRange(
+                new AttendanceRecord
+                {
+                    UserId = targetUser.Id,
+                    Date = mon,
+                    Type = AttendanceType.Present,
+                    WorkLocation = WorkLocationType.WFO,
+                    ClockIn = mon.AddHours(8).AddMinutes(15),
+                    ClockOut = mon.AddHours(17).AddMinutes(20),
+                    TotalHours = 9.08,
+                    Notes = "Hadir tepat waktu di kantor pusat",
+                    Status = AttendanceApprovalStatus.Approved,
+                    CreatedAt = mon,
+                    UpdatedAt = mon
+                },
+                new AttendanceRecord
+                {
+                    UserId = targetUser.Id,
+                    Date = mon.AddDays(1),
+                    Type = AttendanceType.Present,
+                    WorkLocation = WorkLocationType.WFH,
+                    ClockIn = mon.AddDays(1).AddHours(8).AddMinutes(30),
+                    ClockOut = mon.AddDays(1).AddHours(17).AddMinutes(30),
+                    TotalHours = 9.0,
+                    Notes = "Work From Home - Sprint backlog refinement",
+                    Status = AttendanceApprovalStatus.Approved,
+                    CreatedAt = mon.AddDays(1),
+                    UpdatedAt = mon.AddDays(1)
+                },
+                new AttendanceRecord
+                {
+                    UserId = targetUser.Id,
+                    Date = mon.AddDays(2),
+                    Type = AttendanceType.Present,
+                    WorkLocation = WorkLocationType.WFO,
+                    ClockIn = mon.AddDays(2).AddHours(8).AddMinutes(20),
+                    ClockOut = mon.AddDays(2).AddHours(17).AddMinutes(35),
+                    TotalHours = 9.25,
+                    Notes = "Meeting koordinasi arsitektur database",
+                    Status = AttendanceApprovalStatus.Approved,
+                    CreatedAt = mon.AddDays(2),
+                    UpdatedAt = mon.AddDays(2)
+                },
+                new AttendanceRecord
+                {
+                    UserId = targetUser.Id,
+                    Date = mon.AddDays(3),
+                    Type = AttendanceType.Leave,
+                    WorkLocation = WorkLocationType.WFO,
+                    ClockIn = null,
+                    ClockOut = null,
+                    TotalHours = 0,
+                    LeaveReason = "Cuti Tahunan",
+                    Notes = "Keperluan keluarga di luar kota (disetujui)",
+                    Status = AttendanceApprovalStatus.Approved,
+                    CreatedAt = mon.AddDays(3),
+                    UpdatedAt = mon.AddDays(3)
+                },
+                new AttendanceRecord
+                {
+                    UserId = targetUser.Id,
+                    Date = mon.AddDays(4),
+                    Type = AttendanceType.Present,
+                    WorkLocation = WorkLocationType.WFO,
+                    ClockIn = mon.AddDays(4).AddHours(8).AddMinutes(25),
+                    ClockOut = null, // sedang berlangsung
+                    TotalHours = 0,
+                    Notes = "Hari ini di kantor",
+                    Status = AttendanceApprovalStatus.Approved,
+                    CreatedAt = mon.AddDays(4),
+                    UpdatedAt = mon.AddDays(4)
+                }
+            );
+            await db.SaveChangesAsync();
+        }
     }
 }
 

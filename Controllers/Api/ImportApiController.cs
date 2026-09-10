@@ -3,13 +3,14 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
 using ModelTaskStatus = TrackerKerja.Models.TaskStatus;
 
 namespace TrackerKerja.Controllers.Api
 {
     /// <summary>
-    /// Modul API Import dan Ekspor Data Tugas Excel / ARMS
+    /// Modul REST API Import dan Sinkronisasi Data Tugas Excel / ARMS (Multi-Sheet, URL Sync, Local Path Sync, Upsert Engine)
     /// </summary>
     [ApiController]
     [Route("api/import")]
@@ -17,10 +18,17 @@ namespace TrackerKerja.Controllers.Api
     public class ImportApiController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly IExcelSyncService _excelSyncService;
+        private readonly ILogger<ImportApiController> _logger;
 
-        public ImportApiController(AppDbContext db)
+        public ImportApiController(
+            AppDbContext db,
+            IExcelSyncService excelSyncService,
+            ILogger<ImportApiController> logger)
         {
             _db = db;
+            _excelSyncService = excelSyncService;
+            _logger = logger;
         }
 
         /// <summary>
@@ -57,7 +65,7 @@ namespace TrackerKerja.Controllers.Api
 
             var samples = new object[,]
             {
-                { "Integrasi TCES TICS", "TSD-001", "Checking & Testing Product, Scheming & premium class TICS vs Mass Product", "IN_PROGRESS", "HIGH", "ENHANCEMENT", "TCES", "Feature", 40, "2026-08-10", "2026-08-25", "", "haviz.indra@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "", "Menunggu sinkronisasi", "Koordinasi lead", "Sprint 4 Target", "haviz.indra@elistec.com" },
+                { "Integrasi TCES TICS", "TSD-001", "Checking & Testing Product, Scheming & premium class TICS vs Mass Product", "IN_PROGRESS", "HIGH", "ENHANCEMENT", "TCES", "Feature", 40, "2026-08-10", "2026-08-25", "", "haviz.indra@elistec.com;athallah.bariq@elistec.com", "syafix.said@elistec.com", "", "", "heni.rahayu@elistec.com", "nanda.putri@elistec.com", "Menunggu sinkronisasi", "Koordinasi lead", "Sprint 4 Target", "syafix.said@elistec.com" },
                 { "Integrasi TCES TICS", "TSD-002", "Melakukan Deployment ke Server Staging & Smoke Testing", "DONE", "HIGH", "NEW_APP", "TCES", "Task", 100, "2026-08-10", "2026-08-18", "2026-08-18", "haviz.indra@elistec.com", "syafix.said@elistec.com", "mohammad.danang@elistec.com", "", "heni.rahayu@elistec.com", "", "", "", "Deployed successfully", "haviz.indra@elistec.com" }
             };
 
@@ -79,7 +87,7 @@ namespace TrackerKerja.Controllers.Api
         }
 
         /// <summary>
-        /// Mengunggah file Excel untuk diparsing dan divalidasi baris per baris sebelum diimpor (POST /api/import/preview)
+        /// Mengunggah file Excel untuk diparsing seluruh sheet dan dianalisis perubahannya (POST /api/import/preview)
         /// </summary>
         /// <param name="upload">Payload file spreadsheet (.xlsx / .xls)</param>
         [HttpPost("preview")]
@@ -100,159 +108,75 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<object>.Fail("Format file tidak didukung. Hanya file .xlsx atau .xls yang diperbolehkan."));
             }
 
-            var rows = new List<ImportPreviewRowDto>();
-            var allUsers = await _db.Users.AsNoTracking().ToListAsync();
-
-            using (var stream = file.OpenReadStream())
-            using (var wb = new XLWorkbook(stream))
+            try
             {
-                var ws = wb.Worksheets.FirstOrDefault();
-                if (ws == null)
-                {
-                    return BadRequest(ApiResponse<object>.Fail("File Excel tidak memiliki worksheet yang valid."));
-                }
+                using var stream = new MemoryStream();
+                await file.CopyToAsync(stream);
+                stream.Position = 0;
 
-                var rowCount = ws.LastRowUsed()?.RowNumber() ?? 0;
-                var h1 = ws.Cell(1, 1).GetString()?.Trim().ToLower() ?? "";
-                var h2 = ws.Cell(1, 2).GetString()?.Trim().ToLower() ?? "";
-                var h13 = ws.Cell(1, 13).GetString()?.Trim().ToLower() ?? "";
+                var result = await _excelSyncService.ParseFromStreamAsync(stream, file.FileName, "Upload");
+                var dto = MapToResponseDto(result);
 
-                bool isProposed21 = h1.Contains("project_name") || h2.Contains("requirement_code") || h13.Contains("developer_emails") || (h1.Contains("project") && ws.Cell(1, 3).GetString().ToLower().Contains("title"));
-
-                // Build header map
-                var colMap = new Dictionary<string, int>(StringComparer.OrdinalIgnoreCase);
-                var lastCol = ws.LastColumnUsed()?.ColumnNumber() ?? 0;
-                for (int c = 1; c <= lastCol; c++)
-                {
-                    var hText = ws.Cell(1, c).GetString().Trim();
-                    if (!string.IsNullOrEmpty(hText) && !colMap.ContainsKey(hText))
-                    {
-                        colMap[hText] = c;
-                    }
-                }
-
-                for (int r = 2; r <= rowCount; r++)
-                {
-                    var row = ws.Row(r);
-                    string? title = null;
-                    string? cat = null;
-                    string? proj = null;
-                    string? pic = null;
-                    string? priority = null;
-                    string? status = null;
-                    string? start = null;
-                    string? end = null;
-                    string? deadline = null;
-                    int progress = 0;
-                    string? obstacle = null;
-                    string? solution = null;
-                    string? moduleName = null;
-                    string? requirement = null;
-                    string? notesTracker = null;
-
-                    if (isProposed21)
-                    {
-                        proj = row.Cell(1).GetString()?.Trim();
-                        requirement = row.Cell(2).GetString()?.Trim();
-                        title = row.Cell(3).GetString()?.Trim();
-                        status = row.Cell(4).GetString()?.Trim();
-                        priority = row.Cell(5).GetString()?.Trim();
-                        cat = row.Cell(6).GetString()?.Trim();
-                        moduleName = row.Cell(7).GetString()?.Trim();
-                        var rawProgress = row.Cell(9).GetString()?.Trim().Replace("%", "");
-                        if (int.TryParse(rawProgress, out var pVal)) progress = Math.Clamp(pVal, 0, 100);
-                        start = row.Cell(10).GetString()?.Trim();
-                        deadline = row.Cell(11).GetString()?.Trim();
-                        end = row.Cell(12).GetString()?.Trim();
-                        
-                        // Extract PIC from column 22 or header 'PIC'
-                        if (colMap.TryGetValue("PIC", out var pIdx))
-                        {
-                            pic = row.Cell(pIdx).GetString()?.Trim();
-                        }
-                        else if ((row.LastCellUsed()?.Address.ColumnNumber ?? 0) >= 22)
-                        {
-                            pic = row.Cell(22).GetString()?.Trim();
-                        }
-
-                        // Fallback to developer_emails (col 13) if PIC is empty
-                        if (string.IsNullOrEmpty(pic))
-                        {
-                            pic = row.Cell(13).GetString()?.Trim();
-                        }
-
-                        obstacle = row.Cell(19).GetString()?.Trim();
-                        solution = row.Cell(20).GetString()?.Trim();
-                        notesTracker = row.Cell(21).GetString()?.Trim();
-                    }
-                    else
-                    {
-                        title = row.Cell(1).GetString()?.Trim();
-                        cat = row.Cell(2).GetString()?.Trim();
-                        proj = row.Cell(3).GetString()?.Trim();
-                        pic = row.Cell(4).GetString()?.Trim();
-                        priority = row.Cell(5).GetString()?.Trim();
-                        status = row.Cell(6).GetString()?.Trim();
-                        start = row.Cell(7).GetString()?.Trim();
-                        end = row.Cell(8).GetString()?.Trim();
-                        deadline = row.Cell(9).GetString()?.Trim();
-                    }
-
-                    if (string.IsNullOrWhiteSpace(title)) continue;
-
-                    string? matchedUserId = null;
-                    if (!string.IsNullOrWhiteSpace(pic))
-                    {
-                        var primaryEmail = pic.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault();
-                        var u = allUsers.FirstOrDefault(u =>
-                            (!string.IsNullOrEmpty(u.Email) && u.Email.Equals(primaryEmail, StringComparison.OrdinalIgnoreCase)) ||
-                            (!string.IsNullOrEmpty(u.FullName) && u.FullName.Equals(primaryEmail, StringComparison.OrdinalIgnoreCase)) ||
-                            (!string.IsNullOrEmpty(u.UserName) && u.UserName.Equals(primaryEmail, StringComparison.OrdinalIgnoreCase)));
-                        if (u != null) matchedUserId = u.Id;
-                    }
-
-                    rows.Add(new ImportPreviewRowDto
-                    {
-                        RowNumber = r - 1,
-                        IsValid = true,
-                        Title = title,
-                        Category = string.IsNullOrWhiteSpace(cat) ? "General" : cat,
-                        Project = string.IsNullOrWhiteSpace(proj) ? null : proj,
-                        Assignee = string.IsNullOrWhiteSpace(pic) ? null : pic,
-                        Pic = string.IsNullOrWhiteSpace(pic) ? null : pic,
-                        AssigneeUserId = matchedUserId,
-                        Priority = string.IsNullOrWhiteSpace(priority) ? "Medium" : priority,
-                        Status = string.IsNullOrWhiteSpace(status) ? "Todo" : status,
-                        Progress = progress,
-                        StartDate = start,
-                        Deadline = string.IsNullOrWhiteSpace(deadline) ? end : deadline,
-                        EndDate = end,
-                        Milestone = !string.IsNullOrWhiteSpace(moduleName) ? moduleName : requirement,
-                        Requirement = requirement,
-                        ModuleName = moduleName,
-                        Obstacle = obstacle,
-                        Solution = solution,
-                        NotesTracker = notesTracker
-                    });
-                }
+                return Ok(ApiResponse<ImportPreviewResponseDto>.Ok(dto, $"Berhasil memproses {result.TotalRows} baris dari {result.ProcessedSheets.Count} sheet."));
             }
-
-            var response = new ImportPreviewResponseDto
+            catch (Exception ex)
             {
-                FileName = file.FileName,
-                TotalRows = rows.Count,
-                SuccessRows = rows.Count(r => r.IsValid),
-                FailedRows = rows.Count(r => !r.IsValid),
-                Rows = rows
-            };
-
-            return Ok(ApiResponse<ImportPreviewResponseDto>.Ok(response, $"Berhasil memproses {rows.Count} baris data tugas."));
+                _logger.LogError(ex, "API Preview error");
+                return BadRequest(ApiResponse<object>.Fail($"Gagal memproses file: {ex.Message}"));
+            }
         }
 
         /// <summary>
-        /// Mengeksekusi impor data baris tugas yang telah divalidasi ke database (POST /api/import/execute)
+        /// Menganalisis dan mengimpor data langsung dari link / URL (Google Sheets / OneDrive / direct XLSX link) (POST /api/import/sync-url)
         /// </summary>
-        /// <param name="dto">Payload daftar baris tugas yang akan diimpor</param>
+        [HttpPost("sync-url")]
+        [ProducesResponseType(typeof(ApiResponse<ImportPreviewResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SyncUrl([FromBody] SyncUrlRequestDto req)
+        {
+            if (string.IsNullOrWhiteSpace(req?.Url))
+            {
+                return BadRequest(ApiResponse<object>.Fail("URL tautan Excel wajib diisi."));
+            }
+
+            try
+            {
+                var result = await _excelSyncService.ParseFromUrlAsync(req.Url);
+                var dto = MapToResponseDto(result);
+                return Ok(ApiResponse<ImportPreviewResponseDto>.Ok(dto, $"Berhasil membaca {result.TotalRows} baris dari link URL."));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "API Sync URL error for {Url}", req.Url);
+                return BadRequest(ApiResponse<object>.Fail($"Gagal membaca dari link: {ex.Message} Pastikan link dapat diakses publik atau gunakan upload file."));
+            }
+        }
+
+        /// <summary>
+        /// Menganalisis dan mensinkronisasikan file lokal yang ada pada server host (POST /api/import/sync-local)
+        /// </summary>
+        [HttpPost("sync-local")]
+        [ProducesResponseType(typeof(ApiResponse<ImportPreviewResponseDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> SyncLocal([FromBody] SyncLocalRequestDto? req)
+        {
+            try
+            {
+                var localPath = req?.FilePath;
+                var result = await _excelSyncService.ParseFromLocalPathAsync(localPath);
+                var dto = MapToResponseDto(result);
+                return Ok(ApiResponse<ImportPreviewResponseDto>.Ok(dto, $"Berhasil membaca {result.TotalRows} baris dari file server lokal: {result.FileName}"));
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "API Sync Local error");
+                return BadRequest(ApiResponse<object>.Fail($"Gagal membaca file server lokal: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Mengeksekusi impor dan pembaruan data tugas (Case 1: Update existing, Case 2: Insert new) ke database (POST /api/import/execute)
+        /// </summary>
         [HttpPost("execute")]
         [ProducesResponseType(typeof(ApiResponse<ExecuteImportResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
@@ -263,100 +187,68 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<object>.Fail("Tidak ada baris tugas yang valid untuk diimpor."));
             }
 
-            var createdIds = new List<int>();
-            int imported = 0;
-
-            foreach (var r in dto.Rows.Where(x => x.IsValid))
+            var model = new ImportResultViewModel
             {
-                // Cek / Buat Project jika ada
-                int? projId = dto.DefaultProjectId;
-                if (!string.IsNullOrWhiteSpace(r.Project))
+                FileName = "API Execute Import",
+                SourceType = "API",
+                TotalRows = dto.Rows.Count,
+                SuccessRows = dto.Rows.Count(r => r.IsValid),
+                FailedRows = dto.Rows.Count(r => !r.IsValid),
+                Rows = dto.Rows.Select(r => new ImportPreviewRow
                 {
-                    var p = await _db.Projects.FirstOrDefaultAsync(p => p.Name.ToLower() == r.Project.Trim().ToLower());
-                    if (p == null)
-                    {
-                        p = new Project { Name = r.Project.Trim(), Color = "#6366F1", CreatedAt = DateTime.Now };
-                        _db.Projects.Add(p);
-                        await _db.SaveChangesAsync();
-                    }
-                    projId = p.Id;
-                }
-
-                // Cek / Buat Category jika ada
-                int? catId = null;
-                if (!string.IsNullOrWhiteSpace(r.Category))
-                {
-                    var c = await _db.Categories.FirstOrDefaultAsync(c => c.Name.ToLower() == r.Category.Trim().ToLower());
-                    if (c == null)
-                    {
-                        c = new Category { Name = r.Category.Trim(), Color = "#6366F1" };
-                        _db.Categories.Add(c);
-                        await _db.SaveChangesAsync();
-                    }
-                    catId = c.Id;
-                }
-
-                // Parse Prioritas & Status
-                Enum.TryParse<TaskPriority>(r.Priority, true, out var priorityVal);
-                Enum.TryParse<ModelTaskStatus>(r.Status, true, out var statusVal);
-
-                DateTime? parsedStart = null;
-                if (DateTime.TryParse(r.StartDate, out var dtStart)) parsedStart = dtStart;
-
-                DateTime? parsedDue = null;
-                if (DateTime.TryParse(r.Deadline, out var dtDue)) parsedDue = dtDue;
-
-                string? assignedUserId = r.AssigneeUserId;
-                if (string.IsNullOrWhiteSpace(assignedUserId) && (!string.IsNullOrWhiteSpace(r.Assignee) || !string.IsNullOrWhiteSpace(r.Pic)))
-                {
-                    var targetPic = !string.IsNullOrWhiteSpace(r.Assignee) ? r.Assignee : r.Pic!;
-                    var cleanPic = targetPic.Split(new[] { ';', ',' }, StringSplitOptions.RemoveEmptyEntries).Select(e => e.Trim()).FirstOrDefault() ?? targetPic;
-                    var u = await _db.Users.FirstOrDefaultAsync(u =>
-                        (u.Email != null && u.Email.ToLower() == cleanPic.ToLower()) ||
-                        (u.FullName != null && u.FullName.ToLower() == cleanPic.ToLower()) ||
-                        (u.UserName != null && u.UserName.ToLower() == cleanPic.ToLower()));
-                    assignedUserId = u?.Id;
-                }
-                if (string.IsNullOrWhiteSpace(assignedUserId))
-                {
-                    assignedUserId = dto.DefaultAssigneeId;
-                }
-
-                var task = new WorkTask
-                {
-                    Title = r.Title.Trim(),
-                    Description = !string.IsNullOrWhiteSpace(r.NotesTracker) ? r.NotesTracker.Trim() : null,
-                    ProjectId = projId,
-                    CategoryId = catId,
-                    AssignedToUserId = assignedUserId,
-                    Priority = priorityVal,
-                    Status = statusVal,
-                    Progress = statusVal == ModelTaskStatus.Done ? 100 : Math.Clamp(r.Progress, 0, 100),
-                    StartDate = parsedStart,
-                    DueDate = parsedDue,
-                    Milestone = string.IsNullOrWhiteSpace(r.Milestone) ? "Implementation" : r.Milestone.Trim(),
+                    RowNumber = r.RowNumber,
+                    SheetName = r.SheetName,
+                    IsValid = r.IsValid,
+                    Title = r.Title,
+                    Category = r.Category,
+                    Project = r.Project,
+                    Assignee = r.Assignee,
+                    AssigneeUserId = r.AssigneeUserId ?? dto.DefaultAssigneeId,
+                    Priority = r.Priority,
+                    Status = r.Status,
+                    Progress = r.Progress,
+                    StartDate = r.StartDate,
+                    Deadline = r.Deadline,
+                    EndDate = r.EndDate,
+                    Milestone = r.Milestone,
+                    Requirement = r.Requirement,
+                    ModuleName = r.ModuleName,
+                    BugType = r.BugType,
+                    DeveloperEmails = r.DeveloperEmails,
+                    BaEmails = r.BaEmails,
+                    InfraEmails = r.InfraEmails,
+                    MasterDataEmails = r.MasterDataEmails,
+                    TesterEmails = r.TesterEmails,
+                    TwEmails = r.TwEmails,
                     Obstacle = r.Obstacle,
                     Solution = r.Solution,
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
-                };
-
-                _db.Tasks.Add(task);
-                await _db.SaveChangesAsync();
-
-                createdIds.Add(task.Id);
-                imported++;
-            }
-
-            var result = new ExecuteImportResponseDto
-            {
-                ImportedCount = imported,
-                SkippedCount = dto.Rows.Count - imported,
-                CreatedTaskIds = createdIds,
-                Message = $"Berhasil mengimpor {imported} tugas ke database."
+                    NotesTracker = r.NotesTracker,
+                    Pic = r.Pic,
+                    ActionType = r.ActionType,
+                    ExistingTaskId = r.ExistingTaskId,
+                    ChangedFields = r.ChangedFields
+                }).ToList()
             };
 
-            return Ok(ApiResponse<ExecuteImportResponseDto>.Ok(result, result.Message));
+            var syncResult = await _excelSyncService.ExecuteSyncAsync(model, null, "API Client");
+
+            var response = new ExecuteImportResponseDto
+            {
+                ImportedCount = syncResult.InsertedCount,
+                UpdatedCount = syncResult.UpdatedCount,
+                UnchangedCount = syncResult.UnchangedCount,
+                SkippedCount = syncResult.FailedCount,
+                CreatedTaskIds = syncResult.AffectedTaskIds,
+                Message = syncResult.Message,
+                Errors = syncResult.Errors
+            };
+
+            if (!syncResult.Success)
+            {
+                return BadRequest(ApiResponse<ExecuteImportResponseDto>.Fail(syncResult.Message));
+            }
+
+            return Ok(ApiResponse<ExecuteImportResponseDto>.Ok(response, response.Message));
         }
 
         /// <summary>
@@ -427,6 +319,59 @@ namespace TrackerKerja.Controllers.Api
             var content = stream.ToArray();
 
             return File(content, "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", $"ARMS_Tasks_Export_{DateTime.Now:yyyyMMdd_HHmmss}.xlsx");
+        }
+
+        private static ImportPreviewResponseDto MapToResponseDto(ImportResultViewModel result)
+        {
+            return new ImportPreviewResponseDto
+            {
+                FileName = result.FileName,
+                SourceType = result.SourceType,
+                SourceUrl = result.SourceUrl,
+                TotalRows = result.TotalRows,
+                SuccessRows = result.SuccessRows,
+                FailedRows = result.FailedRows,
+                InsertCount = result.InsertCount,
+                UpdateCount = result.UpdateCount,
+                UnchangedCount = result.UnchangedCount,
+                ProcessedSheets = result.ProcessedSheets,
+                Rows = result.Rows.Select(r => new ImportPreviewRowDto
+                {
+                    RowNumber = r.RowNumber,
+                    SheetName = r.SheetName,
+                    IsValid = r.IsValid,
+                    Title = r.Title,
+                    Category = r.Category,
+                    Project = r.Project,
+                    Assignee = r.Assignee,
+                    AssigneeUserId = r.AssigneeUserId,
+                    Priority = r.Priority,
+                    Status = r.Status,
+                    Progress = r.Progress,
+                    StartDate = r.StartDate,
+                    Deadline = r.Deadline,
+                    EndDate = r.EndDate,
+                    Milestone = r.Milestone,
+                    Requirement = r.Requirement,
+                    ModuleName = r.ModuleName,
+                    BugType = r.BugType,
+                    DeveloperEmails = r.DeveloperEmails,
+                    BaEmails = r.BaEmails,
+                    InfraEmails = r.InfraEmails,
+                    MasterDataEmails = r.MasterDataEmails,
+                    TesterEmails = r.TesterEmails,
+                    TwEmails = r.TwEmails,
+                    Obstacle = r.Obstacle,
+                    Solution = r.Solution,
+                    NotesTracker = r.NotesTracker,
+                    Pic = r.Pic,
+                    ErrorMessage = r.ErrorMessage,
+                    WarningMessage = r.WarningMessage,
+                    ActionType = r.ActionType,
+                    ExistingTaskId = r.ExistingTaskId,
+                    ChangedFields = r.ChangedFields
+                }).ToList()
+            };
         }
     }
 }

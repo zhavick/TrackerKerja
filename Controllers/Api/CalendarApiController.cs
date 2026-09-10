@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
@@ -16,10 +17,12 @@ namespace TrackerKerja.Controllers.Api
     public class CalendarApiController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly UserManager<AppUser> _userManager;
 
-        public CalendarApiController(AppDbContext db)
+        public CalendarApiController(AppDbContext db, UserManager<AppUser> userManager)
         {
             _db = db;
+            _userManager = userManager;
         }
 
         /// <summary>
@@ -29,19 +32,38 @@ namespace TrackerKerja.Controllers.Api
         /// <param name="end">Tanggal akhir rentang kalender (format ISO: yyyy-MM-dd)</param>
         /// <param name="projectId">Filter ID Proyek</param>
         /// <param name="assigneeId">Filter ID Pengguna PIC</param>
+        /// <param name="filter">Filter kepemilikan tugas ('all' atau 'mine')</param>
         [HttpGet("events")]
         [ProducesResponseType(typeof(ApiResponse<List<CalendarEventDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetEvents(
             [FromQuery] DateTime? start,
             [FromQuery] DateTime? end,
             [FromQuery] int? projectId,
-            [FromQuery] string? assigneeId)
+            [FromQuery] string? assigneeId,
+            [FromQuery] string? filter = null)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var currentUserId = currentUser?.Id;
+            var isAdmin = User.IsInRole("Admin");
+
             var query = _db.Tasks
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToUser)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (currentUser != null)
+            {
+                if (!isAdmin)
+                {
+                    query = query.Where(t => t.AssignedToUserId == currentUserId);
+                }
+                else if (string.Equals(filter, "mine", StringComparison.OrdinalIgnoreCase) ||
+                         string.Equals(filter, "my", StringComparison.OrdinalIgnoreCase))
+                {
+                    query = query.Where(t => t.AssignedToUserId == currentUserId);
+                }
+            }
 
             if (projectId.HasValue)
                 query = query.Where(t => t.ProjectId == projectId.Value);

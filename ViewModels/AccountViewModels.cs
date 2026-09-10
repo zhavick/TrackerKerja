@@ -88,10 +88,11 @@ namespace TrackerKerja.ViewModels
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
-    // ── Import ViewModels ────────────────────────────────────
+    // ── Import & Sync ViewModels ─────────────────────────────
     public class ImportPreviewRow
     {
         public int RowNumber { get; set; }
+        public string SheetName { get; set; } = string.Empty;
         public string Title { get; set; } = string.Empty;
         public string? Category { get; set; }
         public string? Project { get; set; }
@@ -107,6 +108,7 @@ namespace TrackerKerja.ViewModels
         public string? Solution { get; set; }
         public string? Requirement { get; set; }
         public string? ModuleName { get; set; }
+        public string? Milestone { get; set; }
         public string? BugType { get; set; }
         public string? DeveloperEmails { get; set; }
         public string? BaEmails { get; set; }
@@ -119,14 +121,25 @@ namespace TrackerKerja.ViewModels
         public bool IsValid { get; set; } = true;
         public string? ErrorMessage { get; set; }
         public string? WarningMessage { get; set; }
+
+        // Diff & Sync Metadata
+        public string ActionType { get; set; } = "INSERT"; // "INSERT", "UPDATE", "UNCHANGED", "ERROR"
+        public int? ExistingTaskId { get; set; }
+        public List<string> ChangedFields { get; set; } = new();
     }
 
     public class ImportResultViewModel
     {
         public string FileName { get; set; } = string.Empty;
+        public string SourceType { get; set; } = "Upload"; // "Upload", "Link", "LocalFile"
+        public string? SourceUrl { get; set; }
         public int TotalRows { get; set; }
         public int SuccessRows { get; set; }
         public int FailedRows { get; set; }
+        public int InsertCount { get; set; }
+        public int UpdateCount { get; set; }
+        public int UnchangedCount { get; set; }
+        public List<string> ProcessedSheets { get; set; } = new();
         public List<ImportPreviewRow> Rows { get; set; } = new();
         public List<string> Errors { get; set; } = new();
     }

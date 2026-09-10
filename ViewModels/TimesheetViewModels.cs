@@ -22,6 +22,9 @@ namespace TrackerKerja.ViewModels
         public DateTime[] DayDates { get; set; } = new DateTime[7];
         public string[] DayNames { get; set; } = new[] { "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu" };
 
+        // Daily Attendance & Leaves information for the week (Senin s/d Minggu)
+        public AttendanceDailySummaryDto?[] DailyAttendances { get; set; } = new AttendanceDailySummaryDto?[7];
+
         // Matrix rows per task
         public List<TimesheetTaskRowDto> TaskRows { get; set; } = new();
 

@@ -24,12 +24,31 @@ namespace TrackerKerja.Controllers
         public IActionResult Index() => View();
 
         [HttpGet]
-        public async Task<IActionResult> GetEvents(string? start, string? end)
+        public async Task<IActionResult> GetEvents(string? start, string? end, string? filter = null)
         {
-            var tasks = await _db.Tasks
+            var currentUser = await _userManager.GetUserAsync(User);
+            var currentUserId = currentUser?.Id ?? "";
+            var isAdmin = User.IsInRole("Admin");
+
+            var query = _db.Tasks
                 .Include(t => t.Project)
-                .Where(t => t.DueDate != null)
-                .ToListAsync();
+                .Include(t => t.AssignedToUser)
+                .Where(t => t.DueDate != null);
+
+            // Filter hak akses:
+            // 1. Member non-admin hanya dapat melihat tugas yang ditugaskan kepada dirinya sendiri
+            if (!isAdmin)
+            {
+                query = query.Where(t => t.AssignedToUserId == currentUserId);
+            }
+            // 2. Admin dapat melihat seluruh tugas (default/all) atau menyaring tugas miliknya sendiri (mine)
+            else if (string.Equals(filter, "mine", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(filter, "my", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(t => t.AssignedToUserId == currentUserId);
+            }
+
+            var tasks = await query.ToListAsync();
 
             var colors = new Dictionary<string, string>
             {
@@ -54,6 +73,8 @@ namespace TrackerKerja.Controllers
                     Status = status,
                     Priority = t.Priority.ToString(),
                     ProjectName = t.Project?.Name,
+                    AssigneeName = t.AssignedToUser?.FullName ?? "Belum Ditugaskan",
+                    AssigneeAvatar = t.AssignedToUser?.ProfilePictureUrl,
                     Url = $"/Task/Edit/{t.Id}"
                 };
             }).ToList();

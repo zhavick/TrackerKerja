@@ -5,14 +5,14 @@
 
 ### INFORMASI DOKUMEN
 - **Nama Aplikasi**: Work Tracker Pro (TrackerKerja)
-- **Versi Dokumen**: 3.3 (Enterprise Multi-Instance & Attendance Edition)
+- **Versi Dokumen**: 3.4 (Enterprise Multi-Instance & File Attachment Sync Edition)
 - **Status**: Disetujui & Terimplementasi Penuh (Production-Ready)
 - **Target Platform**: Web Application (ASP.NET Core 8.0 MVC / REST API / Docker Linux Container)
 - **Basis Data**: Entity Framework Core 8.0 dengan SQLite Database Engine (`/app/data/trackerkerja.db` via `./db_data` volume)
 - **Engine Spreadsheet**: ClosedXML 0.104.2 (Format ARMS 21-kolom, Template Standar 9-kolom, & Timesheet Personal)
 - **Dokumentasi REST API**: OpenAPI 3.0 via Swashbuckle Swagger UI (`/swagger`) & Postman Collection
 - **Repositori Source Code**: [https://github.com/zhavick/TrackerKerja.git](https://github.com/zhavick/TrackerKerja.git)
-- **Tanggal Rilis & Pembaruan**: 10 September 2026
+- **Tanggal Rilis & Pembaruan**: 14 September 2026
 
 ---
 
@@ -394,27 +394,43 @@ erDiagram
   - `POST /api/sqltools/minify`
   - `POST /api/sqltools/validate`
 
-### 5.16 Modul Multi-Instance Synchronization (Host Induk Sync)
-- Menghubungkan beberapa instance TrackerKerja terdistribusi (misalnya laptop tim lokal atau cabang) ke satu **Server Host Induk** terpusat.
-- **Dua Metode Sinkronisasi**:
-  1. **Metode 1: REST API Sync (Online Otomatis)**:
-     - Push data terenkripsi via HTTP/HTTPS ke endpoint `/api/sync/push` di server Host Induk.
-     - Menggunakan autentikasi berbasis **API Secret Key**.
-     - Opsi *Allow Untrusted SSL Certificates* untuk sertifikat internal/self-signed.
-     - Mendukung entitas: *Users*, *Projects*, *Categories*, *Tasks*, *Sessions*, *Notes*, *Attachments*, *Attendance*, dan *Master Data*.
-  2. **Metode 2: Manual SQL Dump (Offline / Air-Gapped)**:
-     - **Export SQL Dump**: Menghasilkan script SQL DML lengkap berisi data transaksi yang dapat diunduh.
-     - **Import SQL Dump**: Mengunggah dan mengeksekusi script SQL ke dalam database lokal atau Host Induk dengan mode transaksi aman (*Rollback on error*).
+### 5.16 Modul Multi-Instance Synchronization & File Attachment Sync (Host Induk Sync)
+- Menghubungkan beberapa instance TrackerKerja terdistribusi (misalnya laptop tim lokal atau node cabang) ke satu **Server Host Induk** terpusat dengan sinkronisasi basis data dan berkas lampiran (*file attachments & uploads*).
+- **Cakupan Entitas & Berkas Sinkronisasi**:
+  - **Data Database**: *Users*, *Projects*, *Categories*, *Tasks*, *Sessions*, *Notes*, *Attachments*, *AttendanceRecords*, *AuditLogs*, dan *Master Data*.
+  - **Berkas Fisik (Uploads)**: Seluruh lampiran catatan pada `wwwroot/uploads/notes/{username}/*`, foto avatar profil `wwwroot/uploads/avatars/*`, dan file statis terkait.
+- **Metode Sinkronisasi Komprehensif**:
+  1. **Metode 1: Online REST API Sync (Push & Pull dengan Base64 File Streaming)**:
+     - **Push Sync ke Host**: Mengirimkan transaksi database DML beserta paket arsip berkas lampiran yang dikonversi ke Base64 (`FilesZipBase64`) ke endpoint `/api/sync/receive` di server Host Induk.
+     - **Pull Sync dari Host**: Mengambil dan menyelaraskan seluruh data transaksi dan berkas lampiran terbaru dari server Host Induk ke instance lokal.
+     - **Autentikasi & Keamanan**: Menggunakan **API Secret Key** (`X-Sync-Key` / `ApiSecretKey`), opsi *Allow Untrusted SSL Certificates*, dan proteksi ukuran request hingga 200MB.
+     - **Dukungan Opsi Berkas**: Opsi toggle *Sertakan Berkas Uploads & Lampiran* (`IncludeFiles` / `SyncFiles = true|false`) untuk efisiensi bandwidth bila hanya sinkronisasi data teks.
+  2. **Metode 2: Full Package Archive Export & Import (.zip / Offline Air-Gapped)**:
+     - **Export Full Package (.zip)**: Menghasilkan paket arsip `.zip` mandiri berstruktur standar yang berisi:
+       - `manifest.json`: Metadata instance pengirim, versi, timestamp, statistik tabel, dan total file/ukuran.
+       - `sync_data.sql`: Script SQL DML transaksional terurut sesuai dependensi foreign key.
+       - `uploads/`: Direktori lengkap berkas lampiran catatan dan avatar.
+     - **Import Full Package (.zip / .sql)**: Menerima unggahan berkas `.zip` (full package) maupun berkas `.sql` mandiri. Sistem otomatis mengekstrak berkas lampiran ke direktori fisik target dan mengeksekusi SQL script secara atomik (*Transaction Rollback on Error*).
+  3. **Metode 3: Manual SQL Dump (.sql)**:
+     - Ekspor skrip SQL DML murni untuk migrasi data tabular tanpa berkas fisik.
+
+- **REST API Endpoints Modul Sinkronisasi**:
+  - `GET /api/sync/ping` — Memeriksa koneksi host, status database, total entitas, serta total dan ukuran berkas upload.
+  - `POST /api/sync/push` — Menginisiasi pengiriman data lokal dan berkas lampiran ke server host induk.
+  - `POST /api/sync/pull` — Menginisiasi penarikan data dan berkas lampiran dari server host induk ke lokal.
+  - `POST /api/sync/receive` — Menerima dan memproses payload sinkronisasi (database & berkas) di server host induk.
+  - `GET /api/sync/export-package` — Mengunduh arsip paket sinkronisasi `.zip` (SQL + Berkas Lampiran).
+  - `POST /api/sync/import-package` — Mengunggah dan mengeksekusi paket arsip `.zip` atau skrip `.sql`.
 
 ### 5.17 Modul RESTful API & Swagger OpenAPI Documentation
-- 80+ endpoint RESTful dengan respons terstandarisasi JSON:
+- 85+ endpoint RESTful dengan respons terstandarisasi JSON:
 ```json
 {
   "success": true,
   "message": "Operation description",
   "data": { },
   "errors": null,
-  "timestamp": "2026-09-10T09:00:00Z"
+  "timestamp": "2026-09-14T15:00:00Z"
 }
 ```
 - Swagger UI interaktif di `/swagger` dan berkas Postman Collection & Environment.
@@ -428,7 +444,8 @@ erDiagram
 2. **Role-Based Authorization**: Filter `[Authorize(Roles = "Admin")]` dan verifikasi hak akses berbasis job title.
 3. **Pencegahan SQL Injection**: Seluruh akses database menggunakan parameterized LINQ queries EF Core.
 4. **Sanitasi Path & File Storage**: Proteksi path traversal (`../`) dan validasi MIME type serta ekstensi file upload.
-5. **Data Protection & Secret Handling**: Enkripsi cookie session dan token autentikasi.
+5. **Proteksi Zip-Slip Path Traversal**: Verifikasi ketat path ekstraksi saat mengurai arsip zip payload sinkronisasi (`Path.GetFullPath(dest).StartsWith(baseDirectory)`) guna mencegah penimpaan berkas di luar folder `wwwroot/uploads`.
+6. **Data Protection & Secret Handling**: Enkripsi cookie session dan verifikasi token autentikasi API Secret Key.
 
 ### 6.2 Performa & Keandalan
 1. **Index Optimization**: Indeks database pada `Tasks.ProjectId`, `Tasks.AssignedToUserId`, `Tasks.ParentTaskId`, `AttendanceRecords.UserId`, `AttendanceRecords.Date`, dan `AuditLogs.Timestamp`.

@@ -326,7 +326,7 @@ namespace TrackerKerja.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> PushSyncToHost(string targetUrl, string apiKey, bool cleanBeforeSync = true, bool backupBeforeSync = true)
+        public async Task<IActionResult> PushSyncToHost(string targetUrl, string apiKey, bool cleanBeforeSync = true, bool backupBeforeSync = true, bool syncFiles = true)
         {
             if (string.IsNullOrWhiteSpace(targetUrl))
             {
@@ -337,7 +337,7 @@ namespace TrackerKerja.Controllers
             var setting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GlobalBaseUrl");
             var sourceLabel = setting?.Value ?? $"{Request.Scheme}://{Request.Host}";
 
-            var result = await _syncService.PushSyncToHostAsync(targetUrl, apiKey, cleanBeforeSync, backupBeforeSync, sourceLabel);
+            var result = await _syncService.PushSyncToHostAsync(targetUrl, apiKey, cleanBeforeSync, backupBeforeSync, sourceLabel, syncFiles);
             if (result.Success)
             {
                 TempData["Success"] = $"Sinkronisasi online berhasil dikirim ke Host Induk ({targetUrl.Trim().TrimEnd('/')})! {result.Message}";
@@ -345,6 +345,29 @@ namespace TrackerKerja.Controllers
             else
             {
                 TempData["Error"] = $"Gagal mengirim sinkronisasi ke Host Induk: {result.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> PullSyncFromHost(string targetUrl, string apiKey, bool cleanBeforeSync = true, bool backupBeforeSync = true)
+        {
+            if (string.IsNullOrWhiteSpace(targetUrl))
+            {
+                TempData["Error"] = "Target URL Host Induk tidak boleh kosong.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var result = await _syncService.PullSyncFromHostAsync(targetUrl, apiKey, cleanBeforeSync, backupBeforeSync);
+            if (result.Success)
+            {
+                TempData["Success"] = $"Tarik data & berkas berhasil dari Host Induk ({targetUrl.Trim().TrimEnd('/')})! {result.Message}";
+            }
+            else
+            {
+                TempData["Error"] = $"Gagal menarik data dari Host Induk: {result.Message}";
             }
 
             return RedirectToAction(nameof(Index));
@@ -365,6 +388,72 @@ namespace TrackerKerja.Controllers
                 message = res.Message,
                 data = res
             });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UploadAndSyncPackage(IFormFile packageFile, bool cleanBeforeSync = true, bool backupBeforeSync = true)
+        {
+            if (packageFile == null || packageFile.Length == 0)
+            {
+                TempData["Error"] = "Silakan pilih berkas paket (.zip) atau naskah SQL (.sql) yang valid untuk disinkronkan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var fileName = packageFile.FileName;
+            var isZip = fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+            var isSql = fileName.EndsWith(".sql", StringComparison.OrdinalIgnoreCase);
+
+            if (!isZip && !isSql)
+            {
+                TempData["Error"] = "Format berkas tidak didukung. Harap unggah berkas berformat .zip atau .sql.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                using var stream = packageFile.OpenReadStream();
+                SyncResultDto result;
+
+                if (isZip)
+                {
+                    result = await _syncService.ExecutePackageSyncAsync(
+                        stream,
+                        cleanBeforeSync,
+                        backupBeforeSync,
+                        $"Upload Manual Paket '{fileName}'");
+                }
+                else
+                {
+                    string sqlContent;
+                    using (var reader = new StreamReader(stream))
+                    {
+                        sqlContent = await reader.ReadToEndAsync();
+                    }
+
+                    result = await _syncService.ExecuteSqlSyncAsync(
+                        sqlContent,
+                        cleanBeforeSync,
+                        backupBeforeSync,
+                        $"Upload Manual SQL '{fileName}'");
+                }
+
+                if (result.Success)
+                {
+                    var backupInfo = !string.IsNullOrEmpty(result.BackupFileName) ? $" (Backup otomatis dibuat di folder backups/{result.BackupFileName})" : "";
+                    TempData["Success"] = $"Sinkronisasi paket berhasil! {result.Message}{backupInfo}";
+                }
+                else
+                {
+                    TempData["Error"] = $"Gagal mengeksekusi sinkronisasi paket: {result.Message}";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Terjadi kesalahan saat memproses paket sinkronisasi: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
         }
 
         [HttpPost]
@@ -408,6 +497,22 @@ namespace TrackerKerja.Controllers
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExportSyncPackage([FromQuery] bool cleanBeforeSync = true)
+        {
+            try
+            {
+                var zipBytes = await _syncService.GenerateFullSyncPackageZipAsync(cleanBeforeSync);
+                var fileName = $"TrackerKerja_FullSyncPackage_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
+                return File(zipBytes, "application/zip", fileName);
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Gagal mengekspor Paket Lengkap Sinkronisasi: {ex.Message}";
+                return RedirectToAction(nameof(Index));
+            }
         }
 
         [HttpGet]

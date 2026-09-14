@@ -115,21 +115,21 @@
             <button type="button" onclick="switchSyncTab('tab-online')" id="tab-btn-online"
                     class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-md cursor-pointer">
                 <i class="fas fa-bolt text-amber-300"></i>
-                <span>1. Mode Online API (Push ke Host)</span>
+                <span>1. Mode Online API (Push / Pull)</span>
             </button>
             <button type="button" onclick="switchSyncTab('tab-manual-export')" id="tab-btn-manual-export"
                     class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white cursor-pointer">
-                <i class="fas fa-file-export text-cyan-400"></i>
-                <span>2. Ekspor Manual SQL</span>
+                <i class="fas fa-file-archive text-cyan-400"></i>
+                <span>2. Ekspor Paket Lengkap (.zip / .sql)</span>
             </button>
             <button type="button" onclick="switchSyncTab('tab-host-receiver')" id="tab-btn-host-receiver"
                     class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white cursor-pointer">
                 <i class="fas fa-server text-emerald-400"></i>
-                <span>3. Host Induk (Impor &amp; Bersihkan)</span>
+                <span>3. Host Induk (Impor Paket &amp; Bersihkan)</span>
             </button>
         </div>
 
-        <!-- TAB 1: ONLINE API SYNC (SUBMIT KE HOST INDUK) -->
+        <!-- TAB 1: ONLINE API SYNC (SUBMIT KE HOST INDUK / TARIK DARI HOST) -->
         <div id="tab-online" class="space-y-5">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 <!-- Host Settings Form (Left: 7 Cols) -->
@@ -206,35 +206,41 @@
                     </form>
                 </div>
 
-                <!-- Submit / Push Action Card (Right: 5 Cols) -->
+                <!-- Submit / Push / Pull Action Card (Right: 5 Cols) -->
                 <div class="lg:col-span-5 bg-gradient-to-br from-indigo-900/70 to-purple-900/70 rounded-2xl p-5 border border-indigo-500/30 flex flex-col justify-between">
                     <div>
                         <div class="flex items-center justify-between pb-3 border-b border-indigo-500/30 mb-3">
                             <span class="text-xs font-black uppercase tracking-wider text-indigo-200 flex items-center gap-1.5">
-                                <i class="fas fa-paper-plane text-cyan-400"></i> Submit ke Host Induk
+                                <i class="fas fa-sync-alt text-cyan-400 animate-spin-slow"></i> Eksekusi Sinkronisasi Online
                             </span>
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                         </div>
                         <p class="text-xs text-slate-200 leading-relaxed mb-4">
-                            Kirim seluruh rekaman tugas, sesi timesheet, proyek, kategori, catatan, dan log pengguna saat ini langsung ke server Host Induk melalui API terenkripsi.
+                            Kirim atau tarik seluruh rekaman tugas, sesi timesheet, proyek, kategori, catatan, dan <strong>berkas lampiran upload (avatar &amp; file catatan)</strong> melalui API aman terenkripsi.
                         </p>
 
                         <div class="space-y-2.5 mb-4 bg-slate-900/60 rounded-xl p-3 border border-slate-800 text-xs">
                             <label class="flex items-center gap-2 cursor-pointer select-none">
                                 <input type="checkbox" id="pushCleanBeforeSync" checked class="rounded text-indigo-500 focus:ring-indigo-400">
-                                <span class="text-slate-200 font-medium text-[11px]">Bersihkan data lama di Host Induk (Clean Slate)</span>
+                                <span class="text-slate-200 font-medium text-[11px]">Bersihkan data lama di target (Clean Slate)</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer select-none">
                                 <input type="checkbox" id="pushBackupBeforeSync" checked class="rounded text-indigo-500 focus:ring-indigo-400">
-                                <span class="text-slate-200 font-medium text-[11px]">Buat backup snapshot di Host sebelum proses</span>
+                                <span class="text-slate-200 font-medium text-[11px]">Buat backup snapshot di target sebelum proses</span>
+                            </label>
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" id="pushSyncFiles" checked class="rounded text-emerald-400 focus:ring-emerald-400">
+                                <span class="text-emerald-300 font-bold text-[11px]">
+                                    <i class="fas fa-paperclip mr-1"></i>Sertakan Berkas Upload &amp; Lampiran Catatan
+                                </span>
                             </label>
                         </div>
                     </div>
 
-                    <div>
+                    <div class="space-y-2">
                         @if (!string.IsNullOrEmpty(lastSyncStatus))
                         {
-                            <div class="p-2.5 bg-slate-900/80 rounded-xl border border-slate-800 text-[11px] text-slate-300 mb-3 flex items-start gap-2">
+                            <div class="p-2.5 bg-slate-900/80 rounded-xl border border-slate-800 text-[11px] text-slate-300 mb-2 flex items-start gap-2">
                                 <i class="fas fa-info-circle text-cyan-400 mt-0.5"></i>
                                 <div class="truncate">@lastSyncStatus</div>
                             </div>
@@ -243,24 +249,30 @@
                         <button type="button" onclick="executeOnlinePushSync()" id="btn-push-sync"
                                 class="w-full flex items-center justify-center gap-2.5 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-extrabold py-3 px-4 rounded-xl shadow-lg shadow-indigo-600/30 transition-all cursor-pointer">
                             <i class="fas fa-cloud-upload-alt text-base"></i>
-                            <span>Kirim &amp; Sinkronkan ke Host Induk Sekarang</span>
+                            <span>Kirim &amp; Sinkronkan ke Host Induk (Push)</span>
+                        </button>
+
+                        <button type="button" onclick="executeOnlinePullSync()" id="btn-pull-sync"
+                                class="w-full flex items-center justify-center gap-2 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-bold py-2.5 px-4 rounded-xl transition-all cursor-pointer">
+                            <i class="fas fa-cloud-download-alt text-cyan-400"></i>
+                            <span>Tarik Data &amp; Berkas dari Host Induk (Pull)</span>
                         </button>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- TAB 2: EKSPOR MANUAL SQL (FALLBACK JIKA OFFLINE / BEDA JARINGAN) -->
+        <!-- TAB 2: EKSPOR MANUAL PAKET (OFFLINE FALLBACK DENGAN BERKAS) -->
         <div id="tab-manual-export" class="hidden space-y-4">
             <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/60">
                 <div class="flex items-start justify-between gap-4 mb-4">
                     <div class="flex items-center gap-3">
                         <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-lg">
-                            <i class="fas fa-file-code"></i>
+                            <i class="fas fa-archive"></i>
                         </div>
                         <div>
-                            <h3 class="text-sm font-bold text-white">Ekspor Naskah SQL Sinkronisasi (.sql)</h3>
-                            <p class="text-xs text-slate-400">Mode manual bila server lokal tidak dapat diakses langsung oleh internet publik</p>
+                            <h3 class="text-sm font-bold text-white">Ekspor Paket Sinkronisasi Lengkap (.zip / .sql)</h3>
+                            <p class="text-xs text-slate-400">Unduh seluruh database berserta berkas lampiran catatan &amp; foto avatar untuk dipindahkan secara offline</p>
                         </div>
                     </div>
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
@@ -269,25 +281,60 @@
                 </div>
 
                 <p class="text-xs text-slate-300 leading-relaxed mb-5 max-w-3xl">
-                    Jika server lokal Host Induk berada di balik router/firewall kantor tanpa IP Publik atau VPN, unduh file naskah SQL sinkronisasi dari instance online ini (<code class="text-cyan-300 font-mono">tracker.saidilmuna.space</code>), lalu buka menu <strong>"Host Induk (Impor &amp; Bersihkan)"</strong> di server lokal Anda untuk mengunggah file ini.
+                    Jika server lokal Host Induk berada di balik router/firewall kantor tanpa IP Publik atau koneksi langsung, unduh <strong>Paket Lengkap (.zip)</strong> dari instance online ini (<code class="text-cyan-300 font-mono">tracker.saidilmuna.space</code>), lalu buka menu <strong>"Host Induk (Impor Paket &amp; Bersihkan)"</strong> di server lokal Anda untuk mengunggah paket ini. Seluruh data transaksi dan file fisik lampiran akan otomatis terpasang.
                 </p>
 
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
-                    <a href="/Configuration/ExportSyncSql?cleanBeforeSync=true"
-                       class="flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 text-white text-xs font-bold py-3 px-4 rounded-xl shadow-md transition-all cursor-pointer">
-                        <i class="fas fa-download"></i>
-                        <span>Unduh SQL Sync (Clean Slate)</span>
-                    </a>
-                    <a href="/Configuration/ExportSyncSql?cleanBeforeSync=false"
-                       class="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 text-xs font-bold py-3 px-4 rounded-xl transition-all cursor-pointer">
-                        <i class="fas fa-copy"></i>
-                        <span>Unduh SQL Sync (Merge / Upsert)</span>
-                    </a>
+                <div class="space-y-4">
+                    <!-- Option 1: Full Zip Package (Recommended) -->
+                    <div class="p-4 bg-slate-900/70 rounded-2xl border border-indigo-500/30">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase">Direkomendasikan</span>
+                                <span class="text-xs font-bold text-white">1. Paket Lengkap Sinkronisasi (.zip - Database + Berkas Uploads)</span>
+                            </div>
+                            <span class="text-[11px] text-slate-400">Termasuk Lampiran Catatan &amp; Avatar</span>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mb-3">
+                            Mengemas naskah SQL SQLite serta seluruh berkas pada folder <code class="text-cyan-400">wwwroot/uploads</code> ke dalam satu arsip terkompresi.
+                        </p>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+                            <a href="/Configuration/ExportSyncPackage?cleanBeforeSync=true"
+                               class="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md transition-all cursor-pointer">
+                                <i class="fas fa-file-archive"></i>
+                                <span>Unduh Paket .zip (Clean Slate)</span>
+                            </a>
+                            <a href="/Configuration/ExportSyncPackage?cleanBeforeSync=false"
+                               class="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 text-xs font-bold py-2.5 px-4 rounded-xl transition-all cursor-pointer">
+                                <i class="fas fa-copy"></i>
+                                <span>Unduh Paket .zip (Merge)</span>
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Option 2: SQL Only -->
+                    <div class="p-4 bg-slate-900/40 rounded-2xl border border-slate-800">
+                        <div class="flex items-center justify-between mb-2">
+                            <span class="text-xs font-bold text-slate-300">2. Naskah SQL Saja (.sql - Hanya Data Database)</span>
+                            <span class="text-[11px] text-slate-500">Tanpa Berkas Fisik</span>
+                        </div>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
+                            <a href="/Configuration/ExportSyncSql?cleanBeforeSync=true"
+                               class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer">
+                                <i class="fas fa-file-code text-cyan-400"></i>
+                                <span>Unduh SQL Saja (Clean Slate)</span>
+                            </a>
+                            <a href="/Configuration/ExportSyncSql?cleanBeforeSync=false"
+                               class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer">
+                                <i class="fas fa-file-code text-indigo-400"></i>
+                                <span>Unduh SQL Saja (Merge)</span>
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- TAB 3: HOST INDUK RECEIVER (UNGGAH FILE SQL & BERSIHKAN DATA) -->
+        <!-- TAB 3: HOST INDUK RECEIVER (UNGGAH PAKET .ZIP / .SQL & BERSIHKAN DATA) -->
         <div id="tab-host-receiver" class="hidden space-y-4">
             <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/60">
                 <div class="flex items-start justify-between gap-4 mb-4">
@@ -296,8 +343,8 @@
                             <i class="fas fa-server"></i>
                         </div>
                         <div>
-                            <h3 class="text-sm font-bold text-white">Panel Penerima Host Induk (Impor File SQL &amp; Pembersihan)</h3>
-                            <p class="text-xs text-slate-400">Jalankan di server Host Induk untuk mengeksekusi paket sinkronisasi dari child application</p>
+                            <h3 class="text-sm font-bold text-white">Panel Penerima Host Induk (Impor Paket .zip / .sql &amp; Pembersihan)</h3>
+                            <p class="text-xs text-slate-400">Jalankan di server Host Induk untuk menerapkan paket sinkronisasi beserta berkas lampiran</p>
                         </div>
                     </div>
                     <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
@@ -305,16 +352,16 @@
                     </span>
                 </div>
 
-                <form method="post" asp-action="UploadAndSyncSql" asp-controller="Configuration" enctype="multipart/form-data" id="form-upload-sql-sync" class="space-y-4">
+                <form method="post" asp-action="UploadAndSyncPackage" asp-controller="Configuration" enctype="multipart/form-data" id="form-upload-package-sync" class="space-y-4">
                     @Html.AntiForgeryToken()
 
                     <!-- File Dropzone Input -->
                     <div class="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-2xl p-6 text-center transition-all bg-slate-900/60 cursor-pointer"
-                         onclick="document.getElementById('sqlFileInput').click()">
+                         onclick="document.getElementById('packageFileInput').click()">
                         <i class="fas fa-cloud-upload-alt text-3xl text-emerald-400 mb-2"></i>
-                        <h4 class="text-xs font-bold text-slate-200" id="sqlFileLabel">Pilih atau Drag &amp; Drop berkas paket SQL (.sql) dari Child</h4>
-                        <p class="text-[11px] text-slate-400 mt-1">Mendukung berkas dump SQL hasil ekspor dari aplikasi Work Tracker Pro</p>
-                        <input type="file" id="sqlFileInput" name="sqlFile" accept=".sql" class="hidden" onchange="handleSqlFileSelect(this)" required>
+                        <h4 class="text-xs font-bold text-slate-200" id="packageFileLabel">Pilih atau Drag &amp; Drop berkas paket (.zip) atau naskah SQL (.sql) dari Child</h4>
+                        <p class="text-[11px] text-slate-400 mt-1">Mendukung berkas paket lengkap .zip (SQL + Folder Uploads) atau berkas naskah .sql</p>
+                        <input type="file" id="packageFileInput" name="packageFile" accept=".zip,.sql" class="hidden" onchange="handlePackageFileSelect(this)" required>
                     </div>
 
                     <!-- Options Checkbox -->
@@ -323,7 +370,7 @@
                             <input type="checkbox" name="cleanBeforeSync" value="true" checked class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-400">
                             <div>
                                 <span class="text-slate-200 font-bold block">1. Bersihkan Data Lama (Clean Slate)</span>
-                                <span class="text-slate-400 text-[11px]">Membersihkan data transaksi lama di Host Induk sebelum menerapkan naskah SQL.</span>
+                                <span class="text-slate-400 text-[11px]">Membersihkan data transaksi lama di Host Induk sebelum menerapkan paket.</span>
                             </div>
                         </label>
 
@@ -337,10 +384,10 @@
                     </div>
 
                     <div class="flex items-center justify-end gap-3 pt-2">
-                        <button type="submit" id="btn-submit-upload-sql" disabled
+                        <button type="submit" id="btn-submit-upload-package" disabled
                                 class="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow-md transition-all cursor-pointer">
                             <i class="fas fa-play"></i>
-                            <span>Jalankan Sinkronisasi File SQL</span>
+                            <span>Jalankan Sinkronisasi Paket &amp; Berkas</span>
                         </button>
                     </div>
                 </form>
@@ -932,6 +979,7 @@ function executeOnlinePushSync() {
     const apiKey = document.getElementById('syncApiKeyInput').value.trim();
     const cleanBefore = document.getElementById('pushCleanBeforeSync').checked;
     const backupBefore = document.getElementById('pushBackupBeforeSync').checked;
+    const syncFiles = document.getElementById('pushSyncFiles')?.checked ?? true;
 
     if (!targetUrl) {
         if (typeof SwalAlert === 'function') {
@@ -944,10 +992,11 @@ function executeOnlinePushSync() {
 
     const confirmHtml = `
         <div class="text-left text-xs space-y-2 mt-2">
-            <p>Anda akan mengirimkan seluruh data saat ini ke Host Induk di <strong>${targetUrl}</strong>.</p>
+            <p>Anda akan mengirimkan seluruh data dan berkas saat ini ke Host Induk di <strong>${targetUrl}</strong>.</p>
             <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
                 <div>• Opsi Bersihkan Data Lama di Host: <strong>${cleanBefore ? 'Ya (Clean Slate)' : 'Tidak (Merge)'}</strong></div>
                 <div>• Opsi Buat Backup di Host: <strong>${backupBefore ? 'Ya (Otomatis .db)' : 'Tidak'}</strong></div>
+                <div>• Opsi Sertakan Berkas Lampiran / Upload: <strong>${syncFiles ? 'Ya (Seluruh Berkas & Avatar)' : 'Tidak (Data Saja)'}</strong></div>
             </div>
             <p class="text-slate-500">Pastikan server Host Induk sedang aktif dan menerima koneksi API.</p>
         </div>
@@ -955,7 +1004,7 @@ function executeOnlinePushSync() {
 
     if (typeof Swal === 'function') {
         Swal.fire({
-            title: 'Kirim Data ke Host Induk?',
+            title: 'Kirim Data & Berkas ke Host Induk?',
             html: confirmHtml,
             icon: 'question',
             showCancelButton: true,
@@ -965,21 +1014,21 @@ function executeOnlinePushSync() {
             cancelButtonText: 'Batal'
         }).then((result) => {
             if (result.isConfirmed) {
-                performPushSync(targetUrl, apiKey, cleanBefore, backupBefore);
+                performPushSync(targetUrl, apiKey, cleanBefore, backupBefore, syncFiles);
             }
         });
     } else {
-        if (confirm(`Kirim data ke Host Induk (${targetUrl}) sekarang?`)) {
-            performPushSync(targetUrl, apiKey, cleanBefore, backupBefore);
+        if (confirm(`Kirim data & berkas ke Host Induk (${targetUrl}) sekarang?`)) {
+            performPushSync(targetUrl, apiKey, cleanBefore, backupBefore, syncFiles);
         }
     }
 }
 
-async function performPushSync(targetUrl, apiKey, cleanBefore, backupBefore) {
+async function performPushSync(targetUrl, apiKey, cleanBefore, backupBefore, syncFiles) {
     const btn = document.getElementById('btn-push-sync');
     const origHtml = btn.innerHTML;
     btn.disabled = true;
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sedang Mengirim &amp; Sinkronisasi Data...';
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sedang Mengirim &amp; Sinkronisasi Data &amp; Berkas...';
 
     try {
         const res = await fetch('/api/sync/push', {
@@ -989,7 +1038,8 @@ async function performPushSync(targetUrl, apiKey, cleanBefore, backupBefore) {
                 TargetHostUrl: targetUrl,
                 ApiKey: apiKey,
                 CleanBeforeSync: cleanBefore,
-                BackupBeforeSync: backupBefore
+                BackupBeforeSync: backupBefore,
+                SyncFiles: syncFiles
             })
         });
 
@@ -1000,19 +1050,22 @@ async function performPushSync(targetUrl, apiKey, cleanBefore, backupBefore) {
         if (data.success) {
             const tableList = data.data?.affectedTables?.join(', ') || 'Tabel transaksi & master';
             const duration = data.data?.executionDurationMs || 0;
+            const filesSynced = data.data?.syncedFilesCount ?? 0;
+            const filesSize = data.data?.syncedFilesSizeFormatted || '0 B';
+            const fileInfo = filesSynced > 0 ? `<br><strong>Berkas disinkronkan:</strong> <span class="text-emerald-600 font-bold">${filesSynced} berkas (${filesSize})</span>` : '';
             const backupMsg = data.data?.backupFileName ? `<br><small class="text-slate-500">Backup Host: ${data.data.backupFileName}</small>` : '';
 
             if (typeof Swal === 'function') {
                 Swal.fire({
                     title: 'Sinkronisasi Berhasil!',
-                    html: `Seluruh data berhasil dikirim dan diterapkan di Host Induk dalam <strong>${duration}ms</strong>.<br><br><strong>Tabel yang diperbarui:</strong><br><span class="text-xs font-mono text-indigo-600">${tableList}</span>${backupMsg}`,
+                    html: `Seluruh data &amp; berkas berhasil dikirim dan diterapkan di Host Induk dalam <strong>${duration}ms</strong>.${fileInfo}<br><br><strong>Tabel yang diperbarui:</strong><br><span class="text-xs font-mono text-indigo-600">${tableList}</span>${backupMsg}`,
                     icon: 'success',
                     confirmButtonColor: '#4F46E5'
                 }).then(() => {
                     window.location.reload();
                 });
             } else {
-                alert(`Sinkronisasi Berhasil! Durasi: ${duration}ms.`);
+                alert(`Sinkronisasi Berhasil! Durasi: ${duration}ms. Berkas: ${filesSynced}`);
                 window.location.reload();
             }
         } else {
@@ -1033,18 +1086,142 @@ async function performPushSync(targetUrl, apiKey, cleanBefore, backupBefore) {
     }
 }
 
-function handleSqlFileSelect(input) {
-    const label = document.getElementById('sqlFileLabel');
-    const submitBtn = document.getElementById('btn-submit-upload-sql');
+function executeOnlinePullSync() {
+    const targetUrl = document.getElementById('syncHostUrlInput').value.trim();
+    const apiKey = document.getElementById('syncApiKeyInput').value.trim();
+    const cleanBefore = document.getElementById('pushCleanBeforeSync').checked;
+    const backupBefore = document.getElementById('pushBackupBeforeSync').checked;
+
+    if (!targetUrl) {
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Target Host Kosong', 'Harap isi URL Host Induk sebelum melakukan penarikan data.', 'warning');
+        } else {
+            alert('Harap isi URL Host Induk!');
+        }
+        return;
+    }
+
+    const confirmHtml = `
+        <div class="text-left text-xs space-y-2 mt-2">
+            <p>Anda akan <strong>menarik seluruh data dan berkas lampiran</strong> dari Host Induk (<strong>${targetUrl}</strong>) ke server ini.</p>
+            <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-200">
+                <div>• Opsi Bersihkan Data Lokal: <strong>${cleanBefore ? 'Ya (Clean Slate)' : 'Tidak (Merge)'}</strong></div>
+                <div>• Opsi Buat Backup Lokal: <strong>${backupBefore ? 'Ya (Otomatis .db)' : 'Tidak'}</strong></div>
+            </div>
+            <p class="text-amber-600 font-semibold">Data &amp; berkas lokal akan diperbarui sesuai data terbaru dari Host Induk.</p>
+        </div>
+    `;
+
+    if (typeof Swal === 'function') {
+        Swal.fire({
+            title: 'Tarik Data & Berkas dari Host Induk?',
+            html: confirmHtml,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#0284C7',
+            cancelButtonColor: '#64748B',
+            confirmButtonText: '<i class="fas fa-cloud-download-alt mr-1.5"></i>Ya, Tarik Sekarang',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                performPullSync(targetUrl, apiKey, cleanBefore, backupBefore);
+            }
+        });
+    } else {
+        if (confirm(`Tarik data & berkas dari Host Induk (${targetUrl}) sekarang?`)) {
+            performPullSync(targetUrl, apiKey, cleanBefore, backupBefore);
+        }
+    }
+}
+
+async function performPullSync(targetUrl, apiKey, cleanBefore, backupBefore) {
+    const btn = document.getElementById('btn-pull-sync');
+    const origHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Sedang Mengunduh &amp; Menerapkan Data dari Host Induk...';
+
+    try {
+        const res = await fetch('/api/sync/pull', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                TargetHostUrl: targetUrl,
+                ApiKey: apiKey,
+                CleanBeforeSync: cleanBefore,
+                BackupBeforeSync: backupBefore
+            })
+        });
+
+        const data = await res.json();
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+
+        if (data.success) {
+            const tableList = data.data?.affectedTables?.join(', ') || 'Tabel database';
+            const duration = data.data?.executionDurationMs || 0;
+            const filesSynced = data.data?.syncedFilesCount ?? 0;
+            const filesSize = data.data?.syncedFilesSizeFormatted || '0 B';
+            const fileInfo = filesSynced > 0 ? `<br><strong>Berkas fisik yang disalin:</strong> <span class="text-emerald-600 font-bold">${filesSynced} berkas (${filesSize})</span>` : '';
+
+            if (typeof Swal === 'function') {
+                Swal.fire({
+                    title: 'Tarik Data Berhasil!',
+                    html: `Data &amp; berkas dari Host Induk berhasil diterapkan di instance lokal ini dalam <strong>${duration}ms</strong>.${fileInfo}<br><br><strong>Tabel yang diperbarui:</strong><br><span class="text-xs font-mono text-indigo-600">${tableList}</span>`,
+                    icon: 'success',
+                    confirmButtonColor: '#0284C7'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                alert(`Tarik Data Berhasil! Durasi: ${duration}ms.`);
+                window.location.reload();
+            }
+        } else {
+            if (typeof SwalAlert === 'function') {
+                SwalAlert('Gagal Tarik Data', data.message || 'Terjadi kesalahan saat menarik data dari Host Induk.', 'error');
+            } else {
+                alert('Gagal Tarik Data: ' + data.message);
+            }
+        }
+    } catch (err) {
+        btn.disabled = false;
+        btn.innerHTML = origHtml;
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Kesalahan Jaringan', `Gagal menghubungi Host Induk: ${err.message}`, 'error');
+        } else {
+            alert('Kesalahan Jaringan: ' + err.message);
+        }
+    }
+}
+
+function handlePackageFileSelect(input) {
+    const label = document.getElementById('packageFileLabel') || document.getElementById('sqlFileLabel');
+    const submitBtn = document.getElementById('btn-submit-upload-package') || document.getElementById('btn-submit-upload-sql');
     if (input.files && input.files[0]) {
         const file = input.files[0];
-        label.innerHTML = `<span class="text-emerald-300 font-bold"><i class="fas fa-file-code mr-1"></i>${file.name}</span> (${(file.size / 1024).toFixed(1)} KB)`;
+        const isZip = file.name.endsWith('.zip');
+        const icon = isZip ? 'fa-file-archive text-amber-400' : 'fa-file-code text-cyan-400';
+        label.innerHTML = `<span class="text-emerald-300 font-bold"><i class="fas ${icon} mr-1"></i>${file.name}</span> (${(file.size / 1024).toFixed(1)} KB)`;
         submitBtn.disabled = false;
     } else {
-        label.innerText = 'Pilih atau Drag & Drop berkas paket SQL (.sql) dari Child';
+        label.innerText = 'Pilih atau Drag & Drop berkas paket (.zip) atau naskah SQL (.sql) dari Child';
         submitBtn.disabled = true;
     }
 }
+
+function handleSqlFileSelect(input) {
+    handlePackageFileSelect(input);
+}
+
+document.getElementById('form-upload-package-sync')?.addEventListener('submit', function(e) {
+    const fileInput = document.getElementById('packageFileInput');
+    if (!fileInput.files || !fileInput.files[0]) {
+        e.preventDefault();
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Berkas Belum Dipilih', 'Silakan pilih berkas paket (.zip) atau SQL terlebih dahulu sebelum menjalankan sinkronisasi.', 'warning');
+        }
+    }
+});
 
 document.getElementById('form-upload-sql-sync')?.addEventListener('submit', function(e) {
     const fileInput = document.getElementById('sqlFileInput');

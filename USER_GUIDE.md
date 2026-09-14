@@ -356,9 +356,22 @@ Khusus untuk peran **Administrator**, menu **Master Data** (`/MasterData`) dan *
 ### 13.3 Master Hari Libur Nasional
 - Mengelola daftar hari libur resmi yang terintegrasi otomatis dengan laporan Timesheet Excel.
 
-### 13.4 Sinkronisasi Multi-Instance ke Host Induk
-- **Online API Push**: Mengirimkan data pembaruan tugas dan sesi jam kerja dari server cabang/lokal ke Host Induk terpusat.
-- **Export/Import SQL Script**: Mendukung sinkronisasi manual antar instance melalui skrip dump SQL.
+### 13.4 Sinkronisasi Multi-Instance ke Host Induk (Online Push/Pull & Paket Zip Berkas)
+Fitur ini memungkinkan instance lokal atau laptop cabang melakukan sinkronisasi data pekerjaan dan seluruh berkas lampiran ke atau dari Server Host Induk terpusat:
+- **1. Online Push Sync (Kirim ke Host)**:
+  - Masukkan URL Host Induk (contoh: `https://host-tracker.perusahaan.com`) dan **API Secret Key**.
+  - Aktifkan tombol toggle **"Sertakan Berkas Uploads & Lampiran"** agar seluruh file lampiran catatan (`uploads/notes/*`) dan avatar profil (`uploads/avatars/*`) ikut dikemas dan dikirimkan ke server induk.
+  - Klik **"Test Koneksi"** untuk memverifikasi kesiapan host dan melihat statistik data/file di server tujuan.
+  - Klik **"Mulai Push Sync ke Host"** untuk menjalankan sinkronisasi data dan berkas secara otomatis.
+- **2. Online Pull Sync (Tarik dari Host)**:
+  - Digunakan pada server child untuk menarik pembaruan tugas dan lampiran terbaru dari server induk.
+  - Klik tombol **"Tarik Data dari Host (Pull Sync)"**.
+- **3. Ekspor Paket Lengkap (.zip Offline)**:
+  - Klik tombol **"Unduh Paket Sinkronisasi (.zip)"** pada tab *Ekspor Paket*.
+  - Menghasilkan file `.zip` terstruktur berisi `manifest.json`, `sync_data.sql` DML terurut, dan seluruh folder berkas `uploads/`.
+- **4. Impor Paket (.zip / .sql)**:
+  - Buka tab *Impor Data / Paket*, lalu unggah file `.zip` (Full Package) atau `.sql` (Dump SQL).
+  - Sistem akan mengekstrak berkas lampiran ke folder target secara aman serta mengeksekusi script transaksi database secara otomatis.
 
 ### 13.5 Backup & Export Database (.db & .sql)
 - **Export File Database (.db)**: Mengunduh berkas biner SQLite `.db` utuh untuk pencadangan offline (*full binary backup*).

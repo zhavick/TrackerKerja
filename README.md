@@ -39,9 +39,10 @@
 - **Pencatatan Kehadiran Harian**: Check-in dan Check-out harian dengan status kehadiran fleksibel (*Hadir, WFH, Sakit, Izin, Cuti, Libur, Terlambat*).
 - **Rekonsiliasi Presensi Tim**: Fasilitas pemantauan riwayat absensi bulanan untuk efisiensi evaluasi produktivitas.
 
-### 🔄 5. Sinkronisasi Multi-Instance Host Induk
-- **Online API Push**: Kemampuan mengirim dan menyinkronkan data tugas dan sesi kerja dari instance lokal ke Host Induk / Server Terpusat secara otomatis.
-- **Manual SQL Export & Import**: Ekspor skrip SQL DDL & DML komprehensif atau file biner SQLite `.db` untuk migrasi offline antar lingkungan.
+### 🔄 5. Sinkronisasi Multi-Instance Host Induk & File Attachments
+- **Online Push & Pull Sync**: Kemampuan mengirim (Push) dan menarik (Pull) data tugas, sesi kerja, dan seluruh berkas lampiran (`uploads/notes/*`, `uploads/avatars/*`) antara instance lokal dengan Host Induk secara real-time via REST API.
+- **Full Package (.zip) Export & Import**: Ekspor arsip paket mandiri berstruktur standar (`manifest.json`, `sync_data.sql`, direktori `uploads/`) untuk migrasi data dan berkas pada jaringan tertutup (*air-gapped*).
+- **Manual SQL Export & Import**: Ekspor skrip SQL DDL & DML komprehensif atau file biner SQLite `.db` untuk migrasi offline database.
 
 ### 📋 6. Manajemen Tugas, Parenting & Kanban Board
 - **Hierarki Tugas**: Relasi tugas induk (*Parent Task*) dan sub-tugas (*Child Task*).
@@ -67,7 +68,7 @@
 ### 🛠️ 10. Developer Tools & RESTful API
 - **SQL Formatter & Beautifier**: Alat bantu pemformatan dan validasi sintaks SQL kueri multi-dialek.
 - **JSON Payload Tools**: Pemformatan, validasi sintaks, dan penyimpanan template payload JSON.
-- **70+ Endpoint RESTful**: Terintegrasi penuh dengan Swagger OpenAPI v3.1 interaktif ([http://localhost:5000/swagger](http://localhost:5000/swagger)) dan Postman Collection.
+- **85+ Endpoint RESTful**: Terintegrasi penuh dengan Swagger OpenAPI v3.1 interaktif ([http://localhost:5000/swagger](http://localhost:5000/swagger)) dan Postman Collection.
 
 ### 🎨 11. Sistem Tema Dinamis (16 Tema)
 - **10 Tema Terang**: *Indigo Violet*, *Oceanic Cyan*, *Emerald Forest*, *Sunset Orange*, *Rose Pink*, *Midnight Dark*, *Cyberpunk Neon*, *Royal Amethyst*, *Slate Minimal*, *Warm Amber*.

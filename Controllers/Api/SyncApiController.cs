@@ -42,6 +42,7 @@ namespace TrackerKerja.Controllers.Api
             var totalSessions = await _db.Sessions.CountAsync();
             var totalProjects = await _db.Projects.CountAsync();
             var totalUsers = await _db.Users.CountAsync();
+            var (fileCount, totalBytes, formattedSize) = await _syncService.GetUploadsStatsAsync();
 
             var setting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GlobalBaseUrl");
             var hostUrl = setting?.Value ?? $"{Request.Scheme}://{Request.Host}";
@@ -57,7 +58,10 @@ namespace TrackerKerja.Controllers.Api
                 TotalSessions = totalSessions,
                 TotalProjects = totalProjects,
                 TotalUsers = totalUsers,
-                Message = "Host Induk siap menerima sinkronisasi data dari child application."
+                TotalUploadFiles = fileCount,
+                TotalUploadsSizeBytes = totalBytes,
+                TotalUploadsFormatted = formattedSize,
+                Message = "Host Induk siap menerima sinkronisasi data dan berkas dari child application."
             };
 
             return Ok(ApiResponse<SyncPingResponseDto>.Ok(dto, "Koneksi Host Induk aktif dan terverifikasi."));
@@ -66,7 +70,7 @@ namespace TrackerKerja.Controllers.Api
         /// <summary>
         /// Menerima payload sinkronisasi dari Child Application di Host Induk (POST /api/sync/receive)
         /// </summary>
-        /// <param name="request">Payload sinkronisasi berisi SQL script dan opsi pembersihan</param>
+        /// <param name="request">Payload sinkronisasi berisi SQL script, arsip zip berkas uploads, dan opsi pembersihan</param>
         [HttpPost("receive")]
         [ProducesResponseType(typeof(ApiResponse<SyncResultDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
@@ -95,7 +99,8 @@ namespace TrackerKerja.Controllers.Api
                 request.SqlScript,
                 request.CleanBeforeSync,
                 request.BackupBeforeSync,
-                request.SourceLabel ?? request.SourceInstanceUrl);
+                request.SourceLabel ?? request.SourceInstanceUrl,
+                request.FilesZipBase64);
 
             if (!result.Success)
             {
@@ -106,7 +111,7 @@ namespace TrackerKerja.Controllers.Api
         }
 
         /// <summary>
-        /// Memicu proses pengiriman sinkronisasi dari instance ini ke Host Induk target (POST /api/sync/push)
+        /// Memicu proses pengiriman sinkronisasi data &amp; berkas dari instance ini ke Host Induk target (POST /api/sync/push)
         /// </summary>
         [HttpPost("push")]
         [ProducesResponseType(typeof(ApiResponse<SyncResultDto>), StatusCodes.Status200OK)]
@@ -128,7 +133,8 @@ namespace TrackerKerja.Controllers.Api
                 apiKey,
                 request.CleanBeforeSync,
                 request.BackupBeforeSync,
-                request.SourceLabel);
+                request.SourceLabel,
+                request.SyncFiles);
 
             if (!result.Success)
             {
@@ -136,6 +142,130 @@ namespace TrackerKerja.Controllers.Api
             }
 
             return Ok(ApiResponse<SyncResultDto>.Ok(result, result.Message));
+        }
+
+        /// <summary>
+        /// Menarik (Pull) seluruh data &amp; berkas dari Host Induk ke instance ini (POST /api/sync/pull)
+        /// </summary>
+        [HttpPost("pull")]
+        [ProducesResponseType(typeof(ApiResponse<SyncResultDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> PullFromHost([FromBody] SyncPullRequestDto request)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
+                return BadRequest(ApiResponse<object>.Fail("Validasi request gagal.", errors));
+            }
+
+            var settings = await _syncService.GetSyncSettingsAsync();
+            var targetUrl = !string.IsNullOrWhiteSpace(request.TargetHostUrl) ? request.TargetHostUrl : settings.TargetHostUrl;
+            var apiKey = !string.IsNullOrWhiteSpace(request.ApiKey) ? request.ApiKey : settings.ApiKey;
+
+            var result = await _syncService.PullSyncFromHostAsync(
+                targetUrl,
+                apiKey,
+                request.CleanBeforeSync,
+                request.BackupBeforeSync);
+
+            if (!result.Success)
+            {
+                return BadRequest(ApiResponse<SyncResultDto>.Fail(result.Message, result.ErrorDetails != null ? new List<string> { result.ErrorDetails } : null));
+            }
+
+            return Ok(ApiResponse<SyncResultDto>.Ok(result, result.Message));
+        }
+
+        /// <summary>
+        /// Mengunduh Paket Lengkap Sinkronisasi (.zip) berisi SQL dump dan folder uploads (GET /api/sync/export-package)
+        /// </summary>
+        [HttpGet("export-package")]
+        [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+        public async Task<IActionResult> ExportSyncPackage([FromQuery] bool cleanBeforeSync = true)
+        {
+            // Optional: verify header if provided
+            if (Request.Headers.TryGetValue("X-Sync-ApiKey", out var apiKeyHeader))
+            {
+                var isValid = await _syncService.VerifyApiKeyAsync(apiKeyHeader.ToString());
+                if (!isValid)
+                {
+                    return Unauthorized(ApiResponse<object>.Fail("Autentikasi gagal: API Key sinkronisasi tidak valid."));
+                }
+            }
+
+            try
+            {
+                var zipBytes = await _syncService.GenerateFullSyncPackageZipAsync(cleanBeforeSync);
+                var fileName = $"TrackerKerja_SyncPackage_{DateTime.Now:yyyyMMdd_HHmmss}.zip";
+                return File(zipBytes, "application/zip", fileName);
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<object>.Fail($"Gagal membuat paket sinkronisasi: {ex.Message}"));
+            }
+        }
+
+        /// <summary>
+        /// Mengunggah paket sinkronisasi (.zip atau .sql) untuk diterapkan di server ini (POST /api/sync/import-package)
+        /// </summary>
+        [HttpPost("import-package")]
+        [ProducesResponseType(typeof(ApiResponse<SyncResultDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ImportPackageFile([FromForm] SyncPackageUploadRequest request)
+        {
+            if (request.PackageFile == null || request.PackageFile.Length == 0)
+            {
+                return BadRequest(ApiResponse<object>.Fail("Berkas paket sinkronisasi tidak boleh kosong. Silakan pilih berkas .zip atau .sql yang valid."));
+            }
+
+            var fileName = request.PackageFile.FileName;
+            var isZip = fileName.EndsWith(".zip", StringComparison.OrdinalIgnoreCase);
+            var isSql = fileName.EndsWith(".sql", StringComparison.OrdinalIgnoreCase);
+
+            if (!isZip && !isSql)
+            {
+                return BadRequest(ApiResponse<object>.Fail("Format berkas tidak didukung. Harap unggah paket berformat .zip atau .sql."));
+            }
+
+            try
+            {
+                using var stream = request.PackageFile.OpenReadStream();
+                SyncResultDto result;
+
+                if (isZip)
+                {
+                    result = await _syncService.ExecutePackageSyncAsync(
+                        stream,
+                        request.CleanBeforeSync,
+                        request.BackupBeforeSync,
+                        $"Upload Paket .zip ({fileName})");
+                }
+                else
+                {
+                    string sqlContent;
+                    using (var reader = new StreamReader(stream))
+                    {
+                        sqlContent = await reader.ReadToEndAsync();
+                    }
+
+                    result = await _syncService.ExecuteSqlSyncAsync(
+                        sqlContent,
+                        request.CleanBeforeSync,
+                        request.BackupBeforeSync,
+                        $"Upload Berkas .sql ({fileName})");
+                }
+
+                if (!result.Success)
+                {
+                    return BadRequest(ApiResponse<SyncResultDto>.Fail(result.Message, result.ErrorDetails != null ? new List<string> { result.ErrorDetails } : null));
+                }
+
+                return Ok(ApiResponse<SyncResultDto>.Ok(result, result.Message));
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(ApiResponse<object>.Fail($"Terjadi kesalahan saat mengeksekusi paket sinkronisasi: {ex.Message}"));
+            }
         }
 
         /// <summary>

@@ -17,6 +17,18 @@ builder.Services.AddControllersWithViews(options =>
     options.Filters.Add<AuditLogActionFilter>();
 });
 
+// Configure upload & request size limits for sync packages and attachments (up to 200MB)
+builder.Services.Configure<Microsoft.AspNetCore.Http.Features.FormOptions>(options =>
+{
+    options.MultipartBodyLengthLimit = 200 * 1024 * 1024; // 200 MB
+    options.ValueLengthLimit = int.MaxValue;
+    options.MultipartHeadersLengthLimit = int.MaxValue;
+});
+builder.WebHost.ConfigureKestrel(serverOptions =>
+{
+    serverOptions.Limits.MaxRequestBodySize = 200 * 1024 * 1024; // 200 MB
+});
+
 // Add Swagger / OpenAPI documentation
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(options =>
@@ -620,5 +632,11 @@ app.UseSession();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+if (args.Contains("--run-sync-tests"))
+{
+    var exitCode = await TrackerKerja.Tests.SyncTestRunner.RunAllTestsAsync();
+    Environment.Exit(exitCode);
+}
 
 app.Run();

@@ -94,7 +94,7 @@
                     <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                         <i class="fas fa-server text-indigo-500"></i> Dialek SQL
                     </label>
-                    <select id="sql-dialect" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all cursor-pointer">
+                    <select id="sql-dialect" class="select2 select2-compact w-full" data-placeholder="Pilih Dialek SQL">
                         <option value="sql" selected>Standard SQL (ANSI)</option>
                         <option value="postgresql">PostgreSQL</option>
                         <option value="mysql">MySQL</option>
@@ -118,7 +118,7 @@
                     <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                         <i class="fas fa-indent text-cyan-500"></i> Indentasi
                     </label>
-                    <select id="sql-indent" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all cursor-pointer">
+                    <select id="sql-indent" class="select2 select2-compact w-full" data-placeholder="Pilih Indentasi">
                         <option value="2">2 Spasi</option>
                         <option value="4" selected>4 Spasi</option>
                         <option value="8">8 Spasi</option>
@@ -131,7 +131,7 @@
                     <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                         <i class="fas fa-font text-amber-500"></i> Keyword Case
                     </label>
-                    <select id="sql-casing" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-slate-700 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all cursor-pointer">
+                    <select id="sql-casing" class="select2 select2-compact w-full" data-placeholder="Pilih Huruf Besar/Kecil">
                         <option value="upper" selected>UPPERCASE (SELECT, WHERE)</option>
                         <option value="lower">lowercase (select, where)</option>
                         <option value="preserve">Pertahankan Asli</option>
@@ -143,7 +143,7 @@
                     <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center gap-1">
                         <i class="fas fa-file-code text-emerald-500"></i> Contoh Template
                     </label>
-                    <select id="sql-samples" onchange="loadSampleQuery(this.value)" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-semibold text-indigo-700 bg-indigo-50/50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all cursor-pointer">
+                    <select id="sql-samples" onchange="loadSampleQuery(this.value)" class="select2 select2-compact w-full" data-placeholder="-- Pilih Contoh Query --">
                         <option value="">-- Pilih Contoh Query --</option>
                         <option value="join_aggregate">1. SELECT JOIN, Group By & Subquery</option>
                         <option value="cte_window">2. CTE (WITH) & Window Function</option>
@@ -268,7 +268,7 @@
                            class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400">
                 </div>
                 <div class="md:col-span-1">
-                    <select id="save-sql-task" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-400">
+                    <select id="save-sql-task" class="select2 w-full" data-placeholder="-- Hubungkan ke Tugas (Opsional) --">
                         <option value="">-- Hubungkan ke Tugas (Opsional) --</option>
                         @foreach (var t in tasks)
                         {

@@ -611,8 +611,12 @@ if (!app.Environment.IsDevelopment())
     app.UseHsts();
 }
 
-app.UseHttpsRedirection();
-app.UseStaticFiles();
+var staticFileContentTypeProvider = new Microsoft.AspNetCore.StaticFiles.FileExtensionContentTypeProvider();
+staticFileContentTypeProvider.Mappings[".lottie"] = "application/zip";
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = staticFileContentTypeProvider
+});
 
 // Enable Swagger & Swagger UI
 app.UseSwagger();

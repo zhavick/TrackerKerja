@@ -1136,27 +1136,29 @@
         }
     }, true);
 
-    // ── SELECT2 AUTO-INITIALIZER ─────────────────────────────────
-    function initAppSelect2(scope) {
+    // ── SELECT2 AUTO-INITIALIZER (SEARCH BOX FOR ALL MODULE DROPDOWNS) ──
+    window.initAppSelect2 = function(scope) {
         if (typeof jQuery === 'undefined' || typeof jQuery.fn.select2 === 'undefined') return;
         var root = scope ? jQuery(scope) : jQuery(document);
         
-        root.find('select.select2, select.select2-searchable, select[data-search="true"]').each(function() {
+        root.find('select.select2, select.select2-searchable, select.select2-compact, select[data-search="true"], select.searchable-select').each(function() {
             var $el = jQuery(this);
             if ($el.hasClass('select2-hidden-accessible')) return; // already initialized
             
-            var placeholder = $el.attr('placeholder') || $el.data('placeholder') || '-- Pilih Opsi --';
-            var allowClear = $el.data('allow-clear') === true || $el.attr('data-allow-clear') === 'true';
+            var placeholder = $el.attr('placeholder') || $el.data('placeholder') || $el.find('option[value=""]').first().text() || '-- Pilih / Cari Opsi --';
+            var allowClear = $el.data('allow-clear') === true || $el.attr('data-allow-clear') === 'true' || $el.find('option[value=""]').length > 0;
             var isCompact = $el.hasClass('select2-compact') || $el.closest('.select2-compact-container').length > 0;
             
-            var modalParent = $el.closest('.fixed, [role="dialog"], #quickLogModal, #reset-modal');
+            var modalParent = $el.closest('.fixed, [role="dialog"], #quickLogModal, #reset-modal, #manualAttendanceModal, #leaveModal, #timesheetReportModal, #exportModal, #bulkModal, #task-modal, #createBadgeModal, #editBadgeModal, #saveSqlTaskModal');
             var options = {
                 width: '100%',
                 placeholder: placeholder,
                 allowClear: allowClear,
+                minimumResultsForSearch: 0, // ALWAYS show the search box for fast searching
                 language: {
                     noResults: function() { return "Tidak ada data yang cocok"; },
-                    searching: function() { return "Mencari..."; }
+                    searching: function() { return "Mencari..."; },
+                    inputTooShort: function() { return "Ketik untuk mencari..."; }
                 }
             };
             
@@ -1169,8 +1171,31 @@
             }
             
             $el.select2(options);
+
+            // Forward select2 events to native change event so inline onchange="this.form.submit()" works
+            $el.on('select2:select select2:clear', function() {
+                var nativeEl = this;
+                setTimeout(function() {
+                    var evt = new Event('change', { bubbles: true });
+                    nativeEl.dispatchEvent(evt);
+                }, 10);
+            });
+        });
+    };
+
+    // Auto-run Select2 on DOM Ready and Window Load
+    if (typeof jQuery !== 'undefined') {
+        jQuery(document).ready(function() {
+            window.initAppSelect2();
+        });
+    } else {
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.initAppSelect2) window.initAppSelect2();
         });
     }
+    window.addEventListener('load', function() {
+        if (window.initAppSelect2) window.initAppSelect2();
+    });
 
     // ── USER GUIDE POPUP MODAL ──────────────────────────────────
     function openUserGuideModal() {

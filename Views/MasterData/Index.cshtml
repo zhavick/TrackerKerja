@@ -636,7 +636,7 @@
                         </div>
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kategori</label>
-                            <select name="Category" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-amber-500 transition-all bg-white">
+                            <select name="Category" class="select2 w-full" data-placeholder="Pilih Kategori">
                                 <option value="Tasks">Tasks</option>
                                 <option value="Timesheets">Timesheets</option>
                                 <option value="Notes">Notes</option>
@@ -655,7 +655,7 @@
                     <div class="grid grid-cols-2 gap-3">
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kelangkaan (Rarity)</label>
-                            <select name="Rarity" class="w-full px-3 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-amber-500 transition-all bg-white">
+                            <select name="Rarity" class="select2 w-full" data-placeholder="Pilih Kelangkaan">
                                 <option value="1">Common (⚪ Biasa)</option>
                                 <option value="2">Rare (🔵 Langka)</option>
                                 <option value="3">Epic (🟣 Epik)</option>
@@ -691,7 +691,7 @@
                     <div class="p-3.5 bg-amber-50/60 rounded-xl border border-amber-200/80 space-y-3">
                         <label class="block text-xs font-bold text-amber-900 uppercase tracking-wider">Mekanisme Pemicu (Trigger)</label>
                         <div>
-                            <select name="TriggerType" class="w-full px-3 py-2 rounded-xl border border-amber-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 font-semibold">
+                            <select name="TriggerType" class="select2 w-full" data-placeholder="Pilih Pemicu">
                                 <option value="1">Auto: Jumlah Tugas Selesai (Done Tasks)</option>
                                 <option value="2">Auto: Total Jam Kerja (Hours Logged)</option>
                                 <option value="3">Auto: Jumlah Catatan Kerja (Notes Count)</option>
@@ -1049,7 +1049,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kategori</label>
-                    <select name="Category" id="editBadgeCategory" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-amber-500 bg-white">
+                    <select name="Category" id="editBadgeCategory" class="select2 w-full" data-placeholder="Pilih Kategori">
                         <option value="Tasks">Tasks</option>
                         <option value="Timesheets">Timesheets</option>
                         <option value="Notes">Notes</option>
@@ -1067,7 +1067,7 @@
             <div class="grid grid-cols-2 gap-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kelangkaan (Rarity)</label>
-                    <select name="Rarity" id="editBadgeRarity" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-amber-500 bg-white">
+                    <select name="Rarity" id="editBadgeRarity" class="select2 w-full" data-placeholder="Pilih Kelangkaan">
                         <option value="1">Common (⚪ Biasa)</option>
                         <option value="2">Rare (🔵 Langka)</option>
                         <option value="3">Epic (🟣 Epik)</option>
@@ -1100,7 +1100,7 @@
             <div class="p-3.5 bg-amber-50/60 rounded-xl border border-amber-200/80 space-y-3">
                 <label class="block text-xs font-bold text-amber-900 uppercase tracking-wider">Mekanisme Pemicu (Trigger)</label>
                 <div>
-                    <select name="TriggerType" id="editBadgeTriggerType" class="w-full px-3 py-2 rounded-xl border border-amber-200 text-xs bg-white focus:ring-2 focus:ring-amber-500 font-semibold">
+                    <select name="TriggerType" id="editBadgeTriggerType" class="select2 w-full" data-placeholder="Pilih Pemicu">
                         <option value="1">Auto: Jumlah Tugas Selesai (Done Tasks)</option>
                         <option value="2">Auto: Total Jam Kerja (Hours Logged)</option>
                         <option value="3">Auto: Jumlah Catatan Kerja (Notes Count)</option>
@@ -1115,8 +1115,8 @@
                 </div>
             </div>
 
-            <div>
-                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi / Syarat</label>
+            <div class="space-y-1.5">
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">Deskripsi Pencapaian</label>
                 <textarea name="Description" id="editBadgeDesc" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-amber-500 resize-none"></textarea>
             </div>
 
@@ -1203,12 +1203,21 @@
         document.getElementById('editBadgeCode').value = code;
         document.getElementById('editBadgeName').value = name;
         document.getElementById('editBadgeDesc').value = desc || '';
-        document.getElementById('editBadgeCategory').value = category || 'Tasks';
+        
+        if (typeof jQuery !== 'undefined') {
+            $('#editBadgeCategory').val(category || 'Tasks').trigger('change');
+            $('#editBadgeRarity').val(rarity).trigger('change');
+            $('#editBadgeTriggerType').val(triggerType).trigger('change');
+        } else {
+            document.getElementById('editBadgeCategory').value = category || 'Tasks';
+            document.getElementById('editBadgeRarity').value = rarity;
+            document.getElementById('editBadgeTriggerType').value = triggerType;
+        }
+
         document.getElementById('editBadgeIcon').value = icon || 'fa-solid fa-award';
         document.getElementById('editBadgeIconPreview').className = icon || 'fa-solid fa-award';
         document.getElementById('editBadgeColor').value = color || '#F59E0B';
         document.getElementById('editBadgePoints').value = points;
-        document.getElementById('editBadgeRarity').value = rarity;
         document.getElementById('editBadgeTriggerType').value = triggerType;
         document.getElementById('editBadgeThreshold').value = threshold;
         document.getElementById('editBadgeIsActive').checked = isActive;

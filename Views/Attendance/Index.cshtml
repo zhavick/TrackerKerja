@@ -79,9 +79,9 @@
                 <!-- BELUM CLOCK-IN -->
                 <form method="post" action="/Attendance/ClockIn" class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 bg-white p-3.5 rounded-2xl border border-slate-200/90 shadow-xs">
                     @Html.AntiForgeryToken()
-                    <div class="flex items-center gap-2">
-                        <label class="text-xs font-bold text-slate-700">Lokasi Kerja:</label>
-                        <select name="location" class="text-xs font-bold px-3 py-2 rounded-xl border border-slate-200 bg-slate-50 text-slate-800 focus:ring-2 focus:ring-teal-400 focus:outline-none">
+                    <div class="flex items-center gap-2 min-w-[170px]">
+                        <label class="text-xs font-bold text-slate-700 whitespace-nowrap">Lokasi:</label>
+                        <select name="location" class="select2 select2-compact w-full" data-placeholder="Pilih Lokasi">
                             <option value="WFO">🏢 Kantor (WFO)</option>
                             <option value="WFH">🏠 Rumah (WFH)</option>
                             <option value="Dinas">✈️ Dinas Luar</option>
@@ -505,7 +505,7 @@
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Tipe / Status</label>
-                    <select name="Type" id="manualType" onchange="toggleManualTypeFields()" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-400 focus:outline-none">
+                    <select name="Type" id="manualType" onchange="toggleManualTypeFields()" class="select2 w-full" data-placeholder="Pilih Tipe">
                         <option value="1">🟢 Hadir</option>
                         <option value="2">🟡 Cuti</option>
                         <option value="3">🔴 Sakit</option>
@@ -515,7 +515,7 @@
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Lokasi Kerja</label>
-                    <select name="WorkLocation" id="manualLocation" class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-400 focus:outline-none">
+                    <select name="WorkLocation" id="manualLocation" class="select2 w-full" data-placeholder="Pilih Lokasi">
                         <option value="1">WFO (Kantor)</option>
                         <option value="2">WFH (Rumah)</option>
                         <option value="3">Dinas Luar</option>
@@ -594,7 +594,7 @@
 
             <div class="mb-3">
                 <label class="block text-xs font-bold text-slate-700 mb-1">Jenis Pengajuan</label>
-                <select name="Type" required class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-400 focus:outline-none">
+                <select name="Type" required class="select2 w-full" data-placeholder="Pilih Jenis Pengajuan">
                     <option value="2">🏖️ Cuti (Annual / Special Leave)</option>
                     <option value="3">🏥 Sakit (Medical Leave)</option>
                     <option value="4">📝 Izin Keperluan Pribadi</option>

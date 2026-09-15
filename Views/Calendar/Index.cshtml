@@ -19,10 +19,8 @@
             <!-- Filter Dropdown (Khusus Admin) atau Status Badge (Member) -->
             @if (User.IsInRole("Admin"))
             {
-                <div class="flex items-center gap-2 bg-slate-50 hover:bg-slate-100/80 transition-colors border border-slate-200/80 rounded-xl px-3 py-1.5 shadow-sm">
-                    <i class="fas fa-filter text-indigo-500 text-xs"></i>
-                    <label for="taskFilter" class="text-xs font-semibold text-slate-500 whitespace-nowrap">Tampilan:</label>
-                    <select id="taskFilter" class="bg-transparent text-xs font-bold text-slate-700 focus:outline-none cursor-pointer pr-1">
+                <div class="w-56">
+                    <select id="taskFilter" class="select2 select2-compact w-full" data-placeholder="Filter Tampilan Kalender">
                         <option value="all" selected>🌐 Semua Tugas Tim</option>
                         <option value="mine">👤 Tugas Saya Sendiri</option>
                     </select>

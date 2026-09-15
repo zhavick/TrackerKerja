@@ -3,132 +3,488 @@
     Layout = null;
 }
 <!DOCTYPE html>
-<html lang="id" class="h-full">
+<html lang="id" class="h-full" data-login-theme="dark">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Login — Work Tracker Pro</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <style>
-        body { font-family: 'Inter', sans-serif; }
-        .glass { background: rgba(255,255,255,0.85); backdrop-filter: blur(20px); }
-        .input-field { transition: all 0.2s; }
-        .input-field:focus { transform: translateY(-1px); box-shadow: 0 4px 20px rgba(99,102,241,0.15); }
-        .floating-shape { animation: float 6s ease-in-out infinite; }
-        .floating-shape-2 { animation: float 8s ease-in-out infinite reverse; }
-        @@keyframes float {
-            0%, 100% { transform: translateY(0px) rotate(0deg); }
-            50% { transform: translateY(-20px) rotate(5deg); }
-        }
-        .btn-login { transition: all 0.3s; }
-        .btn-login:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(99,102,241,0.4); }
-    </style>
-</head>
-<body class="h-full bg-gradient-to-br from-indigo-900 via-purple-900 to-slate-900 flex items-center justify-center p-4 relative overflow-hidden">
 
-    <!-- Decorative shapes -->
-    <div class="floating-shape absolute top-16 left-16 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl"></div>
-    <div class="floating-shape-2 absolute bottom-16 right-16 w-80 h-80 rounded-full bg-purple-500/10 blur-3xl"></div>
-    <div class="floating-shape absolute top-1/2 left-1/4 w-48 h-48 rounded-full bg-cyan-500/10 blur-2xl"></div>
-
-    <!-- Login Card -->
-    <div class="glass border border-white/20 rounded-3xl shadow-2xl w-full max-w-md p-8 relative z-10">
-        <!-- Logo -->
-        <div class="text-center mb-8">
-            <div class="w-16 h-16 rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mx-auto mb-4 shadow-xl shadow-indigo-500/30">
-                <i class="fas fa-rocket text-white text-2xl"></i>
-            </div>
-            <h1 class="text-2xl font-black text-slate-800">Work Tracker Pro</h1>
-            <p class="text-slate-500 text-sm mt-1">Masuk ke dashboard kerja Anda</p>
-        </div>
-
-        <!-- Error Messages -->
-        @if (!ViewData.ModelState.IsValid)
-        {
-            <div class="mb-5 p-4 bg-red-50 border border-red-200 rounded-2xl">
-                <div class="flex items-center gap-2 text-red-700 text-sm">
-                    <i class="fas fa-exclamation-circle"></i>
-                    <span>@Html.ValidationSummary(true)</span>
-                </div>
-                @Html.ValidationSummary(true, null, new { @class = "text-red-700 text-sm mt-1" })
-            </div>
-        }
-
-        <form method="post" asp-action="Login" asp-controller="Account">
-            @Html.AntiForgeryToken()
-            <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
-
-            <!-- Email -->
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-slate-700 mb-2">
-                    <i class="fas fa-envelope text-indigo-400 mr-1.5"></i>Email
-                </label>
-                <input type="email" name="Email" value="@Model.Email" required
-                       placeholder="nama@email.com" autocomplete="email"
-                       class="input-field w-full px-4 py-3 rounded-xl border border-indigo-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 placeholder-slate-400">
-            </div>
-
-            <!-- Password -->
-            <div class="mb-4">
-                <label class="block text-sm font-semibold text-slate-700 mb-2">
-                    <i class="fas fa-lock text-indigo-400 mr-1.5"></i>Password
-                </label>
-                <div class="relative">
-                    <input type="password" name="Password" id="password-field" required
-                           placeholder="Password Anda" autocomplete="current-password"
-                           class="input-field w-full px-4 py-3 pr-12 rounded-xl border border-indigo-200 bg-white/70 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 placeholder-slate-400">
-                    <button type="button" onclick="togglePassword()" id="eye-btn"
-                            class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-indigo-500 transition-colors">
-                        <i class="fas fa-eye" id="eye-icon"></i>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Remember Me -->
-            <div class="flex items-center justify-between mb-6">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="RememberMe" class="w-4 h-4 rounded border-indigo-300 text-indigo-500 focus:ring-indigo-400">
-                    <span class="text-sm text-slate-600">Ingat saya</span>
-                </label>
-            </div>
-
-            <!-- Submit -->
-            <button type="submit"
-                    class="btn-login w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3.5 rounded-xl text-base cursor-pointer">
-                <i class="fas fa-sign-in-alt mr-2"></i>Masuk
-            </button>
-        </form>
-
-        <!-- Register link -->
-        <p class="text-center text-slate-500 text-sm mt-6">
-            Belum punya akun?
-            <a href="/Account/Register" class="text-indigo-600 font-semibold hover:text-indigo-800 transition-colors">Daftar sekarang</a>
-        </p>
-
-        <!-- Swagger API Quick Link -->
-        <div class="mt-6 pt-4 border-t border-slate-200/60 text-center">
-            <a href="/swagger" target="_blank" class="inline-flex items-center gap-2 text-xs font-semibold text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 px-3 py-1.5 rounded-lg border border-indigo-200 transition-colors">
-                <i class="fas fa-file-code text-indigo-500"></i>
-                <span>Dokumentasi REST API (Swagger) &rarr;</span>
-            </a>
-        </div>
-    </div>
-
+    <!-- Immediate Anti-FOUC Theme Applicator -->
     <script>
-        function togglePassword() {
-            const field = document.getElementById('password-field');
-            const icon = document.getElementById('eye-icon');
-            if (field.type === 'password') {
-                field.type = 'text';
-                icon.className = 'fas fa-eye-slash';
-            } else {
-                field.type = 'password';
-                icon.className = 'fas fa-eye';
+        (function () {
+            var savedMode = localStorage.getItem('login_theme_mode');
+            if (!savedMode) {
+                var appTheme = localStorage.getItem('app_theme');
+                if (appTheme && (appTheme.startsWith('dark') || appTheme.includes('night') || appTheme.includes('cyber') || appTheme.includes('matrix'))) {
+                    savedMode = 'dark';
+                } else if (appTheme) {
+                    savedMode = 'light';
+                } else {
+                    savedMode = 'dark';
+                }
+            }
+            document.documentElement.setAttribute('data-login-theme', savedMode);
+        })();
+    </script>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: ['class', '[data-login-theme="dark"]'],
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#EEF2FF',
+                            100: '#E0E7FF',
+                            500: '#6366F1',
+                            600: '#4F46E5',
+                            700: '#4338CA',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+                    }
+                }
             }
         }
+    </script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    
+    <!-- DotLottie & Lottie Web Component Players -->
+    <script src="https://unpkg.com/@@dotlottie/player-component@2.7.12/dist/dotlottie-player.mjs" type="module"></script>
+    <script src="https://unpkg.com/@@lottiefiles/lottie-player@2.0.8/dist/lottie-player.js"></script>
+
+    <style>
+        body { font-family: 'Inter', sans-serif; transition: background-color 0.3s ease, color 0.3s ease; }
+        
+        /* ════════════════════════════════════════════════════════════════
+           THEME DEFINITIONS (LIGHT & DARK DYNAMICS)
+           ════════════════════════════════════════════════════════════════ */
+        
+        /* DARK THEME (DEFAULT) */
+        [data-login-theme="dark"] .theme-left-panel {
+            background: linear-gradient(135deg, #020617 0%, #0F172A 40%, #1E1B4B 100%);
+            border-color: #1E293B;
+            color: #FFFFFF;
+        }
+        [data-login-theme="dark"] .theme-right-panel {
+            background: #090D16;
+            color: #FFFFFF;
+        }
+        [data-login-theme="dark"] .theme-input {
+            background: #0F172A;
+            border-color: #334155;
+            color: #FFFFFF;
+        }
+        [data-login-theme="dark"] .theme-input:focus {
+            border-color: #6366F1;
+            background: #0F172A;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        [data-login-theme="dark"] .theme-input-icon {
+            color: #64748B;
+        }
+        [data-login-theme="dark"] .theme-label {
+            color: #CBD5E1;
+        }
+        [data-login-theme="dark"] .theme-subtext {
+            color: #94A3B8;
+        }
+        [data-login-theme="dark"] .theme-card-border {
+            border-color: #1E293B;
+        }
+        [data-login-theme="dark"] .theme-toggle-btn {
+            background: #1E293B;
+            border-color: #334155;
+            color: #FCD34D;
+        }
+        [data-login-theme="dark"] .theme-toggle-btn:hover {
+            background: #334155;
+        }
+        [data-login-theme="dark"] .theme-feature-badge {
+            background: rgba(15, 23, 42, 0.7);
+            border-color: #334155;
+            color: #E2E8F0;
+        }
+
+        /* LIGHT THEME */
+        [data-login-theme="light"] .theme-left-panel {
+            background: linear-gradient(135deg, #4338CA 0%, #6366F1 50%, #4F46E5 100%);
+            border-color: #E0E7FF;
+            color: #FFFFFF;
+        }
+        [data-login-theme="light"] .theme-right-panel {
+            background: #FFFFFF;
+            color: #1E293B;
+        }
+        [data-login-theme="light"] .theme-input {
+            background: #F8FAFC;
+            border-color: #E2E8F0;
+            color: #0F172A;
+        }
+        [data-login-theme="light"] .theme-input:focus {
+            border-color: #4F46E5;
+            background: #FFFFFF;
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
+        }
+        [data-login-theme="light"] .theme-input-icon {
+            color: #94A3B8;
+        }
+        [data-login-theme="light"] .theme-label {
+            color: #334155;
+        }
+        [data-login-theme="light"] .theme-subtext {
+            color: #64748B;
+        }
+        [data-login-theme="light"] .theme-card-border {
+            border-color: #E2E8F0;
+        }
+        [data-login-theme="light"] .theme-toggle-btn {
+            background: #F1F5F9;
+            border-color: #CBD5E1;
+            color: #475569;
+        }
+        [data-login-theme="light"] .theme-toggle-btn:hover {
+            background: #E2E8F0;
+            color: #0F172A;
+        }
+        [data-login-theme="light"] .theme-feature-badge {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.35);
+            color: #FFFFFF;
+        }
+
+        /* Common Elements */
+        .btn-gradient {
+            background: linear-gradient(135deg, #6366F1 0%, #8B5CF6 50%, #4F46E5 100%);
+            background-size: 200% 200%;
+            transition: all 0.3s ease;
+        }
+        .btn-gradient:hover {
+            background-position: right center;
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px -4px rgba(99, 102, 241, 0.45);
+        }
+        .ambient-sphere {
+            filter: blur(100px);
+            pointer-events: none;
+            position: absolute;
+            border-radius: 9999px;
+            opacity: 0.35;
+            animation: pulse-glow 8s ease-in-out infinite alternate;
+        }
+        @@keyframes pulse-glow {
+            0% { transform: scale(1) translate(0, 0); opacity: 0.25; }
+            100% { transform: scale(1.15) translate(20px, -20px); opacity: 0.45; }
+        }
+    </style>
+</head>
+<body class="min-h-screen w-full flex flex-col lg:flex-row overflow-x-hidden select-none">
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- LEFT PANEL: FULL-SCREEN SHOWCASE WITH LARGE LOTTIE ANIMATION ICON    -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="theme-left-panel lg:w-7/12 xl:w-3/5 relative flex flex-col justify-between p-6 sm:p-10 lg:p-12 overflow-hidden border-b lg:border-b-0 lg:border-r transition-all duration-300">
+        
+        <!-- Background Ambient Glows -->
+        <div class="ambient-sphere w-[500px] h-[500px] bg-indigo-500/30 -top-24 -left-24"></div>
+        <div class="ambient-sphere w-[450px] h-[450px] bg-purple-500/25 -bottom-24 right-10" style="animation-delay: -3s;"></div>
+        <div class="ambient-sphere w-[350px] h-[350px] bg-cyan-500/20 top-1/2 left-1/3 -translate-y-1/2" style="animation-delay: -5s;"></div>
+
+        <!-- Top Header & Brand -->
+        <header class="relative z-10 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-400 to-purple-500 flex items-center justify-center shadow-lg ring-1 ring-white/30 text-white">
+                    <i class="fas fa-rocket text-base"></i>
+                </div>
+                <div>
+                    <span class="text-lg font-black tracking-tight text-white flex items-center gap-2">
+                        Work Tracker Pro
+                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white/20 text-white border border-white/30">v2.0</span>
+                    </span>
+                    <p class="text-xs text-white/80 font-medium">Enterprise Project & Team Productivity</p>
+                </div>
+            </div>
+            
+            <a href="/swagger" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-semibold transition-all">
+                <i class="fas fa-code text-white/90 text-xs"></i>
+                <span>API Docs</span>
+            </a>
+        </header>
+
+        <!-- Center Showcase: Large Lottie Animation & Typography -->
+        <div class="relative z-10 my-auto py-8 lg:py-12 flex flex-col items-center text-center max-w-2xl mx-auto">
+            
+            <!-- Large Lottie Animation Icon Container -->
+            <div class="w-full max-w-[340px] sm:max-w-[420px] lg:max-w-[480px] h-[260px] sm:h-[320px] lg:h-[380px] flex items-center justify-center relative">
+                <dotlottie-player
+                    id="admin-lottie"
+                    src="/assets/lottie/knee-deep-in-admin.lottie"
+                    background="transparent"
+                    speed="1"
+                    style="width: 100%; height: 100%;"
+                    loop
+                    autoplay>
+                </dotlottie-player>
+            </div>
+
+            <!-- Showcase Headline -->
+            <h2 class="text-2xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight leading-tight mt-2">
+                Manajemen Pekerjaan Lebih <span class="underline decoration-wavy decoration-cyan-300">Cepat & Terstruktur</span>
+            </h2>
+            <p class="text-white/85 text-xs sm:text-sm lg:text-base mt-3 max-w-xl font-normal leading-relaxed">
+                Pantau progres tugas SDLC, log jam kerja timesheet, absensi harian terintegrasi, dan analitik performa tim dalam satu dashboard modern.
+            </p>
+
+            <!-- Feature Highlight Badges -->
+            <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-3 mt-6">
+                <div class="theme-feature-badge flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold backdrop-blur-md transition-all">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span>Kanban & Waterfall SDLC</span>
+                </div>
+                <div class="theme-feature-badge flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold backdrop-blur-md transition-all">
+                    <span class="w-2 h-2 rounded-full bg-indigo-400"></span>
+                    <span>Timesheet Otomatis</span>
+                </div>
+                <div class="theme-feature-badge flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-semibold backdrop-blur-md transition-all">
+                    <span class="w-2 h-2 rounded-full bg-amber-400"></span>
+                    <span>Presensi & Cuti</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Left Footer Info -->
+        <footer class="relative z-10 flex items-center justify-between text-xs text-white/70 pt-4 border-t border-white/15">
+            <span>&copy; @DateTime.UtcNow.Year Work Tracker Pro. Hak Cipta Dilindungi.</span>
+            <span class="hidden sm:inline">Secure AES-256 Authentication</span>
+        </footer>
+    </section>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- RIGHT PANEL: CLEAN MODERN LOGIN FORM WITH DARK/LIGHT MODE TOGGLE       -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <section class="theme-right-panel lg:w-5/12 xl:w-2/5 min-h-full flex flex-col justify-between p-6 sm:p-10 lg:p-12 xl:p-16 relative transition-all duration-300">
+        
+        <!-- Top Action Bar (Dark/Light Switcher) -->
+        <div class="w-full flex items-center justify-between mb-6">
+            <div class="flex items-center gap-2">
+                <span class="text-xs font-bold theme-subtext uppercase tracking-wider">Akses Portal</span>
+            </div>
+
+            <!-- Dark / Light Mode Switch Button -->
+            <button type="button" 
+                    id="theme-mode-btn" 
+                    onclick="toggleThemeMode()" 
+                    aria-label="Ubah Tema Gelap atau Terang"
+                    title="Klik untuk mengubah tema gelap / terang"
+                    class="theme-toggle-btn flex items-center gap-2 px-3 py-1.5 rounded-xl border text-xs font-bold transition-all cursor-pointer shadow-xs">
+                <i id="theme-mode-icon" class="fas fa-moon text-amber-300"></i>
+                <span id="theme-mode-text">Mode Gelap</span>
+            </button>
+        </div>
+
+        <!-- Center Form Card -->
+        <div class="w-full max-w-md my-auto">
+            
+            <!-- Login Card Header -->
+            <div class="mb-8">
+                <h1 class="text-2xl sm:text-3xl font-black tracking-tight flex items-center gap-2">
+                    <span>Selamat Datang</span>
+                    <span class="text-indigo-500">👋</span>
+                </h1>
+                <p class="theme-subtext text-sm mt-2">Masukkan email dan kata sandi untuk masuk ke akun Anda.</p>
+            </div>
+
+            <!-- Validation Error Alert -->
+            @if (!ViewData.ModelState.IsValid)
+            {
+                <div class="mb-6 p-4 bg-rose-500/10 border border-rose-500/30 rounded-2xl animate-shake">
+                    <div class="flex items-start gap-3 text-rose-500 text-xs font-semibold">
+                        <i class="fas fa-exclamation-circle text-base flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <span>Autentikasi Gagal:</span>
+                            <div class="mt-1 font-normal leading-relaxed">
+                                @Html.ValidationSummary(true, null, new { @class = "list-disc pl-3" })
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            <!-- Login Form -->
+            <form method="post" asp-action="Login" asp-controller="Account" class="space-y-5">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="ReturnUrl" value="@Model.ReturnUrl" />
+
+                <!-- Email Input Field -->
+                <div>
+                    <label for="email-input" class="theme-label block text-xs font-bold uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                        <i class="fas fa-envelope text-indigo-500"></i>
+                        <span>Alamat Email</span>
+                    </label>
+                    <div class="relative">
+                        <input type="email" 
+                               id="email-input" 
+                               name="Email" 
+                               value="@Model.Email" 
+                               required 
+                               autocomplete="email"
+                               placeholder="nama@email.com" 
+                               class="theme-input w-full px-4 py-3.5 pl-11 rounded-2xl border text-sm placeholder-slate-400 focus:outline-none font-medium transition-all" />
+                        <i class="theme-input-icon fas fa-at absolute left-4 top-1/2 -translate-y-1/2 text-xs pointer-events-none"></i>
+                    </div>
+                </div>
+
+                <!-- Password Input Field -->
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <label for="password-input" class="theme-label block text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
+                            <i class="fas fa-lock text-indigo-500"></i>
+                            <span>Kata Sandi</span>
+                        </label>
+                    </div>
+                    <div class="relative">
+                        <input type="password" 
+                               id="password-input" 
+                               name="Password" 
+                               required 
+                               autocomplete="current-password"
+                               placeholder="Masukkan kata sandi..." 
+                               class="theme-input w-full px-4 py-3.5 pl-11 pr-11 rounded-2xl border text-sm placeholder-slate-400 focus:outline-none font-medium transition-all" />
+                        <i class="theme-input-icon fas fa-key absolute left-4 top-1/2 -translate-y-1/2 text-xs pointer-events-none"></i>
+                        <button type="button" 
+                                id="toggle-password-btn" 
+                                onclick="togglePasswordVisibility()" 
+                                aria-label="Tampilkan atau sembunyikan kata sandi"
+                                class="absolute right-3 top-1/2 -translate-y-1/2 w-8 h-8 rounded-xl text-slate-400 hover:text-indigo-500 flex items-center justify-center transition-all cursor-pointer">
+                            <i class="fas fa-eye text-xs" id="password-eye-icon"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Remember Me Checkbox -->
+                <div class="flex items-center justify-between pt-1">
+                    <label class="flex items-center gap-2.5 cursor-pointer group select-none">
+                        <input type="checkbox" 
+                               name="RememberMe" 
+                               value="true" 
+                               class="w-4 h-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer">
+                        <span class="theme-subtext text-xs font-medium group-hover:text-indigo-600 transition-colors">Ingat sesi saya di perangkat ini</span>
+                    </label>
+                </div>
+
+                <!-- Submit Button -->
+                <button type="submit" 
+                        id="submit-login-btn"
+                        class="btn-gradient w-full text-white font-black py-4 px-6 rounded-2xl text-sm shadow-xl flex items-center justify-center gap-2 cursor-pointer mt-3">
+                    <span>Masuk ke Dashboard</span>
+                    <i class="fas fa-arrow-right text-sm"></i>
+                </button>
+            </form>
+
+            <!-- Bottom Navigation Links -->
+            <div class="theme-card-border mt-8 pt-6 border-t text-center space-y-3">
+                <p class="theme-subtext text-xs">
+                    Belum memiliki akun terdaftar? 
+                    <a href="/Account/Register" class="text-indigo-500 font-bold hover:text-indigo-600 transition-colors ml-1">
+                        Daftar Akun Baru &rarr;
+                    </a>
+                </p>
+                <div>
+                    <a href="/swagger" target="_blank" class="theme-subtext inline-flex items-center gap-1.5 text-[11px] font-semibold hover:text-indigo-500 transition-colors">
+                        <i class="fas fa-file-code text-indigo-500"></i>
+                        <span>Dokumentasi REST API (Swagger UI)</span>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Panel Bottom Spacer -->
+        <div class="text-[11px] theme-subtext text-center pt-4">
+            <span>Work Tracker Pro Enterprise Edition</span>
+        </div>
+    </section>
+
+    <!-- Client Scripts -->
+    <script>
+        function updateThemeButtonUI(theme) {
+            const btnText = document.getElementById('theme-mode-text');
+            const btnIcon = document.getElementById('theme-mode-icon');
+            if (!btnText || !btnIcon) return;
+
+            if (theme === 'light') {
+                btnText.textContent = 'Mode Terang';
+                btnIcon.className = 'fas fa-sun text-amber-500';
+            } else {
+                btnText.textContent = 'Mode Gelap';
+                btnIcon.className = 'fas fa-moon text-amber-300';
+            }
+        }
+
+        function toggleThemeMode() {
+            const current = document.documentElement.getAttribute('data-login-theme') || 'dark';
+            const next = current === 'dark' ? 'light' : 'dark';
+            
+            document.documentElement.setAttribute('data-login-theme', next);
+            localStorage.setItem('login_theme_mode', next);
+            
+            // Also synchronize with main dashboard app_theme
+            if (next === 'dark') {
+                localStorage.setItem('app_theme', 'dark-midnight');
+            } else {
+                localStorage.setItem('app_theme', 'indigo');
+            }
+            
+            updateThemeButtonUI(next);
+        }
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('password-input');
+            const icon = document.getElementById('password-eye-icon');
+            if (!input || !icon) return;
+
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fas fa-eye-slash text-xs text-indigo-500';
+            } else {
+                input.type = 'password';
+                icon.className = 'fas fa-eye text-xs';
+            }
+        }
+
+        // Initialize UI state on DOM ready
+        window.addEventListener('DOMContentLoaded', function () {
+            const currentTheme = document.documentElement.getAttribute('data-login-theme') || 'dark';
+            updateThemeButtonUI(currentTheme);
+
+            // Fallback check for Lottie player
+            setTimeout(function () {
+                const player = document.getElementById('admin-lottie');
+                if (player && typeof customElements !== 'undefined' && !customElements.get('dotlottie-player')) {
+                    const wrapper = player.parentElement;
+                    if (wrapper) {
+                        wrapper.innerHTML = `
+                            <lottie-player
+                                src="/assets/lottie/knee-deep-in-admin.json"
+                                background="transparent"
+                                speed="1"
+                                style="width: 100%; height: 100%;"
+                                loop
+                                autoplay>
+                            </lottie-player>
+                        `;
+                    }
+                }
+            }, 1000);
+        });
     </script>
 </body>
 </html>

@@ -158,12 +158,12 @@
 
     <!-- Filters Bar -->
     <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-4">
-        <form method="get" action="/AuditTrail" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+        <form method="get" action="/AuditTrail" data-ajax-grid="true" data-target-grid="#ajaxGridContainer" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <!-- Search Query -->
             <div class="relative lg:col-span-2">
                 <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-xs"></i>
                 <input type="text" name="search" value="@ViewBag.Search" placeholder="Cari path, email, controller, IP..."
-                       class="w-full pl-8 pr-3 py-2 rounded-xl border border-indigo-200 text-xs focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50 focus:bg-white text-slate-800 transition-all">
+                       class="w-full pl-8 pr-3 py-2 rounded-xl border border-indigo-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50/50">
             </div>
 
             <!-- Controller Filter -->
@@ -208,7 +208,7 @@
     </div>
 
     <!-- Table Card -->
-    <div class="bg-white rounded-3xl shadow-sm border border-indigo-100 overflow-hidden">
+    <div id="ajaxGridContainer" data-ajax-grid="true" class="ajax-grid-container bg-white rounded-3xl shadow-sm border border-indigo-100 overflow-hidden">
         <div class="p-5 border-b border-slate-100 flex items-center justify-between">
             <h3 class="font-black text-slate-800 text-sm flex items-center gap-2">
                 <i class="fas fa-list-alt text-indigo-500"></i>

@@ -1,6 +1,7 @@
 @{
     ViewData["Title"] = "Konfigurasi Sistem, Database & Sinkronisasi Host";
     var baseUrl = ViewBag.GlobalBaseUrl as string ?? "http://localhost:5000";
+    var currentAppFont = ViewBag.GlobalAppFont as string ?? "inter";
     var tableStats = ViewBag.TableStats as Dictionary<string, int> ?? new Dictionary<string, int>();
     var syncSettings = ViewBag.SyncSettings as TrackerKerja.ViewModels.SyncSettingsDto ?? new TrackerKerja.ViewModels.SyncSettingsDto();
     var hostSyncTargetUrl = ViewBag.HostSyncTargetUrl as string ?? "http://localhost:5000";
@@ -403,6 +404,162 @@
 
     <!-- LEFT COLUMN: Global Base URL & API Doc (2 Cols) -->
     <div class="lg:col-span-2 space-y-6">
+
+        <!-- 0. FONT & TYPOGRAPHY CONFIGURATION (5 GOOGLE FONTS) -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base font-bold">
+                        <i class="fas fa-font"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800">Pengaturan Tipografi &amp; Font Global</h3>
+                        <p class="text-xs text-slate-400">Pilih jenis huruf antarmuka aplikasi Work Tracker Pro (5 Pilihan Font Gratis Google Fonts)</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                    <i class="fas fa-sparkles text-[10px]"></i> 5 Font Gratis
+                </span>
+            </div>
+
+            <!-- Font Preview Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-4" id="fontPreviewGrid">
+                
+                <!-- 1. Inter -->
+                <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
+                     data-font-id="inter" onclick="selectAndApplyFont('inter')"
+                     style="font-family: 'Inter', sans-serif;">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-black text-sm text-slate-800">Inter</span>
+                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Default UI</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Standar UI modern, sangat seimbang, tajam &amp; nyaman dibaca.</p>
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
+                            Work Tracker Pro 2026<br>
+                            <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                        <span class="font-active-indicator hidden text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
+                            <i class="fas fa-check-circle"></i> Aktif
+                        </span>
+                        <button type="button" class="ml-auto text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
+                            Pilih Font &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 2. Plus Jakarta Sans -->
+                <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
+                     data-font-id="jakarta" onclick="selectAndApplyFont('jakarta')"
+                     style="font-family: 'Plus Jakarta Sans', sans-serif;">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-black text-sm text-slate-800">Plus Jakarta Sans</span>
+                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Modern SaaS</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Geometris kontemporer, ramah &amp; elegan khas enterprise.</p>
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
+                            Work Tracker Pro 2026<br>
+                            <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                        <span class="font-active-indicator hidden text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
+                            <i class="fas fa-check-circle"></i> Aktif
+                        </span>
+                        <button type="button" class="ml-auto text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
+                            Pilih Font &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 3. Outfit -->
+                <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
+                     data-font-id="outfit" onclick="selectAndApplyFont('outfit')"
+                     style="font-family: 'Outfit', sans-serif;">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-black text-sm text-slate-800">Outfit</span>
+                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">Contemporary</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Sans-serif kontemporer dengan lekukan halus dan berkelas.</p>
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
+                            Work Tracker Pro 2026<br>
+                            <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                        <span class="font-active-indicator hidden text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
+                            <i class="fas fa-check-circle"></i> Aktif
+                        </span>
+                        <button type="button" class="ml-auto text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
+                            Pilih Font &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 4. Poppins -->
+                <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
+                     data-font-id="poppins" onclick="selectAndApplyFont('poppins')"
+                     style="font-family: 'Poppins', sans-serif;">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-black text-sm text-slate-800">Poppins</span>
+                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-pink-100 text-pink-700">Rounded Geometrik</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Bentuk bulat geometris yang bersahabat &amp; berkarakter.</p>
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
+                            Work Tracker Pro 2026<br>
+                            <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                        <span class="font-active-indicator hidden text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
+                            <i class="fas fa-check-circle"></i> Aktif
+                        </span>
+                        <button type="button" class="ml-auto text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
+                            Pilih Font &rarr;
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 5. Roboto -->
+                <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
+                     data-font-id="roboto" onclick="selectAndApplyFont('roboto')"
+                     style="font-family: 'Roboto', sans-serif;">
+                    <div>
+                        <div class="flex items-center justify-between mb-1.5">
+                            <span class="font-black text-sm text-slate-800">Roboto</span>
+                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">High Density</span>
+                        </div>
+                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Klasik Google, presisi, densitas data tinggi &amp; mudah dibaca.</p>
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
+                            Work Tracker Pro 2026<br>
+                            <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
+                        </div>
+                    </div>
+                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                        <span class="font-active-indicator hidden text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
+                            <i class="fas fa-check-circle"></i> Aktif
+                        </span>
+                        <button type="button" class="ml-auto text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
+                            Pilih Font &rarr;
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Live Info Note -->
+            <div class="p-3 bg-indigo-50/70 rounded-2xl border border-indigo-100 text-xs text-slate-600 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-info-circle text-indigo-600"></i>
+                    <span>Font yang Anda pilih langsung diterapkan seketika pada seluruh halaman dan tersimpan otomatis.</span>
+                </div>
+            </div>
+        </div>
 
         <!-- 1. GLOBAL BASE URL SETTING -->
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
@@ -1324,6 +1481,20 @@ function copySqlPreview() {
         }
     });
 }
+
+function selectAndApplyFont(fontId) {
+    if (typeof ThemeManager !== 'undefined') {
+        ThemeManager.setGlobalFont(fontId, true);
+    }
+}
+
+// Ensure active font is highlighted on page load
+document.addEventListener('DOMContentLoaded', function () {
+    const savedFont = localStorage.getItem('app_font') || '@currentAppFont' || 'inter';
+    if (typeof ThemeManager !== 'undefined') {
+        ThemeManager.applyFont(savedFont);
+    }
+});
 
 document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {

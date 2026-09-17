@@ -1,0 +1,232 @@
+/* ════════════════════════════════════════════════════════════════════════════════
+   WORK TRACKER PRO — ONBOARDING SCREEN & INTERACTIVE TOUR STYLES
+   ════════════════════════════════════════════════════════════════════════════════ */
+
+/* ── ONBOARDING WELCOME MODAL ── */
+.onboarding-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 99990;
+    background: rgba(15, 23, 42, 0.75);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.3s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.3s;
+}
+
+.onboarding-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+.onboarding-modal-card {
+    background: #ffffff;
+    border-radius: 1.75rem;
+    box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(226, 232, 240, 0.8);
+    width: 100%;
+    max-width: 46rem;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transform: scale(0.94) translateY(12px);
+    transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.onboarding-backdrop.active .onboarding-modal-card {
+    transform: scale(1) translateY(0);
+}
+
+/* Dark mode compatibility for modal */
+[data-theme*="dark"] .onboarding-modal-card,
+[data-theme="slate"] .onboarding-modal-card,
+[data-theme="nord"] .onboarding-modal-card {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f8fafc;
+}
+
+.onboarding-feature-card {
+    transition: all 0.25s ease;
+    border: 1px solid rgba(226, 232, 240, 0.9);
+}
+
+.onboarding-feature-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 25px -5px rgba(99, 102, 241, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
+}
+
+[data-theme*="dark"] .onboarding-feature-card,
+[data-theme="slate"] .onboarding-feature-card,
+[data-theme="nord"] .onboarding-feature-card {
+    background: #0f172a;
+    border-color: #334155;
+}
+
+/* ── SPOTLIGHT OVERLAY ── */
+.tour-spotlight-svg-overlay {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 99980;
+    pointer-events: none;
+    transition: all 0.3s cubic-bezier(0.2, 0, 0, 1);
+}
+
+.tour-spotlight-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.68);
+    z-index: 99979;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: auto;
+    transition: opacity 0.3s ease, visibility 0.3s;
+}
+
+.tour-spotlight-backdrop.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* Highlight Ring around Target Element */
+.tour-target-highlight {
+    position: absolute;
+    border-radius: 0.875rem;
+    box-shadow: 0 0 0 4px #6366f1, 0 0 30px 10px rgba(99, 102, 241, 0.5);
+    pointer-events: none;
+    z-index: 99985;
+    transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    animation: tourPulse 2s infinite ease-in-out;
+}
+
+@keyframes tourPulse {
+    0%, 100% {
+        box-shadow: 0 0 0 3px #6366f1, 0 0 20px 4px rgba(99, 102, 241, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 5px #818cf8, 0 0 32px 12px rgba(99, 102, 241, 0.65);
+    }
+}
+
+/* ── TOUR TOOLTIP CARD (POPOVER) ── */
+.tour-tooltip-container {
+    position: fixed;
+    z-index: 99995;
+    width: 23rem;
+    max-width: calc(100vw - 2rem);
+    background: #ffffff;
+    border-radius: 1.25rem;
+    box-shadow: 0 20px 45px -10px rgba(15, 23, 42, 0.35), 0 0 0 1px rgba(226, 232, 240, 0.9);
+    padding: 1.25rem;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(8px) scale(0.96);
+    transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), top 0.3s cubic-bezier(0.16, 1, 0.3, 1), left 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.tour-tooltip-container.active {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0) scale(1);
+}
+
+[data-theme*="dark"] .tour-tooltip-container,
+[data-theme="slate"] .tour-tooltip-container,
+[data-theme="nord"] .tour-tooltip-container {
+    background: #1e293b;
+    border-color: #334155;
+    color: #f8fafc;
+    box-shadow: 0 20px 45px -10px rgba(0, 0, 0, 0.65), 0 0 0 1px #334155;
+}
+
+/* Tooltip Arrow Pointer */
+.tour-tooltip-arrow {
+    position: absolute;
+    width: 14px;
+    height: 14px;
+    background: #ffffff;
+    transform: rotate(45deg);
+    border: 1px solid rgba(226, 232, 240, 0.9);
+    z-index: -1;
+    transition: all 0.2s ease;
+}
+
+[data-theme*="dark"] .tour-tooltip-arrow,
+[data-theme="slate"] .tour-tooltip-arrow,
+[data-theme="nord"] .tour-tooltip-arrow {
+    background: #1e293b;
+    border-color: #334155;
+}
+
+/* Arrow Orientations */
+.tour-tooltip-container[data-placement="bottom"] .tour-tooltip-arrow {
+    top: -7px;
+    border-bottom: none;
+    border-right: none;
+}
+
+.tour-tooltip-container[data-placement="top"] .tour-tooltip-arrow {
+    bottom: -7px;
+    border-top: none;
+    border-left: none;
+}
+
+.tour-tooltip-container[data-placement="right"] .tour-tooltip-arrow {
+    left: -7px;
+    border-top: none;
+    border-right: none;
+}
+
+.tour-tooltip-container[data-placement="left"] .tour-tooltip-arrow {
+    right: -7px;
+    border-bottom: none;
+    border-left: none;
+}
+
+/* Tour Progress Dots */
+.tour-progress-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 9999px;
+    background: #cbd5e1;
+    transition: all 0.25s ease;
+}
+
+.tour-progress-dot.active {
+    width: 20px;
+    background: #6366f1;
+}
+
+/* Pulsing Badge on Trigger Buttons */
+.tour-trigger-badge {
+    position: relative;
+    display: inline-flex;
+}
+
+.tour-trigger-badge::after {
+    content: '';
+    position: absolute;
+    top: -2px;
+    right: -2px;
+    width: 8px;
+    height: 8px;
+    border-radius: 9999px;
+    background: #6366f1;
+    box-shadow: 0 0 0 2px #ffffff;
+    animation: pingDot 2s cubic-bezier(0, 0, 0.2, 1) infinite;
+}
+
+@keyframes pingDot {
+    75%, 100% {
+        transform: scale(2);
+        opacity: 0;
+    }
+}

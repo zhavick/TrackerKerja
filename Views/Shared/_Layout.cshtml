@@ -39,9 +39,10 @@
         }
     </script>
 
-    <!-- Google Fonts -->
+    <!-- Google Fonts: 5 Handpicked Free Typography Styles (Inter, Plus Jakarta Sans, Outfit, Poppins, Roboto) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Outfit:wght@300;400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=Roboto:wght@300;400;500;700;900&display=swap" rel="stylesheet">
 
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
@@ -66,17 +67,20 @@
     <!-- Fuse.js -->
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
 
-    <!-- Anti-FOUC Immediate Theme Applicator -->
+    <!-- Anti-FOUC Immediate Theme & Font Applicator -->
     <script>
         (function () {
             var theme = localStorage.getItem('app_theme') || 'indigo';
+            var font = localStorage.getItem('app_font') || 'inter';
             document.documentElement.setAttribute('data-theme', theme);
+            document.documentElement.setAttribute('data-font', font);
         })();
     </script>
 
     <!-- Custom 10 Themes Stylesheet & Responsive Site Styles -->
     <link rel="stylesheet" href="~/css/site.css" />
     <link rel="stylesheet" href="~/css/themes.css" />
+    <link rel="stylesheet" href="~/css/onboarding-tour.css" />
 
     <style>
         body { font-family: 'Inter', sans-serif; }
@@ -122,7 +126,7 @@
     <div id="sidebar-backdrop" onclick="closeMobileSidebar()" class="fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-40 lg:hidden hidden transition-opacity duration-300"></div>
 
     <!-- SIDEBAR (Off-canvas on mobile/tablet, fixed on desktop) -->
-    <aside class="fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-64 bg-sidebar flex flex-col flex-shrink-0 overflow-y-auto transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 shadow-2xl lg:shadow-none" id="sidebar">
+    <aside class="fixed lg:static inset-y-0 left-0 z-50 w-72 lg:w-64 bg-sidebar flex flex-col flex-shrink-0 overflow-y-auto transition-transform duration-300 ease-in-out -translate-x-full lg:translate-x-0 shadow-2xl lg:shadow-none" id="sidebar" data-tour="sidebar">
         <!-- Logo & Mobile Close -->
         <div class="px-5 py-4 lg:py-5 border-b border-slate-200/80 flex items-center justify-between">
             <a href="/" class="flex items-center gap-3 group">
@@ -312,7 +316,7 @@
             </div>
 
             <!-- Global Search -->
-            <div class="relative flex-1 max-w-[140px] sm:max-w-xs md:max-w-md z-30" id="search-container">
+            <div class="relative flex-1 max-w-[140px] sm:max-w-xs md:max-w-md z-30" id="search-container" data-tour="search">
                 <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-xs sm:text-sm"></i>
                 <input type="text" id="global-search" placeholder="Cari..." autocomplete="off"
                        class="w-full pl-8 sm:pl-9 pr-3 sm:pr-4 py-1.5 sm:py-2 rounded-xl border border-indigo-200 bg-indigo-50/50 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 transition-all">
@@ -332,14 +336,20 @@
                 </a>
 
                 <!-- User Guide / Panduan Button -->
-                <button type="button" onclick="openUserGuideModal()" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-xl transition-all shadow-xs cursor-pointer" title="Buku Panduan Pengguna & Cetak PDF">
+                <button type="button" id="btnPanduanTop" onclick="openUserGuideModal()" data-tour="guide" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-xl transition-all shadow-xs cursor-pointer" title="Buku Panduan Pengguna & Cetak PDF">
                     <i class="fas fa-book-open text-amber-600"></i>
                     <span class="hidden sm:inline">Panduan</span>
                 </button>
 
+                <!-- Interactive App Tour Button -->
+                <button type="button" onclick="OnboardingTour.startTour()" class="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-xl transition-all shadow-xs cursor-pointer group" title="Mulai Tur Interaktif Panduan Aplikasi">
+                    <i class="fas fa-magic text-indigo-600 group-hover:rotate-12 transition-transform"></i>
+                    <span class="hidden xl:inline">Tur Aplikasi</span>
+                </button>
+
                 <!-- Notification Bell Dropdown -->
                 <div class="relative z-50">
-                    <button type="button" id="notifDropdownBtn" onclick="toggleNotificationDropdown()"
+                    <button type="button" id="notifDropdownBtn" onclick="toggleNotificationDropdown()" data-tour="notif"
                             class="relative p-2 px-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm shadow-xs hover:border-indigo-300 transition-all cursor-pointer"
                             title="Pemberitahuan Tugas">
                         <i class="fas fa-bell text-slate-600"></i>
@@ -396,26 +406,26 @@
                     </div>
                 </div>
 
-                <!-- Dynamic Theme Switcher Dropdown (10 Themes) -->
+                <!-- Dynamic Theme Switcher Dropdown (40 Themes) -->
                 <div class="relative z-50">
-                    <button type="button" id="themeDropdownBtn" onclick="ThemeManager.toggleDropdown()"
+                    <button type="button" id="themeDropdownBtn" onclick="ThemeManager.toggleDropdown()" data-tour="theme"
                             class="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs hover:border-indigo-300 transition-all cursor-pointer"
-                            title="Pilih dan ganti 16 jenis tema tampilan (Light & Dark Theme)">
+                            title="Pilih dan ganti 40 jenis tema tampilan (Light & Dark Theme Eye-Friendly)">
                         <span id="topbar-theme-swatch" class="w-3.5 h-3.5 rounded-full shadow-xs border border-white flex-shrink-0" style="background: #6366F1"></span>
                         <span id="topbar-theme-label" class="hidden md:inline font-bold text-slate-700">Tema</span>
                         <i class="fas fa-palette text-indigo-500 text-xs ml-0.5"></i>
                     </button>
 
                     <!-- Theme Dropdown Floating Menu -->
-                    <div id="themeDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-88 max-w-[360px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-4 z-[9999] animate-fadeIn" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                    <div id="themeDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-96 max-w-[400px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-4 z-[9999] animate-fadeIn" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
                         <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
                             <div class="flex items-center gap-2">
                                 <div class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
                                     <i class="fas fa-palette"></i>
                                 </div>
                                 <div>
-                                    <h4 class="text-xs font-black text-slate-800">Kostumasi Tema (16 Pilihan)</h4>
-                                    <p class="text-[10px] text-slate-400">Pilihan Tema Terang & Dark Mode Modern</p>
+                                    <h4 class="text-xs font-black text-slate-800">Kostumasi Tema (40 Pilihan)</h4>
+                                    <p class="text-[10px] text-slate-400">18 Tema Gelap &amp; 22 Tema Terang Eye-Friendly</p>
                                 </div>
                             </div>
                             <button type="button" onclick="ThemeManager.closeDropdown()" class="text-slate-400 hover:text-slate-600 text-xs p-1 cursor-pointer">
@@ -423,8 +433,8 @@
                             </button>
                         </div>
                         
-                        <!-- 16 Theme Choices List/Grid -->
-                        <div id="themeDropdownGrid" class="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
+                        <!-- 40 Theme Choices List/Grid -->
+                        <div id="themeDropdownGrid" class="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
                             <!-- Populated dynamically by ThemeManager.js -->
                         </div>
                     </div>
@@ -434,7 +444,7 @@
                 @if (SignInManager.IsSignedIn(User))
                 {
                     <div class="relative z-50">
-                        <button type="button" id="userProfileDropdownBtn" onclick="toggleUserProfileDropdown()"
+                        <button type="button" id="userProfileDropdownBtn" onclick="toggleUserProfileDropdown()" data-tour="profile"
                                 class="flex items-center gap-2 p-1.5 sm:pr-3 rounded-2xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs hover:border-indigo-300 transition-all cursor-pointer group"
                                 title="Menu Akun @userFullName">
                             @if (!string.IsNullOrEmpty(userPhoto))
@@ -501,6 +511,29 @@
                                     <div class="flex-1">
                                         <p class="leading-none text-slate-800 font-bold group-hover:text-purple-700">Change Password</p>
                                         <span class="text-[10px] text-slate-400 font-medium">Ganti kata sandi login</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-[10px] text-slate-300 group-hover:text-purple-400"></i>
+                                </a>
+
+                                <!-- 2.5. Tour & Onboarding Trigger in Profile Menu -->
+                                <a href="javascript:void(0)" onclick="toggleUserProfileDropdown(); OnboardingTour.startTour();" class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 hover:text-indigo-700 hover:bg-indigo-50/80 transition-all group">
+                                    <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs group-hover:scale-110 transition-transform flex-shrink-0">
+                                        <i class="fas fa-compass text-xs"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="leading-none text-slate-800 font-bold group-hover:text-indigo-700">Tur Panduan Aplikasi</p>
+                                        <span class="text-[10px] text-slate-400 font-medium">Panduan interaktif fitur di layar</span>
+                                    </div>
+                                    <i class="fas fa-chevron-right text-[10px] text-slate-300 group-hover:text-indigo-400"></i>
+                                </a>
+
+                                <a href="javascript:void(0)" onclick="toggleUserProfileDropdown(); OnboardingTour.showWelcomeModal();" class="flex items-center gap-3 px-3.5 py-2.5 rounded-2xl text-xs font-bold text-slate-700 hover:text-purple-700 hover:bg-purple-50/80 transition-all group">
+                                    <div class="w-8 h-8 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-xs group-hover:scale-110 transition-transform flex-shrink-0">
+                                        <i class="fas fa-sparkles text-xs"></i>
+                                    </div>
+                                    <div class="flex-1">
+                                        <p class="leading-none text-slate-800 font-bold group-hover:text-purple-700">Info Selamat Datang</p>
+                                        <span class="text-[10px] text-slate-400 font-medium">Buka kembali popup pengenalan</span>
                                     </div>
                                     <i class="fas fa-chevron-right text-[10px] text-slate-300 group-hover:text-purple-400"></i>
                                 </a>
@@ -1314,7 +1347,11 @@
     </div>
 </div>
 
+<script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/js/theme-manager.js"></script>
+<script src="~/js/ajax-grid-manager.js"></script>
+<script src="~/js/onboarding-tour.js"></script>
+@await Html.PartialAsync("_OnboardingTour")
 
 @await RenderSectionAsync("Scripts", required: false)
 </body>

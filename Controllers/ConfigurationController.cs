@@ -45,6 +45,10 @@ namespace TrackerKerja.Controllers
             ViewBag.GlobalBaseUrl = baseUrl;
             ViewBag.BaseUrlUpdatedAt = setting?.UpdatedAt ?? DateTime.Now;
 
+            // 1.5. Global App Typography Font
+            var fontSetting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GlobalAppFont");
+            ViewBag.GlobalAppFont = fontSetting?.Value ?? "inter";
+
             // 2. Database Capacity Info
             var dbPath = GetDbFilePath();
             var fileInfo = new FileInfo(dbPath);
@@ -170,6 +174,51 @@ namespace TrackerKerja.Controllers
 
             await _db.SaveChangesAsync();
             TempData["Success"] = $"Global Base URL berhasil diperbarui menjadi '{cleanUrl}'!";
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> UpdateGlobalFont([FromForm] string fontName)
+        {
+            if (string.IsNullOrWhiteSpace(fontName))
+            {
+                return BadRequest(new { success = false, message = "Nama font tidak boleh kosong" });
+            }
+
+            var allowedFonts = new[] { "inter", "jakarta", "outfit", "poppins", "roboto" };
+            var selectedFont = fontName.Trim().ToLowerInvariant();
+            if (!allowedFonts.Contains(selectedFont))
+            {
+                selectedFont = "inter";
+            }
+
+            var setting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GlobalAppFont");
+            if (setting == null)
+            {
+                setting = new SystemSetting
+                {
+                    Key = "GlobalAppFont",
+                    Value = selectedFont,
+                    Description = "Global typography font family setting (Inter, Plus Jakarta Sans, Outfit, Poppins, Roboto)",
+                    UpdatedAt = DateTime.Now
+                };
+                _db.SystemSettings.Add(setting);
+            }
+            else
+            {
+                setting.Value = selectedFont;
+                setting.UpdatedAt = DateTime.Now;
+            }
+
+            await _db.SaveChangesAsync();
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest" || Request.Headers.Accept.ToString().Contains("application/json"))
+            {
+                return Json(new { success = true, font = selectedFont, message = "Font berhasil diperbarui" });
+            }
+
+            TempData["Success"] = $"Tipografi global aplikasi berhasil diatur ke '{selectedFont}'!";
             return RedirectToAction(nameof(Index));
         }
 

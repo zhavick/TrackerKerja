@@ -142,7 +142,7 @@
 
 <!-- Filters Bar -->
 <div class="bg-white rounded-3xl p-4 border border-slate-200/80 shadow-xs mb-6">
-    <form method="get" action="/Timesheet" class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+    <form method="get" action="/Timesheet" data-ajax-grid="true" data-target-grid="#ajaxGridContainer" class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
         <input type="hidden" name="weekDate" value="@Model.WeekStart.ToString("yyyy-MM-dd")" />
 
         <div class="@(User.IsInRole("Admin") ? "sm:col-span-5" : "sm:col-span-10")">
@@ -339,7 +339,7 @@
 </div>
 
 <!-- Weekly Timesheet Matrix Table -->
-<div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden mb-6">
+<div id="ajaxGridContainer" data-ajax-grid="true" class="ajax-grid-container bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden mb-6">
     <div class="p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">

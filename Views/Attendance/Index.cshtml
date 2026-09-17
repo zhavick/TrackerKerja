@@ -203,7 +203,7 @@
 
 <!-- Filters Bar -->
 <div class="bg-white rounded-3xl p-4 border border-slate-200/80 shadow-xs mb-6">
-    <form method="get" action="/Attendance" class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+    <form method="get" action="/Attendance" data-ajax-grid="true" data-target-grid="#ajaxGridContainer" class="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
         <!-- Month Selector -->
         <div class="sm:col-span-3">
             <select name="month" onchange="this.form.submit()" class="select2 select2-compact w-full" data-placeholder="Pilih Bulan">
@@ -269,7 +269,7 @@
 </div>
 
 <!-- Attendance & Leaves Records Table -->
-<div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden mb-6">
+<div id="ajaxGridContainer" data-ajax-grid="true" class="ajax-grid-container bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden mb-6">
     <div class="p-5 border-b border-slate-100 flex items-center justify-between flex-wrap gap-3">
         <div class="flex items-center gap-2">
             <div class="w-8 h-8 rounded-xl bg-teal-50 text-teal-600 flex items-center justify-center text-sm font-bold">

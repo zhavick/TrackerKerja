@@ -1,0 +1,348 @@
+@using Microsoft.AspNetCore.Identity
+@using TrackerKerja.Models
+@inject UserManager<AppUser> UserManager
+@inject SignInManager<AppUser> SignInManager
+
+@{
+    var currentUser = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
+    var currentUserId = currentUser?.Id ?? "";
+    var currentUserName = currentUser?.FullName ?? (User.Identity?.Name ?? "Pengguna Baru");
+    var isUserAdmin = User.IsInRole("Admin");
+}
+
+<!-- ════════════════════════════════════════════════════════════════════════════════
+     1. ONBOARDING WELCOME SCREEN (MODAL POPUP)
+     ════════════════════════════════════════════════════════════════════════════════ -->
+<div id="onboardingWelcomeModal" class="onboarding-backdrop" role="dialog" aria-modal="true" aria-labelledby="onboardingModalTitle">
+    <div class="onboarding-modal-card">
+        
+        <!-- Modal Top Bar -->
+        <div class="px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-700 text-white flex items-center justify-between relative overflow-hidden flex-shrink-0">
+            <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+            <div class="flex items-center gap-3 relative z-10">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-lg shadow-inner ring-2 ring-white/30 flex-shrink-0">
+                    <i class="fas fa-rocket"></i>
+                </div>
+                <div>
+                    <h3 id="onboardingModalTitle" class="font-black text-base sm:text-lg leading-tight">Selamat Datang di Work Tracker Pro! 👋</h3>
+                    <p class="text-xs text-indigo-100 font-medium">Panduan Awal & Informasi Fitur Utama</p>
+                </div>
+            </div>
+            <button type="button" onclick="OnboardingTour.closeWelcomeModal()" class="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer relative z-10" title="Tutup">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Modal Slides Body -->
+        <div class="p-6 overflow-y-auto flex-1 bg-slate-50/60 dark:bg-slate-900/60">
+            
+            <!-- SLIDE 0: Welcome & Overview -->
+            <div id="onboardingSlide_0" class="flex flex-col gap-4 animate-fadeIn">
+                <div class="p-5 rounded-2xl bg-gradient-to-br from-indigo-50 to-purple-50 dark:from-slate-800 dark:to-indigo-950 border border-indigo-100 dark:border-slate-700 flex flex-col sm:flex-row items-center gap-5 text-center sm:text-left">
+                    <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr from-indigo-500 to-purple-600 text-white flex items-center justify-center text-2xl shadow-lg shadow-indigo-500/30 flex-shrink-0">
+                        <i class="fas fa-sparkles"></i>
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap mb-1">
+                            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">Halo, @currentUserName!</span>
+                            <span class="text-[10px] font-extrabold px-2 py-0.5 rounded-full @(isUserAdmin ? "bg-amber-100 text-amber-800" : "bg-indigo-100 text-indigo-700")">
+                                @(isUserAdmin ? "🛡️ Administrator" : "👤 Anggota Tim")
+                            </span>
+                        </div>
+                        <h4 class="text-base sm:text-lg font-black text-slate-800 dark:text-white">Siap meningkatkan produktivitas kerja Anda?</h4>
+                        <p class="text-xs text-slate-600 dark:text-slate-300 mt-1">Work Tracker Pro dirancang untuk mempermudah pengelolaan tugas harian, pelaporan jam kerja otomatis, kolaborasi tim, hingga presensi kehadiran secara terpadu.</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                    <div class="p-3.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                        <div class="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-2 font-bold">
+                            <i class="fas fa-layer-group"></i>
+                        </div>
+                        <h5 class="font-extrabold text-slate-800 dark:text-white mb-0.5">All-in-One Dashboard</h5>
+                        <p class="text-slate-500 dark:text-slate-400 text-[11px]">Pantau metrik personal, tugas aktif, dan progress tim dalam satu tempat.</p>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                        <div class="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-400 flex items-center justify-center mb-2 font-bold">
+                            <i class="fas fa-stopwatch-20"></i>
+                        </div>
+                        <h5 class="font-extrabold text-slate-800 dark:text-white mb-0.5">Multi-Timer Realtime</h5>
+                        <p class="text-slate-500 dark:text-slate-400 text-[11px]">Hitung durasi tugas secara akurat dan sinkronkan otomatis ke Timesheet.</p>
+                    </div>
+                    <div class="p-3.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                        <div class="w-7 h-7 rounded-lg bg-purple-50 dark:bg-purple-900/50 text-purple-600 dark:text-purple-400 flex items-center justify-center mb-2 font-bold">
+                            <i class="fas fa-palette"></i>
+                        </div>
+                        <h5 class="font-extrabold text-slate-800 dark:text-white mb-0.5">16 Tema Tampilan</h5>
+                        <p class="text-slate-500 dark:text-slate-400 text-[11px]">Pilihan tema cerah & tema gelap modern sesuai kenyamanan mata Anda.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE 1: Task Management & Kanban -->
+            <div id="onboardingSlide_1" class="hidden flex-col gap-4 animate-fadeIn">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-cyan-500 text-white flex items-center justify-center text-lg shadow-md shadow-cyan-500/20 flex-shrink-0">
+                        <i class="fas fa-tasks"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Manajemen Tugas & Papan Kanban</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Kelola antrian kerja, prioritas, dan deadline tugas dengan mudah</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Tampilan Tabel & Kanban</h5>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Pindah antar status (Todo, In Progress, Review, Done) secara visual dengan drag & drop.</p>
+                    </div>
+                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Prioritas & Tenggat Waktu</h5>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Tandai tugas Critical/High dan dapatkan peringatan otomatis sebelum tanggal jatuh tempo.</p>
+                    </div>
+                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Sub-tugas (Checklist)</h5>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Bagi tugas kompleks ke item-item checklist terukur dengan kalkulasi progress otomatis.</p>
+                    </div>
+                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Lampiran & Log Komentar</h5>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Unggah berkas bukti kerja dan berkomunikasi langsung dalam utas komentar tugas.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE 2: Timesheet & Multi-Timer -->
+            <div id="onboardingSlide_2" class="hidden flex-col gap-4 animate-fadeIn">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-lg shadow-md shadow-emerald-500/20 flex-shrink-0">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Pencatatan Jam & Timesheet</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Catat durasi kerja presisi dan penuhi rekapitulasi bulanan</p>
+                    </div>
+                </div>
+
+                <div class="space-y-2.5">
+                    <div class="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+                            <i class="fas fa-play"></i>
+                        </div>
+                        <div class="text-xs">
+                            <strong class="text-emerald-900 dark:text-emerald-200 font-bold block mb-0.5">Multi-Timer Sidebar Langsung</strong>
+                            <p class="text-emerald-700 dark:text-emerald-300 text-[11.5px]">Jalankan timer langsung dari daftar tugas atau sidebar. Durasi tersimpan otomatis tanpa perlu input manual yang rumit.</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-amber-500 text-white flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+                            <i class="fas fa-calendar-alt"></i>
+                        </div>
+                        <div class="text-xs">
+                            <strong class="text-amber-900 dark:text-amber-200 font-bold block mb-0.5">Periode Cut-Off Tanggal 25</strong>
+                            <p class="text-amber-700 dark:text-amber-300 text-[11.5px]">Sistem secara cerdas menghitung periode tanggal 26 s/d 25 bulan berjalan dan memberikan notifikasi pengingat sebelum batas cut-off.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE 3: Presensi GPS & Kalender Tim -->
+            <div id="onboardingSlide_3" class="hidden flex-col gap-4 animate-fadeIn">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-teal-500 text-white flex items-center justify-center text-lg shadow-md shadow-teal-500/20 flex-shrink-0">
+                        <i class="fas fa-clipboard-user"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Presensi Online, Cuti & Kalender</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Presensi kehadiran kerja, izin/cuti, dan jadwal tim</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fas fa-map-marker-alt text-teal-500 text-xs"></i>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Presensi Lokasi GPS & Foto</h5>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Check-in dan check-out harian disertai verifikasi radius kantor & swafoto kehadiran.</p>
+                    </div>
+                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fas fa-umbrella-beach text-teal-500 text-xs"></i>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Pengajuan Izin & Cuti</h5>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Ajukan cuti tahunan, sakit, atau izin dinas dengan alur persetujuan terstruktur.</p>
+                    </div>
+                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs sm:col-span-2">
+                        <div class="flex items-center gap-2 mb-1">
+                            <i class="fas fa-calendar-week text-purple-500 text-xs"></i>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Kalender Interaktif Terintegrasi</h5>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Lihat timeline deadline tugas, jadwal libur, dan cuti rekan tim secara visual dalam kalender interaktif.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SLIDE 4: Developer Tools & Custom Theme -->
+            <div id="onboardingSlide_4" class="hidden flex-col gap-4 animate-fadeIn">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-pink-500 text-white flex items-center justify-center text-lg shadow-md shadow-pink-500/20 flex-shrink-0">
+                        <i class="fas fa-magic"></i>
+                    </div>
+                    <div>
+                        <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Fitur Pendukung & Kostumasi</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Percepat pekerjaan harian dengan tool developer & UI kustom</p>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-center">
+                    <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                        <i class="fas fa-code text-pink-500 text-base mb-1"></i>
+                        <h6 class="text-xs font-bold text-slate-800 dark:text-white">JSON Tools</h6>
+                        <span class="text-[10px] text-slate-400">Validator & Formatter</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                        <i class="fas fa-database text-indigo-500 text-base mb-1"></i>
+                        <h6 class="text-xs font-bold text-slate-800 dark:text-white">SQL Tools</h6>
+                        <span class="text-[10px] text-slate-400">Beautifier & History</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                        <i class="fas fa-file-code text-emerald-500 text-base mb-1"></i>
+                        <h6 class="text-xs font-bold text-slate-800 dark:text-white">Swagger API</h6>
+                        <span class="text-[10px] text-slate-400">REST API Docs</span>
+                    </div>
+                    <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
+                        <i class="fas fa-palette text-amber-500 text-base mb-1"></i>
+                        <h6 class="text-xs font-bold text-slate-800 dark:text-white">16 Tema</h6>
+                        <span class="text-[10px] text-slate-400">Light & Dark Mode</span>
+                    </div>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 flex items-center justify-between gap-3">
+                    <div class="text-xs">
+                        <strong class="text-indigo-950 dark:text-indigo-200 font-bold block">Ingin mencoba Tur Interaktif di layar?</strong>
+                        <span class="text-indigo-700 dark:text-indigo-300 text-[11px]">Kami akan memandu Anda melalui setiap menu dan tombol penting.</span>
+                    </div>
+                    <button type="button" onclick="OnboardingTour.startTourFromModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 transition-all flex-shrink-0 cursor-pointer">
+                        Mulai Tur 🚀
+                    </button>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Modal Footer Bar -->
+        <div class="px-6 py-3.5 bg-white dark:bg-slate-800 border-t border-slate-200/80 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+            <!-- Left: Checkbox Don't Show Again -->
+            <label class="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-500 dark:text-slate-400">
+                <input type="checkbox" id="chkDontShowOnboardingAgain" class="rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 w-3.5 h-3.5">
+                <span>Jangan tampilkan lagi</span>
+            </label>
+
+            <!-- Center: Slide Dots -->
+            <div class="flex items-center gap-1.5" id="onboardingDotsContainer">
+                <button type="button" onclick="OnboardingTour.goToSlide(0)" id="onboardingDot_0" class="h-2.5 rounded-full transition-all duration-300 cursor-pointer w-8 bg-indigo-600"></button>
+                <button type="button" onclick="OnboardingTour.goToSlide(1)" id="onboardingDot_1" class="h-2.5 rounded-full transition-all duration-300 cursor-pointer w-2.5 bg-slate-300"></button>
+                <button type="button" onclick="OnboardingTour.goToSlide(2)" id="onboardingDot_2" class="h-2.5 rounded-full transition-all duration-300 cursor-pointer w-2.5 bg-slate-300"></button>
+                <button type="button" onclick="OnboardingTour.goToSlide(3)" id="onboardingDot_3" class="h-2.5 rounded-full transition-all duration-300 cursor-pointer w-2.5 bg-slate-300"></button>
+                <button type="button" onclick="OnboardingTour.goToSlide(4)" id="onboardingDot_4" class="h-2.5 rounded-full transition-all duration-300 cursor-pointer w-2.5 bg-slate-300"></button>
+            </div>
+
+            <!-- Right: Action Buttons -->
+            <div class="flex items-center gap-2">
+                <button type="button" id="btnOnboardingPrev" onclick="OnboardingTour.prevSlide()" class="px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold transition-all cursor-pointer" style="visibility: hidden;">
+                    &larr; Kembali
+                </button>
+                <button type="button" id="btnOnboardingNext" onclick="OnboardingTour.nextSlide()" class="px-4 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm cursor-pointer">
+                    Lanjut &rarr;
+                </button>
+                <button type="button" id="btnOnboardingStartTour" onclick="OnboardingTour.startTourFromModal()" class="hidden px-4 py-1.5 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-black transition-all shadow-md shadow-indigo-500/20 cursor-pointer">
+                    Mulai Tur Interaktif 🚀
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════════════════════════
+     2. INTERACTIVE SPOTLIGHT & WALKTHROUGH OVERLAY
+     ════════════════════════════════════════════════════════════════════════════════ -->
+<div id="tourSpotlightBackdrop" class="tour-spotlight-backdrop" onclick="OnboardingTour.endTour()"></div>
+
+<div id="tourSpotlightOverlay" class="hidden">
+    <!-- SVG Mask for Target Spotlight -->
+    <svg class="tour-spotlight-svg-overlay" xmlns="http://www.w3.org/2000/svg">
+        <path id="tourSpotlightPath" fill="rgba(15, 23, 42, 0.68)" fill-rule="evenodd" d=""></path>
+    </svg>
+
+    <!-- Neon Target Pulsing Ring -->
+    <div id="tourTargetHighlight" class="tour-target-highlight" style="display: none;"></div>
+
+    <!-- Smart Interactive Tooltip Card (Popover) -->
+    <div id="tourTooltipContainer" class="tour-tooltip-container" role="dialog" aria-modal="true" data-placement="bottom">
+        <!-- Arrow Tail -->
+        <div class="tour-tooltip-arrow"></div>
+
+        <!-- Tooltip Header -->
+        <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-100 dark:border-slate-700">
+            <div class="flex items-center gap-2">
+                <span id="tourStepBadge" class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 dark:bg-indigo-900/60 dark:text-indigo-300">
+                    Langkah 1 dari 7
+                </span>
+            </div>
+            <button type="button" onclick="OnboardingTour.endTour()" class="w-6 h-6 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-700 dark:hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer" title="Keluar Tur">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Tooltip Content -->
+        <div class="space-y-1.5 mb-4">
+            <h4 id="tourTooltipTitle" class="font-extrabold text-slate-800 dark:text-white text-sm">Judul Langkah</h4>
+            <p id="tourTooltipText" class="text-slate-600 dark:text-slate-300 text-xs leading-relaxed">Deskripsi langkah panduan fitur aplikasi.</p>
+        </div>
+
+        <!-- Tooltip Navigation Footer -->
+        <div class="flex items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-700">
+            <!-- Progress Indicator Dots -->
+            <div id="tourStepDots" class="flex items-center gap-1">
+                <!-- Populated dynamically -->
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-1.5">
+                <button type="button" id="btnTourPrev" onclick="OnboardingTour.prevStep()" class="px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold transition-all cursor-pointer">
+                    <i class="fas fa-chevron-left text-[10px]"></i>
+                </button>
+                <button type="button" id="btnTourNext" onclick="OnboardingTour.nextStep()" class="px-3.5 py-1.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1 cursor-pointer">
+                    <span>Lanjut</span> <i class="fas fa-chevron-right text-[10px] ml-1"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Onboarding Initialization Script -->
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        if (typeof OnboardingTour !== 'undefined') {
+            OnboardingTour.init({
+                userId: '@currentUserId',
+                userName: '@currentUserName',
+                isAdmin: @(isUserAdmin ? "true" : "false")
+            });
+        }
+    });
+</script>

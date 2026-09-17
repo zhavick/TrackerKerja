@@ -582,6 +582,20 @@
                     </div>
                 </div>
             }
+            @if (TempData["Error"] != null)
+            {
+                <div class="toast-notification pointer-events-auto">
+                    <div class="bg-white border border-red-200 rounded-xl shadow-xl p-4 flex items-center gap-3">
+                        <div class="w-8 h-8 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                            <i class="fas fa-exclamation-triangle text-red-600 text-sm"></i>
+                        </div>
+                        <p class="text-slate-700 text-sm font-medium">@TempData["Error"]</p>
+                        <button onclick="this.closest('.toast-notification').remove()" class="ml-auto text-slate-400 hover:text-slate-600 cursor-pointer">
+                            <i class="fas fa-times text-xs"></i>
+                        </button>
+                    </div>
+                </div>
+            }
         </div>
 
         <!-- PAGE CONTENT -->

@@ -396,5 +396,92 @@ namespace TrackerKerja.Controllers
 
             return RedirectToAction(nameof(Details), new { id = userId });
         }
+
+        // ── 8. ADMIN DELETE MEMBER & LOGIN ACCOUNT ──────────────
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Delete(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                TempData["Error"] = "ID Anggota tidak valid.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                TempData["Error"] = "Anggota tim tidak ditemukan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            if (currentUser != null && currentUser.Id == user.Id)
+            {
+                TempData["Error"] = "Anda tidak dapat menghapus akun Anda sendiri yang sedang aktif digunakan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Protect root admin account
+            if (string.Equals(user.Email, "admin@trackerkerja.com", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(user.UserName, "admin@trackerkerja.com", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Error"] = "Akun Administrator Utama Sistem (admin@trackerkerja.com) dilindungi dan tidak dapat dihapus.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                // 1. Unassign tasks assigned to this user (keep project tasks intact)
+                var userTasks = await _db.Tasks.Where(t => t.AssignedToUserId == id).ToListAsync();
+                foreach (var t in userTasks)
+                {
+                    t.AssignedToUserId = null;
+                }
+
+                // 2. Unassign notes created by this user (keep project notes intact)
+                var userNotes = await _db.Notes.Where(n => n.AuthorUserId == id).ToListAsync();
+                foreach (var n in userNotes)
+                {
+                    n.AuthorUserId = null;
+                }
+
+                // 3. Clear user work sessions user ID
+                var userSessions = await _db.Sessions.Where(s => s.UserId == id).ToListAsync();
+                foreach (var s in userSessions)
+                {
+                    s.UserId = null;
+                }
+
+                // 4. Remove user badges
+                var userBadges = await _db.UserBadges.Where(ub => ub.UserId == id).ToListAsync();
+                _db.UserBadges.RemoveRange(userBadges);
+
+                // 5. Remove attendance records
+                var userAttendances = await _db.Attendances.Where(a => a.UserId == id).ToListAsync();
+                _db.Attendances.RemoveRange(userAttendances);
+
+                // Save relational updates before deleting Identity user
+                await _db.SaveChangesAsync();
+
+                // 6. Delete ASP.NET Core Identity user login account
+                var result = await _userManager.DeleteAsync(user);
+                if (!result.Succeeded)
+                {
+                    var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                    TempData["Error"] = $"Gagal menghapus akun login member: {errors}";
+                    return RedirectToAction(nameof(Index));
+                }
+
+                TempData["Success"] = $"Akun dan data member '{user.FullName}' ({user.Email}) berhasil dihapus permanen dari sistem dan akun login.";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Terjadi kesalahan saat menghapus member: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
     }
 }

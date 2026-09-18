@@ -27,9 +27,16 @@ namespace TrackerKerja.Services
             }
         }
 
-        public string GenerateToken(AppUser user, IList<string> roles, out DateTime expiresAt)
+        public string GenerateToken(AppUser user, IList<string> roles, out DateTime expiresAt, int? expiryMinutes = null)
         {
-            expiresAt = DateTime.UtcNow.AddDays(_expiryInDays);
+            if (expiryMinutes.HasValue && expiryMinutes.Value > 0)
+            {
+                expiresAt = DateTime.UtcNow.AddMinutes(expiryMinutes.Value);
+            }
+            else
+            {
+                expiresAt = DateTime.UtcNow.AddDays(_expiryInDays);
+            }
 
             var claims = new List<Claim>
             {

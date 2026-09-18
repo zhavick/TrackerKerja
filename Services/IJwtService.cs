@@ -14,8 +14,9 @@ namespace TrackerKerja.Services
         /// <param name="user">Entitas pengguna</param>
         /// <param name="roles">Daftar peran pengguna (misal: Admin, User)</param>
         /// <param name="expiresAt">Waktu kedaluwarsa token</param>
+        /// <param name="expiryMinutes">Durasi masa berlaku token dalam menit (opsional, default mengikuti konfigurasi atau 7 hari)</param>
         /// <returns>String token JWT terenkripsi</returns>
-        string GenerateToken(AppUser user, IList<string> roles, out DateTime expiresAt);
+        string GenerateToken(AppUser user, IList<string> roles, out DateTime expiresAt, int? expiryMinutes = null);
 
         /// <summary>
         /// Memvalidasi token JWT dan mengembalikan ClaimsPrincipal jika valid

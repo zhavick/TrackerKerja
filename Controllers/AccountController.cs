@@ -71,7 +71,8 @@ namespace TrackerKerja.Controllers
                 if (user != null)
                 {
                     var roles = await _userManager.GetRolesAsync(user);
-                    var token = _jwtService.GenerateToken(user, roles, out var expiresAt);
+                    // Generate JWT with 1 hour (60 minutes) expiration for security auto-logout
+                    var token = _jwtService.GenerateToken(user, roles, out var expiresAt, expiryMinutes: 60);
                     Response.Cookies.Append("jwt_token", token, new CookieOptions
                     {
                         HttpOnly = true,
@@ -224,6 +225,26 @@ namespace TrackerKerja.Controllers
             await _signInManager.SignOutAsync();
             Response.Cookies.Delete("jwt_token");
             return RedirectToAction("Login");
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> Logout(string? reason = null)
+        {
+            await _signInManager.SignOutAsync();
+            Response.Cookies.Delete("jwt_token");
+            if (string.Equals(reason, "timeout", StringComparison.OrdinalIgnoreCase))
+            {
+                TempData["Warning"] = "Sesi Anda telah berakhir setelah 1 jam tidak aktif demi alasan keamanan. Silakan masuk kembali.";
+            }
+            return RedirectToAction("Login");
+        }
+
+        // ── KEEP ALIVE (SESSION EXTENSION) ─────────────────────
+        [HttpGet]
+        [Authorize]
+        public IActionResult KeepAlive()
+        {
+            return Json(new { status = "active", timestamp = DateTime.UtcNow });
         }
 
         // ── PROFILE ────────────────────────────────────────────

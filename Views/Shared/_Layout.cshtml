@@ -7,7 +7,20 @@
 @inject AppDbContext DbContext
 
 @{
-    var user = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
+    var isSignedIn = SignInManager.IsSignedIn(User) || (User.Identity?.IsAuthenticated == true);
+    var user = isSignedIn ? await UserManager.GetUserAsync(User) : null;
+    if (user == null && User.Identity?.IsAuthenticated == true)
+    {
+        var userId = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value ?? User.FindFirst("sub")?.Value;
+        if (!string.IsNullOrEmpty(userId))
+        {
+            user = await UserManager.FindByIdAsync(userId);
+        }
+        if (user == null && !string.IsNullOrEmpty(User.Identity.Name))
+        {
+            user = await UserManager.FindByNameAsync(User.Identity.Name);
+        }
+    }
     var company = user?.CompanyId.HasValue == true ? await DbContext.Companies.FindAsync(user.CompanyId.Value) : null;
     var companyName = company?.Name ?? (User.IsInRole("Admin") ? "Semua Tim / Perusahaan" : "Tanpa Perusahaan");
     var userInitial = user?.Initials ?? (User.Identity?.Name?.Length > 0 ? User.Identity.Name.Substring(0,1).ToUpper() : "U");
@@ -149,7 +162,7 @@
             </button>
         </div>
 
-        @if (SignInManager.IsSignedIn(User))
+        @if (isSignedIn)
         {
             <!-- Company / Team Badge in Sidebar -->
             <div class="mx-3 mt-3 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/90 shadow-2xs flex items-center gap-2.5">
@@ -275,7 +288,7 @@
 
         <!-- User Footer Section -->
         <div class="p-3 border-t border-slate-200/80 bg-slate-50/80">
-            @if (SignInManager.IsSignedIn(User))
+            @if (isSignedIn)
             {
                 <div class="flex items-center justify-between gap-2 p-2 rounded-xl hover:bg-white transition-all border border-transparent hover:border-slate-200">
                     <a href="/Account/Profile" class="flex items-center gap-2.5 min-w-0 flex-1 group">
@@ -325,7 +338,7 @@
                 </button>
                 <div class="flex items-center gap-2">
                     <h2 class="text-slate-800 font-bold text-base sm:text-lg truncate max-w-[120px] sm:max-w-xs md:max-w-none">@ViewData["Title"]</h2>
-                    @if (SignInManager.IsSignedIn(User))
+                    @if (isSignedIn)
                     {
                         <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold shadow-2xs" title="Perusahaan / Tim Aktif">
                             <i class="fas fa-building text-[11px] text-indigo-500"></i>
@@ -444,7 +457,7 @@
                 </div>
 
                 <!-- User Profile Dropdown in Topbar -->
-                @if (SignInManager.IsSignedIn(User))
+                @if (isSignedIn)
                 {
                     <div class="relative z-50">
                         <button type="button" id="userProfileDropdownBtn" onclick="toggleUserProfileDropdown()" data-tour="profile"
@@ -895,6 +908,17 @@
         if (menu) menu.classList.add('hidden');
         if (chevron) chevron.style.transform = 'rotate(0deg)';
     }
+
+    // Auto-close profile dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+        const btn = document.getElementById('userProfileDropdownBtn');
+        const menu = document.getElementById('userProfileDropdownMenu');
+        if (menu && !menu.classList.contains('hidden')) {
+            if (!menu.contains(e.target) && (!btn || !btn.contains(e.target))) {
+                closeUserProfileDropdown();
+            }
+        }
+    });
 
     function switchNotifTab(tab) {
         currentNotifTab = tab;
@@ -1368,6 +1392,7 @@
 <script src="~/js/theme-manager.js"></script>
 <script src="~/js/ajax-grid-manager.js"></script>
 <script src="~/js/onboarding-tour.js"></script>
+<script src="~/js/session-manager.js"></script>
 @await Html.PartialAsync("_OnboardingTour")
 
 @await RenderSectionAsync("Scripts", required: false)

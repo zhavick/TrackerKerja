@@ -329,6 +329,21 @@
                 </div>
             }
 
+            @if (TempData["Warning"] != null)
+            {
+                <div class="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
+                    <div class="flex items-start gap-3 text-amber-500 text-xs font-semibold">
+                        <i class="fas fa-clock text-base flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold">Pemberitahuan Sesi:</span>
+                            <p class="mt-1 font-normal leading-relaxed text-amber-400">
+                                @TempData["Warning"]
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+
             <!-- Validation Error Alert -->
             @if (!ViewData.ModelState.IsValid)
             {

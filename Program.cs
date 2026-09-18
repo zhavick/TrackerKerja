@@ -122,7 +122,7 @@ builder.Services.AddScoped<IJwtService, JwtService>();
 // Add session support (for Import preview)
 builder.Services.AddSession(options =>
 {
-    options.IdleTimeout = TimeSpan.FromMinutes(30);
+    options.IdleTimeout = TimeSpan.FromHours(1);
     options.Cookie.HttpOnly = true;
     options.Cookie.IsEssential = true;
 });
@@ -154,7 +154,7 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.LoginPath = "/Account/Login";
     options.LogoutPath = "/Account/Logout";
     options.AccessDeniedPath = "/Account/AccessDenied";
-    options.ExpireTimeSpan = TimeSpan.FromDays(7);
+    options.ExpireTimeSpan = TimeSpan.FromHours(1);
     options.SlidingExpiration = true;
 });
 
@@ -181,20 +181,33 @@ builder.Services.AddAuthentication(options =>
             return JwtBearerDefaults.AuthenticationScheme;
         }
 
-        // 2. If it's an API route or from Swagger -> MUST use JwtBearer (challenges with 401 Unauthorized if missing token)
-        if (context.Request.Path.StartsWithSegments("/api") ||
-            context.Request.Headers["Referer"].ToString().Contains("/swagger", StringComparison.OrdinalIgnoreCase))
+        // 2. If from Swagger -> MUST use JwtBearer (challenges with 401 Unauthorized if missing token)
+        if (context.Request.Headers["Referer"].ToString().Contains("/swagger", StringComparison.OrdinalIgnoreCase))
         {
             return JwtBearerDefaults.AuthenticationScheme;
         }
 
-        // 3. For Web MVC routes, if jwt_token cookie is present -> use JwtBearer
+        // 3. For API routes: MUST use JwtBearer
+        if (context.Request.Path.StartsWithSegments("/api"))
+        {
+            return JwtBearerDefaults.AuthenticationScheme;
+        }
+
+        // 4. For Web MVC routes:
+        // Use Identity Application Scheme if user has Identity Application Cookie
+        // (Ensures SignInManager.IsSignedIn, UserManager, and Layout user profile render natively)
+        if (context.Request.Cookies.ContainsKey(".AspNetCore.Identity.Application"))
+        {
+            return IdentityConstants.ApplicationScheme;
+        }
+
+        // If only jwt_token cookie is present without Identity cookie -> use JwtBearer
         if (context.Request.Cookies.ContainsKey("jwt_token"))
         {
             return JwtBearerDefaults.AuthenticationScheme;
         }
 
-        // 4. Otherwise use Identity Application Cookie
+        // 5. Otherwise use Identity Application Cookie
         return IdentityConstants.ApplicationScheme;
     };
 })

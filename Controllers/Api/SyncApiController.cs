@@ -118,10 +118,21 @@ namespace TrackerKerja.Controllers.Api
         /// Memicu proses pengiriman sinkronisasi data &amp; berkas dari instance ini ke Host Induk target (POST /api/sync/push)
         /// </summary>
         [HttpPost("push")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<SyncResultDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> PushToHost([FromBody] SyncPushRequestDto request)
         {
+            var isApiKeyValid = (Request.Headers.TryGetValue("X-Sync-ApiKey", out var hKey) && await _syncService.VerifyApiKeyAsync(hKey.ToString()))
+                || (!string.IsNullOrWhiteSpace(request?.ApiKey) && await _syncService.VerifyApiKeyAsync(request.ApiKey));
+            var isAuthorizedUser = User?.IsInRole("Admin") == true || (User?.Identity?.IsAuthenticated == true);
+
+            if (!isApiKeyValid && !isAuthorizedUser)
+            {
+                return Unauthorized(ApiResponse<object>.Fail("Akses Ditolak: Diperlukan hak akses Administrator atau API Key sinkronisasi yang valid."));
+            }
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
@@ -129,8 +140,8 @@ namespace TrackerKerja.Controllers.Api
             }
 
             var settings = await _syncService.GetSyncSettingsAsync();
-            var targetUrl = !string.IsNullOrWhiteSpace(request.TargetHostUrl) ? request.TargetHostUrl : settings.TargetHostUrl;
-            var apiKey = !string.IsNullOrWhiteSpace(request.ApiKey) ? request.ApiKey : settings.ApiKey;
+            var targetUrl = !string.IsNullOrWhiteSpace(request?.TargetHostUrl) ? request.TargetHostUrl : settings.TargetHostUrl;
+            var apiKey = !string.IsNullOrWhiteSpace(request?.ApiKey) ? request.ApiKey : settings.ApiKey;
 
             var result = await _syncService.PushSyncToHostAsync(
                 targetUrl,
@@ -152,10 +163,21 @@ namespace TrackerKerja.Controllers.Api
         /// Menarik (Pull) seluruh data &amp; berkas dari Host Induk ke instance ini (POST /api/sync/pull)
         /// </summary>
         [HttpPost("pull")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<SyncResultDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> PullFromHost([FromBody] SyncPullRequestDto request)
         {
+            var isApiKeyValid = (Request.Headers.TryGetValue("X-Sync-ApiKey", out var hKey) && await _syncService.VerifyApiKeyAsync(hKey.ToString()))
+                || (!string.IsNullOrWhiteSpace(request?.ApiKey) && await _syncService.VerifyApiKeyAsync(request.ApiKey));
+            var isAuthorizedUser = User?.IsInRole("Admin") == true || (User?.Identity?.IsAuthenticated == true);
+
+            if (!isApiKeyValid && !isAuthorizedUser)
+            {
+                return Unauthorized(ApiResponse<object>.Fail("Akses Ditolak: Diperlukan hak akses Administrator atau API Key sinkronisasi yang valid."));
+            }
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
@@ -163,8 +185,8 @@ namespace TrackerKerja.Controllers.Api
             }
 
             var settings = await _syncService.GetSyncSettingsAsync();
-            var targetUrl = !string.IsNullOrWhiteSpace(request.TargetHostUrl) ? request.TargetHostUrl : settings.TargetHostUrl;
-            var apiKey = !string.IsNullOrWhiteSpace(request.ApiKey) ? request.ApiKey : settings.ApiKey;
+            var targetUrl = !string.IsNullOrWhiteSpace(request?.TargetHostUrl) ? request.TargetHostUrl : settings.TargetHostUrl;
+            var apiKey = !string.IsNullOrWhiteSpace(request?.ApiKey) ? request.ApiKey : settings.ApiKey;
 
             var result = await _syncService.PullSyncFromHostAsync(
                 targetUrl,
@@ -184,17 +206,19 @@ namespace TrackerKerja.Controllers.Api
         /// Mengunduh Paket Lengkap Sinkronisasi (.zip) berisi SQL dump dan folder uploads (GET /api/sync/export-package)
         /// </summary>
         [HttpGet("export-package")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ExportSyncPackage([FromQuery] bool cleanBeforeSync = true)
         {
-            // Optional: verify header if provided
-            if (Request.Headers.TryGetValue("X-Sync-ApiKey", out var apiKeyHeader))
+            var isApiKeyValid = Request.Headers.TryGetValue("X-Sync-ApiKey", out var apiKeyHeader)
+                && await _syncService.VerifyApiKeyAsync(apiKeyHeader.ToString());
+            var isAuthorizedUser = User?.IsInRole("Admin") == true || (User?.Identity?.IsAuthenticated == true);
+
+            if (!isApiKeyValid && !isAuthorizedUser)
             {
-                var isValid = await _syncService.VerifyApiKeyAsync(apiKeyHeader.ToString());
-                if (!isValid)
-                {
-                    return Unauthorized(ApiResponse<object>.Fail("Autentikasi gagal: API Key sinkronisasi tidak valid."));
-                }
+                return Unauthorized(ApiResponse<object>.Fail("Akses Ditolak: Diperlukan API Key sinkronisasi (X-Sync-ApiKey) yang valid atau otorisasi Administrator."));
             }
 
             try
@@ -213,10 +237,21 @@ namespace TrackerKerja.Controllers.Api
         /// Mengunggah paket sinkronisasi (.zip atau .sql) untuk diterapkan di server ini (POST /api/sync/import-package)
         /// </summary>
         [HttpPost("import-package")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<SyncResultDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ImportPackageFile([FromForm] SyncPackageUploadRequest request)
         {
+            var isApiKeyValid = Request.Headers.TryGetValue("X-Sync-ApiKey", out var apiKeyHeader)
+                && await _syncService.VerifyApiKeyAsync(apiKeyHeader.ToString());
+            var isAuthorizedUser = User?.IsInRole("Admin") == true || (User?.Identity?.IsAuthenticated == true);
+
+            if (!isApiKeyValid && !isAuthorizedUser)
+            {
+                return Unauthorized(ApiResponse<object>.Fail("Akses Ditolak: Diperlukan hak akses Administrator atau API Key sinkronisasi yang valid."));
+            }
+
             if (request.PackageFile == null || request.PackageFile.Length == 0)
             {
                 return BadRequest(ApiResponse<object>.Fail("Berkas paket sinkronisasi tidak boleh kosong. Silakan pilih berkas .zip atau .sql yang valid."));
@@ -276,10 +311,21 @@ namespace TrackerKerja.Controllers.Api
         /// Mengunggah berkas .sql secara manual untuk dieksekusi dan disinkronkan di Host Induk (POST /api/sync/import-sql)
         /// </summary>
         [HttpPost("import-sql")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<SyncResultDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ImportSqlFile([FromForm] SyncSqlUploadRequest request)
         {
+            var isApiKeyValid = Request.Headers.TryGetValue("X-Sync-ApiKey", out var apiKeyHeader)
+                && await _syncService.VerifyApiKeyAsync(apiKeyHeader.ToString());
+            var isAuthorizedUser = User?.IsInRole("Admin") == true || (User?.Identity?.IsAuthenticated == true);
+
+            if (!isApiKeyValid && !isAuthorizedUser)
+            {
+                return Unauthorized(ApiResponse<object>.Fail("Akses Ditolak: Diperlukan hak akses Administrator atau API Key sinkronisasi yang valid."));
+            }
+
             if (request.SqlFile == null || request.SqlFile.Length == 0)
             {
                 return BadRequest(ApiResponse<object>.Fail("File SQL tidak boleh kosong. Silakan pilih file .sql yang valid."));
@@ -309,9 +355,21 @@ namespace TrackerKerja.Controllers.Api
         /// Mengunduh seluruh data dalam naskah paket SQL sinkronisasi siap impor (GET /api/sync/export-sql)
         /// </summary>
         [HttpGet("export-sql")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(FileResult), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ExportSqlScript([FromQuery] bool cleanBeforeSync = true)
         {
+            var isApiKeyValid = Request.Headers.TryGetValue("X-Sync-ApiKey", out var apiKeyHeader)
+                && await _syncService.VerifyApiKeyAsync(apiKeyHeader.ToString());
+            var isAuthorizedUser = User?.IsInRole("Admin") == true || (User?.Identity?.IsAuthenticated == true);
+
+            if (!isApiKeyValid && !isAuthorizedUser)
+            {
+                return Unauthorized(ApiResponse<object>.Fail("Akses Ditolak: Diperlukan API Key sinkronisasi (X-Sync-ApiKey) yang valid atau otorisasi Administrator."));
+            }
+
             try
             {
                 var sql = await _syncService.GenerateSyncSqlDumpAsync(cleanBeforeSync);

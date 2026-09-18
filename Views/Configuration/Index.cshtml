@@ -1662,7 +1662,10 @@ async function performPushSync(targetUrl, apiKey, cleanBefore, backupBefore, syn
     try {
         const res = await fetch('/api/sync/push', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Sync-ApiKey': apiKey || ''
+            },
             body: JSON.stringify({
                 TargetHostUrl: targetUrl,
                 ApiKey: apiKey,
@@ -1772,7 +1775,10 @@ async function performPullSync(targetUrl, apiKey, cleanBefore, backupBefore) {
     try {
         const res = await fetch('/api/sync/pull', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: { 
+                'Content-Type': 'application/json',
+                'X-Sync-ApiKey': apiKey || ''
+            },
             body: JSON.stringify({
                 TargetHostUrl: targetUrl,
                 ApiKey: apiKey,

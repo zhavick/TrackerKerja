@@ -242,9 +242,10 @@ builder.Services.AddAuthentication(options =>
             }
             else
             {
-                // For direct API calls or Swagger UI: STRICTLY REQUIRE Authorization Header!
-                // Do NOT fall back to cookie!
-                if (!isSwagger && !isApi)
+                // For Swagger UI: STRICTLY REQUIRE Authorization Header!
+                // Users testing on Swagger UI must click 'Authorize' and input their JWT Bearer token.
+                // For regular Web UI calls (AJAX/Fetch from app pages), fall back to jwt_token cookie if present.
+                if (!isSwagger)
                 {
                     if (context.Request.Cookies.TryGetValue("jwt_token", out var cookieToken) && !string.IsNullOrEmpty(cookieToken))
                     {

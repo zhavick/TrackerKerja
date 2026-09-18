@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/calendar")]
     [Produces("application/json")]
+    [Authorize]
     public class CalendarApiController : ControllerBase
     {
         private readonly AppDbContext _db;
@@ -56,7 +58,13 @@ namespace TrackerKerja.Controllers.Api
             {
                 if (!isAdmin)
                 {
-                    query = query.Where(t => t.AssignedToUserId == currentUserId);
+                    var companyId = currentUser.CompanyId;
+                    query = query.Where(t => t.CompanyId == companyId);
+                    if (string.Equals(filter, "mine", StringComparison.OrdinalIgnoreCase) ||
+                        string.Equals(filter, "my", StringComparison.OrdinalIgnoreCase))
+                    {
+                        query = query.Where(t => t.AssignedToUserId == currentUserId);
+                    }
                 }
                 else if (string.Equals(filter, "mine", StringComparison.OrdinalIgnoreCase) ||
                          string.Equals(filter, "my", StringComparison.OrdinalIgnoreCase))

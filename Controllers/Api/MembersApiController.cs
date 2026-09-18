@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
 
 namespace TrackerKerja.Controllers.Api
@@ -11,17 +12,24 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/members")]
     [Produces("application/json")]
+    [Authorize]
     public class MembersApiController : ControllerBase
     {
         private readonly AppDbContext _db;
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
+        private readonly IEmailService _emailService;
 
-        public MembersApiController(AppDbContext db, UserManager<AppUser> userManager, RoleManager<IdentityRole> roleManager)
+        public MembersApiController(
+            AppDbContext db,
+            UserManager<AppUser> userManager,
+            RoleManager<IdentityRole> roleManager,
+            IEmailService emailService)
         {
             _db = db;
             _userManager = userManager;
             _roleManager = roleManager;
+            _emailService = emailService;
         }
 
         /// <summary>
@@ -29,11 +37,31 @@ namespace TrackerKerja.Controllers.Api
         /// </summary>
         /// <param name="search">Pencarian nama, email, atau jabatan</param>
         /// <param name="role">Filter peran (Admin / User)</param>
+        /// <param name="companyId">Filter tim / perusahaan</param>
+        /// <param name="isApproved">Filter status approval persetujuan admin</param>
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<List<MemberResponseDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] string? role)
+        public async Task<IActionResult> GetAll([FromQuery] string? search, [FromQuery] string? role, [FromQuery] int? companyId, [FromQuery] bool? isApproved)
         {
-            var usersQuery = _db.Users.AsQueryable();
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var usersQuery = _db.Users.Include(u => u.Company).AsQueryable();
+
+            if (!isAdmin && currentUser != null)
+            {
+                usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+            }
+            else if (companyId.HasValue)
+            {
+                usersQuery = usersQuery.Where(u => u.CompanyId == companyId.Value);
+            }
+
+            if (isApproved.HasValue)
+            {
+                usersQuery = usersQuery.Where(u => u.IsApproved == isApproved.Value);
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -73,9 +101,15 @@ namespace TrackerKerja.Controllers.Api
                     JobTitle = user.JobTitle,
                     AvatarColor = user.AvatarColor,
                     ProfilePictureUrl = user.ProfilePictureUrl,
+                    CompanyId = user.CompanyId,
+                    CompanyName = user.Company?.Name,
                     Role = userRole,
                     Initials = user.Initials,
                     CreatedAt = user.CreatedAt,
+                    IsApproved = user.IsApproved,
+                    ApprovedAt = user.ApprovedAt,
+                    ApprovedByUserId = user.ApprovedByUserId,
+                    RejectionReason = user.RejectionReason,
                     TotalTasks = userTasks.Count,
                     ActiveTasks = userTasks.Count(t => t.Status != Models.TaskStatus.Done),
                     DoneTasks = userTasks.Count(t => t.Status == Models.TaskStatus.Done),
@@ -96,10 +130,18 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(string id)
         {
-            var user = await _userManager.FindByIdAsync(id);
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
+            var user = await _db.Users.Include(u => u.Company).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
             {
                 return NotFound(ApiResponse<MemberResponseDto>.Fail($"Anggota dengan ID '{id}' tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanAccessCompany(currentUser, isAdmin, user.CompanyId))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<MemberResponseDto>.Fail("Akses ditolak: Anggota ini berasal dari tim/perusahaan lain."));
             }
 
             var roles = await _userManager.GetRolesAsync(user);
@@ -118,9 +160,15 @@ namespace TrackerKerja.Controllers.Api
                 JobTitle = user.JobTitle,
                 AvatarColor = user.AvatarColor,
                 ProfilePictureUrl = user.ProfilePictureUrl,
+                CompanyId = user.CompanyId,
+                CompanyName = user.Company?.Name,
                 Role = userRole,
                 Initials = user.Initials,
                 CreatedAt = user.CreatedAt,
+                IsApproved = user.IsApproved,
+                ApprovedAt = user.ApprovedAt,
+                ApprovedByUserId = user.ApprovedByUserId,
+                RejectionReason = user.RejectionReason,
                 TotalTasks = userTasks.Count,
                 ActiveTasks = userTasks.Count(t => t.Status != Models.TaskStatus.Done),
                 DoneTasks = userTasks.Count(t => t.Status == Models.TaskStatus.Done),
@@ -140,6 +188,10 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateMemberRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
@@ -165,8 +217,12 @@ namespace TrackerKerja.Controllers.Api
                 FullName = dto.FullName.Trim(),
                 JobTitle = dto.JobTitle.Trim(),
                 AvatarColor = string.IsNullOrWhiteSpace(dto.AvatarColor) ? "#6366F1" : dto.AvatarColor.Trim(),
+                CompanyId = userCompanyId,
                 CreatedAt = DateTime.Now,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                IsApproved = true,
+                ApprovedAt = DateTime.Now,
+                ApprovedByUserId = currentUser?.Id
             };
 
             var result = await _userManager.CreateAsync(newUser, dto.Password);
@@ -178,6 +234,8 @@ namespace TrackerKerja.Controllers.Api
 
             await _userManager.AddToRoleAsync(newUser, role);
 
+            var company = userCompanyId.HasValue ? await _db.Companies.FindAsync(userCompanyId.Value) : null;
+
             var responseDto = new MemberResponseDto
             {
                 Id = newUser.Id,
@@ -185,6 +243,8 @@ namespace TrackerKerja.Controllers.Api
                 Email = newUser.Email,
                 JobTitle = newUser.JobTitle,
                 AvatarColor = newUser.AvatarColor,
+                CompanyId = userCompanyId,
+                CompanyName = company?.Name,
                 Role = role,
                 Initials = newUser.Initials,
                 CreatedAt = newUser.CreatedAt
@@ -204,16 +264,24 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(string id, [FromBody] UpdateMemberRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                 return BadRequest(ApiResponse<MemberResponseDto>.Fail("Validasi gagal.", errors));
             }
 
-            var user = await _userManager.FindByIdAsync(id);
+            var user = await _db.Users.Include(u => u.Company).FirstOrDefaultAsync(u => u.Id == id);
             if (user == null)
             {
                 return NotFound(ApiResponse<MemberResponseDto>.Fail($"Anggota dengan ID '{id}' tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanAccessCompany(currentUser, isAdmin, user.CompanyId))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<MemberResponseDto>.Fail("Akses ditolak: Anda tidak memiliki wewenang untuk mengubah data pengguna ini."));
             }
 
             user.FullName = dto.FullName.Trim();
@@ -244,6 +312,8 @@ namespace TrackerKerja.Controllers.Api
                 Email = user.Email ?? "",
                 JobTitle = user.JobTitle,
                 AvatarColor = user.AvatarColor,
+                CompanyId = user.CompanyId,
+                CompanyName = user.Company?.Name,
                 Role = currentRole,
                 Initials = user.Initials,
                 CreatedAt = user.CreatedAt
@@ -262,10 +332,18 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(string id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound(ApiResponse<object>.Fail($"Anggota dengan ID '{id}' tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanAccessCompany(currentUser, isAdmin, user.CompanyId))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak: Anda tidak memiliki wewenang untuk menghapus pengguna ini."));
             }
 
             // Cegah penghapusan jika ini satu-satunya Admin
@@ -313,10 +391,18 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> ToggleLock(string id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound(ApiResponse<object>.Fail($"Anggota dengan ID '{id}' tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanAccessCompany(currentUser, isAdmin, user.CompanyId))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak."));
             }
 
             var isLocked = await _userManager.IsLockedOutAsync(user);
@@ -341,10 +427,18 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetContributions(string id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var user = await _userManager.FindByIdAsync(id);
             if (user == null)
             {
                 return NotFound(ApiResponse<object>.Fail($"Anggota dengan ID '{id}' tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanAccessCompany(currentUser, isAdmin, user.CompanyId))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak."));
             }
 
             var tasks = await _db.Tasks
@@ -403,7 +497,127 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<object>.Fail("Gagal mengubah password.", errors));
             }
 
+            // Send Password Reset Notification Email (Background Safe)
+            if (!string.IsNullOrWhiteSpace(user.Email))
+            {
+                var resetVars = new Dictionary<string, string>
+                {
+                    { "FullName", user.FullName },
+                    { "Email", user.Email },
+                    { "NewPassword", dto.NewPassword },
+                    { "LoginUrl", "/Account/Login" },
+                    { "CurrentDate", DateTime.Now.ToString("dd MMM yyyy HH:mm") }
+                };
+                _ = Task.Run(async () => await _emailService.SendEventEmailAsync("PASSWORD_RESET_NOTIFICATION", user.Email, resetVars));
+            }
+
             return Ok(ApiResponse<object>.Ok(new { id = user.Id, email = user.Email }, $"Password untuk '{user.FullName}' berhasil diubah secara langsung."));
+        }
+
+        /// <summary>
+        /// Menyetujui pendaftaran akun member baru (POST /api/members/{id}/approve) - Khusus Admin
+        /// </summary>
+        /// <param name="id">ID Pengguna</param>
+        [HttpPost("{id}/approve")]
+        [HttpPut("{id}/approve")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Approve(string id)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound(ApiResponse<object>.Fail($"Anggota dengan ID '{id}' tidak ditemukan."));
+            }
+
+            var currentAdmin = await _userManager.GetUserAsync(User);
+            user.IsApproved = true;
+            user.ApprovedAt = DateTime.Now;
+            user.ApprovedByUserId = currentAdmin?.Id;
+            user.RejectionReason = null;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description).ToList();
+                return BadRequest(ApiResponse<object>.Fail("Gagal menyetujui akun anggota.", errors));
+            }
+
+            // Send USER_APPROVED Email Notification (Background Safe)
+            if (!string.IsNullOrWhiteSpace(user.Email))
+            {
+                var approveVars = new Dictionary<string, string>
+                {
+                    { "FullName", user.FullName },
+                    { "Email", user.Email },
+                    { "LoginUrl", "/Account/Login" },
+                    { "CurrentDate", DateTime.Now.ToString("dd MMM yyyy HH:mm") }
+                };
+                _ = Task.Run(async () => await _emailService.SendEventEmailAsync("USER_APPROVED", user.Email, approveVars));
+            }
+
+            return Ok(ApiResponse<object>.Ok(new
+            {
+                user.Id,
+                user.Email,
+                user.FullName,
+                user.IsApproved,
+                user.ApprovedAt
+            }, $"Pendaftaran akun '{user.FullName}' ({user.Email}) berhasil disetujui. Akun sekarang dapat digunakan untuk login."));
+        }
+
+        /// <summary>
+        /// Menolak pendaftaran akun member baru (POST /api/members/{id}/reject) - Khusus Admin
+        /// </summary>
+        /// <param name="id">ID Pengguna</param>
+        /// <param name="body">Alasan penolakan opsional</param>
+        [HttpPost("{id}/reject")]
+        [HttpPut("{id}/reject")]
+        [Authorize(Roles = "Admin")]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> Reject(string id, [FromBody] RejectMemberRequestDto? body = null)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                return NotFound(ApiResponse<object>.Fail($"Anggota dengan ID '{id}' tidak ditemukan."));
+            }
+
+            if (user.IsApproved)
+            {
+                return BadRequest(ApiResponse<object>.Fail("Akun ini sudah disetujui sebelumnya. Gunakan penonaktifan akun atau hapus member jika diperlukan."));
+            }
+
+            // Send USER_REJECTED Email Notification before deleting (Background Safe)
+            if (!string.IsNullOrWhiteSpace(user.Email))
+            {
+                var rejectVars = new Dictionary<string, string>
+                {
+                    { "FullName", user.FullName },
+                    { "Email", user.Email },
+                    { "RejectionReason", string.IsNullOrWhiteSpace(body?.Reason) ? "Kriteria pendaftaran belum terpenuhi." : body.Reason.Trim() },
+                    { "CurrentDate", DateTime.Now.ToString("dd MMM yyyy HH:mm") }
+                };
+                _ = Task.Run(async () => await _emailService.SendEventEmailAsync("USER_REJECTED", user.Email, rejectVars));
+            }
+
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = result.Errors.Select(e => e.Description).ToList();
+                return BadRequest(ApiResponse<object>.Fail("Gagal menolak pendaftaran anggota.", errors));
+            }
+
+            return Ok(ApiResponse<object>.Ok(new
+            {
+                id,
+                user.Email,
+                user.FullName
+            }, $"Pendaftaran akun '{user.FullName}' ({user.Email}) telah ditolak dan dibatalkan."));
         }
     }
 }

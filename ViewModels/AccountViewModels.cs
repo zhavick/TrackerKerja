@@ -31,6 +31,16 @@ namespace TrackerKerja.ViewModels
         [MaxLength(100)]
         public string JobTitle { get; set; } = string.Empty;
 
+        // Multi-Tenancy Registration
+        public string CompanyOption { get; set; } = "new"; // "new" atau "existing"
+        public int? CompanyId { get; set; }
+
+        [MaxLength(150)]
+        public string? NewCompanyName { get; set; }
+
+        [MaxLength(50)]
+        public string? NewCompanyCode { get; set; }
+
         [Required(ErrorMessage = "Password wajib diisi")]
         [MinLength(6, ErrorMessage = "Password minimal 6 karakter")]
         [DataType(DataType.Password)]
@@ -56,6 +66,10 @@ namespace TrackerKerja.ViewModels
 
         public string? ProfilePictureUrl { get; set; }
         public IFormFile? ProfilePicture { get; set; }
+
+        public string? CoverPictureUrl { get; set; }
+        public IFormFile? CoverPicture { get; set; }
+        public bool RemoveCover { get; set; } = false;
 
         public string Email { get; set; } = string.Empty;
         public string Initials { get; set; } = "?";

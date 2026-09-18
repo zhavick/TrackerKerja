@@ -237,7 +237,14 @@ namespace TrackerKerja.ViewModels
         public string? ProfilePictureUrl { get; set; }
         public string Role { get; set; } = "User";
         public string Initials { get; set; } = "?";
+        public int? CompanyId { get; set; }
+        public string? CompanyName { get; set; }
         public DateTime CreatedAt { get; set; }
+
+        public bool IsApproved { get; set; } = true;
+        public DateTime? ApprovedAt { get; set; }
+        public string? ApprovedByUserId { get; set; }
+        public string? RejectionReason { get; set; }
 
         public int TotalTasks { get; set; }
         public int ActiveTasks { get; set; }
@@ -290,6 +297,12 @@ namespace TrackerKerja.ViewModels
         [Required(ErrorMessage = "Password baru wajib diisi.")]
         [MinLength(6, ErrorMessage = "Password baru minimal 6 karakter.")]
         public string NewPassword { get; set; } = string.Empty;
+    }
+
+    public class RejectMemberRequestDto
+    {
+        [MaxLength(500, ErrorMessage = "Alasan penolakan maksimal 500 karakter.")]
+        public string? Reason { get; set; }
     }
     #endregion
 
@@ -498,6 +511,9 @@ namespace TrackerKerja.ViewModels
     public class LoginResponseDto
     {
         public bool IsSuccess { get; set; }
+        public string? Token { get; set; }
+        public string TokenType { get; set; } = "Bearer";
+        public DateTime? ExpiresAt { get; set; }
         public string UserId { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
         public string FullName { get; set; } = string.Empty;
@@ -505,6 +521,8 @@ namespace TrackerKerja.ViewModels
         public string Role { get; set; } = "User";
         public string AvatarColor { get; set; } = "#6366F1";
         public string? ProfilePictureUrl { get; set; }
+        public int? CompanyId { get; set; }
+        public string? CompanyName { get; set; }
         public string Message { get; set; } = string.Empty;
     }
 
@@ -518,6 +536,9 @@ namespace TrackerKerja.ViewModels
         public string Role { get; set; } = "User";
         public string AvatarColor { get; set; } = "#6366F1";
         public string? ProfilePictureUrl { get; set; }
+        public string? CoverPictureUrl { get; set; }
+        public int? CompanyId { get; set; }
+        public string? CompanyName { get; set; }
         public DateTime CreatedAt { get; set; }
         public int TotalAssignedTasks { get; set; }
         public int CompletedTasks { get; set; }
@@ -555,6 +576,9 @@ namespace TrackerKerja.ViewModels
 
         [MaxLength(500)]
         public string? ProfilePictureUrl { get; set; }
+
+        [MaxLength(500)]
+        public string? CoverPictureUrl { get; set; }
     }
     #endregion
 
@@ -1186,6 +1210,132 @@ namespace TrackerKerja.ViewModels
         public string LeaveReason { get; set; } = "Cuti Tahunan";
 
         public string? Notes { get; set; }
+    }
+    #endregion
+
+    #region Email Integration & Template DTOs
+    public class EmailConfigDto
+    {
+        [Required(ErrorMessage = "Server Host SMTP wajib diisi.")]
+        public string SmtpHost { get; set; } = "smtp.gmail.com";
+
+        public string MailHost
+        {
+            get => SmtpHost;
+            set => SmtpHost = value;
+        }
+
+        [Range(1, 65535, ErrorMessage = "Port SMTP harus antara 1 dan 65535.")]
+        public int SmtpPort { get; set; } = 587;
+
+        public int MailPort
+        {
+            get => SmtpPort;
+            set => SmtpPort = value;
+        }
+
+        [Required(ErrorMessage = "Email pengirim wajib diisi.")]
+        [EmailAddress(ErrorMessage = "Format email pengirim tidak valid.")]
+        public string SenderEmail { get; set; } = "notifications@trackerkerja.com";
+
+        [Required(ErrorMessage = "Nama pengirim wajib diisi.")]
+        public string SenderName { get; set; } = "Work Tracker Pro";
+
+        public string? SenderPassword { get; set; }
+
+        public bool EnableSsl { get; set; } = true;
+
+        public bool RequireAuth { get; set; } = true;
+
+        public bool IsEnabled { get; set; } = true;
+
+        public int TimeoutSeconds { get; set; } = 15;
+
+        public DateTime? UpdatedAt { get; set; }
+    }
+
+    public class TestEmailRequestDto
+    {
+        [Required(ErrorMessage = "Email penerima test wajib diisi.")]
+        [EmailAddress(ErrorMessage = "Format email penerima tidak valid.")]
+        public string RecipientEmail { get; set; } = string.Empty;
+
+        public string? Subject { get; set; }
+        public string? Message { get; set; }
+    }
+
+    public class TestEmailResponseDto
+    {
+        public bool IsSuccess { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public long LatencyMs { get; set; }
+        public string Diagnostics { get; set; } = string.Empty;
+        public string Recipient { get; set; } = string.Empty;
+    }
+
+    public class EmailTemplateDto
+    {
+        public int Id { get; set; }
+        public string EventCode { get; set; } = string.Empty;
+        public string EventName { get; set; } = string.Empty;
+        public string Category { get; set; } = "General";
+        public string Subject { get; set; } = string.Empty;
+        public string BodyHtml { get; set; } = string.Empty;
+        public string? AvailableVariables { get; set; }
+        public bool IsActive { get; set; } = true;
+        public DateTime CreatedAt { get; set; }
+        public DateTime UpdatedAt { get; set; }
+        public string? UpdatedByUserId { get; set; }
+    }
+
+    public class CreateOrUpdateEmailTemplateDto
+    {
+        public int Id { get; set; }
+
+        [Required(ErrorMessage = "Kode Event wajib diisi.")]
+        [MaxLength(100)]
+        public string EventCode { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Nama Event wajib diisi.")]
+        [MaxLength(200)]
+        public string EventName { get; set; } = string.Empty;
+
+        [MaxLength(50)]
+        public string Category { get; set; } = "General";
+
+        [Required(ErrorMessage = "Subjek email wajib diisi.")]
+        [MaxLength(300)]
+        public string Subject { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Konten HTML template email wajib diisi.")]
+        public string BodyHtml { get; set; } = string.Empty;
+
+        [MaxLength(1000)]
+        public string? AvailableVariables { get; set; }
+
+        public bool IsActive { get; set; } = true;
+    }
+
+    public class TemplatePreviewRequestDto
+    {
+        public string? EventCode { get; set; }
+        public string? Subject { get; set; }
+        public string? BodyHtml { get; set; }
+        public Dictionary<string, string>? SampleVariables { get; set; }
+    }
+
+    public class TemplatePreviewResponseDto
+    {
+        public string RenderedSubject { get; set; } = string.Empty;
+        public string RenderedBodyHtml { get; set; } = string.Empty;
+        public string RenderedHtml
+        {
+            get => RenderedBodyHtml;
+            set => RenderedBodyHtml = value;
+        }
+        public string? EventCode { get; set; }
+        public string? EventName { get; set; }
+        public Dictionary<string, string> UsedVariables { get; set; } = new();
     }
     #endregion
 }

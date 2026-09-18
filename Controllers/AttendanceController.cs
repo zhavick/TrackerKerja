@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
+using TrackerKerja.Helpers;
 using TrackerKerja.Models;
 using TrackerKerja.ViewModels;
 
@@ -28,24 +29,14 @@ namespace TrackerKerja.Controllers
             if (currentUser == null) return Challenge();
 
             var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser.CompanyId;
 
-            // Non-admin can only see their own attendance
-            if (!isAdmin)
-            {
-                memberId = currentUser.Id;
-            }
-            else if (string.IsNullOrEmpty(memberId))
-            {
-                // Default admin to currentUser unless specified or "all"
-                memberId = currentUser.Id;
-            }
-
-            var targetMonth = month ?? DateTime.Today.Month;
-            var targetYear = year ?? DateTime.Today.Year;
+            var targetMonth = month ?? DateTimeHelper.Today.Month;
+            var targetYear = year ?? DateTimeHelper.Today.Year;
 
             if (targetMonth < 1) targetMonth = 1;
             if (targetMonth > 12) targetMonth = 12;
-            if (targetYear < 2020 || targetYear > 2050) targetYear = DateTime.Today.Year;
+            if (targetYear < 2020 || targetYear > 2050) targetYear = DateTimeHelper.Today.Year;
 
             var startDate = new DateTime(targetYear, targetMonth, 1);
             var endDate = startDate.AddMonths(1).AddDays(-1);
@@ -55,6 +46,18 @@ namespace TrackerKerja.Controllers
                 .Include(a => a.ApprovedByUser)
                 .Where(a => a.Date >= startDate && a.Date <= endDate)
                 .AsQueryable();
+
+            // Non-admin can only see their own attendance or same company
+            if (!isAdmin)
+            {
+                memberId = currentUser.Id;
+                query = query.Where(a => a.User != null && a.User.CompanyId == userCompanyId);
+            }
+            else if (string.IsNullOrEmpty(memberId))
+            {
+                // Default admin to currentUser unless specified or "all"
+                memberId = currentUser.Id;
+            }
 
             if (!string.IsNullOrEmpty(memberId) && memberId != "all")
             {
@@ -71,8 +74,8 @@ namespace TrackerKerja.Controllers
                 .ThenBy(a => a.ClockIn)
                 .ToListAsync();
 
-            // Today's record for logged-in user
-            var today = DateTime.Today;
+            // Today's record for logged-in user (GMT+7)
+            var today = DateTimeHelper.Today;
             var todayRecord = await _db.Attendances
                 .Include(a => a.User)
                 .FirstOrDefaultAsync(a => a.UserId == currentUser.Id && a.Date == today);
@@ -89,6 +92,10 @@ namespace TrackerKerja.Controllers
             var avgHours = totalPresent > 0 ? Math.Round(totalHours / totalPresent, 1) : 0;
 
             var membersQuery = _db.Users.AsQueryable();
+            if (!isAdmin)
+            {
+                membersQuery = membersQuery.Where(u => u.CompanyId == userCompanyId);
+            }
             var allMembers = await membersQuery.OrderBy(u => u.FullName).ToListAsync();
 
             var viewModel = new AttendanceIndexViewModel
@@ -123,7 +130,8 @@ namespace TrackerKerja.Controllers
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null) return Challenge();
 
-            var today = DateTime.Today;
+            var today = DateTimeHelper.Today;
+            var nowGmt7 = DateTimeHelper.Now;
             var existing = await _db.Attendances.FirstOrDefaultAsync(a => a.UserId == currentUser.Id && a.Date == today);
 
             if (existing != null)
@@ -135,7 +143,7 @@ namespace TrackerKerja.Controllers
                 }
 
                 existing.Type = AttendanceType.Present;
-                existing.ClockIn = DateTime.Now;
+                existing.ClockIn = nowGmt7;
                 if (Enum.TryParse<WorkLocationType>(location, out var locType))
                 {
                     existing.WorkLocation = locType;
@@ -144,7 +152,7 @@ namespace TrackerKerja.Controllers
                 {
                     existing.Notes = notes.Trim();
                 }
-                existing.UpdatedAt = DateTime.Now;
+                existing.UpdatedAt = nowGmt7;
             }
             else
             {
@@ -157,17 +165,17 @@ namespace TrackerKerja.Controllers
                     Date = today,
                     Type = AttendanceType.Present,
                     WorkLocation = locType,
-                    ClockIn = DateTime.Now,
+                    ClockIn = nowGmt7,
                     Notes = string.IsNullOrWhiteSpace(notes) ? null : notes.Trim(),
                     Status = AttendanceApprovalStatus.Approved,
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
+                    CreatedAt = nowGmt7,
+                    UpdatedAt = nowGmt7
                 };
                 _db.Attendances.Add(record);
             }
 
             await _db.SaveChangesAsync();
-            TempData["Success"] = $"Jam kedatangan berhasil dicatat: {DateTime.Now:HH:mm} ({location}). Semangat bekerja!";
+            TempData["Success"] = $"Jam kedatangan berhasil dicatat: {nowGmt7:HH:mm} ({location}). Semangat bekerja!";
             return RedirectToAction(nameof(Index));
         }
 
@@ -179,7 +187,7 @@ namespace TrackerKerja.Controllers
             var currentUser = await _userManager.GetUserAsync(User);
             if (currentUser == null) return Challenge();
 
-            var today = DateTime.Today;
+            var today = DateTimeHelper.Today;
             var record = await _db.Attendances.FirstOrDefaultAsync(a => a.UserId == currentUser.Id && a.Date == today);
 
             if (record == null || !record.ClockIn.HasValue)
@@ -188,7 +196,7 @@ namespace TrackerKerja.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var now = DateTime.Now;
+            var now = DateTimeHelper.Now;
             record.ClockOut = now;
 
             var duration = (now - record.ClockIn.Value).TotalHours;
@@ -198,7 +206,7 @@ namespace TrackerKerja.Controllers
             {
                 record.Notes = string.IsNullOrEmpty(record.Notes) ? notes.Trim() : $"{record.Notes} | {notes.Trim()}";
             }
-            record.UpdatedAt = DateTime.Now;
+            record.UpdatedAt = now;
 
             await _db.SaveChangesAsync();
             TempData["Success"] = $"Jam pulang berhasil dicatat: {now:HH:mm}. Total durasi kehadiran: {record.DurationFormatted}. Selamat beristirahat!";
@@ -244,7 +252,7 @@ namespace TrackerKerja.Controllers
                     {
                         UserId = targetUserId,
                         Date = model.Date.Date,
-                        CreatedAt = DateTime.Now
+                        CreatedAt = DateTimeHelper.Now
                     };
                     _db.Attendances.Add(record);
                 }
@@ -254,7 +262,7 @@ namespace TrackerKerja.Controllers
             record.WorkLocation = model.WorkLocation;
             record.LeaveReason = string.IsNullOrWhiteSpace(model.LeaveReason) ? null : model.LeaveReason.Trim();
             record.Notes = string.IsNullOrWhiteSpace(model.Notes) ? null : model.Notes.Trim();
-            record.UpdatedAt = DateTime.Now;
+            record.UpdatedAt = DateTimeHelper.Now;
 
             if (model.Type == AttendanceType.Present)
             {
@@ -321,6 +329,7 @@ namespace TrackerKerja.Controllers
             var daysCount = 0;
             var curDate = model.StartDate.Date;
             var endDate = model.EndDate.Date;
+            var nowGmt7 = DateTimeHelper.Now;
 
             while (curDate <= endDate)
             {
@@ -338,7 +347,7 @@ namespace TrackerKerja.Controllers
                         existing.LeaveReason = model.LeaveReason?.Trim();
                         existing.Notes = model.Notes?.Trim();
                         existing.Status = AttendanceApprovalStatus.Approved;
-                        existing.UpdatedAt = DateTime.Now;
+                        existing.UpdatedAt = nowGmt7;
                     }
                     else
                     {
@@ -354,8 +363,8 @@ namespace TrackerKerja.Controllers
                             LeaveReason = model.LeaveReason?.Trim(),
                             Notes = model.Notes?.Trim(),
                             Status = AttendanceApprovalStatus.Approved,
-                            CreatedAt = DateTime.Now,
-                            UpdatedAt = DateTime.Now
+                            CreatedAt = nowGmt7,
+                            UpdatedAt = nowGmt7
                         };
                         _db.Attendances.Add(newRecord);
                     }
@@ -419,8 +428,8 @@ namespace TrackerKerja.Controllers
                 memberId = currentUser.Id;
             }
 
-            var targetMonth = month ?? DateTime.Today.Month;
-            var targetYear = year ?? DateTime.Today.Year;
+            var targetMonth = month ?? DateTimeHelper.Today.Month;
+            var targetYear = year ?? DateTimeHelper.Today.Year;
             var startDate = new DateTime(targetYear, targetMonth, 1);
             var endDate = startDate.AddMonths(1).AddDays(-1);
 
@@ -428,6 +437,11 @@ namespace TrackerKerja.Controllers
                 .Include(a => a.User)
                 .Where(a => a.Date >= startDate && a.Date <= endDate)
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                query = query.Where(a => a.User != null && a.User.CompanyId == currentUser.CompanyId);
+            }
 
             string employeeName = "Semua Karyawan";
             if (!string.IsNullOrEmpty(memberId) && memberId != "all")

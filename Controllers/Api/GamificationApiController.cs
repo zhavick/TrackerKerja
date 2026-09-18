@@ -10,6 +10,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/gamification")]
     [Produces("application/json")]
+    [Authorize]
     public class GamificationApiController : ControllerBase
     {
         private readonly IGamificationService _gamificationService;

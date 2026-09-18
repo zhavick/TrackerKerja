@@ -1,10 +1,15 @@
 @using Microsoft.AspNetCore.Identity
 @using TrackerKerja.Models
+@using TrackerKerja.Data
+@using Microsoft.EntityFrameworkCore
 @inject UserManager<AppUser> UserManager
 @inject SignInManager<AppUser> SignInManager
+@inject AppDbContext DbContext
 
 @{
     var user = SignInManager.IsSignedIn(User) ? await UserManager.GetUserAsync(User) : null;
+    var company = user?.CompanyId.HasValue == true ? await DbContext.Companies.FindAsync(user.CompanyId.Value) : null;
+    var companyName = company?.Name ?? (User.IsInRole("Admin") ? "Semua Tim / Perusahaan" : "Tanpa Perusahaan");
     var userInitial = user?.Initials ?? (User.Identity?.Name?.Length > 0 ? User.Identity.Name.Substring(0,1).ToUpper() : "U");
     var userFullName = user?.FullName ?? (User.Identity?.Name ?? "Pengguna");
     var userJobTitle = user?.JobTitle ?? "Work Tracker User";
@@ -144,6 +149,20 @@
             </button>
         </div>
 
+        @if (SignInManager.IsSignedIn(User))
+        {
+            <!-- Company / Team Badge in Sidebar -->
+            <div class="mx-3 mt-3 px-3 py-2 rounded-xl bg-gradient-to-r from-indigo-50 to-purple-50 border border-indigo-100/90 shadow-2xs flex items-center gap-2.5">
+                <div class="w-7 h-7 rounded-lg bg-indigo-600 text-white flex items-center justify-center text-xs font-black flex-shrink-0 shadow-2xs">
+                    <i class="fas fa-building"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <p class="text-[10px] text-indigo-500 font-extrabold uppercase tracking-wider leading-none mb-0.5">Perusahaan / Tim</p>
+                    <p class="text-xs text-slate-800 font-black truncate leading-tight" title="@companyName">@companyName</p>
+                </div>
+            </div>
+        }
+
         <!-- Running Timers in Sidebar (Supports Multi-User & Multi-Task) -->
         <div id="sidebar-timer" class="hidden mx-3 mt-3 p-3 rounded-2xl bg-gradient-to-br from-indigo-50/90 to-purple-50/90 border border-indigo-200/80 shadow-xs">
             <div class="flex items-center justify-between mb-2 pb-1.5 border-b border-indigo-100/70">
@@ -218,14 +237,6 @@
                 <span class="text-sm font-medium">Laporan</span>
             </a>
 
-            <a href="/swagger" target="_blank" class="sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl text-slate-600 hover:text-slate-900 group">
-                <div class="flex items-center gap-3">
-                    <i class="fas fa-file-code w-5 text-center text-emerald-500"></i>
-                    <span class="text-sm font-medium">Swagger API</span>
-                </div>
-                <span class="text-[10px] font-black uppercase tracking-wider px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 border border-emerald-200">Doc</span>
-            </a>
-
             @if (User.IsInRole("Admin"))
             {
                 <p class="text-slate-400 text-xs font-bold uppercase tracking-widest px-3 mb-2 mt-5">Pengaturan & Admin</p>
@@ -253,7 +264,7 @@
                 <span class="text-sm font-medium">Pengaturan Profil</span>
             </a>
 
-            <a href="javascript:void(0)" onclick="openUserGuideModal()" class="sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl text-amber-700 hover:bg-amber-50">
+            <a href="javascript:void(0)" onclick="openUserGuideModal()" data-tour="guide" class="sidebar-link flex items-center justify-between px-3 py-2.5 rounded-xl text-amber-700 hover:bg-amber-50">
                 <div class="flex items-center gap-3">
                     <i class="fas fa-book-open w-5 text-center text-amber-600"></i>
                     <span class="text-sm font-semibold">Panduan Pengguna</span>
@@ -312,7 +323,16 @@
                 <button type="button" onclick="toggleMobileSidebar()" class="lg:hidden w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 flex items-center justify-center shadow-xs transition-colors cursor-pointer" title="Menu Navigasi">
                     <i class="fas fa-bars text-sm"></i>
                 </button>
-                <h2 class="text-slate-800 font-bold text-base sm:text-lg truncate max-w-[120px] sm:max-w-xs md:max-w-none">@ViewData["Title"]</h2>
+                <div class="flex items-center gap-2">
+                    <h2 class="text-slate-800 font-bold text-base sm:text-lg truncate max-w-[120px] sm:max-w-xs md:max-w-none">@ViewData["Title"]</h2>
+                    @if (SignInManager.IsSignedIn(User))
+                    {
+                        <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold shadow-2xs" title="Perusahaan / Tim Aktif">
+                            <i class="fas fa-building text-[11px] text-indigo-500"></i>
+                            <span class="truncate max-w-[160px]">@companyName</span>
+                        </span>
+                    }
+                </div>
             </div>
 
             <!-- Global Search -->
@@ -325,27 +345,10 @@
 
             <!-- Header Actions -->
             <div class="flex items-center gap-1.5 sm:gap-3 flex-shrink-0">
-                <a href="/swagger" target="_blank" class="hidden md:flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-3 py-2 rounded-xl transition-colors" title="Buka Dokumentasi Swagger REST API">
-                    <i class="fas fa-code text-indigo-500"></i>
-                    <span>Swagger API</span>
-                </a>
-
                 <a href="/Import" class="hidden lg:flex items-center gap-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border border-emerald-200 text-xs font-semibold px-3 py-2 rounded-xl transition-colors">
                     <i class="fas fa-file-excel text-emerald-500"></i>
                     <span>Import Excel</span>
                 </a>
-
-                <!-- User Guide / Panduan Button -->
-                <button type="button" id="btnPanduanTop" onclick="openUserGuideModal()" data-tour="guide" class="flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 text-amber-800 border border-amber-200 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-xl transition-all shadow-xs cursor-pointer" title="Buku Panduan Pengguna & Cetak PDF">
-                    <i class="fas fa-book-open text-amber-600"></i>
-                    <span class="hidden sm:inline">Panduan</span>
-                </button>
-
-                <!-- Interactive App Tour Button -->
-                <button type="button" onclick="OnboardingTour.startTour()" class="flex items-center gap-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 text-xs font-semibold px-2.5 sm:px-3 py-2 rounded-xl transition-all shadow-xs cursor-pointer group" title="Mulai Tur Interaktif Panduan Aplikasi">
-                    <i class="fas fa-magic text-indigo-600 group-hover:rotate-12 transition-transform"></i>
-                    <span class="hidden xl:inline">Tur Aplikasi</span>
-                </button>
 
                 <!-- Notification Bell Dropdown -->
                 <div class="relative z-50">

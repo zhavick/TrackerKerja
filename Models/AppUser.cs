@@ -17,7 +17,20 @@ namespace TrackerKerja.Models
         [MaxLength(300)]
         public string? ProfilePictureUrl { get; set; }
 
+        [MaxLength(300)]
+        public string? CoverPictureUrl { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
+
+        // Company / Team Multi-Tenancy
+        public int? CompanyId { get; set; }
+        public virtual Company? Company { get; set; }
+
+        // Admin Approval for New Registrations
+        public bool IsApproved { get; set; } = true;
+        public DateTime? ApprovedAt { get; set; }
+        public string? ApprovedByUserId { get; set; }
+        public string? RejectionReason { get; set; }
 
         // Gamification Navigation Property
         public virtual ICollection<UserBadge> UserBadges { get; set; } = new List<UserBadge>();

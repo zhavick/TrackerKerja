@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
 
 namespace TrackerKerja.Controllers.Api
@@ -9,13 +12,16 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/projects")]
     [Produces("application/json")]
+    [Authorize]
     public class ProjectsApiController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly UserManager<AppUser> _userManager;
 
-        public ProjectsApiController(AppDbContext db)
+        public ProjectsApiController(AppDbContext db, UserManager<AppUser> userManager)
         {
             _db = db;
+            _userManager = userManager;
         }
 
         /// <summary>
@@ -25,13 +31,26 @@ namespace TrackerKerja.Controllers.Api
         /// <param name="search">Pencarian nama atau deskripsi proyek</param>
         [HttpGet]
         [ProducesResponseType(typeof(ApiResponse<List<ProjectResponseDto>>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetAll([FromQuery] ProjectStatus? status, [FromQuery] string? search)
+        public async Task<IActionResult> GetAll([FromQuery] ProjectStatus? status, [FromQuery] string? search, [FromQuery] int? companyId)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             var query = _db.Projects
                 .Include(p => p.Tasks)
                     .ThenInclude(t => t.Sessions)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (!isAdmin && currentUser != null)
+            {
+                query = query.Where(p => p.CompanyId == userCompanyId);
+            }
+            else if (companyId.HasValue)
+            {
+                query = query.Where(p => p.CompanyId == companyId.Value);
+            }
 
             if (status.HasValue)
                 query = query.Where(p => p.Status == status.Value);
@@ -57,6 +76,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var project = await _db.Projects
                 .Include(p => p.Tasks)
                     .ThenInclude(t => t.Sessions)
@@ -66,6 +88,11 @@ namespace TrackerKerja.Controllers.Api
             if (project == null)
             {
                 return NotFound(ApiResponse<ProjectResponseDto>.Fail($"Proyek dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanViewProject(currentUser, isAdmin, project))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<ProjectResponseDto>.Fail("Akses ditolak: Anda tidak memiliki izin untuk melihat proyek ini."));
             }
 
             return Ok(ApiResponse<ProjectResponseDto>.Ok(MapToResponseDto(project), "Detail proyek berhasil diambil."));
@@ -80,6 +107,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateProjectRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var userCompanyId = currentUser?.CompanyId;
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
@@ -93,6 +123,7 @@ namespace TrackerKerja.Controllers.Api
                 Color = string.IsNullOrWhiteSpace(dto.Color) ? "#6366F1" : dto.Color.Trim(),
                 Deadline = dto.Deadline,
                 Status = dto.Status,
+                CompanyId = userCompanyId,
                 CreatedAt = DateTime.Now
             };
 
@@ -114,6 +145,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateProjectRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
@@ -124,6 +158,11 @@ namespace TrackerKerja.Controllers.Api
             if (project == null)
             {
                 return NotFound(ApiResponse<ProjectResponseDto>.Fail($"Proyek dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanViewProject(currentUser, isAdmin, project))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<ProjectResponseDto>.Fail("Akses ditolak: Anda tidak memiliki wewenang untuk mengubah proyek ini."));
             }
 
             project.Name = dto.Name.Trim();
@@ -153,10 +192,18 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetProjectTasks(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var project = await _db.Projects.AsNoTracking().FirstOrDefaultAsync(p => p.Id == id);
             if (project == null)
             {
                 return NotFound(ApiResponse<object>.Fail($"Proyek dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanViewProject(currentUser, isAdmin, project))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak: Anda tidak memiliki izin untuk melihat proyek ini."));
             }
 
             var tasks = await _db.Tasks
@@ -205,6 +252,8 @@ namespace TrackerKerja.Controllers.Api
                 HasParent = t.HasParent,
                 TotalDurationSeconds = t.TotalDurationSeconds,
                 TotalDurationFormatted = t.TotalDurationFormatted,
+                CompanyId = t.CompanyId ?? project.CompanyId,
+                CompanyName = t.Company?.Name,
                 CreatedAt = t.CreatedAt,
                 UpdatedAt = t.UpdatedAt
             }).ToList();
@@ -219,11 +268,22 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<List<ProjectProgressReportDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetSummary()
         {
-            var projects = await _db.Projects
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var query = _db.Projects
                 .Include(p => p.Tasks)
                     .ThenInclude(t => t.Sessions)
                 .AsNoTracking()
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!isAdmin && currentUser != null)
+            {
+                query = query.Where(p => p.CompanyId == userCompanyId);
+            }
+
+            var projects = await query.ToListAsync();
 
             var summary = projects.Select(p =>
             {
@@ -252,10 +312,18 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var project = await _db.Projects.Include(p => p.Tasks).FirstOrDefaultAsync(p => p.Id == id);
             if (project == null)
             {
                 return NotFound(ApiResponse<object>.Fail($"Proyek dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanViewProject(currentUser, isAdmin, project))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak: Anda tidak memiliki wewenang untuk menghapus proyek ini."));
             }
 
             // Lepaskan projectId dari tasks

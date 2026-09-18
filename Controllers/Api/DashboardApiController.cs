@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/dashboard")]
     [Produces("application/json")]
+    [Authorize]
     public class DashboardApiController : ControllerBase
     {
         private readonly AppDbContext _db;
@@ -35,22 +37,42 @@ namespace TrackerKerja.Controllers.Api
             var currentUser = await _userManager.GetUserAsync(User);
             var currentUserId = currentUser?.Id ?? "";
             var isAdmin = User.IsInRole("Admin");
+            var companyId = currentUser?.CompanyId;
 
-            var allTasks = await _db.Tasks
+            var tasksQuery = _db.Tasks
                 .Include(t => t.Project)
                 .Include(t => t.Sessions)
                 .AsNoTracking()
-                .ToListAsync();
+                .AsQueryable();
 
-            var allProjects = await _db.Projects
+            var projectsQuery = _db.Projects
                 .Include(p => p.Tasks)
                 .AsNoTracking()
-                .ToListAsync();
+                .AsQueryable();
 
-            var totalMembers = await _db.Users.CountAsync();
+            var usersQuery = _db.Users
+                .AsNoTracking()
+                .AsQueryable();
+
+            var sessionsQuery = _db.Sessions
+                .Include(s => s.Task)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!isAdmin)
+            {
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == companyId);
+                projectsQuery = projectsQuery.Where(p => p.CompanyId == companyId);
+                usersQuery = usersQuery.Where(u => u.CompanyId == companyId);
+                sessionsQuery = sessionsQuery.Where(s => s.Task != null && s.Task.CompanyId == companyId);
+            }
+
+            var allTasks = await tasksQuery.ToListAsync();
+            var allProjects = await projectsQuery.ToListAsync();
+            var totalMembers = await usersQuery.CountAsync();
 
             var today = DateTime.Today;
-            var todaySessions = await _db.Sessions
+            var todaySessions = await sessionsQuery
                 .Where(s => s.StartTime.Date == today)
                 .ToListAsync();
 
@@ -114,7 +136,17 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<TriggerSyncResponseDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> RunSync()
         {
-            var tasks = await _db.Tasks.ToListAsync();
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
+            var query = _db.Tasks.AsQueryable();
+            if (!isAdmin)
+            {
+                var companyId = currentUser?.CompanyId;
+                query = query.Where(t => t.CompanyId == companyId);
+            }
+
+            var tasks = await query.ToListAsync();
             int syncedCount = 0;
 
             foreach (var task in tasks)

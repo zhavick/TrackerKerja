@@ -1,5 +1,5 @@
 @{
-    ViewData["Title"] = "Konfigurasi Sistem, Database & Sinkronisasi Host";
+    ViewData["Title"] = "Konfigurasi Sistem, Database, Email & Sinkronisasi Host";
     var baseUrl = ViewBag.GlobalBaseUrl as string ?? "http://localhost:5000";
     var currentAppFont = ViewBag.GlobalAppFont as string ?? "inter";
     var tableStats = ViewBag.TableStats as Dictionary<string, int> ?? new Dictionary<string, int>();
@@ -9,6 +9,8 @@
     var hostSyncRole = ViewBag.HostSyncRole as string ?? "child";
     var lastSyncAt = ViewBag.LastSyncAt as DateTime?;
     var lastSyncStatus = ViewBag.LastSyncStatus as string;
+    var emailConfig = ViewBag.EmailConfig as TrackerKerja.ViewModels.EmailConfigDto ?? new TrackerKerja.ViewModels.EmailConfigDto();
+    var emailTemplates = ViewBag.EmailTemplates as List<TrackerKerja.Models.EmailTemplate> ?? new List<TrackerKerja.Models.EmailTemplate>();
 }
 
 <!-- Page Header -->
@@ -707,6 +709,316 @@
             </div>
         </div>
 
+        <!-- ========================================================================= -->
+        <!-- 3. EMAIL SMTP SERVER INTEGRATION & TEST CONNECTION -->
+        <!-- ========================================================================= -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-sky-500 to-indigo-600 text-white flex items-center justify-center text-base font-bold shadow-md shadow-indigo-200">
+                        <i class="fas fa-envelope-open-text"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <span>Integrasi Server Email (SMTP)</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full @(emailConfig.IsEnabled ? "bg-emerald-100 text-emerald-700" : "bg-slate-100 text-slate-600")">
+                                @(emailConfig.IsEnabled ? "● Layanan Aktif" : "○ Nonaktif")
+                            </span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Pengaturan server SMTP untuk notifikasi event, pendaftaran, approval, penugasan tugas &amp; reset password</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-2">
+                    <span class="text-[11px] text-slate-400">SSL / TLS: <strong class="text-indigo-600">@(emailConfig.EnableSsl ? "Aktif" : "Non-SSL")</strong></span>
+                </div>
+            </div>
+
+            <!-- SMTP Form & Test Connection Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Settings Form (7 Cols) -->
+                <div class="lg:col-span-7">
+                    <form method="post" asp-action="UpdateEmailSettings" asp-controller="Configuration" id="form-email-settings" class="space-y-4">
+                        @Html.AntiForgeryToken()
+
+                        <!-- Enable Email Switch -->
+                        <div class="p-3.5 bg-indigo-50/70 rounded-2xl border border-indigo-100 flex items-center justify-between">
+                            <div>
+                                <span class="text-xs font-bold text-slate-800 block">Status Layanan Email</span>
+                                <span class="text-[11px] text-slate-500">Aktifkan pengiriman email otomatis saat event terjadi di sistem</span>
+                            </div>
+                            <label class="relative inline-flex items-center cursor-pointer">
+                                <input type="checkbox" name="IsEnabled" value="true" @(emailConfig.IsEnabled ? "checked" : "") class="sr-only peer">
+                                <input type="hidden" name="IsEnabled" value="false" />
+                                <div class="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                            </label>
+                        </div>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                            <!-- Mail Server Host -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    SMTP Mail Host <span class="text-rose-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <i class="fas fa-server absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                    <input type="text" name="MailHost" value="@emailConfig.MailHost" required
+                                           placeholder="smtp.gmail.com / mail.domain.com"
+                                           class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+
+                            <!-- SMTP Port -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    SMTP Port <span class="text-rose-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <i class="fas fa-hashtag absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                    <input type="number" name="MailPort" value="@emailConfig.MailPort" required min="1" max="65535"
+                                           placeholder="587 / 465 / 25"
+                                           class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+
+                            <!-- Sender Email Address -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    Email Pengirim (Sender Email) <span class="text-rose-500">*</span>
+                                </label>
+                                <div class="relative">
+                                    <i class="fas fa-at absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                    <input type="email" name="SenderEmail" value="@emailConfig.SenderEmail" required
+                                           placeholder="notifikasi@domain.com"
+                                           class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+
+                            <!-- Sender Display Name -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    Nama Pengirim (Display Name)
+                                </label>
+                                <div class="relative">
+                                    <i class="fas fa-user-tag absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                    <input type="text" name="SenderName" value="@emailConfig.SenderName"
+                                           placeholder="TrackerKerja Notifications"
+                                           class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+
+                            <!-- Sender Password -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    Password / App Password
+                                </label>
+                                <div class="relative">
+                                    <i class="fas fa-key absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                    <input type="password" name="SenderPassword" id="smtpSenderPassword" value="@emailConfig.SenderPassword"
+                                           placeholder="••••••••"
+                                           class="w-full pl-9 pr-9 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                    <button type="button" onclick="toggleSmtpPasswordVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 text-xs cursor-pointer">
+                                        <i class="fas fa-eye" id="toggle-smtp-pass-icon"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Timeout Seconds -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1">
+                                    Timeout (Detik)
+                                </label>
+                                <div class="relative">
+                                    <i class="fas fa-stopwatch absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                    <input type="number" name="TimeoutSeconds" value="@emailConfig.TimeoutSeconds" min="5" max="60"
+                                           placeholder="15"
+                                           class="w-full pl-9 pr-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- SSL Checkbox Option -->
+                        <div class="pt-1">
+                            <label class="flex items-center gap-2 cursor-pointer select-none">
+                                <input type="checkbox" name="EnableSsl" value="true" @(emailConfig.EnableSsl ? "checked" : "") class="rounded text-indigo-600 focus:ring-indigo-500">
+                                <input type="hidden" name="EnableSsl" value="false" />
+                                <span class="text-xs font-bold text-slate-700">Aktifkan Enkripsi SSL / TLS (Disarankan untuk Port 587 / 465)</span>
+                            </label>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-3 border-t border-slate-100">
+                            <span class="text-[11px] text-slate-400">
+                                Terakhir diubah: <strong>@(emailConfig.UpdatedAt?.ToString("dd MMM yyyy HH:mm") ?? "Belum pernah")</strong>
+                            </span>
+                            <button type="submit" class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm transition-all cursor-pointer">
+                                <i class="fas fa-save"></i>
+                                <span>Simpan Pengaturan SMTP</span>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+
+                <!-- Test Connection Card (5 Cols) -->
+                <div class="lg:col-span-5 bg-gradient-to-br from-slate-900 via-slate-800 to-indigo-950 rounded-2xl p-5 text-white flex flex-col justify-between border border-slate-700/80 shadow-md">
+                    <div>
+                        <div class="flex items-center justify-between pb-3 border-b border-slate-700/80 mb-3">
+                            <span class="text-xs font-black uppercase tracking-wider text-cyan-300 flex items-center gap-2">
+                                <i class="fas fa-paper-plane text-cyan-400"></i> Uji Coba Server Email (Test)
+                            </span>
+                            <span id="test-latency-badge" class="hidden font-mono text-[11px] font-bold px-2.5 py-0.5 rounded-lg bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
+                                <i class="fas fa-bolt mr-1"></i> <span id="test-latency-val">0</span>ms
+                            </span>
+                        </div>
+
+                        <p class="text-xs text-slate-300 leading-relaxed mb-4">
+                            Kirim pesan uji coba langsung untuk memverifikasi autentikasi host, port, kredensial password, dan konektivitas SSL/TLS.
+                        </p>
+
+                        <div class="space-y-3 mb-4">
+                            <div>
+                                <label class="block text-[11px] font-bold text-slate-300 mb-1">
+                                    Alamat Email Penerima Test (Recipient)
+                                </label>
+                                <div class="relative">
+                                    <i class="fas fa-inbox absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                                    <input type="email" id="testEmailRecipientInput" value="@User.Identity?.Name"
+                                           placeholder="email-anda@domain.com"
+                                           class="w-full pl-8 pr-3 py-2 bg-slate-950/80 border border-slate-700 rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                                </div>
+                            </div>
+
+                            <!-- Diagnostic Output Box (Collapsible) -->
+                            <div id="test-diag-box" class="hidden bg-slate-950/90 rounded-xl p-3 border border-slate-800 text-[11px] font-mono max-h-32 overflow-y-auto space-y-1">
+                                <div class="flex items-center justify-between text-[10px] text-slate-400 border-b border-slate-800 pb-1 mb-1">
+                                    <span>Log Diagnostik SMTP:</span>
+                                    <span id="test-diag-status" class="font-bold"></span>
+                                </div>
+                                <pre id="test-diag-text" class="text-slate-300 whitespace-pre-wrap"></pre>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="space-y-2 pt-2">
+                        <button type="button" onclick="testEmailSmtpConnection()" id="btn-test-smtp"
+                                class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-indigo-600 hover:from-cyan-400 hover:to-indigo-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md transition-all cursor-pointer">
+                            <i class="fas fa-paper-plane" id="test-smtp-icon"></i>
+                            <span id="test-smtp-text">Kirim Email Test Koneksi</span>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ========================================================================= -->
+        <!-- 4. EMAIL TEMPLATE MANAGEMENT & EVENT NOTIFICATION -->
+        <!-- ========================================================================= -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-3">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-pink-600 text-white flex items-center justify-center text-base font-bold shadow-md shadow-purple-200">
+                        <i class="fas fa-layer-group"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <span>Manajemen Template Email &amp; Notifikasi Event</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                                @emailTemplates.Count Template Terdaftar
+                            </span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Kustomisasi subjek, naskah HTML, dan variabel placeholder dinamis untuk setiap event sistem</p>
+                    </div>
+                </div>
+
+                <form method="post" asp-action="ResetDefaultTemplates" asp-controller="Configuration"
+                      data-confirm="Pulihkan seluruh template email ke 7 template default bawaan sistem? Perubahan kustom Anda akan ditimpa."
+                      data-confirm-title="Pulihkan Template Default"
+                      data-confirm-btn="<i class='fas fa-undo mr-1.5'></i>Ya, Pulihkan Default">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer" title="Pulihkan 7 template default bawaan">
+                        <i class="fas fa-undo text-purple-600 text-xs"></i>
+                        <span>Pulihkan Default (7 Template)</span>
+                    </button>
+                </form>
+            </div>
+
+            <!-- Category Filter Chips -->
+            <div class="flex items-center gap-2 mb-4 overflow-x-auto pb-1">
+                <button type="button" onclick="filterTemplateCategory('all')" id="chip-cat-all"
+                        class="template-cat-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white transition-all cursor-pointer">
+                    Semua Event (@emailTemplates.Count)
+                </button>
+                <button type="button" onclick="filterTemplateCategory('Authentication')" id="chip-cat-Authentication"
+                        class="template-cat-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer">
+                    Autentikasi (@emailTemplates.Count(t => t.Category == "Authentication"))
+                </button>
+                <button type="button" onclick="filterTemplateCategory('Admin Alert')" id="chip-cat-Admin Alert"
+                        class="template-cat-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer">
+                    Admin Alert (@emailTemplates.Count(t => t.Category == "Admin Alert"))
+                </button>
+                <button type="button" onclick="filterTemplateCategory('Task Management')" id="chip-cat-Task Management"
+                        class="template-cat-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer">
+                    Manajemen Tugas (@emailTemplates.Count(t => t.Category == "Task Management"))
+                </button>
+            </div>
+
+            <!-- Template Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4" id="templateGrid">
+                @foreach (var t in emailTemplates)
+                {
+                    <div class="template-card p-4 rounded-2xl border border-slate-200/80 bg-slate-50/50 hover:bg-white hover:shadow-md transition-all flex flex-col justify-between"
+                         data-category="@t.Category">
+                        <div>
+                            <div class="flex items-start justify-between gap-2 mb-2">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="font-mono font-bold text-[10px] px-2 py-0.5 rounded-md bg-indigo-100 text-indigo-700 border border-indigo-200">
+                                        @t.EventCode
+                                    </span>
+                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-slate-200/80 text-slate-700">
+                                        @t.Category
+                                    </span>
+                                </div>
+                                <span class="inline-flex items-center gap-1 text-[11px] font-bold @(t.IsActive ? "text-emerald-600" : "text-slate-400")">
+                                    <i class="fas @(t.IsActive ? "fa-check-circle" : "fa-times-circle")"></i>
+                                    @(t.IsActive ? "Aktif" : "Nonaktif")
+                                </span>
+                            </div>
+
+                            <h4 class="font-bold text-xs text-slate-800 mb-1">@t.EventName</h4>
+                            <div class="p-2 bg-white rounded-xl border border-slate-100 mb-3">
+                                <span class="text-[10px] text-slate-400 font-bold block">Subjek:</span>
+                                <p class="text-xs text-slate-700 font-medium truncate">@t.Subject</p>
+                            </div>
+
+                            <!-- Available Variables Tags -->
+                            <div class="mb-3">
+                                <span class="text-[10px] text-slate-400 font-bold block mb-1">Variabel Tersedia:</span>
+                                <div class="flex flex-wrap gap-1">
+                                    @foreach (var v in (t.AvailableVariables ?? "").Split(',', StringSplitOptions.TrimEntries | StringSplitOptions.RemoveEmptyEntries))
+                                    {
+                                        <span class="text-[10px] font-mono bg-indigo-50 text-indigo-600 px-1.5 py-0.5 rounded border border-indigo-100" title="Klik untuk menyalin">
+                                            @v
+                                        </span>
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between pt-3 border-t border-slate-100 gap-2">
+                            <button type="button" onclick="openPreviewTemplateModal(@t.Id)"
+                                    class="flex items-center gap-1.5 px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                                <i class="fas fa-eye text-cyan-600"></i>
+                                <span>Pratinjau</span>
+                            </button>
+                            <button type="button" onclick="openEditTemplateModal(@t.Id)"
+                                    class="flex items-center gap-1.5 px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all cursor-pointer">
+                                <i class="fas fa-edit"></i>
+                                <span>Ubah Template</span>
+                            </button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
     </div>
 
     <!-- RIGHT COLUMN: Database Capacity, Export & Maintenance (1 Col) -->
@@ -995,6 +1307,166 @@
                     <i class="fas fa-download"></i>
                     <span>Unduh File .sql Lengkap</span>
                 </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- EDIT EMAIL TEMPLATE MODAL -->
+<!-- ========================================================================= -->
+<div id="edit-email-template-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 animate-slideIn flex flex-col max-h-[90vh]">
+        <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-purple-50 text-purple-600 flex items-center justify-center text-sm font-bold">
+                    <i class="fas fa-edit"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800" id="edit-modal-title">Ubah Template Email Event</h3>
+                    <p class="text-[11px] text-slate-400" id="edit-modal-subtitle">Sesuaikan subjek dan konten pesan HTML</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeEditTemplateModal()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <form method="post" asp-action="SaveEmailTemplate" asp-controller="Configuration" id="form-edit-template" class="my-4 space-y-4 overflow-y-auto flex-1 pr-1">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" id="templateEditId" value="0">
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Kode Event (Identifier)</label>
+                    <input type="text" name="EventCode" id="templateEditEventCode" readonly
+                           class="w-full px-3 py-2 bg-slate-100 border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-600 cursor-not-allowed">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Nama Event</label>
+                    <input type="text" name="EventName" id="templateEditEventName" required
+                           class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 mb-1">Kategori</label>
+                    <select name="Category" id="templateEditCategory" required
+                            class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="Authentication">Authentication</option>
+                        <option value="Admin Alert">Admin Alert</option>
+                        <option value="Task Management">Task Management</option>
+                        <option value="System">System</option>
+                    </select>
+                </div>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-bold text-slate-700">Subjek Email (Email Subject)</label>
+                    <span class="text-[11px] text-slate-400">Mendukung placeholder <code class="text-indigo-600">{NamaVariabel}</code></span>
+                </div>
+                <input type="text" name="Subject" id="templateEditSubject" required
+                       class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <!-- Available Variables Badge Cheat Sheet -->
+            <div class="p-3 bg-slate-50 rounded-2xl border border-slate-200">
+                <div class="flex items-center justify-between mb-1.5">
+                    <span class="text-[11px] font-bold text-slate-700 flex items-center gap-1.5">
+                        <i class="fas fa-tags text-indigo-500"></i> Variabel Placeholder yang Didukung (Klik untuk menyisipkan ke kursor / salin):
+                    </span>
+                </div>
+                <div class="flex flex-wrap gap-1.5" id="templateVariablesContainer">
+                    <!-- Dynamic badges inserted via JS -->
+                </div>
+            </div>
+
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-xs font-bold text-slate-700">Naskah Pesan HTML (Email Body HTML)</label>
+                    <div class="flex items-center gap-2">
+                        <label class="flex items-center gap-1.5 text-xs font-bold text-slate-700 cursor-pointer">
+                            <input type="checkbox" name="IsActive" id="templateEditIsActive" value="true" checked class="rounded text-indigo-600">
+                            <input type="hidden" name="IsActive" value="false" />
+                            <span>Template Aktif</span>
+                        </label>
+                    </div>
+                </div>
+                <textarea name="BodyHtml" id="templateEditBodyHtml" rows="11" required
+                          class="w-full p-3 bg-slate-900 text-indigo-200 border border-slate-800 rounded-2xl text-xs font-mono focus:outline-none focus:ring-2 focus:ring-indigo-500 leading-relaxed"></textarea>
+            </div>
+
+            <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+                <button type="button" onclick="closeEditTemplateModal()"
+                        class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+                    Batal
+                </button>
+                <div class="flex items-center gap-2">
+                    <button type="button" onclick="previewCurrentEditedTemplate()"
+                            class="flex items-center gap-1.5 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition-all cursor-pointer">
+                        <i class="fas fa-eye text-cyan-600"></i>
+                        <span>Uji Pratinjau</span>
+                    </button>
+                    <button type="submit"
+                            class="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold rounded-xl shadow-md transition-all cursor-pointer">
+                        <i class="fas fa-save"></i>
+                        <span>Simpan Perubahan Template</span>
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ========================================================================= -->
+<!-- LIVE PREVIEW EMAIL TEMPLATE MODAL -->
+<!-- ========================================================================= -->
+<div id="preview-email-template-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-3xl max-w-3xl w-full p-6 shadow-2xl border border-slate-200 animate-slideIn flex flex-col max-h-[90vh]">
+        <div class="flex items-start justify-between pb-3 border-b border-slate-100">
+            <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-cyan-50 text-cyan-600 flex items-center justify-center text-sm font-bold">
+                    <i class="fas fa-desktop"></i>
+                </div>
+                <div>
+                    <h3 class="text-base font-bold text-slate-800">Pratinjau Render Email (Live Preview)</h3>
+                    <p class="text-[11px] text-slate-400" id="preview-modal-eventname">Simulasi tampilan email pada inbox penerima</p>
+                </div>
+            </div>
+            <button type="button" onclick="closePreviewTemplateModal()" class="text-slate-400 hover:text-slate-600 text-lg cursor-pointer">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="my-4 flex-1 overflow-y-auto pr-1 space-y-4">
+            <!-- Simulated Email Client Header -->
+            <div class="bg-slate-100 rounded-2xl p-3.5 border border-slate-200 space-y-1.5 text-xs">
+                <div class="flex items-center justify-between">
+                    <span class="text-slate-400 font-bold text-[10px] uppercase">Subjek:</span>
+                    <span id="preview-email-subject" class="font-bold text-slate-800 flex-1 ml-3 truncate"></span>
+                </div>
+                <div class="flex items-center justify-between text-[11px] text-slate-600">
+                    <div><strong>Dari:</strong> <span id="preview-email-from">@emailConfig.SenderName &lt;@emailConfig.SenderEmail&gt;</span></div>
+                    <div><strong>Kepada:</strong> <span id="preview-email-to">pengguna@domain.com</span></div>
+                </div>
+            </div>
+
+            <!-- Email Body Render Sandbox Container -->
+            <div class="border border-slate-200 rounded-2xl p-4 bg-slate-50 min-h-[300px] flex items-center justify-center overflow-x-auto" id="preview-rendered-body-container">
+                <div id="preview-rendered-html" class="w-full"></div>
+            </div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-3">
+            <button type="button" onclick="closePreviewTemplateModal()"
+                    class="px-4 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer">
+                Tutup Pratinjau
+            </button>
+            <div class="flex items-center gap-2">
+                <button type="button" onclick="testSendFromPreview()"
+                        class="flex items-center gap-1.5 px-4 py-2 bg-gradient-to-r from-cyan-600 to-indigo-600 hover:from-cyan-700 hover:to-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs transition-all cursor-pointer">
+                    <i class="fas fa-paper-plane"></i>
+                    <span>Kirim Test Email ke Saya</span>
+                </button>
             </div>
         </div>
     </div>
@@ -1488,6 +1960,248 @@ function selectAndApplyFont(fontId) {
     }
 }
 
+// =========================================================================
+// EMAIL SMTP INTEGRATION & TEMPLATE MANAGEMENT JAVASCRIPT
+// =========================================================================
+
+function toggleSmtpPasswordVisibility() {
+    const input = document.getElementById('smtpSenderPassword');
+    const icon = document.getElementById('toggle-smtp-pass-icon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.className = 'fas fa-eye-slash';
+    } else {
+        input.type = 'password';
+        icon.className = 'fas fa-eye';
+    }
+}
+
+async function testEmailSmtpConnection() {
+    const recipient = document.getElementById('testEmailRecipientInput')?.value.trim();
+    const btn = document.getElementById('btn-test-smtp');
+    const icon = document.getElementById('test-smtp-icon');
+    const text = document.getElementById('test-smtp-text');
+    const latencyBadge = document.getElementById('test-latency-badge');
+    const latencyVal = document.getElementById('test-latency-val');
+    const diagBox = document.getElementById('test-diag-box');
+    const diagText = document.getElementById('test-diag-text');
+    const diagStatus = document.getElementById('test-diag-status');
+
+    if (!recipient) {
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Email Kosong', 'Harap masukkan alamat email tujuan uji coba!', 'warning');
+        } else {
+            alert('Harap masukkan alamat email tujuan!');
+        }
+        return;
+    }
+
+    btn.disabled = true;
+    icon.className = 'fas fa-spinner fa-spin';
+    text.innerText = 'Menguji Koneksi SMTP...';
+    latencyBadge.classList.add('hidden');
+    diagBox.classList.add('hidden');
+
+    try {
+        const formData = new FormData();
+        formData.append('recipientEmail', recipient);
+
+        const res = await fetch('/Configuration/TestEmailConnection', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await res.json();
+        btn.disabled = false;
+        icon.className = 'fas fa-paper-plane';
+        text.innerText = 'Kirim Email Test Koneksi';
+
+        if (data.latencyMs) {
+            latencyVal.innerText = data.latencyMs;
+            latencyBadge.classList.remove('hidden');
+        }
+
+        if (data.diagnostics) {
+            diagBox.classList.remove('hidden');
+            diagText.innerText = data.diagnostics;
+            diagStatus.innerText = data.success ? 'SUCCESS (250 OK)' : 'FAILED';
+            diagStatus.className = data.success ? 'text-emerald-400 font-bold' : 'text-rose-400 font-bold';
+        }
+
+        if (data.success) {
+            if (typeof Swal === 'function') {
+                Swal.fire({
+                    title: 'Uji Coba Berhasil!',
+                    html: `Email test berhasil dikirim ke <strong>${recipient}</strong> dalam waktu <strong>${data.latencyMs}ms</strong>.<br><br><span class="text-xs text-slate-500">Periksa kotak masuk (atau folder spam) Anda.</span>`,
+                    icon: 'success',
+                    confirmButtonColor: '#4F46E5'
+                });
+            } else {
+                alert(`Koneksi SMTP Berhasil! Terkirim dalam ${data.latencyMs}ms ke ${recipient}`);
+            }
+        } else {
+            if (typeof Swal === 'function') {
+                Swal.fire({
+                    title: 'Koneksi SMTP Gagal',
+                    html: `<p class="text-xs text-rose-600 mb-2">${data.message || 'Terjadi kesalahan koneksi SMTP.'}</p><pre class="bg-slate-900 text-rose-300 text-[11px] p-3 rounded-xl text-left overflow-x-auto">${data.diagnostics || 'No diagnostics available'}</pre>`,
+                    icon: 'error',
+                    confirmButtonColor: '#EF4444'
+                });
+            } else {
+                alert('Gagal: ' + data.message);
+            }
+        }
+    } catch (err) {
+        btn.disabled = false;
+        icon.className = 'fas fa-paper-plane';
+        text.innerText = 'Kirim Email Test Koneksi';
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Kesalahan Jaringan', `Gagal menghubungi server: ${err.message}`, 'error');
+        } else {
+            alert('Kesalahan: ' + err.message);
+        }
+    }
+}
+
+function filterTemplateCategory(cat) {
+    const chips = document.querySelectorAll('.template-cat-chip');
+    chips.forEach(c => {
+        c.className = 'template-cat-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200 transition-all cursor-pointer';
+    });
+
+    const activeChip = document.getElementById(`chip-cat-${cat}`) || document.getElementById('chip-cat-all');
+    if (activeChip) {
+        activeChip.className = 'template-cat-chip px-3 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white transition-all cursor-pointer';
+    }
+
+    const cards = document.querySelectorAll('.template-card');
+    cards.forEach(card => {
+        if (cat === 'all' || card.getAttribute('data-category') === cat) {
+            card.classList.remove('hidden');
+        } else {
+            card.classList.add('hidden');
+        }
+    });
+}
+
+let currentEditingTemplate = null;
+
+async function openEditTemplateModal(id) {
+    try {
+        const res = await fetch(`/Configuration/GetEmailTemplate?id=${id}`);
+        const data = await res.json();
+        if (!data.success) {
+            if (typeof SwalAlert === 'function') SwalAlert('Error', data.message || 'Gagal memuat template', 'error');
+            return;
+        }
+
+        const t = data.data;
+        currentEditingTemplate = t;
+        document.getElementById('templateEditId').value = t.id;
+        document.getElementById('templateEditEventCode').value = t.eventCode;
+        document.getElementById('templateEditEventName').value = t.eventName;
+        document.getElementById('templateEditCategory').value = t.category;
+        document.getElementById('templateEditSubject').value = t.subject;
+        document.getElementById('templateEditBodyHtml').value = t.bodyHtml;
+        document.getElementById('templateEditIsActive').checked = t.isActive;
+        document.getElementById('edit-modal-title').innerText = `Ubah Template: ${t.eventName}`;
+        document.getElementById('edit-modal-subtitle').innerText = `Event Identifier: ${t.eventCode} (${t.category})`;
+
+        // Populate variable badges
+        const container = document.getElementById('templateVariablesContainer');
+        container.innerHTML = '';
+        const vars = (t.availableVariables || '').split(',').map(v => v.trim()).filter(Boolean);
+        vars.forEach(v => {
+            const chip = document.createElement('button');
+            chip.type = 'button';
+            chip.className = 'text-[11px] font-mono bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold px-2 py-1 rounded-lg border border-indigo-200 transition-colors cursor-pointer flex items-center gap-1';
+            chip.innerHTML = `<i class="fas fa-plus text-[9px]"></i><span>${v}</span>`;
+            chip.title = `Klik untuk menyisipkan ${v} ke kursor`;
+            chip.onclick = () => insertTemplateVariable(v);
+            container.appendChild(chip);
+        });
+
+        document.getElementById('edit-email-template-modal').classList.remove('hidden');
+    } catch (err) {
+        if (typeof SwalAlert === 'function') SwalAlert('Error', err.message, 'error');
+    }
+}
+
+function closeEditTemplateModal() {
+    document.getElementById('edit-email-template-modal').classList.add('hidden');
+}
+
+function insertTemplateVariable(varName) {
+    const textarea = document.getElementById('templateEditBodyHtml');
+    const start = textarea.selectionStart || 0;
+    const end = textarea.selectionEnd || 0;
+    const text = textarea.value;
+    textarea.value = text.substring(0, start) + varName + text.substring(end);
+    textarea.focus();
+    textarea.selectionStart = textarea.selectionEnd = start + varName.length;
+
+    if (typeof Swal === 'function') {
+        const Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 1500,
+            timerProgressBar: false
+        });
+        Toast.fire({
+            icon: 'success',
+            title: `Variabel ${varName} disisipkan`
+        });
+    }
+}
+
+async function openPreviewTemplateModal(id) {
+    try {
+        const formData = new FormData();
+        formData.append('id', id);
+
+        const res = await fetch('/Configuration/PreviewEmailTemplate', {
+            method: 'POST',
+            body: formData
+        });
+
+        const data = await res.json();
+        if (!data.success) {
+            if (typeof SwalAlert === 'function') SwalAlert('Error', data.message || 'Gagal memuat pratinjau', 'error');
+            return;
+        }
+
+        document.getElementById('preview-email-subject').innerText = data.renderedSubject || 'Subjek Template';
+        document.getElementById('preview-modal-eventname').innerText = `${data.eventName} (${data.eventCode})`;
+        document.getElementById('preview-rendered-html').innerHTML = data.renderedHtml || '<p class="text-slate-400">Konten kosong</p>';
+        document.getElementById('preview-email-to').innerText = document.getElementById('testEmailRecipientInput')?.value.trim() || '@User.Identity?.Name' || 'pengguna@domain.com';
+
+        document.getElementById('preview-email-template-modal').classList.remove('hidden');
+    } catch (err) {
+        if (typeof SwalAlert === 'function') SwalAlert('Error', err.message, 'error');
+    }
+}
+
+function closePreviewTemplateModal() {
+    document.getElementById('preview-email-template-modal').classList.add('hidden');
+}
+
+async function previewCurrentEditedTemplate() {
+    const id = document.getElementById('templateEditId').value;
+    if (id && id !== '0') {
+        await openPreviewTemplateModal(id);
+    }
+}
+
+async function testSendFromPreview() {
+    const recipient = document.getElementById('testEmailRecipientInput')?.value.trim() || '@User.Identity?.Name';
+    if (!recipient) {
+        if (typeof SwalAlert === 'function') SwalAlert('Penerima Kosong', 'Harap isi email penerima.', 'warning');
+        return;
+    }
+    await testEmailSmtpConnection();
+}
+
 // Ensure active font is highlighted on page load
 document.addEventListener('DOMContentLoaded', function () {
     const savedFont = localStorage.getItem('app_font') || '@currentAppFont' || 'inter';
@@ -1500,6 +2214,8 @@ document.addEventListener('keydown', e => {
     if (e.key === 'Escape') {
         closeResetModal();
         closeSqlPreviewModal();
+        closeEditTemplateModal();
+        closePreviewTemplateModal();
     }
 });
 </script>

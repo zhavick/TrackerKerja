@@ -5,14 +5,14 @@
 
 ### INFORMASI DOKUMEN
 - **Nama Aplikasi**: Work Tracker Pro (TrackerKerja)
-- **Versi Dokumen**: 3.4 (Enterprise Multi-Instance & File Attachment Sync Edition)
+- **Versi Dokumen**: 3.5 (Enterprise Email Integration, Admin Approval, & Multi-Tenancy Edition)
 - **Status**: Disetujui & Terimplementasi Penuh (Production-Ready)
 - **Target Platform**: Web Application (ASP.NET Core 8.0 MVC / REST API / Docker Linux Container)
 - **Basis Data**: Entity Framework Core 8.0 dengan SQLite Database Engine (`/app/data/trackerkerja.db` via `./db_data` volume)
 - **Engine Spreadsheet**: ClosedXML 0.104.2 (Format ARMS 21-kolom, Template Standar 9-kolom, & Timesheet Personal)
 - **Dokumentasi REST API**: OpenAPI 3.0 via Swashbuckle Swagger UI (`/swagger`) & Postman Collection
 - **Repositori Source Code**: [https://github.com/zhavick/TrackerKerja.git](https://github.com/zhavick/TrackerKerja.git)
-- **Tanggal Rilis & Pembaruan**: 14 September 2026
+- **Tanggal Rilis & Pembaruan**: 17 September 2026
 
 ---
 
@@ -22,7 +22,9 @@
 3. [Entity Relationship Diagram (ERD) & Struktur Database](#3-entity-relationship-diagram-erd--struktur-database)
 4. [Role-Based Access Control (RBAC) & Matriks Hak Akses](#4-role-based-access-control-rbac--matriks-hak-akses)
 5. [Flow Proses & Spesifikasi Modul](#5-flow-proses--spesifikasi-modul)
-   - [5.1 Modul Autentikasi & Profil Pengguna](#51-modul-autentikasi--profil-pengguna)
+   - [5.1 Modul Autentikasi, Admin Approval & Multi-Tenancy](#51-modul-autentikasi-admin-approval--multi-tenancy)
+     - [5.1.1 Alur Persetujuan Registrasi Pengguna Baru (Admin Approval Workflow)](#511-alur-persetujuan-registrasi-pengguna-baru-admin-approval-workflow)
+     - [5.1.2 Modul Multi-Tenancy Organisasi & Perusahaan (Company Isolation)](#512-modul-multi-tenancy-organisasi--perusahaan-company-isolation)
    - [5.2 Modul Sistem Desain Responsif & Mobile Navigation](#52-modul-sistem-desain-responsif--mobile-navigation)
    - [5.3 Modul Sistem Tema Tampilan Dinamis (16 Tema)](#53-modul-sistem-tema-tampilan-dinamis-16-tema)
    - [5.4 Modul Manajemen Proyek & Kategori](#54-modul-manajemen-proyek--kategori)
@@ -39,6 +41,8 @@
    - [5.15 Modul SQL Beautifier & Query Tools](#515-modul-sql-beautifier--query-tools)
    - [5.16 Modul Multi-Instance Synchronization (Host Induk Sync)](#516-modul-multi-instance-synchronization-host-induk-sync)
    - [5.17 Modul RESTful API & Swagger OpenAPI Documentation](#517-modul-restful-api--swagger-openapi-documentation)
+   - [5.18 Modul Integrasi Server Email (SMTP) & Sub-Modul Template Email Event](#518-modul-integrasi-server-email-smtp--sub-modul-template-email-event)
+   - [5.19 Pembaruan Navigasi & Ergonomi Antarmuka (Topbar & Sidebar)](#519-pembaruan-navigasi--ergonomi-antarmuka-topbar--sidebar)
 6. [Spesifikasi Non-Fungsional, Keamanan & Privasi Data](#6-spesifikasi-non-fungsional-keamanan--privasi-data)
 7. [Panduan Docker Containerization, Git Repository & Deployment](#7-panduan-docker-containerization-git-repository--deployment)
 
@@ -118,6 +122,11 @@ flowchart TB
 
 ```mermaid
 erDiagram
+    Companies ||--o{ AspNetUsers : "employs"
+    Companies ||--o{ Projects : "owns"
+    Companies ||--o{ WorkTasks : "scopes"
+    Companies ||--o{ WorkNotes : "stores"
+
     AspNetUsers ||--o{ WorkTasks : "assigned_to"
     AspNetUsers ||--o{ WorkSessions : "logs_time"
     AspNetUsers ||--o{ AttendanceRecords : "logs_attendance"
@@ -138,6 +147,29 @@ erDiagram
     MasterStatuses ||--o{ WorkTasks : "sets_status"
     MasterMilestones ||--o{ WorkTasks : "sets_milestone"
 
+    Companies {
+        int Id PK
+        string Name
+        string Code
+        string Description
+        string Address
+        string ContactEmail
+        datetime CreatedAt
+    }
+
+    EmailTemplates {
+        int Id PK
+        string EventCode
+        string EventName
+        string Category
+        string Subject
+        string BodyHtml
+        string AvailableVariables
+        bool IsActive
+        datetime CreatedAt
+        datetime UpdatedAt
+    }
+
     AspNetUsers {
         string Id PK
         string FullName
@@ -145,6 +177,11 @@ erDiagram
         string JobTitle
         string AvatarColor
         string ProfilePictureUrl
+        int CompanyId FK
+        bool IsApproved
+        datetime ApprovedAt
+        string ApprovedByUserId
+        string RejectionReason
         datetime CreatedAt
     }
 
@@ -154,6 +191,7 @@ erDiagram
         string Description
         string Color
         int Status
+        int CompanyId FK
         datetime Deadline
         datetime CreatedAt
     }
@@ -164,6 +202,7 @@ erDiagram
         int CategoryId FK
         string AssignedToUserId FK
         int ParentTaskId FK
+        int CompanyId FK
         string Title
         string Description
         int Priority
@@ -303,10 +342,28 @@ erDiagram
 
 ## 5. FLOW PROSES & SPESIFIKASI MODUL
 
-### 5.1 Modul Autentikasi & Profil Pengguna
+### 5.1 Modul Autentikasi, Admin Approval & Multi-Tenancy
 - Menggunakan **ASP.NET Core Identity** dengan penyimpanan terintegrasi EF Core SQLite.
-- Manajemen password, lockout policies, dan cookie session persistence 7 hari (*Sliding Expiration*).
+- Manajemen password hashing (PBKDF2), lockout policies, dan cookie session persistence 7 hari (*Sliding Expiration*).
 - Upload foto avatar unik tersimpan di direktori `wwwroot/uploads/avatars/`.
+
+#### 5.1.1 Alur Persetujuan Registrasi Pengguna Baru (Admin Approval Workflow)
+- **Registrasi Akun Baru**: Pengguna mendaftar melalui form web (`/Account/Register`) atau REST API (`POST /api/auth/register`). Akun baru secara bawaan memiliki atribut `IsApproved = false`.
+- **Proteksi Akses (Blocking)**:
+  - Sebelum disetujui, akun tidak diizinkan masuk ke sistem.
+  - Percobaan login melalui Web UI akan diarahkan ke halaman login dengan pesan notifikasi kuning informatif: *"Pendaftaran Anda berhasil dan akun Anda sedang menunggu persetujuan (approval) dari Administrator."*
+  - Percobaan login melalui REST API (`POST /api/auth/login`) akan langsung ditolak dengan status **HTTP 403 Forbidden** dan pesan rincian menunggu approval.
+- **Tinjauan & Verifikasi Administrator**:
+  - Administrator menerima notifikasi email otomatis event `ADMIN_NEW_USER_ALERT`.
+  - Administrator dapat melihat daftar pendaftar yang menunggu approval di tab khusus pada direktori Anggota (`/Member`) atau melalui REST API `GET /api/members?isApproved=false`.
+- **Tindakan Persetujuan / Penolakan**:
+  - **Persetujuan (Approve)**: Admin menekan tombol *Setujui Akun* atau memanggil API `POST /api/members/{id}/approve`. Field `IsApproved` diubah menjadi `true`, `ApprovedAt` mencatat waktu persetujuan, dan `ApprovedByUserId` mencatat admin penanggung jawab. Sistem secara otomatis mengirimkan email konfirmasi `USER_APPROVED` kepada pengguna bersangkutan.
+  - **Penolakan (Reject)**: Admin dapat menolak pendaftaran disertai catatan alasan penolakan (`RejectionReason`) melalui Web UI atau API `POST /api/members/{id}/reject`. Sistem mengirimkan email pemberitahuan penolakan `USER_REJECTED` dan menghapus rekaman registrasi akun.
+
+#### 5.1.2 Modul Multi-Tenancy Organisasi & Perusahaan (Company Isolation)
+- Setiap pengguna, proyek, tugas, dan catatan kerja terhubung ke entitas Perusahaan/Organisasi (`CompanyId`).
+- Pada saat pendaftaran, pengguna dapat memilih untuk bergabung dengan perusahaan yang sudah ada (`CompanyOption = existing`) atau mendaftarkan nama/kode perusahaan baru (`CompanyOption = new`).
+- **Isolasi Data**: Pengguna reguler hanya dapat melihat dan mengakses proyek, tugas, dan catatan yang berada dalam lingkup perusahaan yang sama. Administrator memiliki visibilitas penuh terhadap seluruh entitas untuk keperluan audit dan pengawasan lintas tim.
 
 ### 5.2 Modul Sistem Desain Responsif & Mobile Navigation
 - **Off-Canvas Drawer Navigation**: Menggantikan sidebar pada layar `< 1024px` dengan transisi halus dan latar belakang *backdrop blur*.
@@ -423,17 +480,74 @@ erDiagram
   - `POST /api/sync/import-package` — Mengunggah dan mengeksekusi paket arsip `.zip` atau skrip `.sql`.
 
 ### 5.17 Modul RESTful API & Swagger OpenAPI Documentation
-- 85+ endpoint RESTful dengan respons terstandarisasi JSON:
+- 95+ endpoint RESTful dengan respons terstandarisasi JSON:
 ```json
 {
-  "success": true,
+  "isSuccess": true,
   "message": "Operation description",
   "data": { },
   "errors": null,
-  "timestamp": "2026-09-14T15:00:00Z"
+  "timestamp": "2026-09-17T15:00:00Z"
 }
 ```
 - Swagger UI interaktif di `/swagger` dan berkas Postman Collection & Environment.
+
+### 5.18 Modul Integrasi Server Email (SMTP) & Sub-Modul Template Email Event
+- **Latar Belakang & Arsitektur**:
+  - Modul integrasi email menyediakan saluran komunikasi otomatis (*notification channel*) antara sistem TrackerKerja dengan seluruh pemangku kepentingan (karyawan, manajer, dan administrator).
+  - Seluruh konfigurasi server SMTP disimpan secara dinamis pada tabel `SystemSettings` di database SQLite tanpa membutuhkan restart aplikasi maupun build ulang kontainer.
+- **Konfigurasi Parameter SMTP**:
+  - `Email_SmtpHost`: Server host SMTP (misal `smtp.gmail.com`, `smtp.office365.com`, `smtp.mailtrap.io`).
+  - `Email_SmtpPort`: Port koneksi SMTP (misal `587` untuk STARTTLS, `465` untuk SSL, `2525`).
+  - `Email_SenderEmail`: Alamat surat elektronik pengirim default.
+  - `Email_SenderName`: Nama tampilan pengirim (*Display Name*).
+  - `Email_SenderPassword`: Kata sandi pengirim / *App Password* (disimpan terenkripsi/aman dan disamarkan `••••••••` pada UI).
+  - `Email_EnableSsl`: Sakelar enkripsi TLS/SSL (default: aktif).
+  - `Email_RequireAuth`: Sakelar kebutuhan otentikasi kredensial jaringan.
+  - `Email_IsEnabled`: Sakelar master aktif/nonaktif pengiriman email sistem.
+- **Uji Koneksi Mandiri (Test SMTP Connection & Live Diagnostics)**:
+  - Form uji koneksi mandiri pada `/Configuration` dan API `POST /api/email-config/test`.
+  - Mengirimkan email uji coba berformat HTML ke alamat penerima test yang ditentukan.
+  - Mengukur latensi koneksi dalam milidetik (*Latency ms*).
+  - Menyajikan kotak diagnostik interaktif (*Diagnostics Box*) yang mencatat respon handshake protokol mail (misal `250 OK`, status enkripsi TLS, status kredensial).
+- **Sub-Modul Template Email Berbasis Event**:
+  - Model entitas `EmailTemplate` mencakup: `EventCode`, `EventName`, `Category`, `Subject`, `BodyHtml`, `AvailableVariables`, `IsActive`, `CreatedAt`, `UpdatedAt`.
+  - **7 Event Default Bawaan Sistem**:
+    1. `USER_REGISTERED`: Dikirimkan kepada pendaftar baru bahwa akun telah berhasil dicatat dan sedang menunggu verifikasi admin.
+    2. `ADMIN_NEW_USER_ALERT`: Dikirimkan kepada seluruh Administrator bahwa ada pengguna baru yang mendaftar dan membutuhkan persetujuan.
+    3. `USER_APPROVED`: Dikirimkan kepada pengguna saat akunnya disetujui oleh admin beserta tombol tautan masuk ke aplikasi.
+    4. `USER_REJECTED`: Dikirimkan kepada pendaftar jika pengajuan ditolak, menyertakan alasan penolakan.
+    5. `PASSWORD_RESET_NOTIFICATION`: Dikirimkan kepada pengguna saat password mereka di-reset oleh admin beserta kata sandi baru.
+    6. `TASK_ASSIGNED`: Dikirimkan kepada PIC penanggung jawab saat ada tugas baru yang dialokasikan kepadanya.
+    7. `TASK_STATUS_CHANGED`: Dikirimkan kepada PIC saat status tugas mengalami perubahan.
+  - **Mesin Render Placeholder Variabel Dinamis**:
+    - Mendukung format `{Variabel}` maupun `{{Variabel}}` secara *case-insensitive*.
+    - Variabel global otomatis: `{AppName}`, `{AppUrl}`, `{CurrentYear}`, `{CurrentDate}`, `{CurrentTime}`, `{RecipientEmail}`, `{RecipientName}`.
+    - Variabel kontekstual event: `{FullName}`, `{JobTitle}`, `{CompanyName}`, `{AdminName}`, `{RejectionReason}`, `{NewPassword}`, `{TaskTitle}`, `{TaskCode}`, `{ProjectName}`, `{Priority}`, `{Status}`, `{DueDate}`, `{ActionUrl}`.
+  - **Live Preview Modal**:
+    - Administrator dapat melihat pratinjau rendering template HTML secara langsung sebelum menyimpannya.
+  - **Reset ke Bawaan (Factory Defaults)**:
+    - Fitur memulihkan seluruh 7 template HTML bawaan sistem ke format standar jika diperlukan.
+- **Background-Safe Dispatcher**:
+  - Pemanggilan pengiriman email pada operasi CRUD (`AccountController`, `MemberController`, `TaskController`) diisolasi dalam thread asinkron `Task.Run()` dengan *scoped service provider*.
+  - Kegagalan server SMTP (misal timeout atau jaringan offline) dicatat di log sistem dan **tidak pernah menggagalkan atau membatalkan transaksi CRUD bisnis pengguna**.
+- **REST API Endpoints Modul Email**:
+  - `GET /api/email-config` — Mengambil konfigurasi SMTP saat ini (kata sandi tersamar).
+  - `PUT /api/email-config` — Memperbarui konfigurasi SMTP.
+  - `POST /api/email-config/test` — Melakukan uji koneksi SMTP diagnostik.
+  - `GET /api/email-config/templates` — Mengambil seluruh daftar template email.
+  - `GET /api/email-config/templates/{id}` — Mengambil detail satu template email.
+  - `POST /api/email-config/templates` — Membuat atau memperbarui template email.
+  - `DELETE /api/email-config/templates/{id}` — Menghapus template email kustom.
+  - `POST /api/email-config/templates/{id}/preview` — Melakukan render pratinjau live template.
+
+### 5.19 Pembaruan Navigasi & Ergonomi Antarmuka (Topbar & Sidebar)
+- **Topbar Minimalis & Fokus Kerja**:
+  - Tombol aksi tautan eksternal pada bilah atas (Header Actions) dirampingkan dengan menghapus tombol *Swagger API*, *Tur Aplikasi*, dan *Panduan Pengguna* dari topbar utama.
+  - Tata letak bilah atas kini lebih lega, elegan, dan fokus menampilkan judul halaman aktif, badge nama perusahaan, kotak pencarian global, tombol *Import Excel*, lonceng notifikasi, pemilih 16 tema dinamis, dan kartu profil.
+- **Sentralisasi Navigasi Bantuan pada Sidebar**:
+  - Tautan dokumentasi **Swagger REST API** dan **Buku Panduan Pengguna (PDF)** dipusatkan pada Bilah Samping (Sidebar) bagian bawah (*Akun & Bantuan*).
+  - Fitur **Tur Aplikasi (Interactive Onboarding Tour)** dapat diakses kapan saja melalui menu profil pengguna atau pintasan bantuan.
 
 ---
 

@@ -1,8 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
 
 namespace TrackerKerja.Controllers.Api
@@ -10,6 +12,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/timesheets")]
     [Produces("application/json")]
+    [Authorize]
     public class TimesheetsApiController : ControllerBase
     {
         private readonly AppDbContext _db;
@@ -45,6 +48,9 @@ namespace TrackerKerja.Controllers.Api
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 20;
 
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var query = _db.Sessions
                 .Include(s => s.Task)
                     .ThenInclude(t => t!.Project)
@@ -52,6 +58,12 @@ namespace TrackerKerja.Controllers.Api
                     .ThenInclude(t => t!.AssignedToUser)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                var companyId = currentUser?.CompanyId;
+                query = query.Where(s => s.Task != null && s.Task.CompanyId == companyId);
+            }
 
             if (taskId.HasValue)
                 query = query.Where(s => s.TaskId == taskId.Value);
@@ -98,6 +110,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<TimesheetSummaryDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetSummary()
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var now = DateTime.Now;
             var todayStart = DateTime.Today;
             var todayEnd = todayStart.AddDays(1).AddTicks(-1);
@@ -107,19 +122,26 @@ namespace TrackerKerja.Controllers.Api
 
             var monthStart = new DateTime(now.Year, now.Month, 1);
 
-            var todaySecs = await _db.Sessions
+            var query = _db.Sessions.AsQueryable();
+            if (!isAdmin)
+            {
+                var companyId = currentUser?.CompanyId;
+                query = query.Where(s => s.Task != null && s.Task.CompanyId == companyId);
+            }
+
+            var todaySecs = await query
                 .Where(s => s.StartTime >= todayStart && s.StartTime <= todayEnd)
                 .SumAsync(s => s.Duration);
 
-            var weekSecs = await _db.Sessions
+            var weekSecs = await query
                 .Where(s => s.StartTime >= weekStart)
                 .SumAsync(s => s.Duration);
 
-            var monthSecs = await _db.Sessions
+            var monthSecs = await query
                 .Where(s => s.StartTime >= monthStart)
                 .SumAsync(s => s.Duration);
 
-            var runningCount = await _db.Sessions.CountAsync(s => s.EndTime == null);
+            var runningCount = await query.CountAsync(s => s.EndTime == null);
 
             var format = (long secs) =>
             {
@@ -151,6 +173,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var session = await _db.Sessions
                 .Include(s => s.Task)
                     .ThenInclude(t => t!.Project)
@@ -162,6 +187,11 @@ namespace TrackerKerja.Controllers.Api
             if (session == null)
             {
                 return NotFound(ApiResponse<TimesheetResponseDto>.Fail($"Sesi kerja dengan ID {id} tidak ditemukan."));
+            }
+
+            if (session.Task != null && !TaskPermissionHelper.CanViewTask(currentUser, isAdmin, session.Task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<TimesheetResponseDto>.Fail("Akses ditolak: Anda tidak memiliki akses ke sesi ini."));
             }
 
             return Ok(ApiResponse<TimesheetResponseDto>.Ok(MapToResponseDto(session), "Detail sesi kerja berhasil diambil."));
@@ -176,15 +206,24 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateTimesheetRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                 return BadRequest(ApiResponse<TimesheetResponseDto>.Fail("Validasi gagal.", errors));
             }
 
-            if (!await _db.Tasks.AnyAsync(t => t.Id == dto.TaskId))
+            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == dto.TaskId);
+            if (task == null)
             {
                 return BadRequest(ApiResponse<TimesheetResponseDto>.Fail($"Tugas dengan ID {dto.TaskId} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanViewTask(currentUser, isAdmin, task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<TimesheetResponseDto>.Fail("Akses ditolak."));
             }
 
             var duration = dto.Duration;
@@ -267,14 +306,20 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> StartTimer([FromBody] StartTimerRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var currentUserId = currentUser?.Id;
+
             var task = await _db.Tasks.FindAsync(dto.TaskId);
             if (task == null)
             {
                 return BadRequest(ApiResponse<TimesheetResponseDto>.Fail($"Tugas dengan ID {dto.TaskId} tidak ditemukan."));
             }
 
-            var currentUser = await _userManager.GetUserAsync(User);
-            var currentUserId = currentUser?.Id;
+            if (!TaskPermissionHelper.CanViewTask(currentUser, isAdmin, task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<TimesheetResponseDto>.Fail("Akses ditolak: Anda tidak memiliki akses ke tugas ini."));
+            }
 
             // Cek apakah timer sudah berjalan untuk task ini pada user yang sama
             var existingSession = await _db.Sessions.FirstOrDefaultAsync(s => 
@@ -332,23 +377,24 @@ namespace TrackerKerja.Controllers.Api
         public async Task<IActionResult> StopTimer([FromBody] StopTimerRequestDto dto)
         {
             var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
             var currentUserId = currentUser?.Id;
 
             WorkSession? session = null;
             if (dto.SessionId.HasValue)
             {
-                session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == dto.SessionId.Value && s.EndTime == null);
+                session = await _db.Sessions.Include(s => s.Task).FirstOrDefaultAsync(s => s.Id == dto.SessionId.Value && s.EndTime == null);
             }
             else if (dto.TaskId.HasValue)
             {
-                session = await _db.Sessions.FirstOrDefaultAsync(s => 
+                session = await _db.Sessions.Include(s => s.Task).FirstOrDefaultAsync(s => 
                     s.TaskId == dto.TaskId.Value && 
                     s.EndTime == null && 
                     (s.UserId == currentUserId || (s.UserId == null && s.Task != null && s.Task.AssignedToUserId == currentUserId)));
             }
             else
             {
-                session = await _db.Sessions.OrderByDescending(s => s.StartTime).FirstOrDefaultAsync(s => 
+                session = await _db.Sessions.Include(s => s.Task).OrderByDescending(s => s.StartTime).FirstOrDefaultAsync(s => 
                     s.EndTime == null && 
                     (s.UserId == currentUserId || (s.UserId == null && s.Task != null && s.Task.AssignedToUserId == currentUserId)));
             }
@@ -356,6 +402,11 @@ namespace TrackerKerja.Controllers.Api
             if (session == null)
             {
                 return NotFound(ApiResponse<TimesheetResponseDto>.Fail("Tidak ditemukan sesi timer yang sedang berjalan aktif."));
+            }
+
+            if (session.Task != null && !TaskPermissionHelper.CanViewTask(currentUser, isAdmin, session.Task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<TimesheetResponseDto>.Fail("Akses ditolak."));
             }
 
             session.EndTime = DateTime.Now;
@@ -389,16 +440,24 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateTimesheetRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
                 return BadRequest(ApiResponse<TimesheetResponseDto>.Fail("Validasi gagal.", errors));
             }
 
-            var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == id);
+            var session = await _db.Sessions.Include(s => s.Task).FirstOrDefaultAsync(s => s.Id == id);
             if (session == null)
             {
                 return NotFound(ApiResponse<TimesheetResponseDto>.Fail($"Sesi kerja dengan ID {id} tidak ditemukan."));
+            }
+
+            if (session.Task != null && !TaskPermissionHelper.CanViewTask(currentUser, isAdmin, session.Task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<TimesheetResponseDto>.Fail("Akses ditolak."));
             }
 
             session.StartTime = dto.StartTime;
@@ -428,10 +487,18 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
-            var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == id);
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
+            var session = await _db.Sessions.Include(s => s.Task).FirstOrDefaultAsync(s => s.Id == id);
             if (session == null)
             {
                 return NotFound(ApiResponse<object>.Fail($"Sesi kerja dengan ID {id} tidak ditemukan."));
+            }
+
+            if (session.Task != null && !TaskPermissionHelper.CanViewTask(currentUser, isAdmin, session.Task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak."));
             }
 
             _db.Sessions.Remove(session);
@@ -447,7 +514,17 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ClearAll()
         {
-            var sessions = await _db.Sessions.ToListAsync();
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
+            var query = _db.Sessions.Include(s => s.Task).AsQueryable();
+            if (!isAdmin)
+            {
+                var companyId = currentUser?.CompanyId;
+                query = query.Where(s => s.Task != null && s.Task.CompanyId == companyId);
+            }
+
+            var sessions = await query.ToListAsync();
             var count = sessions.Count;
 
             _db.Sessions.RemoveRange(sessions);
@@ -471,6 +548,9 @@ namespace TrackerKerja.Controllers.Api
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var query = _db.Sessions
                 .Include(s => s.Task)
                     .ThenInclude(t => t!.Project)
@@ -478,6 +558,12 @@ namespace TrackerKerja.Controllers.Api
                     .ThenInclude(t => t!.AssignedToUser)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                var companyId = currentUser?.CompanyId;
+                query = query.Where(s => s.Task != null && s.Task.CompanyId == companyId);
+            }
 
             if (projectId.HasValue) query = query.Where(s => s.Task != null && s.Task.ProjectId == projectId.Value);
             if (!string.IsNullOrWhiteSpace(userId)) query = query.Where(s => s.Task != null && s.Task.AssignedToUserId == userId);
@@ -540,6 +626,9 @@ namespace TrackerKerja.Controllers.Api
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var query = _db.Sessions
                 .Include(s => s.Task)
                     .ThenInclude(t => t!.Project)
@@ -547,6 +636,12 @@ namespace TrackerKerja.Controllers.Api
                     .ThenInclude(t => t!.AssignedToUser)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                var companyId = currentUser?.CompanyId;
+                query = query.Where(s => s.Task != null && s.Task.CompanyId == companyId);
+            }
 
             if (projectId.HasValue) query = query.Where(s => s.Task != null && s.Task.ProjectId == projectId.Value);
             if (!string.IsNullOrWhiteSpace(userId)) query = query.Where(s => s.Task != null && s.Task.AssignedToUserId == userId);

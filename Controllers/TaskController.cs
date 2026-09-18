@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
+using TrackerKerja.Helpers;
 using TrackerKerja.Models;
 using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
@@ -26,15 +27,18 @@ namespace TrackerKerja.Controllers
         private readonly AppDbContext _db;
         private readonly UserManager<AppUser> _userManager;
         private readonly IGamificationService _gamificationService;
+        private readonly IEmailService _emailService;
 
         public TaskController(
             AppDbContext db,
             UserManager<AppUser> userManager,
-            IGamificationService gamificationService)
+            IGamificationService gamificationService,
+            IEmailService emailService)
         {
             _db = db;
             _userManager = userManager;
             _gamificationService = gamificationService;
+            _emailService = emailService;
         }
 
         public async Task<IActionResult> Index(
@@ -44,6 +48,10 @@ namespace TrackerKerja.Controllers
             string? assigneeId,
             string? milestone,
             string? search,
+            string? period,
+            DateTime? startDate,
+            DateTime? endDate,
+            string? periodField,
             string? sortBy = "created",
             string? sortOrder = "desc",
             int page = 1,
@@ -60,6 +68,17 @@ namespace TrackerKerja.Controllers
                 .Include(t => t.ChildTasks)
                 .Include(t => t.Sessions)
                 .AsQueryable();
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            if (!isAdmin)
+            {
+                query = query.Where(t => t.CompanyId == userCompanyId ||
+                                        (t.Project != null && t.Project.CompanyId == userCompanyId) ||
+                                        (t.AssignedToUser != null && t.AssignedToUser.CompanyId == userCompanyId));
+            }
 
             if (!string.IsNullOrEmpty(status) && Enum.TryParse<ModelTaskStatus>(status, out var s))
                 query = query.Where(t => t.Status == s);
@@ -78,6 +97,141 @@ namespace TrackerKerja.Controllers
 
             if (!string.IsNullOrEmpty(search))
                 query = query.Where(t => t.Title.Contains(search) || (t.Description != null && t.Description.Contains(search)));
+
+            // ── PERIODE FILTER (PRESET & RENTANG TANGGAL) ───────────
+            var today = DateTimeHelper.Today;
+            DateTime? filterStart = startDate?.Date;
+            DateTime? filterEnd = endDate?.Date;
+
+            if (!string.IsNullOrWhiteSpace(period) && period.ToLower() != "all")
+            {
+                switch (period.ToLower().Trim())
+                {
+                    case "today":
+                    case "harian":
+                    case "hari_ini":
+                        filterStart = today;
+                        filterEnd = today;
+                        break;
+
+                    case "yesterday":
+                    case "kemarin":
+                        filterStart = today.AddDays(-1);
+                        filterEnd = today.AddDays(-1);
+                        break;
+
+                    case "this_week":
+                    case "mingguan":
+                    case "minggu_ini":
+                        int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
+                        filterStart = today.AddDays(-1 * diff);
+                        filterEnd = filterStart.Value.AddDays(6);
+                        break;
+
+                    case "last_week":
+                    case "minggu_lalu":
+                        int diffLast = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
+                        var thisWeekMonday = today.AddDays(-1 * diffLast);
+                        filterStart = thisWeekMonday.AddDays(-7);
+                        filterEnd = filterStart.Value.AddDays(6);
+                        break;
+
+                    case "this_month":
+                    case "bulanan":
+                    case "bulan_ini":
+                        filterStart = new DateTime(today.Year, today.Month, 1);
+                        filterEnd = filterStart.Value.AddMonths(1).AddDays(-1);
+                        break;
+
+                    case "last_month":
+                    case "bulan_lalu":
+                        var prevMonth = today.AddMonths(-1);
+                        filterStart = new DateTime(prevMonth.Year, prevMonth.Month, 1);
+                        filterEnd = filterStart.Value.AddMonths(1).AddDays(-1);
+                        break;
+
+                    case "this_quarter":
+                    case "kuartal_ini":
+                        int quarter = (today.Month - 1) / 3;
+                        filterStart = new DateTime(today.Year, quarter * 3 + 1, 1);
+                        filterEnd = filterStart.Value.AddMonths(3).AddDays(-1);
+                        break;
+
+                    case "this_year":
+                    case "tahun_ini":
+                        filterStart = new DateTime(today.Year, 1, 1);
+                        filterEnd = new DateTime(today.Year, 12, 31);
+                        break;
+
+                    case "custom":
+                    case "kustom":
+                        // Tetap gunakan startDate dan endDate dari input user
+                        break;
+                }
+            }
+
+            if (filterStart.HasValue || filterEnd.HasValue)
+            {
+                var sStart = filterStart ?? DateTime.MinValue;
+                var sEnd = filterEnd.HasValue ? filterEnd.Value.AddDays(1).AddTicks(-1) : DateTime.MaxValue;
+
+                switch (periodField?.ToLower().Trim())
+                {
+                    case "duedate":
+                        if (filterStart.HasValue && filterEnd.HasValue)
+                            query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value >= sStart && t.DueDate.Value <= sEnd);
+                        else if (filterStart.HasValue)
+                            query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value >= sStart);
+                        else if (filterEnd.HasValue)
+                            query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value <= sEnd);
+                        break;
+
+                    case "startdate":
+                        if (filterStart.HasValue && filterEnd.HasValue)
+                            query = query.Where(t => t.StartDate.HasValue && t.StartDate.Value >= sStart && t.StartDate.Value <= sEnd);
+                        else if (filterStart.HasValue)
+                            query = query.Where(t => t.StartDate.HasValue && t.StartDate.Value >= sStart);
+                        else if (filterEnd.HasValue)
+                            query = query.Where(t => t.StartDate.HasValue && t.StartDate.Value <= sEnd);
+                        break;
+
+                    case "created":
+                        if (filterStart.HasValue && filterEnd.HasValue)
+                            query = query.Where(t => t.CreatedAt >= sStart && t.CreatedAt <= sEnd);
+                        else if (filterStart.HasValue)
+                            query = query.Where(t => t.CreatedAt >= sStart);
+                        else if (filterEnd.HasValue)
+                            query = query.Where(t => t.CreatedAt <= sEnd);
+                        break;
+
+                    default: // "any" / "range" (Default: Tugas aktif / rentang / dibuat pada periode ini)
+                        if (filterStart.HasValue && filterEnd.HasValue)
+                        {
+                            query = query.Where(t =>
+                                (t.StartDate.HasValue && t.StartDate.Value <= sEnd && (t.DueDate == null || t.DueDate.Value >= sStart)) ||
+                                (t.DueDate.HasValue && t.DueDate.Value >= sStart && t.DueDate.Value <= sEnd) ||
+                                (t.CreatedAt >= sStart && t.CreatedAt <= sEnd)
+                            );
+                        }
+                        else if (filterStart.HasValue)
+                        {
+                            query = query.Where(t =>
+                                (t.DueDate.HasValue && t.DueDate.Value >= sStart) ||
+                                (t.StartDate.HasValue && t.StartDate.Value >= sStart) ||
+                                (t.CreatedAt >= sStart)
+                            );
+                        }
+                        else if (filterEnd.HasValue)
+                        {
+                            query = query.Where(t =>
+                                (t.StartDate.HasValue && t.StartDate.Value <= sEnd) ||
+                                (t.DueDate.HasValue && t.DueDate.Value <= sEnd) ||
+                                (t.CreatedAt <= sEnd)
+                            );
+                        }
+                        break;
+                }
+            }
 
             bool isAsc = string.Equals(sortOrder, "asc", StringComparison.OrdinalIgnoreCase);
 
@@ -121,8 +275,16 @@ namespace TrackerKerja.Controllers
                 tasks = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
             }
 
-            ViewBag.Projects = await _db.Projects.ToListAsync();
-            ViewBag.Users = await _db.Users.OrderBy(u => u.FullName).ToListAsync();
+            var projectsQuery = _db.Projects.AsQueryable();
+            var usersQuery = _db.Users.AsQueryable();
+            if (!isAdmin)
+            {
+                projectsQuery = projectsQuery.Where(p => p.CompanyId == userCompanyId);
+                usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+            }
+
+            ViewBag.Projects = await projectsQuery.OrderBy(p => p.Name).ToListAsync();
+            ViewBag.Users = await usersQuery.OrderBy(u => u.FullName).ToListAsync();
             ViewBag.Milestones = await _db.MasterMilestones.OrderBy(m => m.OrderIndex).ToListAsync();
             ViewBag.StatusFilter = status;
             ViewBag.PriorityFilter = priority;
@@ -130,6 +292,12 @@ namespace TrackerKerja.Controllers
             ViewBag.AssigneeFilter = assigneeId;
             ViewBag.MilestoneFilter = milestone;
             ViewBag.Search = search;
+            ViewBag.PeriodFilter = period;
+            ViewBag.StartDateFilter = startDate;
+            ViewBag.EndDateFilter = endDate;
+            ViewBag.PeriodFieldFilter = periodField;
+            ViewBag.FilterStart = filterStart;
+            ViewBag.FilterEnd = filterEnd;
             ViewBag.SortBy = sortBy;
             ViewBag.SortOrder = sortOrder;
 
@@ -143,12 +311,27 @@ namespace TrackerKerja.Controllers
 
         public async Task<IActionResult> Create()
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var projectsQuery = _db.Projects.Where(p => p.Status == ProjectStatus.Active).AsQueryable();
+            var usersQuery = _db.Users.AsQueryable();
+            var tasksQuery = _db.Tasks.AsQueryable();
+
+            if (!isAdmin)
+            {
+                projectsQuery = projectsQuery.Where(p => p.CompanyId == userCompanyId);
+                usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
+
             return View(new TaskFormViewModel
             {
-                Projects = await _db.Projects.Where(p => p.Status == ProjectStatus.Active).ToListAsync(),
+                Projects = await projectsQuery.OrderBy(p => p.Name).ToListAsync(),
                 Categories = await _db.Categories.ToListAsync(),
-                Users = await _db.Users.OrderBy(u => u.FullName).ToListAsync(),
-                AvailableParentTasks = await _db.Tasks.OrderBy(t => t.Title).ToListAsync(),
+                Users = await usersQuery.OrderBy(u => u.FullName).ToListAsync(),
+                AvailableParentTasks = await tasksQuery.OrderBy(t => t.Title).ToListAsync(),
                 Milestones = await _db.MasterMilestones.OrderBy(m => m.OrderIndex).ToListAsync()
             });
         }
@@ -157,6 +340,10 @@ namespace TrackerKerja.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(WorkTask model)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             ModelState.Remove("Project");
             ModelState.Remove("Category");
             ModelState.Remove("AssignedToUser");
@@ -171,16 +358,30 @@ namespace TrackerKerja.Controllers
 
             if (!ModelState.IsValid)
             {
+                var projectsQuery = _db.Projects.Where(p => p.Status == ProjectStatus.Active).AsQueryable();
+                var usersQuery = _db.Users.AsQueryable();
+                var tasksQuery = _db.Tasks.AsQueryable();
+
+                if (!isAdmin)
+                {
+                    projectsQuery = projectsQuery.Where(p => p.CompanyId == userCompanyId);
+                    usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+                    tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+                }
+
                 return View(new TaskFormViewModel
                 {
                     Task = model,
-                    Projects = await _db.Projects.Where(p => p.Status == ProjectStatus.Active).ToListAsync(),
+                    Projects = await projectsQuery.OrderBy(p => p.Name).ToListAsync(),
                     Categories = await _db.Categories.ToListAsync(),
-                    Users = await _db.Users.OrderBy(u => u.FullName).ToListAsync(),
-                    AvailableParentTasks = await _db.Tasks.OrderBy(t => t.Title).ToListAsync(),
+                    Users = await usersQuery.OrderBy(u => u.FullName).ToListAsync(),
+                    AvailableParentTasks = await tasksQuery.OrderBy(t => t.Title).ToListAsync(),
                     Milestones = await _db.MasterMilestones.OrderBy(m => m.OrderIndex).ToListAsync()
                 });
             }
+
+            // Set Company Multi-Tenancy
+            model.CompanyId = userCompanyId ?? 1;
 
             // Smart Progress & Status synchronization
             if (model.Progress >= 100)
@@ -201,6 +402,41 @@ namespace TrackerKerja.Controllers
             model.UpdatedAt = DateTime.Now;
             _db.Tasks.Add(model);
             await _db.SaveChangesAsync();
+
+            // Dispatch TASK_ASSIGNED email if assigned to a user (Background Safe)
+            if (!string.IsNullOrWhiteSpace(model.AssignedToUserId))
+            {
+                var assignedUserId = model.AssignedToUserId;
+                var createdTaskId = model.Id;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var scope = HttpContext.RequestServices.CreateScope();
+                        var dbScoped = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        var assignee = await dbScoped.Users.FindAsync(assignedUserId);
+                        var savedTask = await dbScoped.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.Id == createdTaskId);
+
+                        if (assignee != null && !string.IsNullOrWhiteSpace(assignee.Email) && savedTask != null)
+                        {
+                            var taskVars = new Dictionary<string, string>
+                            {
+                                { "FullName", assignee.FullName },
+                                { "TaskTitle", savedTask.Title },
+                                { "TaskDescription", string.IsNullOrWhiteSpace(savedTask.Description) ? "Tidak ada deskripsi rinci." : savedTask.Description },
+                                { "ProjectName", savedTask.Project?.Name ?? "Tanpa Proyek" },
+                                { "Priority", savedTask.Priority.ToString() },
+                                { "DueDate", savedTask.DueDate.HasValue ? savedTask.DueDate.Value.ToString("dd MMM yyyy") : "-" },
+                                { "TaskUrl", $"/Task/Details/{savedTask.Id}" }
+                            };
+                            await emailSvc.SendEventEmailAsync("TASK_ASSIGNED", assignee.Email, taskVars);
+                        }
+                    }
+                    catch { }
+                });
+            }
+
             TempData["Success"] = "Tugas berhasil dibuat!";
             return RedirectToAction(nameof(Index));
         }
@@ -229,13 +465,25 @@ namespace TrackerKerja.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            var userCompanyId = currentUser?.CompanyId;
+            var projectsQuery = _db.Projects.Where(p => p.Status == ProjectStatus.Active).AsQueryable();
+            var usersQuery = _db.Users.AsQueryable();
+            var tasksQuery = _db.Tasks.Where(t => t.Id != id).AsQueryable();
+
+            if (!isAdmin)
+            {
+                projectsQuery = projectsQuery.Where(p => p.CompanyId == userCompanyId);
+                usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
+
             return View(new TaskFormViewModel
             {
                 Task = task,
-                Projects = await _db.Projects.Where(p => p.Status == ProjectStatus.Active).ToListAsync(),
+                Projects = await projectsQuery.OrderBy(p => p.Name).ToListAsync(),
                 Categories = await _db.Categories.ToListAsync(),
-                Users = await _db.Users.OrderBy(u => u.FullName).ToListAsync(),
-                AvailableParentTasks = await _db.Tasks.Where(t => t.Id != id).OrderBy(t => t.Title).ToListAsync(),
+                Users = await usersQuery.OrderBy(u => u.FullName).ToListAsync(),
+                AvailableParentTasks = await tasksQuery.OrderBy(t => t.Title).ToListAsync(),
                 Milestones = await _db.MasterMilestones.OrderBy(m => m.OrderIndex).ToListAsync()
             });
         }
@@ -251,6 +499,7 @@ namespace TrackerKerja.Controllers
 
             var currentUser = await _userManager.GetUserAsync(User);
             var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
 
             if (!TaskPermissionHelper.CanEditTask(currentUser, isAdmin, existingTask))
             {
@@ -272,16 +521,30 @@ namespace TrackerKerja.Controllers
 
             if (!ModelState.IsValid)
             {
+                var projectsQuery = _db.Projects.Where(p => p.Status == ProjectStatus.Active).AsQueryable();
+                var usersQuery = _db.Users.AsQueryable();
+                var tasksQuery = _db.Tasks.Where(t => t.Id != id).AsQueryable();
+
+                if (!isAdmin)
+                {
+                    projectsQuery = projectsQuery.Where(p => p.CompanyId == userCompanyId);
+                    usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+                    tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+                }
+
                 return View(new TaskFormViewModel
                 {
                     Task = model,
-                    Projects = await _db.Projects.Where(p => p.Status == ProjectStatus.Active).ToListAsync(),
+                    Projects = await projectsQuery.OrderBy(p => p.Name).ToListAsync(),
                     Categories = await _db.Categories.ToListAsync(),
-                    Users = await _db.Users.OrderBy(u => u.FullName).ToListAsync(),
-                    AvailableParentTasks = await _db.Tasks.Where(t => t.Id != id).OrderBy(t => t.Title).ToListAsync(),
+                    Users = await usersQuery.OrderBy(u => u.FullName).ToListAsync(),
+                    AvailableParentTasks = await tasksQuery.OrderBy(t => t.Title).ToListAsync(),
                     Milestones = await _db.MasterMilestones.OrderBy(m => m.OrderIndex).ToListAsync()
                 });
             }
+
+            // Preserve or assign company
+            model.CompanyId = existingTask.CompanyId ?? userCompanyId ?? 1;
 
             // Smart Progress & Status synchronization
             if (model.Progress >= 100)
@@ -758,6 +1021,7 @@ namespace TrackerKerja.Controllers
 
             if (Enum.TryParse<ModelTaskStatus>(status, out var s))
             {
+                var oldStatus = task.Status;
                 task.Status = s;
                 if (s == ModelTaskStatus.Done) task.Progress = 100;
                 task.UpdatedAt = DateTime.Now;
@@ -766,6 +1030,38 @@ namespace TrackerKerja.Controllers
                 if (!string.IsNullOrEmpty(task.AssignedToUserId))
                 {
                     await _gamificationService.EvaluateAndAwardBadgesAsync(task.AssignedToUserId);
+
+                    if (oldStatus != s)
+                    {
+                        var taskId = task.Id;
+                        var assigneeId = task.AssignedToUserId;
+                        _ = Task.Run(async () =>
+                        {
+                            try
+                            {
+                                using var scope = HttpContext.RequestServices.CreateScope();
+                                var dbScoped = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                                var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                                var assignee = await dbScoped.Users.FindAsync(assigneeId);
+                                var currentTask = await dbScoped.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.Id == taskId);
+
+                                if (assignee != null && !string.IsNullOrWhiteSpace(assignee.Email) && currentTask != null)
+                                {
+                                    var statusVars = new Dictionary<string, string>
+                                    {
+                                        { "FullName", assignee.FullName },
+                                        { "TaskTitle", currentTask.Title },
+                                        { "OldStatus", oldStatus.ToString() },
+                                        { "NewStatus", s.ToString() },
+                                        { "ProjectName", currentTask.Project?.Name ?? "Tanpa Proyek" },
+                                        { "TaskUrl", $"/Task/Details/{currentTask.Id}" }
+                                    };
+                                    await emailSvc.SendEventEmailAsync("TASK_STATUS_CHANGED", assignee.Email, statusVars);
+                                }
+                            }
+                            catch { }
+                        });
+                    }
                 }
 
                 return Json(new { success = true });
@@ -1047,6 +1343,17 @@ namespace TrackerKerja.Controllers
             string? milestone,
             string? search)
         {
+            var currentUser = _userManager.GetUserAsync(User).GetAwaiter().GetResult();
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            if (!isAdmin)
+            {
+                query = query.Where(t => t.CompanyId == userCompanyId ||
+                                        (t.Project != null && t.Project.CompanyId == userCompanyId) ||
+                                        (t.AssignedToUser != null && t.AssignedToUser.CompanyId == userCompanyId));
+            }
+
             if (!string.IsNullOrWhiteSpace(selectedIds))
             {
                 var idList = selectedIds.Split(new[] { ',', ';', ' ' }, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)

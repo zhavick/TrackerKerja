@@ -29,6 +29,7 @@ namespace TrackerKerja.Controllers
             var currentUser = await _userManager.GetUserAsync(User);
             var currentUserId = currentUser?.Id ?? "";
             var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
 
             var query = _db.Tasks
                 .Include(t => t.Project)
@@ -36,10 +37,10 @@ namespace TrackerKerja.Controllers
                 .Where(t => t.DueDate != null);
 
             // Filter hak akses:
-            // 1. Member non-admin hanya dapat melihat tugas yang ditugaskan kepada dirinya sendiri
+            // 1. Member non-admin hanya dapat melihat tugas yang ditugaskan kepada dirinya sendiri dalam perusahaannya
             if (!isAdmin)
             {
-                query = query.Where(t => t.AssignedToUserId == currentUserId);
+                query = query.Where(t => (t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId)) && t.AssignedToUserId == currentUserId);
             }
             // 2. Admin dapat melihat seluruh tugas (default/all) atau menyaring tugas miliknya sendiri (mine)
             else if (string.Equals(filter, "mine", StringComparison.OrdinalIgnoreCase) ||
@@ -85,7 +86,7 @@ namespace TrackerKerja.Controllers
         [HttpPost]
         public async Task<IActionResult> UpdateTaskDate(int taskId, string newDate)
         {
-            var task = await _db.Tasks.FindAsync(taskId);
+            var task = await _db.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.Id == taskId);
             if (task == null) return Json(new { success = false, message = "Tugas tidak ditemukan." });
 
             var currentUser = await _userManager.GetUserAsync(User);

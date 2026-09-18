@@ -18,6 +18,7 @@ namespace TrackerKerja.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly Services.IDatabaseExportService _exportService;
         private readonly Services.IDatabaseSyncService _syncService;
+        private readonly Services.IEmailService _emailService;
 
         public ConfigurationController(
             AppDbContext db,
@@ -25,7 +26,8 @@ namespace TrackerKerja.Controllers
             IWebHostEnvironment env,
             UserManager<AppUser> userManager,
             Services.IDatabaseExportService exportService,
-            Services.IDatabaseSyncService syncService)
+            Services.IDatabaseSyncService syncService,
+            Services.IEmailService emailService)
         {
             _db = db;
             _config = config;
@@ -33,6 +35,7 @@ namespace TrackerKerja.Controllers
             _userManager = userManager;
             _exportService = exportService;
             _syncService = syncService;
+            _emailService = emailService;
         }
 
         public async Task<IActionResult> Index()
@@ -138,6 +141,12 @@ namespace TrackerKerja.Controllers
             ViewBag.HostSyncRole = syncSettings.Role;
             ViewBag.LastSyncAt = syncSettings.LastSyncAt;
             ViewBag.LastSyncStatus = syncSettings.LastSyncStatus;
+
+            // 5. Email SMTP Configuration & Event Templates
+            var emailConfig = await _emailService.GetEmailConfigAsync();
+            var emailTemplates = await _emailService.GetAllTemplatesAsync();
+            ViewBag.EmailConfig = emailConfig;
+            ViewBag.EmailTemplates = emailTemplates;
 
             return View();
         }
@@ -579,6 +588,273 @@ namespace TrackerKerja.Controllers
                 TempData["Error"] = $"Gagal mengekspor SQL Sinkronisasi: {ex.Message}";
                 return RedirectToAction(nameof(Index));
             }
+        }
+
+        // ── EMAIL SMTP INTEGRATION ACTIONS ─────────────────────
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UpdateEmailSettings(EmailConfigDto dto)
+        {
+            if (dto == null)
+            {
+                TempData["Error"] = "Data konfigurasi email tidak valid.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                await _emailService.SaveEmailConfigAsync(dto);
+                TempData["Success"] = "Pengaturan Server Email SMTP berhasil disimpan!";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Gagal menyimpan pengaturan email: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> TestEmailConnection([FromForm] string? recipientEmail, [FromBody] TestEmailRequestDto? jsonDto = null)
+        {
+            var targetEmail = recipientEmail ?? jsonDto?.RecipientEmail;
+
+            if (string.IsNullOrWhiteSpace(targetEmail))
+            {
+                var currentUser = await _userManager.GetUserAsync(User);
+                targetEmail = currentUser?.Email;
+            }
+
+            if (string.IsNullOrWhiteSpace(targetEmail))
+            {
+                return Json(new { success = false, message = "Email tujuan uji coba (recipient) tidak boleh kosong." });
+            }
+
+            var result = await _emailService.TestConnectionAsync(targetEmail);
+            return Json(new
+            {
+                success = result.IsSuccess,
+                message = result.Message,
+                latencyMs = result.LatencyMs,
+                diagnostics = result.Diagnostics,
+                recipient = targetEmail
+            });
+        }
+
+        // ── EMAIL TEMPLATE MANAGEMENT ACTIONS ──────────────────
+
+        [HttpGet]
+        public async Task<IActionResult> GetEmailTemplate(int id)
+        {
+            var template = await _emailService.GetTemplateByIdAsync(id);
+            if (template == null)
+            {
+                return Json(new { success = false, message = "Template email tidak ditemukan." });
+            }
+
+            return Json(new
+            {
+                success = true,
+                data = new
+                {
+                    template.Id,
+                    template.EventCode,
+                    template.EventName,
+                    template.Category,
+                    template.Subject,
+                    template.BodyHtml,
+                    template.AvailableVariables,
+                    template.IsActive
+                }
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveEmailTemplate(CreateOrUpdateEmailTemplateDto dto)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errorList = string.Join(", ", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage));
+                TempData["Error"] = $"Validasi template gagal: {errorList}";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            var saved = await _emailService.SaveTemplateAsync(dto, currentUser?.Id);
+
+            if (saved != null)
+            {
+                TempData["Success"] = $"Template email '{saved.EventName}' ({saved.EventCode}) berhasil disimpan!";
+            }
+            else
+            {
+                TempData["Error"] = "Gagal menyimpan template email.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteEmailTemplate(int id)
+        {
+            var deleted = await _emailService.DeleteTemplateAsync(id);
+            if (deleted)
+            {
+                TempData["Success"] = "Template email berhasil dihapus.";
+            }
+            else
+            {
+                TempData["Error"] = "Template email tidak ditemukan atau gagal dihapus.";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> PreviewEmailTemplate([FromForm] int id, [FromForm] string? sampleJson)
+        {
+            var template = await _emailService.GetTemplateByIdAsync(id);
+            if (template == null)
+            {
+                return Json(new { success = false, message = "Template tidak ditemukan." });
+            }
+
+            Dictionary<string, string> sampleVars = new();
+            if (!string.IsNullOrWhiteSpace(sampleJson))
+            {
+                try
+                {
+                    sampleVars = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, string>>(sampleJson) ?? new();
+                }
+                catch { }
+            }
+
+            var preview = _emailService.RenderTemplate(template, sampleVars);
+            return Json(new
+            {
+                success = true,
+                renderedSubject = preview.RenderedSubject,
+                renderedHtml = preview.RenderedHtml,
+                eventCode = template.EventCode,
+                eventName = template.EventName
+            });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetDefaultTemplates()
+        {
+            try
+            {
+                // Remove existing templates and seed defaults
+                var existing = await _db.EmailTemplates.ToListAsync();
+                _db.EmailTemplates.RemoveRange(existing);
+                await _db.SaveChangesAsync();
+
+                // Re-seed default 7 templates
+                var defaults = new List<EmailTemplate>
+                {
+                    new EmailTemplate
+                    {
+                        EventCode = "USER_REGISTERED",
+                        EventName = "Pendaftaran Akun Baru (User)",
+                        Category = "Authentication",
+                        Subject = "[{AppName}] Pendaftaran Berhasil - Menunggu Persetujuan Admin",
+                        BodyHtml = @"<div style=""font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);""><div style=""background:linear-gradient(135deg,#4f46e5,#7c3aed);padding:32px 24px;text-align:center;color:#fff;""><h1 style=""margin:0;font-size:24px;font-weight:800;"">TrackerKerja</h1><p style=""margin:6px 0 0;font-size:13px;opacity:0.9;"">Sistem Manajemen Tugas & Kolaborasi Tim</p></div><div style=""padding:32px 24px;""><h2 style=""color:#1e293b;font-size:18px;margin-top:0;"">Halo, {FullName}! 👋</h2><p style=""color:#475569;font-size:14px;line-height:1.6;"">Terima kasih telah mendaftar di <strong>{AppName}</strong>. Akun Anda dengan email <strong style=""color:#4f46e5;"">{Email}</strong> berhasil dibuat.</p><div style=""background:#f8fafc;border-left:4px solid #f59e0b;padding:16px;border-radius:8px;margin:24px 0;""><p style=""margin:0;color:#92400e;font-size:13px;font-weight:600;"">⏳ Status Akun: Menunggu Persetujuan Administrator</p><p style=""margin:6px 0 0;color:#78350f;font-size:12px;"">Sistem kami menerapkan keamanan pendaftaran berbasis Approval. Anda akan menerima email notifikasi saat akun telah disetujui.</p></div></div><div style=""background:#f8fafc;padding:20px 24px;text-align:center;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;""><p style=""margin:0;"">&copy; {CurrentYear} {AppName}. All rights reserved.</p></div></div>",
+                        AvailableVariables = "{FullName}, {Email}, {CompanyName}, {JobTitle}, {CurrentDate}",
+                        IsActive = true,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    },
+                    new EmailTemplate
+                    {
+                        EventCode = "USER_APPROVED",
+                        EventName = "Persetujuan Akun Pengguna (User Approved)",
+                        Category = "Authentication",
+                        Subject = "[{AppName}] Selamat! Akun Anda Telah Disetujui",
+                        BodyHtml = @"<div style=""font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);""><div style=""background:linear-gradient(135deg,#059669,#10b981);padding:32px 24px;text-align:center;color:#fff;""><h1 style=""margin:0;font-size:24px;font-weight:800;"">Akun Telah Disetujui! 🎉</h1><p style=""margin:6px 0 0;font-size:13px;opacity:0.9;"">Selamat bergabung di {AppName}</p></div><div style=""padding:32px 24px;""><h2 style=""color:#1e293b;font-size:18px;margin-top:0;"">Halo, {FullName}!</h2><p style=""color:#475569;font-size:14px;line-height:1.6;"">Kabar baik! Administrator telah menyetujui akun Anda. Sekarang Anda dapat langsung masuk dan mulai mengelola tugas kerja Anda.</p><div style=""text-align:center;margin:32px 0;""><a href=""{LoginUrl}"" style=""background:linear-gradient(135deg,#059669,#10b981);color:#fff;text-decoration:none;padding:14px 32px;border-radius:12px;font-weight:700;font-size:14px;display:inline-block;"">Masuk ke TrackerKerja &rarr;</a></div></div><div style=""background:#f8fafc;padding:20px 24px;text-align:center;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;""><p style=""margin:0;"">&copy; {CurrentYear} {AppName}. All rights reserved.</p></div></div>",
+                        AvailableVariables = "{FullName}, {Email}, {LoginUrl}, {CurrentDate}",
+                        IsActive = true,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    },
+                    new EmailTemplate
+                    {
+                        EventCode = "USER_REJECTED",
+                        EventName = "Penolakan Pendaftaran Akun",
+                        Category = "Authentication",
+                        Subject = "[{AppName}] Pemberitahuan Status Pendaftaran Akun",
+                        BodyHtml = @"<div style=""font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);""><div style=""background:linear-gradient(135deg,#e11d48,#f43f5e);padding:32px 24px;text-align:center;color:#fff;""><h1 style=""margin:0;font-size:24px;font-weight:800;"">Status Pendaftaran Akun</h1></div><div style=""padding:32px 24px;""><h2 style=""color:#1e293b;font-size:18px;margin-top:0;"">Halo, {FullName}</h2><p style=""color:#475569;font-size:14px;line-height:1.6;"">Mohon maaf, permohonan pendaftaran akun Anda untuk email <strong>{Email}</strong> belum dapat disetujui saat ini.</p><div style=""background:#fff1f2;border-left:4px solid #e11d48;padding:16px;border-radius:8px;margin:24px 0;""><p style=""margin:0;color:#9f1239;font-size:13px;font-weight:600;"">Alasan: {RejectionReason}</p></div></div><div style=""background:#f8fafc;padding:20px 24px;text-align:center;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;""><p style=""margin:0;"">&copy; {CurrentYear} {AppName}. All rights reserved.</p></div></div>",
+                        AvailableVariables = "{FullName}, {Email}, {RejectionReason}, {CurrentDate}",
+                        IsActive = true,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    },
+                    new EmailTemplate
+                    {
+                        EventCode = "ADMIN_NEW_USER_ALERT",
+                        EventName = "Peringatan Admin: User Baru Mendaftar",
+                        Category = "Admin Alert",
+                        Subject = "[{AppName} Admin] Pendaftaran Akun Baru: {FullName} ({CompanyName})",
+                        BodyHtml = @"<div style=""font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);""><div style=""background:linear-gradient(135deg,#3b82f6,#1d4ed8);padding:32px 24px;text-align:center;color:#fff;""><h1 style=""margin:0;font-size:22px;font-weight:800;"">Pendaftaran Akun Baru 👤</h1><p style=""margin:6px 0 0;font-size:13px;opacity:0.9;"">Perlu tindakan persetujuan (approval) Administrator</p></div><div style=""padding:32px 24px;""><div style=""background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin-bottom:24px;""><table style=""width:100%;font-size:13px;color:#334155;""><tr><td style=""padding:6px 0;color:#64748b;width:120px;"">Nama Lengkap:</td><td style=""font-weight:700;"">{FullName}</td></tr><tr><td style=""padding:6px 0;color:#64748b;"">Email:</td><td style=""font-weight:700;"">{Email}</td></tr><tr><td style=""padding:6px 0;color:#64748b;"">Perusahaan/Tim:</td><td>{CompanyName}</td></tr><tr><td style=""padding:6px 0;color:#64748b;"">Jabatan:</td><td>{JobTitle}</td></tr><tr><td style=""padding:6px 0;color:#64748b;"">Waktu Daftar:</td><td>{CurrentDate}</td></tr></table></div><div style=""text-align:center;""><a href=""{ApprovalUrl}"" style=""background:#2563eb;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:13px;display:inline-block;"">Buka Panel Approval Member &rarr;</a></div></div><div style=""background:#f8fafc;padding:20px 24px;text-align:center;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;""><p style=""margin:0;"">&copy; {CurrentYear} {AppName}. All rights reserved.</p></div></div>",
+                        AvailableVariables = "{FullName}, {Email}, {CompanyName}, {JobTitle}, {ApprovalUrl}, {CurrentDate}",
+                        IsActive = true,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    },
+                    new EmailTemplate
+                    {
+                        EventCode = "TASK_ASSIGNED",
+                        EventName = "Penugasan Tugas Baru (Task Assigned)",
+                        Category = "Task Management",
+                        Subject = "[{AppName}] Tugas Baru Diberikan: {TaskTitle}",
+                        BodyHtml = @"<div style=""font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);""><div style=""background:linear-gradient(135deg,#4f46e5,#6366f1);padding:32px 24px;text-align:center;color:#fff;""><h1 style=""margin:0;font-size:22px;font-weight:800;"">Tugas Baru Ditugaskan 📋</h1></div><div style=""padding:32px 24px;""><h2 style=""color:#1e293b;font-size:16px;margin-top:0;"">Halo, {FullName}!</h2><p style=""color:#475569;font-size:14px;"">Anda telah ditugaskan untuk mengerjakan tugas berikut:</p><div style=""background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;""><h3 style=""margin:0 0 12px;color:#1e293b;font-size:16px;"">{TaskTitle}</h3><p style=""margin:0 0 12px;color:#64748b;font-size:13px;line-height:1.5;"">{TaskDescription}</p><table style=""width:100%;font-size:12px;color:#475569;""><tr><td style=""padding:4px 0;width:110px;color:#94a3b8;"">Proyek:</td><td style=""font-weight:600;"">{ProjectName}</td></tr><tr><td style=""padding:4px 0;color:#94a3b8;"">Prioritas:</td><td style=""font-weight:600;"">{Priority}</td></tr><tr><td style=""padding:4px 0;color:#94a3b8;"">Batas Waktu:</td><td style=""font-weight:600;"">{DueDate}</td></tr></table></div><div style=""text-align:center;""><a href=""{TaskUrl}"" style=""background:#4f46e5;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:13px;display:inline-block;"">Buka Detail Tugas &rarr;</a></div></div><div style=""background:#f8fafc;padding:20px 24px;text-align:center;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;""><p style=""margin:0;"">&copy; {CurrentYear} {AppName}. All rights reserved.</p></div></div>",
+                        AvailableVariables = "{FullName}, {TaskTitle}, {TaskDescription}, {ProjectName}, {Priority}, {DueDate}, {TaskUrl}",
+                        IsActive = true,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    },
+                    new EmailTemplate
+                    {
+                        EventCode = "TASK_STATUS_CHANGED",
+                        EventName = "Perubahan Status Tugas (Status Updated)",
+                        Category = "Task Management",
+                        Subject = "[{AppName}] Status Tugas Diperbarui: {TaskTitle} -> {NewStatus}",
+                        BodyHtml = @"<div style=""font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);""><div style=""background:linear-gradient(135deg,#0284c7,#0ea5e9);padding:32px 24px;text-align:center;color:#fff;""><h1 style=""margin:0;font-size:22px;font-weight:800;"">Status Tugas Berubah 🔄</h1></div><div style=""padding:32px 24px;""><h2 style=""color:#1e293b;font-size:16px;margin-top:0;"">Halo, {FullName}</h2><p style=""color:#475569;font-size:14px;"">Status tugas <strong>{TaskTitle}</strong> telah diperbarui.</p><div style=""background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:20px;margin:20px 0;text-align:center;""><span style=""background:#e2e8f0;color:#475569;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;"">{OldStatus}</span><span style=""margin:0 12px;color:#94a3b8;font-size:16px;"">&rarr;</span><span style=""background:#dbeafe;color:#1d4ed8;padding:6px 14px;border-radius:8px;font-size:12px;font-weight:700;"">{NewStatus}</span></div><div style=""text-align:center;""><a href=""{TaskUrl}"" style=""background:#0284c7;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:13px;display:inline-block;"">Lihat Tugas &rarr;</a></div></div><div style=""background:#f8fafc;padding:20px 24px;text-align:center;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;""><p style=""margin:0;"">&copy; {CurrentYear} {AppName}. All rights reserved.</p></div></div>",
+                        AvailableVariables = "{FullName}, {TaskTitle}, {OldStatus}, {NewStatus}, {ProjectName}, {TaskUrl}",
+                        IsActive = true,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    },
+                    new EmailTemplate
+                    {
+                        EventCode = "PASSWORD_RESET_NOTIFICATION",
+                        EventName = "Reset Password Pengguna",
+                        Category = "Authentication",
+                        Subject = "[{AppName}] Pemberitahuan Reset Password Akun",
+                        BodyHtml = @"<div style=""font-family:'Segoe UI',sans-serif;max-width:600px;margin:0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;box-shadow:0 4px 6px -1px rgba(0,0,0,0.1);""><div style=""background:linear-gradient(135deg,#d97706,#f59e0b);padding:32px 24px;text-align:center;color:#fff;""><h1 style=""margin:0;font-size:22px;font-weight:800;"">Reset Password Akun 🔑</h1></div><div style=""padding:32px 24px;""><h2 style=""color:#1e293b;font-size:16px;margin-top:0;"">Halo, {FullName}</h2><p style=""color:#475569;font-size:14px;line-height:1.6;"">Password akun <strong>{AppName}</strong> Anda telah direset oleh Administrator. Berikut adalah kredensial baru Anda:</p><div style=""background:#fef3c7;border:1px solid #fde68a;border-radius:12px;padding:20px;margin:24px 0;""><p style=""margin:0 0 6px;color:#92400e;font-size:12px;font-weight:600;"">Password Baru Sementara:</p><p style=""margin:0;font-family:monospace;font-size:18px;font-weight:700;color:#b45309;"">{NewPassword}</p></div><p style=""color:#64748b;font-size:12px;"">Demi keamanan, segera ubah password Anda setelah berhasil masuk.</p><div style=""text-align:center;margin-top:24px;""><a href=""{LoginUrl}"" style=""background:#d97706;color:#fff;text-decoration:none;padding:12px 28px;border-radius:10px;font-weight:700;font-size:13px;display:inline-block;"">Login Sekarang &rarr;</a></div></div><div style=""background:#f8fafc;padding:20px 24px;text-align:center;border-top:1px solid #e2e8f0;color:#94a3b8;font-size:12px;""><p style=""margin:0;"">&copy; {CurrentYear} {AppName}. All rights reserved.</p></div></div>",
+                        AvailableVariables = "{FullName}, {Email}, {NewPassword}, {LoginUrl}, {CurrentDate}",
+                        IsActive = true,
+                        CreatedAt = DateTime.Now,
+                        UpdatedAt = DateTime.Now
+                    }
+                };
+
+                _db.EmailTemplates.AddRange(defaults);
+                await _db.SaveChangesAsync();
+                TempData["Success"] = "7 Template email default berhasil dipulihkan!";
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Gagal memulihkan template default: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
         }
 
         #region Helpers

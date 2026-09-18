@@ -65,104 +65,218 @@
         </div>
     </div>
 
-    <!-- Filter Bar -->
-    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-3.5 sm:p-4">
-        <form method="get" action="/Task" data-ajax-grid="true" data-target-grid="#ajaxGridContainer" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2.5 items-center">
-            <!-- Search -->
-            <div class="relative sm:col-span-2 lg:col-span-2">
-                <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-xs"></i>
-                <input type="text" name="search" value="@ViewBag.Search" placeholder="Cari judul tugas, PIC, deskripsi..."
-                       class="w-full pl-8 pr-3 py-2 rounded-xl border border-indigo-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50/50">
-            </div>
-            
-            <!-- Status Filter -->
-            <div>
-                <select name="status" class="select2 select2-compact w-full" data-placeholder="Semua Status">
-                    <option value="">Semua Status</option>
-                    @if (ViewBag.StatusFilter == "Todo") { <option value="Todo" selected>📋 Todo</option> } else { <option value="Todo">📋 Todo</option> }
-                    @if (ViewBag.StatusFilter == "InProgress") { <option value="InProgress" selected>🔄 In Progress</option> } else { <option value="InProgress">🔄 In Progress</option> }
-                    @if (ViewBag.StatusFilter == "Done") { <option value="Done" selected>✅ Done</option> } else { <option value="Done">✅ Done</option> }
-                </select>
-            </div>
-            
-            <!-- Priority Filter -->
-            <div>
-                <select name="priority" class="select2 select2-compact w-full" data-placeholder="Semua Prioritas">
-                    <option value="">Semua Prioritas</option>
-                    @if (ViewBag.PriorityFilter == "Critical") { <option value="Critical" selected>🔴 Critical</option> } else { <option value="Critical">🔴 Critical</option> }
-                    @if (ViewBag.PriorityFilter == "High") { <option value="High" selected>🟡 High</option> } else { <option value="High">🟡 High</option> }
-                    @if (ViewBag.PriorityFilter == "Medium") { <option value="Medium" selected>🔵 Medium</option> } else { <option value="Medium">🔵 Medium</option> }
-                    @if (ViewBag.PriorityFilter == "Low") { <option value="Low" selected>🟢 Low</option> } else { <option value="Low">🟢 Low</option> }
-                </select>
+    <!-- Filter Bar with Period Search -->
+    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 p-4 space-y-3">
+        <form method="get" action="/Task" id="taskFilterForm" data-ajax-grid="true" data-target-grid="#ajaxGridContainer" class="space-y-3">
+            <!-- Row 1: Search, Preset Periode, Rentang Tanggal (Mulai & Selesai), dan Target Field -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-12 gap-2.5 items-center">
+                <!-- Search -->
+                <div class="relative sm:col-span-2 md:col-span-2 lg:col-span-4">
+                    <i class="fas fa-search absolute left-3 top-1/2 -translate-y-1/2 text-indigo-400 text-xs"></i>
+                    <input type="text" name="search" value="@ViewBag.Search" placeholder="Cari judul tugas, PIC, deskripsi..."
+                           class="w-full pl-8 pr-3 py-2 rounded-xl border border-indigo-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50/50">
+                </div>
+
+                <!-- Period Preset Selector -->
+                <div class="sm:col-span-2 md:col-span-2 lg:col-span-3">
+                    <select name="period" id="periodSelect" onchange="handlePeriodPresetChange(this.value)" class="select2 select2-compact w-full" data-placeholder="Semua Periode">
+                        <option value="">📅 Semua Periode (All Time)</option>
+                        <option value="today" selected="@(ViewBag.PeriodFilter == "today")">⚡ Hari Ini (Today)</option>
+                        <option value="yesterday" selected="@(ViewBag.PeriodFilter == "yesterday")">Kemarin (Yesterday)</option>
+                        <option value="this_week" selected="@(ViewBag.PeriodFilter == "this_week")">🗓️ Minggu Ini (This Week)</option>
+                        <option value="last_week" selected="@(ViewBag.PeriodFilter == "last_week")">Minggu Lalu (Last Week)</option>
+                        <option value="this_month" selected="@(ViewBag.PeriodFilter == "this_month")">📆 Bulan Ini (This Month)</option>
+                        <option value="last_month" selected="@(ViewBag.PeriodFilter == "last_month")">Bulan Lalu (Last Month)</option>
+                        <option value="this_quarter" selected="@(ViewBag.PeriodFilter == "this_quarter")">📊 Kuartal Ini (Q@(((DateTime.Today.Month - 1) / 3) + 1))</option>
+                        <option value="this_year" selected="@(ViewBag.PeriodFilter == "this_year")">📈 Tahun Ini (@DateTime.Today.Year)</option>
+                        <option value="custom" selected="@(ViewBag.PeriodFilter == "custom")">🎯 Kustom Rentang Tanggal</option>
+                    </select>
+                </div>
+
+                <!-- Start Date -->
+                <div class="sm:col-span-1 md:col-span-1 lg:col-span-2">
+                    <div class="relative">
+                        <input type="date" name="startDate" id="startDateInput"
+                               value="@(ViewBag.StartDateFilter != null ? ((DateTime)ViewBag.StartDateFilter).ToString("yyyy-MM-dd") : "")"
+                               placeholder="Dari Tanggal"
+                               title="Dari Tanggal Mulai"
+                               class="w-full px-2.5 py-2 rounded-xl border border-indigo-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50/50">
+                    </div>
+                </div>
+
+                <!-- End Date -->
+                <div class="sm:col-span-1 md:col-span-1 lg:col-span-2">
+                    <div class="relative">
+                        <input type="date" name="endDate" id="endDateInput"
+                               value="@(ViewBag.EndDateFilter != null ? ((DateTime)ViewBag.EndDateFilter).ToString("yyyy-MM-dd") : "")"
+                               placeholder="Sampai Tanggal"
+                               title="Sampai Tanggal Selesai"
+                               class="w-full px-2.5 py-2 rounded-xl border border-indigo-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 bg-slate-50/50">
+                    </div>
+                </div>
+
+                <!-- Date Target Field -->
+                <div class="sm:col-span-2 md:col-span-2 lg:col-span-1">
+                    <select name="periodField" class="select2 select2-compact w-full" data-placeholder="Basis" title="Basis Tanggal Target">
+                        <option value="" selected="@(string.IsNullOrEmpty(ViewBag.PeriodFieldFilter) || ViewBag.PeriodFieldFilter == "any")">Rentang</option>
+                        <option value="duedate" selected="@(ViewBag.PeriodFieldFilter == "duedate")">Tenggat</option>
+                        <option value="startdate" selected="@(ViewBag.PeriodFieldFilter == "startdate")">Mulai</option>
+                        <option value="created" selected="@(ViewBag.PeriodFieldFilter == "created")">Dibuat</option>
+                    </select>
+                </div>
             </div>
 
-            <!-- Project Filter -->
-            <div>
-                <select name="projectId" class="select2 select2-compact w-full" data-placeholder="Semua Proyek">
-                    <option value="">Semua Proyek</option>
-                    @foreach (var proj in (List<TrackerKerja.Models.Project>)ViewBag.Projects)
-                    {
-                        if (ViewBag.ProjectFilter?.ToString() == proj.Id.ToString())
-                        {
-                            <option value="@proj.Id" selected>📁 @proj.Name</option>
-                        }
-                        else
-                        {
-                            <option value="@proj.Id">📁 @proj.Name</option>
-                        }
-                    }
-                </select>
-            </div>
+            <!-- Row 2: Status, Priority, Project, Assignee, Milestone, Filter & Reset -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-12 gap-2.5 items-center pt-1 border-t border-slate-100">
+                <!-- Status Filter -->
+                <div class="lg:col-span-2">
+                    <select name="status" class="select2 select2-compact w-full" data-placeholder="Semua Status">
+                        <option value="">Semua Status</option>
+                        <option value="Todo" selected="@(ViewBag.StatusFilter == "Todo")">📋 Todo</option>
+                        <option value="InProgress" selected="@(ViewBag.StatusFilter == "InProgress")">🔄 In Progress</option>
+                        <option value="Done" selected="@(ViewBag.StatusFilter == "Done")">✅ Done</option>
+                    </select>
+                </div>
 
-            <!-- Assignee Filter -->
-            <div>
-                <select name="assigneeId" class="select2 select2-compact w-full" data-placeholder="Semua PIC">
-                    <option value="">Semua PIC / Penugasan</option>
-                    @foreach (var user in (List<TrackerKerja.Models.AppUser>)ViewBag.Users)
-                    {
-                        if (ViewBag.AssigneeFilter?.ToString() == user.Id)
-                        {
-                            <option value="@user.Id" selected>👤 @user.FullName</option>
-                        }
-                        else
-                        {
-                            <option value="@user.Id">👤 @user.FullName</option>
-                        }
-                    }
-                </select>
-            </div>
+                <!-- Priority Filter -->
+                <div class="lg:col-span-2">
+                    <select name="priority" class="select2 select2-compact w-full" data-placeholder="Semua Prioritas">
+                        <option value="">Semua Prioritas</option>
+                        <option value="Critical" selected="@(ViewBag.PriorityFilter == "Critical")">🔴 Critical</option>
+                        <option value="High" selected="@(ViewBag.PriorityFilter == "High")">🟡 High</option>
+                        <option value="Medium" selected="@(ViewBag.PriorityFilter == "Medium")">🔵 Medium</option>
+                        <option value="Low" selected="@(ViewBag.PriorityFilter == "Low")">🟢 Low</option>
+                    </select>
+                </div>
 
-            <!-- Milestone (SDLC Waterfall) Filter -->
-            <div class="sm:col-span-2 lg:col-span-2">
-                <select name="milestone" class="select2 select2-compact w-full" data-placeholder="Semua Milestone SDLC">
-                    <option value="">Semua Milestone SDLC</option>
-                    @if (ViewBag.Milestones != null)
-                    {
-                        foreach (var m in (List<TrackerKerja.Models.MasterMilestone>)ViewBag.Milestones)
+                <!-- Project Filter -->
+                <div class="lg:col-span-2">
+                    <select name="projectId" class="select2 select2-compact w-full" data-placeholder="Semua Proyek">
+                        <option value="">Semua Proyek</option>
+                        @foreach (var proj in (List<TrackerKerja.Models.Project>)ViewBag.Projects)
                         {
-                            if (ViewBag.MilestoneFilter == m.Name)
+                            <option value="@proj.Id" selected="@(ViewBag.ProjectFilter?.ToString() == proj.Id.ToString())">📁 @proj.Name</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Assignee Filter -->
+                <div class="lg:col-span-2">
+                    <select name="assigneeId" class="select2 select2-compact w-full" data-placeholder="Semua PIC">
+                        <option value="">Semua PIC</option>
+                        @foreach (var user in (List<TrackerKerja.Models.AppUser>)ViewBag.Users)
+                        {
+                            <option value="@user.Id" selected="@(ViewBag.AssigneeFilter?.ToString() == user.Id)">👤 @user.FullName</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Milestone Filter -->
+                <div class="lg:col-span-2">
+                    <select name="milestone" class="select2 select2-compact w-full" data-placeholder="Semua Milestone">
+                        <option value="">Semua Milestone</option>
+                        @if (ViewBag.Milestones != null)
+                        {
+                            foreach (var m in (List<TrackerKerja.Models.MasterMilestone>)ViewBag.Milestones)
                             {
-                                <option value="@m.Name" selected>🎯 @m.Name</option>
-                            }
-                            else
-                            {
-                                <option value="@m.Name">🎯 @m.Name</option>
+                                <option value="@m.Name" selected="@(ViewBag.MilestoneFilter == m.Name)">🎯 @m.Name</option>
                             }
                         }
-                    }
-                </select>
-            </div>
+                    </select>
+                </div>
 
-            <!-- Action Buttons -->
-            <div class="sm:col-span-2 lg:col-span-4 flex items-center justify-end gap-2 pt-1">
-                <button type="submit" class="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-semibold transition-colors shadow-sm cursor-pointer">
-                    <i class="fas fa-filter mr-1"></i>Filter
-                </button>
-                <a href="/Task" class="text-slate-500 hover:text-indigo-600 px-3 py-2 rounded-xl text-xs border border-slate-200 hover:border-indigo-300 font-semibold transition-colors">
-                    Reset
-                </a>
+                <!-- Action Buttons -->
+                <div class="lg:col-span-2 flex items-center justify-end gap-2">
+                    <button type="submit" class="flex-1 sm:flex-none flex items-center justify-center gap-1.5 bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-xl text-xs font-bold transition-all shadow-md shadow-indigo-100 hover:shadow-indigo-200 cursor-pointer">
+                        <i class="fas fa-search"></i><span>Filter</span>
+                    </button>
+                    <a href="/Task" class="text-slate-500 hover:text-indigo-600 px-3 py-2 rounded-xl text-xs border border-slate-200 hover:border-indigo-300 font-bold transition-all hover:bg-slate-50" title="Reset Semua Filter">
+                        <i class="fas fa-undo"></i>
+                    </a>
+                </div>
             </div>
         </form>
+
+        <!-- Active Filter Indicator Badges -->
+        @if (!string.IsNullOrEmpty(ViewBag.Search) ||
+             !string.IsNullOrEmpty(ViewBag.StatusFilter) ||
+             !string.IsNullOrEmpty(ViewBag.PriorityFilter) ||
+             ViewBag.ProjectFilter != null ||
+             !string.IsNullOrEmpty(ViewBag.AssigneeFilter) ||
+             !string.IsNullOrEmpty(ViewBag.MilestoneFilter) ||
+             !string.IsNullOrEmpty(ViewBag.PeriodFilter) ||
+             ViewBag.StartDateFilter != null ||
+             ViewBag.EndDateFilter != null)
+        {
+            <div class="flex items-center gap-2 flex-wrap pt-2 border-t border-slate-100 text-xs text-slate-500">
+                <span class="font-bold text-slate-600 text-[11px] flex items-center gap-1">
+                    <i class="fas fa-filter text-indigo-500"></i> Filter Aktif:
+                </span>
+
+                @if (!string.IsNullOrEmpty(ViewBag.PeriodFilter) || ViewBag.StartDateFilter != null || ViewBag.EndDateFilter != null)
+                {
+                    <span class="inline-flex items-center gap-1 bg-indigo-50 text-indigo-700 border border-indigo-200 px-2.5 py-0.5 rounded-lg text-[11px] font-bold">
+                        <i class="fas fa-calendar-alt text-[10px]"></i>
+                        @if (!string.IsNullOrEmpty(ViewBag.PeriodFilter) && ViewBag.PeriodFilter != "custom")
+                        {
+                            <span>Periode: @ViewBag.PeriodFilter</span>
+                        }
+                        @if (ViewBag.FilterStart != null || ViewBag.FilterEnd != null)
+                        {
+                            <span class="font-mono">(@(((DateTime?)ViewBag.FilterStart)?.ToString("dd/MM/yy")) s/d @(((DateTime?)ViewBag.FilterEnd)?.ToString("dd/MM/yy")))</span>
+                        }
+                    </span>
+                }
+
+                @if (!string.IsNullOrEmpty(ViewBag.Search))
+                {
+                    <span class="inline-flex items-center gap-1 bg-slate-100 text-slate-700 border border-slate-200 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold">
+                        <i class="fas fa-search text-[10px]"></i> "@ViewBag.Search"
+                    </span>
+                }
+
+                @if (!string.IsNullOrEmpty(ViewBag.StatusFilter))
+                {
+                    <span class="inline-flex items-center gap-1 bg-blue-50 text-blue-700 border border-blue-200 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold">
+                        Status: @ViewBag.StatusFilter
+                    </span>
+                }
+
+                @if (!string.IsNullOrEmpty(ViewBag.PriorityFilter))
+                {
+                    <span class="inline-flex items-center gap-1 bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold">
+                        Prioritas: @ViewBag.PriorityFilter
+                    </span>
+                }
+
+                @if (ViewBag.ProjectFilter != null)
+                {
+                    var activeProj = ((List<TrackerKerja.Models.Project>)ViewBag.Projects).FirstOrDefault(p => p.Id.ToString() == ViewBag.ProjectFilter?.ToString());
+                    <span class="inline-flex items-center gap-1 bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold">
+                        Proyek: @(activeProj?.Name ?? ViewBag.ProjectFilter.ToString())
+                    </span>
+                }
+
+                @if (!string.IsNullOrEmpty(ViewBag.AssigneeFilter))
+                {
+                    var activeUser = ((List<TrackerKerja.Models.AppUser>)ViewBag.Users).FirstOrDefault(u => u.Id == ViewBag.AssigneeFilter);
+                    <span class="inline-flex items-center gap-1 bg-purple-50 text-purple-700 border border-purple-200 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold">
+                        PIC: @(activeUser?.FullName ?? ViewBag.AssigneeFilter)
+                    </span>
+                }
+
+                @if (!string.IsNullOrEmpty(ViewBag.MilestoneFilter))
+                {
+                    <span class="inline-flex items-center gap-1 bg-teal-50 text-teal-700 border border-teal-200 px-2.5 py-0.5 rounded-lg text-[11px] font-semibold">
+                        Milestone: @ViewBag.MilestoneFilter
+                    </span>
+                }
+
+                <a href="/Task" class="text-[11px] text-red-500 hover:text-red-700 font-bold ml-auto hover:underline">
+                    Hapus Semua Filter
+                </a>
+            </div>
+        }
     </div>
 
     <!-- Data Grid Table Container -->
@@ -175,7 +289,7 @@
             </div>
             <h3 class="text-slate-800 font-black text-lg mb-2">Belum Ada Tugas yang Ditemukan</h3>
             <p class="text-slate-500 text-xs mb-5 max-w-md mx-auto">
-                Silakan buat tugas baru atau import data tugas dari template Excel yang telah disediakan.
+                Silakan sesuaikan filter pencarian atau buat tugas baru dari template Excel.
             </p>
             <div class="flex items-center justify-center gap-3">
                 <a href="/Import" class="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-bold px-5 py-2.5 rounded-xl border border-emerald-200 transition-all">
@@ -201,6 +315,10 @@
         if (ViewBag.ProjectFilter != null) queryParams.Add($"projectId={ViewBag.ProjectFilter}");
         if (!string.IsNullOrEmpty(ViewBag.AssigneeFilter)) queryParams.Add($"assigneeId={Uri.EscapeDataString(ViewBag.AssigneeFilter)}");
         if (!string.IsNullOrEmpty(ViewBag.MilestoneFilter)) queryParams.Add($"milestone={Uri.EscapeDataString(ViewBag.MilestoneFilter)}");
+        if (!string.IsNullOrEmpty(ViewBag.PeriodFilter)) queryParams.Add($"period={Uri.EscapeDataString(ViewBag.PeriodFilter)}");
+        if (ViewBag.StartDateFilter != null) queryParams.Add($"startDate={((DateTime)ViewBag.StartDateFilter).ToString("yyyy-MM-dd")}");
+        if (ViewBag.EndDateFilter != null) queryParams.Add($"endDate={((DateTime)ViewBag.EndDateFilter).ToString("yyyy-MM-dd")}");
+        if (!string.IsNullOrEmpty(ViewBag.PeriodFieldFilter)) queryParams.Add($"periodField={Uri.EscapeDataString(ViewBag.PeriodFieldFilter)}");
         if (!string.IsNullOrEmpty(ViewBag.SortBy)) queryParams.Add($"sortBy={ViewBag.SortBy}");
         if (!string.IsNullOrEmpty(ViewBag.SortOrder)) queryParams.Add($"sortOrder={ViewBag.SortOrder}");
 
@@ -227,6 +345,10 @@
         if (ViewBag.ProjectFilter != null) queryParams.Add($"projectId={ViewBag.ProjectFilter}");
         if (!string.IsNullOrEmpty(ViewBag.AssigneeFilter)) queryParams.Add($"assigneeId={Uri.EscapeDataString(ViewBag.AssigneeFilter)}");
         if (!string.IsNullOrEmpty(ViewBag.MilestoneFilter)) queryParams.Add($"milestone={Uri.EscapeDataString(ViewBag.MilestoneFilter)}");
+        if (!string.IsNullOrEmpty(ViewBag.PeriodFilter)) queryParams.Add($"period={Uri.EscapeDataString(ViewBag.PeriodFilter)}");
+        if (ViewBag.StartDateFilter != null) queryParams.Add($"startDate={((DateTime)ViewBag.StartDateFilter).ToString("yyyy-MM-dd")}");
+        if (ViewBag.EndDateFilter != null) queryParams.Add($"endDate={((DateTime)ViewBag.EndDateFilter).ToString("yyyy-MM-dd")}");
+        if (!string.IsNullOrEmpty(ViewBag.PeriodFieldFilter)) queryParams.Add($"periodField={Uri.EscapeDataString(ViewBag.PeriodFieldFilter)}");
         
         queryParams.Add($"sortBy={column}");
         queryParams.Add($"sortOrder={nextOrder}");
@@ -935,6 +1057,102 @@
         if (modal) modal.classList.add('hidden');
     }
 
+    function handlePeriodPresetChange(preset) {
+        const sInput = document.getElementById('startDateInput');
+        const eInput = document.getElementById('endDateInput');
+        if (!sInput || !eInput) return;
+
+        if (!preset || preset === "all") {
+            sInput.value = "";
+            eInput.value = "";
+            return;
+        }
+
+        const today = new Date();
+        const formatDate = (d) => {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${day}`;
+        };
+
+        switch (preset) {
+            case "today":
+            case "hari_ini":
+                sInput.value = formatDate(today);
+                eInput.value = formatDate(today);
+                break;
+            case "yesterday":
+            case "kemarin": {
+                const yest = new Date(today);
+                yest.setDate(yest.getDate() - 1);
+                sInput.value = formatDate(yest);
+                eInput.value = formatDate(yest);
+                break;
+            }
+            case "this_week":
+            case "minggu_ini": {
+                const diff = (today.getDay() + 6) % 7; // Monday = 0
+                const mon = new Date(today);
+                mon.setDate(mon.getDate() - diff);
+                const sun = new Date(mon);
+                sun.setDate(sun.getDate() + 6);
+                sInput.value = formatDate(mon);
+                eInput.value = formatDate(sun);
+                break;
+            }
+            case "last_week":
+            case "minggu_lalu": {
+                const diff = (today.getDay() + 6) % 7;
+                const thisMon = new Date(today);
+                thisMon.setDate(thisMon.getDate() - diff);
+                const lastMon = new Date(thisMon);
+                lastMon.setDate(lastMon.getDate() - 7);
+                const lastSun = new Date(lastMon);
+                lastSun.setDate(lastSun.getDate() + 6);
+                sInput.value = formatDate(lastMon);
+                eInput.value = formatDate(lastSun);
+                break;
+            }
+            case "this_month":
+            case "bulan_ini": {
+                const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+                const lastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                sInput.value = formatDate(firstDay);
+                eInput.value = formatDate(lastDay);
+                break;
+            }
+            case "last_month":
+            case "bulan_lalu": {
+                const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+                const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+                sInput.value = formatDate(firstDay);
+                eInput.value = formatDate(lastDay);
+                break;
+            }
+            case "this_quarter":
+            case "kuartal_ini": {
+                const q = Math.floor(today.getMonth() / 3);
+                const firstDay = new Date(today.getFullYear(), q * 3, 1);
+                const lastDay = new Date(today.getFullYear(), (q + 1) * 3, 0);
+                sInput.value = formatDate(firstDay);
+                eInput.value = formatDate(lastDay);
+                break;
+            }
+            case "this_year":
+            case "tahun_ini": {
+                const firstDay = new Date(today.getFullYear(), 0, 1);
+                const lastDay = new Date(today.getFullYear(), 11, 31);
+                sInput.value = formatDate(firstDay);
+                eInput.value = formatDate(lastDay);
+                break;
+            }
+            case "custom":
+                // Biarkan nilai tanggal tetap atau biarkan pengguna memilih
+                break;
+        }
+    }
+
     function onExportPeriodChange(val) {
         const customDateDiv = document.getElementById('exportCustomDateRange');
         if (customDateDiv) {
@@ -965,7 +1183,7 @@
         } else {
             // Apply current grid filters
             const urlParams = new URLSearchParams(window.location.search);
-            ['projectId', 'status', 'priority', 'assigneeId', 'milestone', 'search'].forEach(key => {
+            ['projectId', 'status', 'priority', 'assigneeId', 'milestone', 'search', 'period', 'startDate', 'endDate', 'periodField'].forEach(key => {
                 if (urlParams.has(key) && urlParams.get(key)) {
                     params.append(key, urlParams.get(key));
                 }

@@ -107,6 +107,9 @@ namespace TrackerKerja.ViewModels
         public long TotalDurationSeconds { get; set; }
         public string TotalDurationFormatted { get; set; } = "00:00:00";
 
+        public int? CompanyId { get; set; }
+        public string? CompanyName { get; set; }
+
         public DateTime CreatedAt { get; set; }
         public DateTime UpdatedAt { get; set; }
     }

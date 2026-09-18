@@ -4,7 +4,9 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
+using TrackerKerja.Helpers;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
 
 namespace TrackerKerja.Controllers
@@ -37,7 +39,7 @@ namespace TrackerKerja.Controllers
                 memberId = currentUser.Id;
             }
 
-            var targetDate = weekDate ?? DateTime.Today;
+            var targetDate = weekDate ?? DateTimeHelper.Today;
             // Monday of the week
             int diff = (7 + (targetDate.DayOfWeek - DayOfWeek.Monday)) % 7;
             var weekStart = targetDate.AddDays(-1 * diff).Date;
@@ -52,6 +54,12 @@ namespace TrackerKerja.Controllers
                     .ThenInclude(t => t!.AssignedToUser)
                 .Where(s => s.StartTime >= weekStart && s.StartTime <= weekEnd && s.EndTime != null)
                 .AsQueryable();
+
+            var userCompanyId = currentUser?.CompanyId;
+            if (!isAdmin)
+            {
+                query = query.Where(s => s.Task != null && (s.Task.CompanyId == userCompanyId || (s.Task.Project != null && s.Task.Project.CompanyId == userCompanyId)));
+            }
 
             if (projectId.HasValue)
             {
@@ -70,10 +78,24 @@ namespace TrackerKerja.Controllers
                 .Include(t => t.Project)
                 .Include(t => t.Sessions)
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                userTasksQuery = userTasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
+
             if (!isAdmin || (!string.IsNullOrEmpty(memberId) && memberId != "all"))
             {
                 var targetUserId = !string.IsNullOrEmpty(memberId) ? memberId : currentUser?.Id;
                 userTasksQuery = userTasksQuery.Where(t => t.AssignedToUserId == targetUserId);
+            }
+
+            var projectsQuery = _db.Projects.AsQueryable();
+            var membersQuery = _db.Users.AsQueryable();
+            if (!isAdmin)
+            {
+                projectsQuery = projectsQuery.Where(p => p.CompanyId == userCompanyId);
+                membersQuery = membersQuery.Where(u => u.CompanyId == userCompanyId);
             }
 
             var viewModel = new TimesheetViewModel
@@ -82,8 +104,8 @@ namespace TrackerKerja.Controllers
                 WeekEnd = weekStart.AddDays(6),
                 SelectedProjectId = projectId,
                 SelectedMemberId = memberId,
-                AllProjects = await _db.Projects.OrderBy(p => p.Name).ToListAsync(),
-                AllMembers = await _db.Users.OrderBy(u => u.FullName).ToListAsync(),
+                AllProjects = await projectsQuery.OrderBy(p => p.Name).ToListAsync(),
+                AllMembers = await membersQuery.OrderBy(u => u.FullName).ToListAsync(),
                 UserTasks = await userTasksQuery.OrderBy(t => t.Title).ToListAsync(),
                 RecentSessions = sessions
             };
@@ -191,8 +213,15 @@ namespace TrackerKerja.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> AddSession(int taskId, DateTime sessionDate, int hours, int minutes, string? notes)
         {
-            var task = await _db.Tasks.FindAsync(taskId);
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var task = await _db.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.Id == taskId);
             if (task == null) return NotFound();
+
+            if (!TaskPermissionHelper.CanEditTask(currentUser, isAdmin, task))
+            {
+                return Forbid();
+            }
 
             var totalSeconds = (hours * 3600) + (minutes * 60);
             if (totalSeconds <= 0)
@@ -226,6 +255,7 @@ namespace TrackerKerja.Controllers
         {
             var currentUser = await _userManager.GetUserAsync(User);
             var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
 
             if (!isAdmin)
             {
@@ -248,6 +278,11 @@ namespace TrackerKerja.Controllers
                     .ThenInclude(t => t!.AssignedToUser)
                 .Where(s => s.StartTime >= weekStart && s.StartTime <= weekEnd && s.EndTime != null)
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                query = query.Where(s => s.Task != null && (s.Task.CompanyId == userCompanyId || (s.Task.Project != null && s.Task.Project.CompanyId == userCompanyId)));
+            }
 
             if (projectId.HasValue) query = query.Where(s => s.Task != null && s.Task.ProjectId == projectId.Value);
             if (!string.IsNullOrEmpty(memberId) && memberId != "all") query = query.Where(s => s.Task != null && s.Task.AssignedToUserId == memberId);

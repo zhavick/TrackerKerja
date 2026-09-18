@@ -28,6 +28,10 @@ namespace TrackerKerja.Models
 
         public DateTime CreatedAt { get; set; } = DateTime.Now;
 
+        // Company / Team Multi-Tenancy
+        public int? CompanyId { get; set; }
+        public virtual Company? Company { get; set; }
+
         public ICollection<WorkTask> Tasks { get; set; } = new List<WorkTask>();
 
         // Computed

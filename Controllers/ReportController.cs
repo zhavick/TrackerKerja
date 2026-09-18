@@ -1,7 +1,9 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
+using TrackerKerja.Models;
 
 namespace TrackerKerja.Controllers
 {
@@ -9,40 +11,72 @@ namespace TrackerKerja.Controllers
     public class ReportController : Controller
     {
         private readonly AppDbContext _db;
-        public ReportController(AppDbContext db) { _db = db; }
+        private readonly UserManager<AppUser> _userManager;
+
+        public ReportController(AppDbContext db, UserManager<AppUser> userManager)
+        {
+            _db = db;
+            _userManager = userManager;
+        }
 
         public async Task<IActionResult> Index()
         {
-            var sessions = await _db.Sessions
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var sessionsQuery = _db.Sessions
                 .Include(s => s.Task)
                 .ThenInclude(t => t!.Project)
                 .Where(s => s.EndTime != null)
-                .ToListAsync();
+                .AsQueryable();
 
-            var projects = await _db.Projects
+            var projectsQuery = _db.Projects
                 .Include(p => p.Tasks)
                 .ThenInclude(t => t.Sessions)
-                .ToListAsync();
+                .AsQueryable();
 
-            var users = await _db.Users.OrderBy(u => u.FullName).ToListAsync();
+            var usersQuery = _db.Users.OrderBy(u => u.FullName).AsQueryable();
+            var tasksQuery = _db.Tasks.AsQueryable();
+
+            if (!isAdmin)
+            {
+                sessionsQuery = sessionsQuery.Where(s => s.Task != null && (s.Task.CompanyId == userCompanyId || (s.Task.Project != null && s.Task.Project.CompanyId == userCompanyId)));
+                projectsQuery = projectsQuery.Where(p => p.CompanyId == userCompanyId);
+                usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
+
+            var sessions = await sessionsQuery.ToListAsync();
+            var projects = await projectsQuery.ToListAsync();
+            var users = await usersQuery.ToListAsync();
 
             ViewBag.Sessions = sessions;
             ViewBag.Projects = projects;
             ViewBag.Members = users;
             ViewBag.TotalHours = sessions.Sum(s => s.Duration) / 3600.0;
-            ViewBag.TotalTasks = await _db.Tasks.CountAsync();
-            ViewBag.DoneTasks = await _db.Tasks.CountAsync(t => t.Status == Models.TaskStatus.Done);
+            ViewBag.TotalTasks = await tasksQuery.CountAsync();
+            ViewBag.DoneTasks = await tasksQuery.CountAsync(t => t.Status == Models.TaskStatus.Done);
             return View();
         }
 
         [HttpGet]
         public async Task<IActionResult> GetGanttData(int? projectId, string? assigneeId, string? status, string? search)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             var query = _db.Tasks
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.Sessions)
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                query = query.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
 
             if (projectId.HasValue)
                 query = query.Where(t => t.ProjectId == projectId.Value);
@@ -131,9 +165,22 @@ namespace TrackerKerja.Controllers
                     break;
             }
 
-            var sessions = await _db.Sessions
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var sessionsQuery = _db.Sessions
+                .Include(s => s.Task)
+                    .ThenInclude(t => t!.Project)
                 .Where(s => s.StartTime >= start && s.EndTime != null)
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!isAdmin)
+            {
+                sessionsQuery = sessionsQuery.Where(s => s.Task != null && (s.Task.CompanyId == userCompanyId || (s.Task.Project != null && s.Task.Project.CompanyId == userCompanyId)));
+            }
+
+            var sessions = await sessionsQuery.ToListAsync();
 
             var labels = new List<string>();
             var data = new List<double>();

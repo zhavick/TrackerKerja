@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
@@ -9,6 +10,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/audit-trail")]
     [Produces("application/json")]
+    [Authorize(Roles = "Admin")]
     public class AuditTrailApiController : ControllerBase
     {
         private readonly AppDbContext _db;

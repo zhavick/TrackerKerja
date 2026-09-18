@@ -143,7 +143,7 @@ cp -r wwwroot/uploads/* ./uploads/
 
 ---
 
-## ⚙ Konfigurasi Environment Variables
+## ⚙ Konfigurasi Environment Variables & Pengaturan Sistem
 
 Anda dapat mengatur variabel lingkungan di file `docker-compose.yml` atau parameter `-e`:
 
@@ -151,19 +151,31 @@ Anda dapat mengatur variabel lingkungan di file `docker-compose.yml` atau parame
 | :--- | :--- | :--- |
 | `ASPNETCORE_ENVIRONMENT` | `Production` | `Production` (optimized) atau `Development` (debug error details) |
 | `ASPNETCORE_URLS` | `http://+:5000` | Port binding aplikasi di dalam container |
-| `ConnectionStrings__DefaultConnection` | `Data Source=data/trackerkerja.db` | Path file SQLite |
-| `GlobalBaseUrl` | `http://localhost:5000` | URL publik untuk Swagger, webhook, dan ekspor |
+| `ConnectionStrings__DefaultConnection` | `Data Source=data/trackerkerja.db` | Path file SQLite di dalam container volume |
+| `GlobalBaseUrl` | `http://localhost:5000` | URL publik sistem untuk link tautan email notifikasi, Swagger, dan webhook |
+
+### 📧 Konfigurasi Integrasi Email (SMTP) dalam Docker
+Konfigurasi integrasi email (Host Mail, Port, Email Pengirim, Password Aplikasi, SSL/TLS) **disimpan secara dinamis dan persisten di database SQLite (`./db_data/trackerkerja.db`)**.
+- **Tanpa Perlu Restart Container**: Anda tidak perlu me-restart Docker atau mengedit environment variable setiap kali mengubah pengaturan email; cukup kelola langsung melalui Web UI `/Configuration` atau REST API `/api/email-config`.
+- **Konektivitas Keluar (Outbound Network)**: Pastikan Docker host mengizinkan koneksi keluar (*outbound*) ke port SMTP provider Anda (misal port 587 untuk Google Workspace STARTTLS, port 465 untuk SSL, atau port 2525 untuk Mailtrap).
+- **Alamat Base URL pada Email**: Nilai `GlobalBaseUrl` akan otomatis disisipkan ke dalam tombol aksi dan tautan pada template email (`{ActionUrl}` dan `{AppUrl}`) sehingga penerima dapat langsung mengklik tautan verifikasi atau detail tugas dari kotak masuk mereka.
 
 ---
 
-## 🌐 Akses Aplikasi & Endpoint Penting
+## 🌐 Akses Aplikasi & Alur Pendaftaran Akun
 
 Setelah container berjalan:
 
 - **Web Dashboard**: [http://localhost:5000](http://localhost:5000)
-- **Swagger REST API Docs**: [http://localhost:5000/swagger](http://localhost:5000/swagger)
-- **Postman API Spec**: Endpoint `/api/v1/...`
-- **Autentikasi**: Gunakan akun email dan kata sandi yang telah didaftarkan oleh Administrator saat inisialisasi awal.
+- **Akun Administrator Awal**:
+  - **Email**: `admin@trackerkerja.com`
+  - **Kata Sandi**: `Password123!` (atau `Admin123!`)
+- **Pendaftaran Akun Baru (Admin Approval)**:
+  - Pengguna baru dapat mendaftar mandiri via tombol *Daftar Akun Baru* di halaman login.
+  - Akun yang baru mendaftar memiliki status **Menunggu Persetujuan (Pending Approval)** dan tidak dapat login hingga Administrator menyetujuinya di menu **Anggota Tim (`/Member`)**.
+- **Dokumentasi REST API & Panduan**:
+  - **Swagger UI**: [http://localhost:5000/swagger](http://localhost:5000/swagger) atau via menu *Swagger API* pada bilah samping (Sidebar).
+  - **Buku Panduan Pengguna (PDF)**: Tersedia pada bilah samping (Sidebar) menu *Panduan Pengguna*.
 
 ---
 

@@ -96,12 +96,23 @@ namespace TrackerKerja.Controllers
         // ── INDEX: LIST ALL NOTES ──────────────────────────────
         public async Task<IActionResult> Index(string? filter, string? category, string? authorId, int? taskId, string? search)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             var query = _db.Notes
                 .Include(n => n.AuthorUser)
                 .Include(n => n.Attachments)
                 .Include(n => n.Task)
                     .ThenInclude(t => t!.Project)
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                query = query.Where(n => n.CompanyId == userCompanyId ||
+                    (n.AuthorUser != null && n.AuthorUser.CompanyId == userCompanyId) ||
+                    (n.Task != null && (n.Task.CompanyId == userCompanyId || (n.Task.Project != null && n.Task.Project.CompanyId == userCompanyId))));
+            }
 
             if (filter == "standalone")
                 query = query.Where(n => n.TaskId == null);
@@ -131,18 +142,28 @@ namespace TrackerKerja.Controllers
             ViewBag.TaskId = taskId;
             ViewBag.Search = search;
 
-            ViewBag.Tasks = await _db.Tasks
-                .Include(t => t.Project)
+            var tasksQuery = _db.Tasks.Include(t => t.Project).AsQueryable();
+            var authorsQuery = _db.Users.AsQueryable();
+            var allNotesQuery = _db.Notes.AsQueryable();
+
+            if (!isAdmin)
+            {
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+                authorsQuery = authorsQuery.Where(u => u.CompanyId == userCompanyId);
+                allNotesQuery = allNotesQuery.Where(n => n.CompanyId == userCompanyId || (n.AuthorUser != null && n.AuthorUser.CompanyId == userCompanyId));
+            }
+
+            ViewBag.Tasks = await tasksQuery
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
-            ViewBag.Authors = await _db.Users
+            ViewBag.Authors = await authorsQuery
                 .OrderBy(u => u.FullName)
                 .ToListAsync();
 
-            ViewBag.TotalCount = await _db.Notes.CountAsync();
-            ViewBag.StandaloneCount = await _db.Notes.CountAsync(n => n.TaskId == null);
-            ViewBag.LinkedCount = await _db.Notes.CountAsync(n => n.TaskId != null);
+            ViewBag.TotalCount = await allNotesQuery.CountAsync();
+            ViewBag.StandaloneCount = await allNotesQuery.CountAsync(n => n.TaskId == null);
+            ViewBag.LinkedCount = await allNotesQuery.CountAsync(n => n.TaskId != null);
 
             return View(notes);
         }
@@ -151,8 +172,17 @@ namespace TrackerKerja.Controllers
         [HttpGet]
         public async Task<IActionResult> Create(int? taskId)
         {
-            ViewBag.Tasks = await _db.Tasks
-                .Include(t => t.Project)
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var tasksQuery = _db.Tasks.Include(t => t.Project).AsQueryable();
+            if (!isAdmin)
+            {
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
+
+            ViewBag.Tasks = await tasksQuery
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
@@ -169,20 +199,29 @@ namespace TrackerKerja.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Create(WorkNote model, List<IFormFile>? attachments)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             ModelState.Remove("AuthorUser");
             ModelState.Remove("Task");
 
             if (!ModelState.IsValid)
             {
-                ViewBag.Tasks = await _db.Tasks
-                    .Include(t => t.Project)
+                var tasksQuery = _db.Tasks.Include(t => t.Project).AsQueryable();
+                if (!isAdmin)
+                {
+                    tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+                }
+
+                ViewBag.Tasks = await tasksQuery
                     .OrderByDescending(t => t.CreatedAt)
                     .ToListAsync();
                 return View(model);
             }
 
-            var currentUser = await _userManager.GetUserAsync(User);
             model.AuthorUserId = currentUser?.Id;
+            model.CompanyId = userCompanyId;
             model.CreatedAt = DateTime.Now;
             model.UpdatedAt = DateTime.Now;
 
@@ -219,6 +258,10 @@ namespace TrackerKerja.Controllers
         [HttpGet]
         public async Task<IActionResult> Edit(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             var note = await _db.Notes
                 .Include(n => n.AuthorUser)
                 .Include(n => n.Task)
@@ -227,9 +270,15 @@ namespace TrackerKerja.Controllers
                 .FirstOrDefaultAsync(n => n.Id == id);
 
             if (note == null) return NotFound();
+            if (!TaskPermissionHelper.CanViewNote(currentUser, isAdmin, note)) return Forbid();
 
-            ViewBag.Tasks = await _db.Tasks
-                .Include(t => t.Project)
+            var tasksQuery = _db.Tasks.Include(t => t.Project).AsQueryable();
+            if (!isAdmin)
+            {
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
+
+            ViewBag.Tasks = await tasksQuery
                 .OrderByDescending(t => t.CreatedAt)
                 .ToListAsync();
 
@@ -260,11 +309,15 @@ namespace TrackerKerja.Controllers
                 return View(model);
             }
 
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var existing = await _db.Notes
                 .Include(n => n.Attachments)
                 .FirstOrDefaultAsync(n => n.Id == id);
 
             if (existing == null) return NotFound();
+            if (!TaskPermissionHelper.CanEditNote(currentUser, isAdmin, existing)) return Forbid();
 
             existing.Title = model.Title;
             existing.ContentHtml = model.ContentHtml;
@@ -279,7 +332,6 @@ namespace TrackerKerja.Controllers
             // Save any newly added attachments
             if (newAttachments != null && newAttachments.Count > 0)
             {
-                var currentUser = await _userManager.GetUserAsync(User);
                 await SaveAttachmentsAsync(newAttachments, existing.Id, currentUser);
             }
 
@@ -291,6 +343,9 @@ namespace TrackerKerja.Controllers
         [HttpGet]
         public async Task<IActionResult> Details(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var note = await _db.Notes
                 .Include(n => n.AuthorUser)
                 .Include(n => n.Attachments)
@@ -300,6 +355,7 @@ namespace TrackerKerja.Controllers
                 .FirstOrDefaultAsync(n => n.Id == id);
 
             if (note == null) return NotFound();
+            if (!TaskPermissionHelper.CanViewNote(currentUser, isAdmin, note)) return Forbid();
 
             return View(note);
         }
@@ -358,9 +414,14 @@ namespace TrackerKerja.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> TogglePin(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var note = await _db.Notes.FindAsync(id);
             if (note != null)
             {
+                if (!TaskPermissionHelper.CanEditNote(currentUser, isAdmin, note)) return Forbid();
+
                 note.IsPinned = !note.IsPinned;
                 note.UpdatedAt = DateTime.Now;
                 await _db.SaveChangesAsync();
@@ -374,12 +435,17 @@ namespace TrackerKerja.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Delete(int id, int? returnTaskId)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var note = await _db.Notes
                 .Include(n => n.Attachments)
                 .FirstOrDefaultAsync(n => n.Id == id);
 
             if (note != null)
             {
+                if (!TaskPermissionHelper.CanEditNote(currentUser, isAdmin, note)) return Forbid();
+
                 // Delete physical attachment files
                 foreach (var att in note.Attachments)
                 {
@@ -413,11 +479,20 @@ namespace TrackerKerja.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
-            var notes = await _db.Notes
-                .Include(n => n.Attachments)
-                .Where(n => ids.Contains(n.Id))
-                .ToListAsync();
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
 
+            var query = _db.Notes
+                .Include(n => n.Attachments)
+                .Where(n => ids.Contains(n.Id));
+
+            if (!isAdmin)
+            {
+                query = query.Where(n => n.CompanyId == userCompanyId || (n.AuthorUser != null && n.AuthorUser.CompanyId == userCompanyId));
+            }
+
+            var notes = await query.ToListAsync();
             var count = notes.Count;
 
             // Delete physical attachment files

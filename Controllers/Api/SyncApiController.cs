@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
@@ -9,6 +10,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/sync")]
     [Produces("application/json")]
+    [Authorize]
     public class SyncApiController : ControllerBase
     {
         private readonly IDatabaseSyncService _syncService;
@@ -24,6 +26,7 @@ namespace TrackerKerja.Controllers.Api
         /// Pengujian koneksi (Ping) &amp; validasi API Key Host Induk (GET /api/sync/ping)
         /// </summary>
         [HttpGet("ping")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<SyncPingResponseDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         public async Task<IActionResult> Ping()
@@ -72,6 +75,7 @@ namespace TrackerKerja.Controllers.Api
         /// </summary>
         /// <param name="request">Payload sinkronisasi berisi SQL script, arsip zip berkas uploads, dan opsi pembersihan</param>
         [HttpPost("receive")]
+        [AllowAnonymous]
         [ProducesResponseType(typeof(ApiResponse<SyncResultDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status401Unauthorized)]
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]

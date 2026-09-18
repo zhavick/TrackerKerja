@@ -25,37 +25,56 @@ namespace TrackerKerja.Controllers
             var currentUser = await _userManager.GetUserAsync(User);
             var currentUserId = currentUser?.Id ?? "";
             var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
 
             var today = DateTime.Today;
             var weekStart = today.AddDays(-(int)today.DayOfWeek + 1);
 
-            var allTasks = await _db.Tasks
+            var tasksQuery = _db.Tasks
                 .Include(t => t.Project)
                 .Include(t => t.Category)
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.Sessions)
-                .ToListAsync();
+                .AsQueryable();
 
-            var allProjects = await _db.Projects
+            var projectsQuery = _db.Projects
                 .Include(p => p.Tasks)
                 .OrderByDescending(p => p.CreatedAt)
-                .ToListAsync();
+                .AsQueryable();
 
-            var allUsers = await _db.Users
+            var usersQuery = _db.Users
                 .OrderBy(u => u.FullName)
-                .ToListAsync();
+                .AsQueryable();
 
-            var todaySessions = await _db.Sessions
+            var sessionsQuery = _db.Sessions
+                .Include(s => s.Task)
+                    .ThenInclude(t => t!.Project)
+                .AsQueryable();
+
+            if (!isAdmin)
+            {
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+                projectsQuery = projectsQuery.Where(p => p.CompanyId == userCompanyId);
+                usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+                sessionsQuery = sessionsQuery.Where(s => s.Task != null && (s.Task.CompanyId == userCompanyId || (s.Task.Project != null && s.Task.Project.CompanyId == userCompanyId)));
+            }
+
+            var allTasks = await tasksQuery.ToListAsync();
+            var allProjects = await projectsQuery.ToListAsync();
+            var allUsers = await usersQuery.ToListAsync();
+
+            var todaySessions = await sessionsQuery
                 .Where(s => s.StartTime.Date == today)
                 .ToListAsync();
 
-            var weekSessions = await _db.Sessions
+            var weekSessions = await sessionsQuery
                 .Where(s => s.StartTime >= weekStart)
                 .ToListAsync();
 
             var runningSession = await _db.Sessions
                 .Include(s => s.Task)
-                .FirstOrDefaultAsync(s => s.EndTime == null);
+                    .ThenInclude(t => t!.Project)
+                .FirstOrDefaultAsync(s => s.EndTime == null && (isAdmin || (s.Task != null && (s.Task.CompanyId == userCompanyId || (s.Task.Project != null && s.Task.Project.CompanyId == userCompanyId)))));
 
             // ── PERSONAL STATS (FOR LOGGED IN USER) ─────────────
             var myTasks = allTasks.Where(t => t.AssignedToUserId == currentUserId).ToList();
@@ -217,11 +236,20 @@ namespace TrackerKerja.Controllers
         [HttpGet]
         public async Task<IActionResult> GetProjectMemberDistribution(int? projectId)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             var query = _db.Tasks
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.Sessions)
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                query = query.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
 
             if (projectId.HasValue && projectId.Value > 0)
             {
@@ -229,7 +257,13 @@ namespace TrackerKerja.Controllers
             }
 
             var tasks = await query.ToListAsync();
-            var users = await _db.Users.OrderBy(u => u.FullName).ToListAsync();
+
+            var usersQuery = _db.Users.OrderBy(u => u.FullName).AsQueryable();
+            if (!isAdmin)
+            {
+                usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+            }
+            var users = await usersQuery.ToListAsync();
 
             var result = new List<object>();
 

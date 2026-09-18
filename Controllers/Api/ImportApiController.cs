@@ -1,4 +1,5 @@
 using ClosedXML.Excel;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
@@ -15,6 +16,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/import")]
     [Produces("application/json")]
+    [Authorize]
     public class ImportApiController : ControllerBase
     {
         private readonly AppDbContext _db;

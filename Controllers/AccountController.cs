@@ -16,19 +16,25 @@ namespace TrackerKerja.Controllers
         private readonly AppDbContext _db;
         private readonly IWebHostEnvironment _env;
         private readonly IGamificationService _gamificationService;
+        private readonly IEmailService _emailService;
+        private readonly IJwtService _jwtService;
 
         public AccountController(
             UserManager<AppUser> userManager,
             SignInManager<AppUser> signInManager,
             AppDbContext db,
             IWebHostEnvironment env,
-            IGamificationService gamificationService)
+            IGamificationService gamificationService,
+            IEmailService emailService,
+            IJwtService jwtService)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _db = db;
             _env = env;
             _gamificationService = gamificationService;
+            _emailService = emailService;
+            _jwtService = jwtService;
         }
 
         // ── LOGIN ────────────────────────────────────────────
@@ -45,11 +51,36 @@ namespace TrackerKerja.Controllers
         {
             if (!ModelState.IsValid) return View(model);
 
+            var existingUser = await _userManager.FindByEmailAsync(model.Email.Trim());
+            if (existingUser != null)
+            {
+                var isPasswordCorrect = await _userManager.CheckPasswordAsync(existingUser, model.Password);
+                if (isPasswordCorrect && !existingUser.IsApproved)
+                {
+                    ModelState.AddModelError("", "Akun Anda sedang menunggu persetujuan (approval) dari Administrator sebelum dapat digunakan untuk login.");
+                    return View(model);
+                }
+            }
+
             var result = await _signInManager.PasswordSignInAsync(
                 model.Email, model.Password, model.RememberMe, lockoutOnFailure: true);
 
             if (result.Succeeded)
             {
+                var user = existingUser ?? await _userManager.FindByEmailAsync(model.Email.Trim());
+                if (user != null)
+                {
+                    var roles = await _userManager.GetRolesAsync(user);
+                    var token = _jwtService.GenerateToken(user, roles, out var expiresAt);
+                    Response.Cookies.Append("jwt_token", token, new CookieOptions
+                    {
+                        HttpOnly = true,
+                        Secure = Request.IsHttps,
+                        SameSite = SameSiteMode.Lax,
+                        Expires = expiresAt
+                    });
+                }
+
                 if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
                     return Redirect(model.ReturnUrl);
                 return RedirectToAction("Index", "Home");
@@ -65,9 +96,10 @@ namespace TrackerKerja.Controllers
 
         // ── REGISTER ────────────────────────────────────────────
         [HttpGet]
-        public IActionResult Register()
+        public async Task<IActionResult> Register()
         {
             if (User.Identity?.IsAuthenticated == true) return RedirectToAction("Index", "Home");
+            ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
             return View(new RegisterViewModel());
         }
 
@@ -75,7 +107,45 @@ namespace TrackerKerja.Controllers
         [ValidateAntiForgeryToken]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            if (!ModelState.IsValid) return View(model);
+            if (!ModelState.IsValid)
+            {
+                ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
+                return View(model);
+            }
+
+            int? assignedCompanyId = null;
+            string companyNameForEmail = "Pribadi / Belum Ditentukan";
+
+            if (model.CompanyOption == "existing" && model.CompanyId.HasValue)
+            {
+                var comp = await _db.Companies.FindAsync(model.CompanyId.Value);
+                if (comp == null)
+                {
+                    ModelState.AddModelError("CompanyId", "Perusahaan / Tim yang dipilih tidak ditemukan.");
+                    ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
+                    return View(model);
+                }
+                assignedCompanyId = comp.Id;
+                companyNameForEmail = comp.Name;
+            }
+            else
+            {
+                // New Company Registration
+                var compName = !string.IsNullOrWhiteSpace(model.NewCompanyName)
+                    ? model.NewCompanyName.Trim()
+                    : "Tim " + model.FullName.Trim();
+
+                var newComp = new Company
+                {
+                    Name = compName,
+                    Code = !string.IsNullOrWhiteSpace(model.NewCompanyCode) ? model.NewCompanyCode.Trim().ToUpper() : null,
+                    CreatedAt = DateTime.Now
+                };
+                _db.Companies.Add(newComp);
+                await _db.SaveChangesAsync();
+                assignedCompanyId = newComp.Id;
+                companyNameForEmail = newComp.Name;
+            }
 
             var colors = new[] { "#6366F1", "#06B6D4", "#10B981", "#F59E0B", "#8B5CF6", "#EF4444", "#EC4899" };
             var rnd = new Random();
@@ -87,22 +157,61 @@ namespace TrackerKerja.Controllers
                 FullName = model.FullName,
                 JobTitle = model.JobTitle,
                 AvatarColor = colors[rnd.Next(colors.Length)],
+                CompanyId = assignedCompanyId,
                 CreatedAt = DateTime.Now,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                IsApproved = false // Requires Admin Approval
             };
 
             var result = await _userManager.CreateAsync(user, model.Password);
             if (result.Succeeded)
             {
                 await _userManager.AddToRoleAsync(user, "User");
-                await _signInManager.SignInAsync(user, isPersistent: false);
-                TempData["Success"] = $"Selamat datang, {user.FullName}! Akun Anda berhasil dibuat.";
-                return RedirectToAction("Index", "Home");
+
+                // Dispatch Email Notification to User (Background Safe)
+                var userRegVars = new Dictionary<string, string>
+                {
+                    { "FullName", user.FullName },
+                    { "Email", user.Email ?? "" },
+                    { "CompanyName", companyNameForEmail },
+                    { "JobTitle", user.JobTitle ?? "-" },
+                    { "CurrentDate", DateTime.Now.ToString("dd MMM yyyy HH:mm") }
+                };
+                _ = Task.Run(async () => await _emailService.SendEventEmailAsync("USER_REGISTERED", user.Email!, userRegVars));
+
+                // Dispatch Email Alert to Admin(s)
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        var adminUsers = await _userManager.GetUsersInRoleAsync("Admin");
+                        var adminEmails = adminUsers.Where(a => !string.IsNullOrWhiteSpace(a.Email)).Select(a => a.Email!).Distinct().ToList();
+                        var adminAlertVars = new Dictionary<string, string>
+                        {
+                            { "FullName", user.FullName },
+                            { "Email", user.Email ?? "" },
+                            { "CompanyName", companyNameForEmail },
+                            { "JobTitle", user.JobTitle ?? "-" },
+                            { "ApprovalUrl", "/Member?approvalStatus=pending" },
+                            { "CurrentDate", DateTime.Now.ToString("dd MMM yyyy HH:mm") }
+                        };
+
+                        foreach (var adminEmail in adminEmails)
+                        {
+                            await _emailService.SendEventEmailAsync("ADMIN_NEW_USER_ALERT", adminEmail, adminAlertVars);
+                        }
+                    }
+                    catch { }
+                });
+
+                TempData["Info"] = $"Pendaftaran berhasil! Akun {user.FullName} ({user.Email}) saat ini sedang menunggu persetujuan (approval) dari Administrator sebelum dapat digunakan untuk login.";
+                return RedirectToAction("Login");
             }
 
             foreach (var error in result.Errors)
                 ModelState.AddModelError("", error.Description);
 
+            ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
             return View(model);
         }
 
@@ -113,6 +222,7 @@ namespace TrackerKerja.Controllers
         public async Task<IActionResult> Logout()
         {
             await _signInManager.SignOutAsync();
+            Response.Cookies.Delete("jwt_token");
             return RedirectToAction("Login");
         }
 
@@ -140,6 +250,7 @@ namespace TrackerKerja.Controllers
                 JobTitle = user.JobTitle,
                 AvatarColor = user.AvatarColor,
                 ProfilePictureUrl = user.ProfilePictureUrl,
+                CoverPictureUrl = user.CoverPictureUrl,
                 Email = user.Email ?? "",
                 Initials = user.Initials,
                 CreatedAt = user.CreatedAt,
@@ -168,6 +279,7 @@ namespace TrackerKerja.Controllers
                 model.Initials = user.Initials;
                 model.CreatedAt = user.CreatedAt;
                 model.ProfilePictureUrl = user.ProfilePictureUrl;
+                model.CoverPictureUrl = user.CoverPictureUrl;
                 model.Gamification = await _gamificationService.GetGamificationStatsAsync(user.Id);
                 return View(model);
             }
@@ -205,6 +317,43 @@ namespace TrackerKerja.Controllers
                 user.ProfilePictureUrl = $"/uploads/avatars/{uniqueFileName}";
             }
 
+            // Handle Cover Picture Upload or Reset
+            if (model.CoverPicture != null && model.CoverPicture.Length > 0)
+            {
+                var allowedCoverExtensions = new[] { ".jpg", ".jpeg", ".png", ".webp", ".gif" };
+                var coverExt = Path.GetExtension(model.CoverPicture.FileName).ToLower();
+
+                if (!allowedCoverExtensions.Contains(coverExt))
+                {
+                    TempData["Error"] = "Format foto cover tidak didukung. Gunakan JPG, PNG, atau WEBP.";
+                    return RedirectToAction("Profile");
+                }
+
+                if (model.CoverPicture.Length > 10 * 1024 * 1024) // 10MB limit
+                {
+                    TempData["Error"] = "Ukuran foto cover terlalu besar. Maksimal 10MB.";
+                    return RedirectToAction("Profile");
+                }
+
+                var coversFolder = Path.Combine(_env.WebRootPath, "uploads", "covers");
+                if (!Directory.Exists(coversFolder))
+                    Directory.CreateDirectory(coversFolder);
+
+                var uniqueCoverName = $"cover_{Guid.NewGuid()}{coverExt}";
+                var coverFilePath = Path.Combine(coversFolder, uniqueCoverName);
+
+                using (var fileStream = new FileStream(coverFilePath, FileMode.Create))
+                {
+                    await model.CoverPicture.CopyToAsync(fileStream);
+                }
+
+                user.CoverPictureUrl = $"/uploads/covers/{uniqueCoverName}";
+            }
+            else if (model.RemoveCover)
+            {
+                user.CoverPictureUrl = null;
+            }
+
             user.FullName = model.FullName;
             user.JobTitle = model.JobTitle;
             user.AvatarColor = model.AvatarColor;
@@ -215,11 +364,11 @@ namespace TrackerKerja.Controllers
             var newBadges = await _gamificationService.EvaluateAndAwardBadgesAsync(user.Id);
             if (newBadges.Any())
             {
-                TempData["Success"] = $"Profil diperbarui! 🎉 Selamat, kamu membuka badge baru: {string.Join(", ", newBadges.Select(b => b.Name))}!";
+                TempData["Success"] = $"Profil & Cover diperbarui! 🎉 Selamat, kamu membuka badge baru: {string.Join(", ", newBadges.Select(b => b.Name))}!";
             }
             else
             {
-                TempData["Success"] = "Profil berhasil diperbarui!";
+                TempData["Success"] = "Profil & Cover berhasil diperbarui!";
             }
 
             return RedirectToAction("Profile");
@@ -257,6 +406,15 @@ namespace TrackerKerja.Controllers
             if (result.Succeeded)
             {
                 await _signInManager.RefreshSignInAsync(user);
+                var roles = await _userManager.GetRolesAsync(user);
+                var token = _jwtService.GenerateToken(user, roles, out var expiresAt);
+                Response.Cookies.Append("jwt_token", token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Expires = expiresAt
+                });
                 TempData["Success"] = "Password berhasil diubah!";
             }
             else

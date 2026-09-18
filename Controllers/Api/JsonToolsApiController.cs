@@ -1,4 +1,5 @@
 using System.Text.Json;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
@@ -13,6 +14,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/json-tools")]
     [Produces("application/json")]
+    [Authorize]
     public class JsonToolsApiController : ControllerBase
     {
         private readonly AppDbContext _db;

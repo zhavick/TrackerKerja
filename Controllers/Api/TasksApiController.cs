@@ -1,7 +1,11 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
+using TrackerKerja.Helpers;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
 using ModelTaskStatus = TrackerKerja.Models.TaskStatus;
 
@@ -10,13 +14,18 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/tasks")]
     [Produces("application/json")]
+    [Authorize]
     public class TasksApiController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly UserManager<AppUser> _userManager;
+        private readonly IEmailService _emailService;
 
-        public TasksApiController(AppDbContext db)
+        public TasksApiController(AppDbContext db, UserManager<AppUser> userManager, IEmailService emailService)
         {
             _db = db;
+            _userManager = userManager;
+            _emailService = emailService;
         }
 
         /// <summary>
@@ -29,6 +38,10 @@ namespace TrackerKerja.Controllers.Api
         /// <param name="assigneeId">Filter ID Pengguna / PIC</param>
         /// <param name="milestone">Filter Milestone SDLC (Requirement Analysis, System Design, Implementation, Testing dan QA, Deployment, Maintenance)</param>
         /// <param name="parentTaskId">Filter ID Induk Tugas (null jika tugas utama)</param>
+        /// <param name="period">Filter Preset Periode (today, yesterday, this_week, last_week, this_month, last_month, this_quarter, this_year, custom)</param>
+        /// <param name="startDate">Filter Tanggal Mulai Periode (YYYY-MM-DD)</param>
+        /// <param name="endDate">Filter Tanggal Akhir Periode (YYYY-MM-DD)</param>
+        /// <param name="periodField">Target bidang tanggal (range, duedate, startdate, created)</param>
         /// <param name="page">Halaman (default: 1)</param>
         /// <param name="pageSize">Jumlah item per halaman (default: 10, max: 100)</param>
         [HttpGet]
@@ -41,12 +54,21 @@ namespace TrackerKerja.Controllers.Api
             [FromQuery] string? assigneeId,
             [FromQuery] string? milestone,
             [FromQuery] int? parentTaskId,
+            [FromQuery] string? period,
+            [FromQuery] DateTime? startDate,
+            [FromQuery] DateTime? endDate,
+            [FromQuery] string? periodField,
+            [FromQuery] int? companyId,
             [FromQuery] int page = 1,
             [FromQuery] int pageSize = 10)
         {
             if (page < 1) page = 1;
             if (pageSize < 1) pageSize = 10;
             if (pageSize > 100) pageSize = 100;
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
 
             var query = _db.Tasks
                 .Include(t => t.Project)
@@ -57,6 +79,15 @@ namespace TrackerKerja.Controllers.Api
                 .Include(t => t.Sessions)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (!isAdmin && currentUser != null)
+            {
+                query = query.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
+            else if (companyId.HasValue)
+            {
+                query = query.Where(t => t.CompanyId == companyId.Value || (t.Project != null && t.Project.CompanyId == companyId.Value));
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -81,6 +112,140 @@ namespace TrackerKerja.Controllers.Api
 
             if (parentTaskId.HasValue)
                 query = query.Where(t => t.ParentTaskId == parentTaskId.Value);
+
+            // ── PERIODE FILTER (PRESET & RENTANG TANGGAL) ───────────
+            var today = DateTimeHelper.Today;
+            DateTime? filterStart = startDate?.Date;
+            DateTime? filterEnd = endDate?.Date;
+
+            if (!string.IsNullOrWhiteSpace(period) && period.ToLower() != "all")
+            {
+                switch (period.ToLower().Trim())
+                {
+                    case "today":
+                    case "harian":
+                    case "hari_ini":
+                        filterStart = today;
+                        filterEnd = today;
+                        break;
+
+                    case "yesterday":
+                    case "kemarin":
+                        filterStart = today.AddDays(-1);
+                        filterEnd = today.AddDays(-1);
+                        break;
+
+                    case "this_week":
+                    case "mingguan":
+                    case "minggu_ini":
+                        int diff = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
+                        filterStart = today.AddDays(-1 * diff);
+                        filterEnd = filterStart.Value.AddDays(6);
+                        break;
+
+                    case "last_week":
+                    case "minggu_lalu":
+                        int diffLast = (7 + (today.DayOfWeek - DayOfWeek.Monday)) % 7;
+                        var thisWeekMonday = today.AddDays(-1 * diffLast);
+                        filterStart = thisWeekMonday.AddDays(-7);
+                        filterEnd = filterStart.Value.AddDays(6);
+                        break;
+
+                    case "this_month":
+                    case "bulanan":
+                    case "bulan_ini":
+                        filterStart = new DateTime(today.Year, today.Month, 1);
+                        filterEnd = filterStart.Value.AddMonths(1).AddDays(-1);
+                        break;
+
+                    case "last_month":
+                    case "bulan_lalu":
+                        var prevMonth = today.AddMonths(-1);
+                        filterStart = new DateTime(prevMonth.Year, prevMonth.Month, 1);
+                        filterEnd = filterStart.Value.AddMonths(1).AddDays(-1);
+                        break;
+
+                    case "this_quarter":
+                    case "kuartal_ini":
+                        int quarter = (today.Month - 1) / 3;
+                        filterStart = new DateTime(today.Year, quarter * 3 + 1, 1);
+                        filterEnd = filterStart.Value.AddMonths(3).AddDays(-1);
+                        break;
+
+                    case "this_year":
+                    case "tahun_ini":
+                        filterStart = new DateTime(today.Year, 1, 1);
+                        filterEnd = new DateTime(today.Year, 12, 31);
+                        break;
+
+                    case "custom":
+                    case "kustom":
+                        break;
+                }
+            }
+
+            if (filterStart.HasValue || filterEnd.HasValue)
+            {
+                var sStart = filterStart ?? DateTime.MinValue;
+                var sEnd = filterEnd.HasValue ? filterEnd.Value.AddDays(1).AddTicks(-1) : DateTime.MaxValue;
+
+                switch (periodField?.ToLower().Trim())
+                {
+                    case "duedate":
+                        if (filterStart.HasValue && filterEnd.HasValue)
+                            query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value >= sStart && t.DueDate.Value <= sEnd);
+                        else if (filterStart.HasValue)
+                            query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value >= sStart);
+                        else if (filterEnd.HasValue)
+                            query = query.Where(t => t.DueDate.HasValue && t.DueDate.Value <= sEnd);
+                        break;
+
+                    case "startdate":
+                        if (filterStart.HasValue && filterEnd.HasValue)
+                            query = query.Where(t => t.StartDate.HasValue && t.StartDate.Value >= sStart && t.StartDate.Value <= sEnd);
+                        else if (filterStart.HasValue)
+                            query = query.Where(t => t.StartDate.HasValue && t.StartDate.Value >= sStart);
+                        else if (filterEnd.HasValue)
+                            query = query.Where(t => t.StartDate.HasValue && t.StartDate.Value <= sEnd);
+                        break;
+
+                    case "created":
+                        if (filterStart.HasValue && filterEnd.HasValue)
+                            query = query.Where(t => t.CreatedAt >= sStart && t.CreatedAt <= sEnd);
+                        else if (filterStart.HasValue)
+                            query = query.Where(t => t.CreatedAt >= sStart);
+                        else if (filterEnd.HasValue)
+                            query = query.Where(t => t.CreatedAt <= sEnd);
+                        break;
+
+                    default:
+                        if (filterStart.HasValue && filterEnd.HasValue)
+                        {
+                            query = query.Where(t =>
+                                (t.StartDate.HasValue && t.StartDate.Value <= sEnd && (t.DueDate == null || t.DueDate.Value >= sStart)) ||
+                                (t.DueDate.HasValue && t.DueDate.Value >= sStart && t.DueDate.Value <= sEnd) ||
+                                (t.CreatedAt >= sStart && t.CreatedAt <= sEnd)
+                            );
+                        }
+                        else if (filterStart.HasValue)
+                        {
+                            query = query.Where(t =>
+                                (t.DueDate.HasValue && t.DueDate.Value >= sStart) ||
+                                (t.StartDate.HasValue && t.StartDate.Value >= sStart) ||
+                                (t.CreatedAt >= sStart)
+                            );
+                        }
+                        else if (filterEnd.HasValue)
+                        {
+                            query = query.Where(t =>
+                                (t.StartDate.HasValue && t.StartDate.Value <= sEnd) ||
+                                (t.DueDate.HasValue && t.DueDate.Value <= sEnd) ||
+                                (t.CreatedAt <= sEnd)
+                            );
+                        }
+                        break;
+                }
+            }
 
             var totalItems = await query.CountAsync();
             var tasks = await query
@@ -109,10 +274,22 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<TaskSummaryDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetSummary()
         {
-            var tasks = await _db.Tasks
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var query = _db.Tasks
+                .Include(t => t.Project)
                 .Include(t => t.Sessions)
                 .AsNoTracking()
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!isAdmin && currentUser != null)
+            {
+                query = query.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
+
+            var tasks = await query.ToListAsync();
 
             var totalWorkSec = tasks.SelectMany(t => t.Sessions).Sum(s => s.Duration);
             var h = totalWorkSec / 3600;
@@ -141,6 +318,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var task = await _db.Tasks
                 .Include(t => t.Project)
                 .Include(t => t.Category)
@@ -156,6 +336,11 @@ namespace TrackerKerja.Controllers.Api
                 return NotFound(ApiResponse<TaskResponseDto>.Fail($"Tugas dengan ID {id} tidak ditemukan."));
             }
 
+            if (!TaskPermissionHelper.CanViewTask(currentUser, isAdmin, task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<TaskResponseDto>.Fail("Akses ditolak: Anda tidak memiliki izin untuk melihat tugas ini."));
+            }
+
             return Ok(ApiResponse<TaskResponseDto>.Ok(MapToResponseDto(task), "Detail tugas berhasil diambil."));
         }
 
@@ -168,6 +353,10 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateTaskRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values
@@ -178,9 +367,17 @@ namespace TrackerKerja.Controllers.Api
             }
 
             // Validasi Project jika diisi
-            if (dto.ProjectId.HasValue && !await _db.Projects.AnyAsync(p => p.Id == dto.ProjectId.Value))
+            if (dto.ProjectId.HasValue)
             {
-                return BadRequest(ApiResponse<TaskResponseDto>.Fail($"Project dengan ID {dto.ProjectId.Value} tidak ditemukan."));
+                var project = await _db.Projects.FirstOrDefaultAsync(p => p.Id == dto.ProjectId.Value);
+                if (project == null)
+                {
+                    return BadRequest(ApiResponse<TaskResponseDto>.Fail($"Project dengan ID {dto.ProjectId.Value} tidak ditemukan."));
+                }
+                if (!TaskPermissionHelper.CanViewProject(currentUser, isAdmin, project))
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<TaskResponseDto>.Fail("Akses ditolak: Anda tidak dapat menambahkan tugas ke proyek milik tim/perusahaan lain."));
+                }
             }
 
             // Validasi Category jika diisi
@@ -190,9 +387,17 @@ namespace TrackerKerja.Controllers.Api
             }
 
             // Validasi Assignee jika diisi
-            if (!string.IsNullOrWhiteSpace(dto.AssignedToUserId) && !await _db.Users.AnyAsync(u => u.Id == dto.AssignedToUserId))
+            if (!string.IsNullOrWhiteSpace(dto.AssignedToUserId))
             {
-                return BadRequest(ApiResponse<TaskResponseDto>.Fail($"Pengguna PIC dengan ID '{dto.AssignedToUserId}' tidak ditemukan."));
+                var assignee = await _db.Users.FirstOrDefaultAsync(u => u.Id == dto.AssignedToUserId);
+                if (assignee == null)
+                {
+                    return BadRequest(ApiResponse<TaskResponseDto>.Fail($"Pengguna PIC dengan ID '{dto.AssignedToUserId}' tidak ditemukan."));
+                }
+                if (!isAdmin && assignee.CompanyId != userCompanyId)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<TaskResponseDto>.Fail("Akses ditolak: PIC harus merupakan anggota tim/perusahaan yang sama."));
+                }
             }
 
             // Validasi Parent Task jika diisi
@@ -210,6 +415,7 @@ namespace TrackerKerja.Controllers.Api
                 ProjectId = dto.ProjectId,
                 CategoryId = dto.CategoryId,
                 AssignedToUserId = string.IsNullOrWhiteSpace(dto.AssignedToUserId) ? null : dto.AssignedToUserId,
+                CompanyId = userCompanyId,
                 Priority = dto.Priority,
                 Status = dto.Status,
                 Progress = dto.Status == ModelTaskStatus.Done ? 100 : Math.Clamp(dto.Progress, 0, 100),
@@ -236,6 +442,22 @@ namespace TrackerKerja.Controllers.Api
                 .AsNoTracking()
                 .FirstAsync(t => t.Id == task.Id);
 
+            // Dispatch TASK_ASSIGNED email if assigned (Background Safe)
+            if (!string.IsNullOrWhiteSpace(createdTask.AssignedToUserId) && createdTask.AssignedToUser != null && !string.IsNullOrWhiteSpace(createdTask.AssignedToUser.Email))
+            {
+                var taskVars = new Dictionary<string, string>
+                {
+                    { "FullName", createdTask.AssignedToUser.FullName },
+                    { "TaskTitle", createdTask.Title },
+                    { "TaskDescription", string.IsNullOrWhiteSpace(createdTask.Description) ? "Tidak ada deskripsi rinci." : createdTask.Description },
+                    { "ProjectName", createdTask.Project?.Name ?? "Tanpa Proyek" },
+                    { "Priority", createdTask.Priority.ToString() },
+                    { "DueDate", createdTask.DueDate.HasValue ? createdTask.DueDate.Value.ToString("dd MMM yyyy") : "-" },
+                    { "TaskUrl", $"/Task/Details/{createdTask.Id}" }
+                };
+                _ = Task.Run(async () => await _emailService.SendEventEmailAsync("TASK_ASSIGNED", createdTask.AssignedToUser.Email!, taskVars));
+            }
+
             var responseDto = MapToResponseDto(createdTask);
             return CreatedAtAction(nameof(GetById), new { id = task.Id }, ApiResponse<TaskResponseDto>.Ok(responseDto, "Tugas berhasil dibuat."));
         }
@@ -251,6 +473,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateTaskRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values
@@ -260,10 +485,15 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<TaskResponseDto>.Fail("Validasi payload gagal.", errors));
             }
 
-            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id);
+            var task = await _db.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.Id == id);
             if (task == null)
             {
                 return NotFound(ApiResponse<TaskResponseDto>.Fail($"Tugas dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanEditTask(currentUser, isAdmin, task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<TaskResponseDto>.Fail("Akses ditolak: Anda tidak memiliki wewenang untuk mengubah tugas ini."));
             }
 
             // Cegah self-parent loop
@@ -345,6 +575,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] UpdateTaskStatusDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values
@@ -354,12 +587,18 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<TaskResponseDto>.Fail("Validasi payload gagal.", errors));
             }
 
-            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id);
+            var task = await _db.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.Id == id);
             if (task == null)
             {
                 return NotFound(ApiResponse<TaskResponseDto>.Fail($"Tugas dengan ID {id} tidak ditemukan."));
             }
 
+            if (!TaskPermissionHelper.CanEditTask(currentUser, isAdmin, task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<TaskResponseDto>.Fail("Akses ditolak: Anda tidak memiliki wewenang untuk mengubah status tugas ini."));
+            }
+
+            var oldStatus = task.Status;
             task.Status = dto.Status;
             if (dto.Progress.HasValue)
             {
@@ -383,6 +622,21 @@ namespace TrackerKerja.Controllers.Api
                 .AsNoTracking()
                 .FirstAsync(t => t.Id == task.Id);
 
+            // Dispatch TASK_STATUS_CHANGED if status changed (Background Safe)
+            if (oldStatus != dto.Status && !string.IsNullOrWhiteSpace(updatedTask.AssignedToUserId) && updatedTask.AssignedToUser != null && !string.IsNullOrWhiteSpace(updatedTask.AssignedToUser.Email))
+            {
+                var statusVars = new Dictionary<string, string>
+                {
+                    { "FullName", updatedTask.AssignedToUser.FullName },
+                    { "TaskTitle", updatedTask.Title },
+                    { "OldStatus", oldStatus.ToString() },
+                    { "NewStatus", dto.Status.ToString() },
+                    { "ProjectName", updatedTask.Project?.Name ?? "Tanpa Proyek" },
+                    { "TaskUrl", $"/Task/Details/{updatedTask.Id}" }
+                };
+                _ = Task.Run(async () => await _emailService.SendEventEmailAsync("TASK_STATUS_CHANGED", updatedTask.AssignedToUser.Email!, statusVars));
+            }
+
             return Ok(ApiResponse<TaskResponseDto>.Ok(MapToResponseDto(updatedTask), $"Status tugas berhasil diubah menjadi '{task.Status}'."));
         }
 
@@ -395,7 +649,11 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var task = await _db.Tasks
+                .Include(t => t.Project)
                 .Include(t => t.ChildTasks)
                 .Include(t => t.Sessions)
                 .Include(t => t.Notes)
@@ -404,6 +662,11 @@ namespace TrackerKerja.Controllers.Api
             if (task == null)
             {
                 return NotFound(ApiResponse<object>.Fail($"Tugas dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanDeleteTask(currentUser, isAdmin, task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak: Anda tidak memiliki wewenang untuk menghapus tugas ini."));
             }
 
             // Lepaskan relasi child tasks sebelum hapus jika ada
@@ -435,11 +698,20 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<object>.Fail("Daftar ID tugas tidak boleh kosong."));
             }
 
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var tasks = await _db.Tasks
+                .Include(t => t.Project)
                 .Include(t => t.ChildTasks)
                 .Include(t => t.Sessions)
                 .Where(t => dto.TaskIds.Contains(t.Id))
                 .ToListAsync();
+
+            if (!isAdmin)
+            {
+                tasks = tasks.Where(t => TaskPermissionHelper.CanDeleteTask(currentUser, isAdmin, t)).ToList();
+            }
 
             foreach (var t in tasks)
             {
@@ -469,7 +741,16 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> ClearAll()
         {
-            var tasks = await _db.Tasks.Include(t => t.Sessions).ToListAsync();
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var tasksQuery = _db.Tasks.Include(t => t.Project).Include(t => t.Sessions).AsQueryable();
+            if (!isAdmin)
+            {
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
+            var tasks = await tasksQuery.ToListAsync();
             var count = tasks.Count;
 
             _db.Tasks.RemoveRange(tasks);
@@ -491,6 +772,10 @@ namespace TrackerKerja.Controllers.Api
             [FromQuery] string? assigneeId,
             [FromQuery] TaskPriority? priority)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             var query = _db.Tasks
                 .Include(t => t.Project)
                 .Include(t => t.Category)
@@ -498,6 +783,11 @@ namespace TrackerKerja.Controllers.Api
                 .Include(t => t.Sessions)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (!isAdmin && currentUser != null)
+            {
+                query = query.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
+            }
 
             if (projectId.HasValue)
                 query = query.Where(t => t.ProjectId == projectId.Value);
@@ -551,10 +841,18 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> AddSession(int id, [FromBody] AddTaskSessionRequestDto dto)
         {
-            var task = await _db.Tasks.FirstOrDefaultAsync(t => t.Id == id);
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
+            var task = await _db.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.Id == id);
             if (task == null)
             {
                 return NotFound(ApiResponse<object>.Fail($"Tugas dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanEditTask(currentUser, isAdmin, task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak: Anda tidak memiliki izin menambahkan sesi pada tugas ini."));
             }
 
             var dur = dto.DurationSeconds > 0
@@ -602,6 +900,20 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteSession(int id, int sessionId)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
+            var task = await _db.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.Id == id);
+            if (task == null)
+            {
+                return NotFound(ApiResponse<object>.Fail($"Tugas dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanEditTask(currentUser, isAdmin, task))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak: Anda tidak memiliki izin menghapus sesi pada tugas ini."));
+            }
+
             var session = await _db.Sessions.FirstOrDefaultAsync(s => s.Id == sessionId && s.TaskId == id);
             if (session == null)
             {
@@ -671,6 +983,8 @@ namespace TrackerKerja.Controllers.Api
                 CompletedChildTasksCount = childDoneCount,
                 TotalDurationSeconds = task.TotalDurationSeconds,
                 TotalDurationFormatted = task.TotalDurationFormatted,
+                CompanyId = task.CompanyId ?? task.Project?.CompanyId,
+                CompanyName = task.Company?.Name ?? task.Project?.Company?.Name,
                 CreatedAt = task.CreatedAt,
                 UpdatedAt = task.UpdatedAt
             };

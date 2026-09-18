@@ -1,3 +1,5 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
@@ -10,13 +12,16 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/reports")]
     [Produces("application/json")]
+    [Authorize]
     public class ReportsApiController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly UserManager<AppUser> _userManager;
 
-        public ReportsApiController(AppDbContext db)
+        public ReportsApiController(AppDbContext db, UserManager<AppUser> userManager)
         {
             _db = db;
+            _userManager = userManager;
         }
 
         /// <summary>
@@ -26,9 +31,24 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<ReportDashboardDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetDashboardReport()
         {
-            var tasks = await _db.Tasks.AsNoTracking().ToListAsync();
-            var projects = await _db.Projects.Include(p => p.Tasks).ThenInclude(t => t.Sessions).AsNoTracking().ToListAsync();
-            var sessions = await _db.Sessions.Where(s => s.EndTime != null).AsNoTracking().ToListAsync();
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var companyId = currentUser?.CompanyId;
+
+            var tasksQuery = _db.Tasks.AsNoTracking().AsQueryable();
+            var projectsQuery = _db.Projects.Include(p => p.Tasks).ThenInclude(t => t.Sessions).AsNoTracking().AsQueryable();
+            var sessionsQuery = _db.Sessions.Include(s => s.Task).Where(s => s.EndTime != null).AsNoTracking().AsQueryable();
+
+            if (!isAdmin)
+            {
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == companyId);
+                projectsQuery = projectsQuery.Where(p => p.CompanyId == companyId);
+                sessionsQuery = sessionsQuery.Where(s => s.Task != null && s.Task.CompanyId == companyId);
+            }
+
+            var tasks = await tasksQuery.ToListAsync();
+            var projects = await projectsQuery.ToListAsync();
+            var sessions = await sessionsQuery.ToListAsync();
 
             var totalTasks = tasks.Count;
             var doneTasks = tasks.Count(t => t.Status == ModelTaskStatus.Done);
@@ -90,6 +110,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetChartData([FromQuery] string period = "week")
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var now = DateTime.Now;
             DateTime start;
             string format;
@@ -108,10 +131,19 @@ namespace TrackerKerja.Controllers.Api
                 days = 7;
             }
 
-            var sessions = await _db.Sessions
+            var query = _db.Sessions
+                .Include(s => s.Task)
                 .Where(s => s.StartTime >= start && s.EndTime != null)
                 .AsNoTracking()
-                .ToListAsync();
+                .AsQueryable();
+
+            if (!isAdmin)
+            {
+                var companyId = currentUser?.CompanyId;
+                query = query.Where(s => s.Task != null && s.Task.CompanyId == companyId);
+            }
+
+            var sessions = await query.ToListAsync();
 
             var labels = new List<string>();
             var data = new List<double>();
@@ -134,8 +166,21 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<List<MemberWorkloadReportDto>>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetMembersWorkload()
         {
-            var users = await _db.Users.OrderBy(u => u.FullName).AsNoTracking().ToListAsync();
-            var allTasks = await _db.Tasks.Include(t => t.Sessions).AsNoTracking().ToListAsync();
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var companyId = currentUser?.CompanyId;
+
+            var usersQuery = _db.Users.OrderBy(u => u.FullName).AsNoTracking().AsQueryable();
+            var tasksQuery = _db.Tasks.Include(t => t.Sessions).AsNoTracking().AsQueryable();
+
+            if (!isAdmin)
+            {
+                usersQuery = usersQuery.Where(u => u.CompanyId == companyId);
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == companyId);
+            }
+
+            var users = await usersQuery.ToListAsync();
+            var allTasks = await tasksQuery.ToListAsync();
 
             var list = users.Select(u =>
             {
@@ -174,12 +219,21 @@ namespace TrackerKerja.Controllers.Api
             [FromQuery] DateTime? startDate,
             [FromQuery] DateTime? endDate)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var query = _db.Tasks
                 .Include(t => t.Project)
                 .Include(t => t.AssignedToUser)
                 .Include(t => t.Sessions)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                var companyId = currentUser?.CompanyId;
+                query = query.Where(t => t.CompanyId == companyId);
+            }
 
             if (projectId.HasValue)
                 query = query.Where(t => t.ProjectId == projectId.Value);

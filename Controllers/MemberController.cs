@@ -16,25 +16,55 @@ namespace TrackerKerja.Controllers
         private readonly UserManager<AppUser> _userManager;
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly IGamificationService _gamificationService;
+        private readonly IEmailService _emailService;
 
         public MemberController(
             AppDbContext db,
             UserManager<AppUser> userManager,
             RoleManager<IdentityRole> roleManager,
-            IGamificationService gamificationService)
+            IGamificationService gamificationService,
+            IEmailService emailService)
         {
             _db = db;
             _userManager = userManager;
             _roleManager = roleManager;
             _gamificationService = gamificationService;
+            _emailService = emailService;
         }
 
         // ── 1. INDEX: LIST ALL TEAM MEMBERS ──────────────────────
-        public async Task<IActionResult> Index(string? search, string? role)
+        public async Task<IActionResult> Index(string? search, string? role, int? companyId, string? approvalStatus)
         {
             ViewData["Title"] = "Anggota Tim & Kontribusi";
 
-            var usersQuery = _db.Users.AsQueryable();
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var usersQuery = _db.Users.Include(u => u.Company).AsQueryable();
+
+            // Multi-tenant isolation: non-admins only see users in their own company
+            if (!isAdmin)
+            {
+                usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+            }
+            else if (companyId.HasValue)
+            {
+                usersQuery = usersQuery.Where(u => u.CompanyId == companyId.Value);
+            }
+
+            // Approval status filter
+            if (!string.IsNullOrWhiteSpace(approvalStatus))
+            {
+                if (approvalStatus.Equals("pending", StringComparison.OrdinalIgnoreCase))
+                {
+                    usersQuery = usersQuery.Where(u => !u.IsApproved);
+                }
+                else if (approvalStatus.Equals("approved", StringComparison.OrdinalIgnoreCase))
+                {
+                    usersQuery = usersQuery.Where(u => u.IsApproved);
+                }
+            }
 
             if (!string.IsNullOrWhiteSpace(search))
             {
@@ -88,8 +118,19 @@ namespace TrackerKerja.Controllers
                 });
             }
 
+            var pendingCountQuery = _db.Users.Where(u => !u.IsApproved);
+            if (!isAdmin && currentUser != null)
+            {
+                pendingCountQuery = pendingCountQuery.Where(u => u.CompanyId == userCompanyId);
+            }
+            var pendingCount = await pendingCountQuery.CountAsync();
+
             ViewBag.Search = search;
             ViewBag.RoleFilter = role;
+            ViewBag.CompanyFilter = companyId;
+            ViewBag.ApprovalStatus = approvalStatus ?? "all";
+            ViewBag.PendingCount = pendingCount;
+            ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
             ViewBag.TotalMembers = memberList.Count;
 
             return View(memberList);
@@ -102,6 +143,16 @@ namespace TrackerKerja.Controllers
             if (user == null)
             {
                 TempData["Error"] = "Anggota tim tidak ditemukan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
+            // Multi-tenant check: non-admin cannot view members from other companies
+            if (!TaskPermissionHelper.CanAccessCompany(currentUser, isAdmin, user.CompanyId))
+            {
+                TempData["Error"] = "Anda tidak memiliki akses untuk melihat profil anggota dari tim / perusahaan lain.";
                 return RedirectToAction(nameof(Index));
             }
 
@@ -167,9 +218,10 @@ namespace TrackerKerja.Controllers
         // ── 3. CREATE: ADD NEW MEMBER ───────────────────────────
         [Authorize(Roles = "Admin")]
         [HttpGet]
-        public IActionResult Create()
+        public async Task<IActionResult> Create()
         {
             ViewData["Title"] = "Tambah Anggota Tim Baru";
+            ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
             return View(new MemberFormViewModel());
         }
 
@@ -181,6 +233,7 @@ namespace TrackerKerja.Controllers
             if (string.IsNullOrWhiteSpace(model.FullName) || string.IsNullOrWhiteSpace(model.Email))
             {
                 ModelState.AddModelError("", "Nama lengkap dan Email wajib diisi.");
+                ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
                 return View(model);
             }
 
@@ -188,9 +241,11 @@ namespace TrackerKerja.Controllers
             if (existing != null)
             {
                 ModelState.AddModelError("Email", "Email sudah digunakan oleh anggota lain.");
+                ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
                 return View(model);
             }
 
+            var currentUser = await _userManager.GetUserAsync(User);
             var password = !string.IsNullOrWhiteSpace(model.Password) ? model.Password : "Password123!";
 
             var user = new AppUser
@@ -201,8 +256,12 @@ namespace TrackerKerja.Controllers
                 JobTitle = model.JobTitle ?? "Team Member",
                 PhoneNumber = model.PhoneNumber,
                 AvatarColor = model.AvatarColor ?? "#6366F1",
+                CompanyId = model.CompanyId ?? currentUser?.CompanyId ?? 1,
                 CreatedAt = DateTime.Now,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                IsApproved = true,
+                ApprovedAt = DateTime.Now,
+                ApprovedByUserId = currentUser?.Id
             };
 
             var res = await _userManager.CreateAsync(user, password);
@@ -210,6 +269,7 @@ namespace TrackerKerja.Controllers
             {
                 foreach (var err in res.Errors)
                     ModelState.AddModelError("", err.Description);
+                ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
                 return View(model);
             }
 
@@ -243,9 +303,11 @@ namespace TrackerKerja.Controllers
                 JobTitle = user.JobTitle,
                 PhoneNumber = user.PhoneNumber,
                 AvatarColor = user.AvatarColor,
+                CompanyId = user.CompanyId,
                 Role = roles.FirstOrDefault() ?? "User"
             };
 
+            ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
             ViewData["Title"] = $"Edit Anggota - {user.FullName}";
             return View(model);
         }
@@ -264,12 +326,17 @@ namespace TrackerKerja.Controllers
             user.JobTitle = model.JobTitle ?? "Team Member";
             user.PhoneNumber = model.PhoneNumber;
             user.AvatarColor = model.AvatarColor ?? "#6366F1";
+            if (model.CompanyId.HasValue)
+            {
+                user.CompanyId = model.CompanyId.Value;
+            }
 
             var res = await _userManager.UpdateAsync(user);
             if (!res.Succeeded)
             {
                 foreach (var err in res.Errors)
                     ModelState.AddModelError("", err.Description);
+                ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
                 return View(model);
             }
 
@@ -350,6 +417,20 @@ namespace TrackerKerja.Controllers
             }
             else
             {
+                // Send Password Reset Notification Email (Background Safe)
+                if (!string.IsNullOrWhiteSpace(user.Email))
+                {
+                    var resetVars = new Dictionary<string, string>
+                    {
+                        { "FullName", user.FullName },
+                        { "Email", user.Email },
+                        { "NewPassword", newPassword },
+                        { "LoginUrl", "/Account/Login" },
+                        { "CurrentDate", DateTime.Now.ToString("dd MMM yyyy HH:mm") }
+                    };
+                    _ = Task.Run(async () => await _emailService.SendEventEmailAsync("PASSWORD_RESET_NOTIFICATION", user.Email, resetVars));
+                }
+
                 TempData["Success"] = $"Password untuk anggota '{user.FullName}' berhasil diubah secara langsung!";
             }
 
@@ -481,6 +562,126 @@ namespace TrackerKerja.Controllers
                 TempData["Error"] = $"Terjadi kesalahan saat menghapus member: {ex.Message}";
             }
 
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── 9. ADMIN APPROVE MEMBER REGISTRATION ────────────────
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Approve(string id)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, message = "ID Anggota tidak valid." });
+                TempData["Error"] = "ID Anggota tidak valid.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, message = "Anggota tidak ditemukan." });
+                TempData["Error"] = "Anggota tidak ditemukan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var currentAdmin = await _userManager.GetUserAsync(User);
+            user.IsApproved = true;
+            user.ApprovedAt = DateTime.Now;
+            user.ApprovedByUserId = currentAdmin?.Id;
+            user.RejectionReason = null;
+
+            var result = await _userManager.UpdateAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, message = $"Gagal menyetujui akun: {errors}" });
+                TempData["Error"] = $"Gagal menyetujui akun: {errors}";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { success = true, message = $"Pendaftaran akun '{user.FullName}' ({user.Email}) berhasil disetujui." });
+
+            // Send USER_APPROVED Email Notification (Background Safe)
+            if (!string.IsNullOrWhiteSpace(user.Email))
+            {
+                var approveVars = new Dictionary<string, string>
+                {
+                    { "FullName", user.FullName },
+                    { "Email", user.Email },
+                    { "LoginUrl", "/Account/Login" },
+                    { "CurrentDate", DateTime.Now.ToString("dd MMM yyyy HH:mm") }
+                };
+                _ = Task.Run(async () => await _emailService.SendEventEmailAsync("USER_APPROVED", user.Email, approveVars));
+            }
+
+            TempData["Success"] = $"Pendaftaran akun '{user.FullName}' ({user.Email}) berhasil disetujui! Akun sekarang dapat digunakan untuk login.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── 10. ADMIN REJECT MEMBER REGISTRATION ────────────────
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> Reject(string id, string? reason)
+        {
+            if (string.IsNullOrWhiteSpace(id))
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, message = "ID Anggota tidak valid." });
+                TempData["Error"] = "ID Anggota tidak valid.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, message = "Anggota tidak ditemukan." });
+                TempData["Error"] = "Anggota tidak ditemukan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (user.IsApproved)
+            {
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, message = "Akun ini sudah disetujui sebelumnya." });
+                TempData["Error"] = "Akun ini sudah disetujui sebelumnya. Gunakan penonaktifan atau hapus member jika diperlukan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            // Send USER_REJECTED Email Notification before deleting (Background Safe)
+            if (!string.IsNullOrWhiteSpace(user.Email))
+            {
+                var rejectVars = new Dictionary<string, string>
+                {
+                    { "FullName", user.FullName },
+                    { "Email", user.Email },
+                    { "RejectionReason", string.IsNullOrWhiteSpace(reason) ? "Kriteria pendaftaran belum terpenuhi." : reason.Trim() },
+                    { "CurrentDate", DateTime.Now.ToString("dd MMM yyyy HH:mm") }
+                };
+                _ = Task.Run(async () => await _emailService.SendEventEmailAsync("USER_REJECTED", user.Email, rejectVars));
+            }
+
+            var result = await _userManager.DeleteAsync(user);
+            if (!result.Succeeded)
+            {
+                var errors = string.Join(", ", result.Errors.Select(e => e.Description));
+                if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                    return Json(new { success = false, message = $"Gagal menolak pendaftaran: {errors}" });
+                TempData["Error"] = $"Gagal menolak pendaftaran: {errors}";
+                return RedirectToAction(nameof(Index));
+            }
+
+            if (Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+                return Json(new { success = true, message = $"Pendaftaran akun '{user.FullName}' ({user.Email}) telah ditolak dan dibatalkan." });
+
+            TempData["Success"] = $"Pendaftaran akun '{user.FullName}' ({user.Email}) telah ditolak dan dibatalkan.";
             return RedirectToAction(nameof(Index));
         }
     }

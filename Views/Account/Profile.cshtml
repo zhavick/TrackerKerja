@@ -1,275 +1,511 @@
 @model TrackerKerja.ViewModels.ProfileViewModel
 @{
-    ViewData["Title"] = "Profil Saya";
-    var avatarColors = new[] { "#6366F1","#06B6D4","#10B981","#F59E0B","#EF4444","#8B5CF6","#EC4899","#F97316" };
+    ViewData["Title"] = "Profil Saya & Cover";
+    var avatarColors = new[] { "#6366F1", "#06B6D4", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#F97316" };
+    var defaultCoverUrl = "/images/default-profile-cover.svg";
+    var currentCoverUrl = !string.IsNullOrEmpty(Model.CoverPictureUrl) ? Model.CoverPictureUrl : defaultCoverUrl;
+    var hasCustomCover = !string.IsNullOrEmpty(Model.CoverPictureUrl);
 }
 
-<div class="max-w-4xl mx-auto">
+<div class="w-full max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 space-y-6 pb-12">
 
-    <!-- Profile Header -->
-    <div class="bg-gradient-to-br from-indigo-500 via-purple-600 to-pink-600 rounded-3xl p-5 sm:p-8 text-white mb-6 relative overflow-hidden shadow-xl">
-        <div class="absolute top-0 right-0 w-64 h-64 bg-white/5 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-        <div class="absolute bottom-0 left-0 w-48 h-48 bg-white/5 rounded-full translate-y-1/2 -translate-x-1/2"></div>
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 1. HERO PROFILE & NAME CARD (WIDE BANNER + COVER PHOTO) -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden transition-all mb-6">
+        
+        <!-- Cover Photo Banner (Wide Responsive Aspect Ratio) -->
+        <div class="h-44 sm:h-56 md:h-64 lg:h-72 w-full relative overflow-hidden bg-slate-950 group">
+            <img id="hero-cover-img"
+                 src="@currentCoverUrl"
+                 alt="Profile Cover Background"
+                 class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105" />
 
-        <div class="relative flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-4 sm:gap-6">
-            <!-- Avatar Display -->
-            <div class="relative flex-shrink-0">
-                @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+            <!-- Ambient Gradient Overlay for Contrast & Readability -->
+            <div class="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/25 to-transparent"></div>
+
+            <!-- Top Left: Profile Badge & Cover Status -->
+            <div class="absolute top-4 left-4 flex items-center gap-2 flex-wrap z-10">
+                <span class="px-3 py-1 rounded-full text-xs font-black tracking-wide text-white bg-black/45 backdrop-blur-md border border-white/20 shadow-md inline-flex items-center gap-1.5">
+                    <i class="fas fa-sparkles text-amber-400"></i> PROFIL PENGGUNA
+                </span>
+                @if (hasCustomCover)
                 {
-                    <img src="@Model.ProfilePictureUrl" alt="@Model.FullName" id="header-avatar-img"
-                         class="w-20 sm:w-24 h-20 sm:h-24 rounded-3xl object-cover shadow-2xl border-2 border-white/40" />
-                    <div id="avatar-preview" class="hidden w-20 sm:w-24 h-20 sm:h-24 rounded-3xl items-center justify-center text-2xl sm:text-3xl font-black shadow-2xl"
-                         style="background: @Model.AvatarColor">
-                        @Model.Initials
-                    </div>
+                    <span id="badge-custom-cover" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold text-emerald-300 bg-emerald-950/60 backdrop-blur-md border border-emerald-500/30 inline-flex items-center gap-1">
+                        <i class="fas fa-check-circle"></i> Cover Kustom
+                    </span>
                 }
                 else
                 {
-                    <img id="header-avatar-img" class="hidden w-20 sm:w-24 h-20 sm:h-24 rounded-3xl object-cover shadow-2xl border-2 border-white/40" />
-                    <div class="w-20 sm:w-24 h-20 sm:h-24 rounded-3xl flex items-center justify-center text-2xl sm:text-3xl font-black shadow-2xl"
-                         id="avatar-preview" style="background: @Model.AvatarColor">
-                        @Model.Initials
-                    </div>
-                }
-
-                @if (Model.Gamification?.FeaturedBadge != null)
-                {
-                    <div class="absolute -bottom-2 -right-2 w-8 h-8 rounded-full border-2 border-white shadow-lg flex items-center justify-center text-white text-xs animate-bounce"
-                         style="background: @Model.Gamification.FeaturedBadge.Color" title="Badge Utama: @Model.Gamification.FeaturedBadge.Name">
-                        <i class="@Model.Gamification.FeaturedBadge.Icon"></i>
-                    </div>
+                    <span id="badge-custom-cover" class="px-2.5 py-0.5 rounded-full text-[11px] font-bold text-indigo-200 bg-indigo-950/60 backdrop-blur-md border border-indigo-400/30 inline-flex items-center gap-1">
+                        <i class="fas fa-paint-brush"></i> Cover Default Kreatif
+                    </span>
                 }
             </div>
 
-            <div class="flex-1">
-                <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
-                    <h2 class="text-2xl sm:text-3xl font-black">@Model.FullName</h2>
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-400 text-amber-950 shadow-sm border border-amber-300 inline-flex items-center gap-1">
-                        <i class="fas fa-crown text-[10px]"></i> LVL @(Model.Gamification?.Level ?? 1)
-                    </span>
-                    <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white backdrop-blur-md border border-white/20">
-                        @(Model.Gamification?.LevelTitle ?? "🌱 Novice Tracker")
-                    </span>
-                </div>
-                <p class="text-white/90 text-sm sm:text-base mt-0.5">@Model.JobTitle</p>
-                <p class="text-white/70 text-xs sm:text-sm mt-0.5">@Model.Email</p>
-
-                <!-- EXP Progress Bar -->
-                <div class="mt-3 bg-black/20 p-2.5 rounded-2xl border border-white/10 max-w-md">
-                    <div class="flex items-center justify-between text-xs font-bold mb-1">
-                        <span class="text-amber-300 flex items-center gap-1">
-                            <i class="fas fa-bolt text-amber-400"></i> @(Model.Gamification?.TotalExp ?? 0) Total EXP
-                        </span>
-                        <span class="text-white/80 text-[11px]">
-                            @(Model.Gamification?.CurrentLevelExp ?? 0) / @(Model.Gamification?.NextLevelExp ?? 200) EXP (Level @((Model.Gamification?.Level ?? 1) + 1))
-                        </span>
-                    </div>
-                    <div class="w-full bg-white/20 rounded-full h-2 overflow-hidden">
-                        <div class="bg-gradient-to-r from-amber-400 to-yellow-300 h-2 rounded-full transition-all duration-500 shadow-sm"
-                             style="width: @(Model.Gamification?.ExpProgressPercent ?? 0)%"></div>
-                    </div>
-                </div>
+            <!-- Top Right: Quick Action to Scroll to Edit Profile & Cover -->
+            <div class="absolute top-4 right-4 flex items-center gap-2 z-10">
+                <a href="#edit-profile-section"
+                   class="px-3.5 py-2 rounded-2xl text-xs font-bold text-white bg-black/50 hover:bg-black/75 backdrop-blur-md border border-white/30 hover:border-white/50 transition-all shadow-lg flex items-center gap-2 cursor-pointer hover:shadow-indigo-500/20">
+                    <i class="fas fa-camera text-indigo-300"></i>
+                    <span class="hidden sm:inline">Ubah Cover &amp; Foto</span>
+                    <span class="sm:hidden">Edit</span>
+                </a>
             </div>
         </div>
 
-        <!-- Quick Stats -->
-        <div class="relative grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-4 mt-6">
-            <div class="bg-white/10 rounded-2xl p-3 sm:p-4 text-center backdrop-blur-sm">
-                <p class="text-xl sm:text-2xl font-black">@Model.TotalTasks</p>
-                <p class="text-white/70 text-xs mt-0.5">Total Tugas</p>
+        <!-- Card Body Below Cover Banner (Natural Flow, No Negative Margin On Container) -->
+        <div class="px-5 sm:px-8 pb-7 pt-0 relative">
+            
+            <!-- Row 1: Overlapping Avatar & Identity Info -->
+            <div class="flex flex-col sm:flex-row items-center sm:items-start text-center sm:text-left gap-5 sm:gap-6">
+                
+                <!-- Avatar (ONLY the avatar has negative margin so it bridges the cover cleanly) -->
+                <div class="relative flex-shrink-0 -mt-14 sm:-mt-16 lg:-mt-20 z-20">
+                    @if (!string.IsNullOrEmpty(Model.ProfilePictureUrl))
+                    {
+                        <img src="@Model.ProfilePictureUrl" alt="@Model.FullName" id="header-avatar-img"
+                             class="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-3xl object-cover shadow-2xl border-4 border-white bg-white ring-4 ring-indigo-500/15" />
+                        <div id="avatar-preview" class="hidden w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-3xl items-center justify-center text-3xl sm:text-4xl font-black shadow-2xl border-4 border-white ring-4 ring-indigo-500/15 text-white"
+                             style="background: @Model.AvatarColor">
+                            @Model.Initials
+                        </div>
+                    }
+                    else
+                    {
+                        <img id="header-avatar-img" class="hidden w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-3xl object-cover shadow-2xl border-4 border-white bg-white ring-4 ring-indigo-500/15" />
+                        <div class="w-24 h-24 sm:w-28 sm:h-28 lg:w-32 lg:h-32 rounded-3xl flex items-center justify-center text-3xl sm:text-4xl font-black shadow-2xl border-4 border-white ring-4 ring-indigo-500/15 text-white"
+                             id="avatar-preview" style="background: @Model.AvatarColor">
+                            @Model.Initials
+                        </div>
+                    }
+
+                    <!-- Featured Badge Floating Indicator -->
+                    @if (Model.Gamification?.FeaturedBadge != null)
+                    {
+                        <div class="absolute -bottom-2 -right-2 w-9 h-9 rounded-2xl border-2 border-white shadow-xl flex items-center justify-center text-white text-sm animate-bounce"
+                             style="background: @Model.Gamification.FeaturedBadge.Color"
+                             title="Badge Utama: @Model.Gamification.FeaturedBadge.Name">
+                            <i class="@Model.Gamification.FeaturedBadge.Icon"></i>
+                        </div>
+                    }
+                </div>
+
+                <!-- User Information (Starts right below cover banner with clean spacing) -->
+                <div class="pt-1 sm:pt-3 flex-1 min-w-0 space-y-2">
+                    <div class="flex items-center justify-center sm:justify-start gap-2 flex-wrap">
+                        <h1 class="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">@Model.FullName</h1>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-black bg-amber-100 text-amber-900 border border-amber-300 shadow-xs inline-flex items-center gap-1">
+                            <i class="fas fa-crown text-amber-600 text-[10px]"></i> LVL @(Model.Gamification?.Level ?? 1)
+                        </span>
+                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
+                            @(Model.Gamification?.LevelTitle ?? "🌱 Novice Tracker")
+                        </span>
+                    </div>
+
+                    <div class="flex items-center justify-center sm:justify-start gap-3 flex-wrap text-xs text-slate-500 font-medium">
+                        <span class="flex items-center gap-1 text-slate-700 font-semibold">
+                            <i class="fas fa-briefcase text-indigo-500"></i> @(string.IsNullOrWhiteSpace(Model.JobTitle) ? "Anggota Tim" : Model.JobTitle)
+                        </span>
+                        <span>&bull;</span>
+                        <span class="flex items-center gap-1 text-slate-500">
+                            <i class="fas fa-envelope text-slate-400"></i> @Model.Email
+                        </span>
+                        <span>&bull;</span>
+                        <span class="flex items-center gap-1 text-slate-500">
+                            <i class="fas fa-calendar-alt text-slate-400"></i> Bergabung @Model.CreatedAt.ToString("MMM yyyy")
+                        </span>
+                    </div>
+
+                    <!-- Gamification EXP Progress Bar (Compact & Sleek) -->
+                    <div class="pt-1 max-w-xl mx-auto sm:mx-0">
+                        <div class="flex items-center justify-between text-[11px] font-bold text-slate-600 mb-1">
+                            <span class="text-amber-600 flex items-center gap-1">
+                                <i class="fas fa-bolt text-amber-500"></i> @(Model.Gamification?.TotalExp ?? 0) Total EXP
+                            </span>
+                            <span class="text-slate-400 font-mono">
+                                @(Model.Gamification?.CurrentLevelExp ?? 0) / @(Model.Gamification?.NextLevelExp ?? 200) EXP ke Lvl @((Model.Gamification?.Level ?? 1) + 1)
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden border border-slate-200/60 shadow-inner">
+                            <div class="bg-gradient-to-r from-amber-400 via-orange-500 to-indigo-600 h-2.5 rounded-full transition-all duration-500 shadow-sm"
+                                 style="width: @(Model.Gamification?.ExpProgressPercent ?? 0)%"></div>
+                        </div>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white/10 rounded-2xl p-3 sm:p-4 text-center backdrop-blur-sm">
-                <p class="text-xl sm:text-2xl font-black">@Model.DoneTasks</p>
-                <p class="text-white/70 text-xs mt-0.5">Selesai</p>
+
+            <!-- Row 2: Dedicated Quick Stats Grid (Clean 4-column layout on laptop, 2-column on mobile) -->
+            <div class="mt-6 pt-5 border-t border-slate-100">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
+                    <div class="bg-slate-50 hover:bg-indigo-50/50 p-4 rounded-2xl border border-slate-200/80 text-center transition-all hover:shadow-xs">
+                        <div class="flex items-center justify-center gap-2 mb-1">
+                            <i class="fas fa-tasks text-indigo-500 text-xs"></i>
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Total Tugas</span>
+                        </div>
+                        <span class="text-2xl sm:text-3xl font-black text-slate-800">@Model.TotalTasks</span>
+                        <span class="text-[11px] text-slate-400 block mt-0.5">Semua Periode</span>
+                    </div>
+                    <div class="bg-slate-50 hover:bg-emerald-50/50 p-4 rounded-2xl border border-slate-200/80 text-center transition-all hover:shadow-xs">
+                        <div class="flex items-center justify-center gap-2 mb-1">
+                            <i class="fas fa-check-circle text-emerald-500 text-xs"></i>
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Selesai</span>
+                        </div>
+                        <span class="text-2xl sm:text-3xl font-black text-emerald-600">@Model.DoneTasks</span>
+                        <span class="text-[11px] text-emerald-600/80 block mt-0.5 font-bold">Tugas Selesai</span>
+                    </div>
+                    <div class="bg-slate-50 hover:bg-amber-50/50 p-4 rounded-2xl border border-slate-200/80 text-center transition-all hover:shadow-xs">
+                        <div class="flex items-center justify-center gap-2 mb-1">
+                            <i class="fas fa-medal text-amber-500 text-xs"></i>
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Badges</span>
+                        </div>
+                        <span class="text-2xl sm:text-3xl font-black text-amber-600">@(Model.Gamification?.UnlockedBadgesCount ?? 0)</span>
+                        <span class="text-[11px] text-slate-400 block mt-0.5">dari @(Model.Gamification?.TotalBadgesCount ?? 0) Terbuka</span>
+                    </div>
+                    <div class="bg-slate-50 hover:bg-purple-50/50 p-4 rounded-2xl border border-slate-200/80 text-center transition-all hover:shadow-xs">
+                        <div class="flex items-center justify-center gap-2 mb-1">
+                            <i class="fas fa-clock text-purple-500 text-xs"></i>
+                            <span class="text-xs text-slate-500 font-bold uppercase tracking-wider">Jam Kerja</span>
+                        </div>
+                        <span class="text-2xl sm:text-3xl font-black text-purple-600">@Model.TotalHours</span>
+                        <span class="text-[11px] text-slate-400 block mt-0.5">Total Jam Log</span>
+                    </div>
+                </div>
             </div>
-            <div class="bg-white/10 rounded-2xl p-3 sm:p-4 text-center backdrop-blur-sm">
-                <p class="text-xl sm:text-2xl font-black">@(Model.Gamification?.UnlockedBadgesCount ?? 0) / @(Model.Gamification?.TotalBadgesCount ?? 0)</p>
-                <p class="text-white/70 text-xs mt-0.5">Badge Terbuka</p>
-            </div>
-            <div class="bg-white/10 rounded-2xl p-3 sm:p-4 text-center backdrop-blur-sm">
-                <p class="text-xl sm:text-2xl font-black">@Model.TotalHours</p>
-                <p class="text-white/70 text-xs mt-0.5">Jam Kerja</p>
-            </div>
+
         </div>
     </div>
 
-    <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 2. MAIN FORMS GRID (12-COL WIDE ON LAPTOP, STACK ON MOBILE) -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
 
-        <!-- Edit Profile Form -->
-        <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4">
-                <h3 class="text-white font-bold flex items-center gap-2">
-                    <i class="fas fa-user-edit"></i> Edit Profil & Foto
-                </h3>
+        <!-- ───────────────────────────────────────────────────────────── -->
+        <!-- FORM: EDIT PROFIL & FOTO & COVER (7 COLS ON LAPTOP)          -->
+        <!-- ───────────────────────────────────────────────────────────── -->
+        <div id="edit-profile-section" class="lg:col-span-7 bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden scroll-mt-6">
+            <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 px-6 py-4.5 flex items-center justify-between text-white shadow-sm">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-white/20 text-white flex items-center justify-center text-lg font-bold backdrop-blur-md shadow-inner">
+                        <i class="fas fa-user-edit"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-base font-black tracking-tight">Edit Profil &amp; Foto &amp; Cover</h3>
+                        <p class="text-xs text-indigo-100">Kustomisasi foto cover banner, foto profil avatar, nama, dan jabatan kerja</p>
+                    </div>
+                </div>
+                <span class="hidden sm:inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold bg-white/15 text-white backdrop-blur-md border border-white/20">
+                    <i class="fas fa-magic"></i> Live Preview
+                </span>
             </div>
-            <div class="p-6">
-                <form method="post" asp-action="Profile" asp-controller="Account" enctype="multipart/form-data">
-                    @Html.AntiForgeryToken()
 
-                    <!-- Profile Picture Upload -->
-                    <div class="mb-5 p-4 bg-indigo-50/50 rounded-2xl border border-indigo-100">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-camera text-indigo-500 mr-1.5"></i>Foto Profil
-                        </label>
-                        <div class="flex items-center gap-4">
-                            <div class="w-16 h-16 rounded-2xl bg-white border border-indigo-200 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-sm">
-                                <img id="preview-img" src="@(string.IsNullOrEmpty(Model.ProfilePictureUrl) ? "/images/default-avatar.png" : Model.ProfilePictureUrl)"
-                                     alt="Preview" class="@(string.IsNullOrEmpty(Model.ProfilePictureUrl) ? "hidden" : "") w-full h-full object-cover" />
-                                <div id="preview-placeholder" class="@(string.IsNullOrEmpty(Model.ProfilePictureUrl) ? "" : "hidden") text-slate-400 text-xs text-center font-bold">
-                                    @Model.Initials
-                                </div>
-                            </div>
-                            <div class="flex-1">
-                                <input type="file" name="ProfilePicture" id="avatar-file-input" accept="image/*"
-                                       class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer"
-                                       onchange="previewFile(event)" />
-                                <p class="text-[11px] text-slate-400 mt-1">Format: JPG, PNG, WEBP (Max 5MB)</p>
-                            </div>
-                        </div>
+            <div class="p-6 sm:p-7">
+                @if (TempData["Success"] != null)
+                {
+                    <div class="mb-5 p-4 bg-emerald-50 border border-emerald-200 rounded-2xl text-emerald-800 text-xs font-semibold flex items-center gap-2.5 shadow-xs">
+                        <i class="fas fa-check-circle text-emerald-500 text-base flex-shrink-0"></i>
+                        <span>@TempData["Success"]</span>
                     </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-user text-indigo-400 mr-1.5"></i>Nama Lengkap
-                        </label>
-                        <input type="text" name="FullName" value="@Model.FullName" required
-                               class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800">
-                    </div>
-
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-briefcase text-indigo-400 mr-1.5"></i>Jabatan / Posisi
-                        </label>
-                        <input type="text" name="JobTitle" value="@Model.JobTitle"
-                               class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800">
-                    </div>
-
-                    <!-- Avatar Color -->
-                    <div class="mb-5">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-palette text-indigo-400 mr-1.5"></i>Warna Background Avatar
-                        </label>
-                        <div class="flex items-center gap-3 flex-wrap">
-                            <input type="color" name="AvatarColor" id="color-input" value="@Model.AvatarColor"
-                                   class="w-10 h-10 rounded-xl border border-indigo-200 cursor-pointer"
-                                   onchange="updateAvatarPreview(this.value)">
-                            <div class="flex gap-2 flex-wrap">
-                                @foreach (var color in avatarColors)
-                                {
-                                    <button type="button"
-                                            onclick="setColor('@color')"
-                                            class="w-8 h-8 rounded-xl border-2 @(Model.AvatarColor == color ? "border-slate-800 scale-110" : "border-white") shadow-sm hover:scale-110 transition-all"
-                                            style="background:@color"></button>
-                                }
-                            </div>
-                        </div>
-                    </div>
-
-                    <button type="submit"
-                            class="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold py-3 rounded-xl hover:shadow-lg hover:shadow-indigo-200 transition-all">
-                        <i class="fas fa-save mr-2"></i>Simpan Profil
-                    </button>
-                </form>
-            </div>
-        </div>
-
-        <!-- Change Password Form -->
-        <div id="change-password" class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden scroll-mt-6">
-            <div class="bg-gradient-to-r from-emerald-500 to-teal-600 px-6 py-4">
-                <h3 class="text-white font-bold flex items-center gap-2">
-                    <i class="fas fa-lock"></i> Ganti Password (Change Password)
-                </h3>
-            </div>
-            <div class="p-6">
+                }
 
                 @if (TempData["Error"] != null)
                 {
-                    <div class="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-red-700 text-sm flex items-center gap-2">
-                        <i class="fas fa-times-circle"></i>
+                    <div class="mb-5 p-4 bg-rose-50 border border-rose-200 rounded-2xl text-rose-800 text-xs font-semibold flex items-center gap-2.5 shadow-xs">
+                        <i class="fas fa-exclamation-circle text-rose-500 text-base flex-shrink-0"></i>
                         <span>@TempData["Error"]</span>
                     </div>
                 }
 
-                <form method="post" asp-action="ChangePassword" asp-controller="Account">
+                <form method="post" asp-action="Profile" asp-controller="Account" enctype="multipart/form-data" class="space-y-6">
                     @Html.AntiForgeryToken()
+                    <input type="hidden" name="RemoveCover" id="remove-cover-input" value="false" />
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-key text-emerald-500 mr-1.5"></i>Password Lama
-                        </label>
-                        <input type="password" name="CurrentPassword" required placeholder="Password saat ini"
-                               class="w-full px-4 py-3 rounded-xl border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800">
+                    <!-- SECTION A: UPLOAD FOTO COVER BANNER -->
+                    <div class="p-5 bg-gradient-to-br from-indigo-50/50 via-purple-50/30 to-slate-50/50 rounded-2xl border border-indigo-100/80">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fas fa-image text-indigo-600"></i>
+                                <span>Foto Cover Banner</span>
+                            </label>
+                            <span class="text-[11px] text-slate-400 font-medium">Disarankan 1920 &times; 640 px (Maks 10MB)</span>
+                        </div>
+
+                        <!-- Live Cover Preview Box -->
+                        <div class="relative w-full h-32 sm:h-40 rounded-2xl overflow-hidden border-2 border-dashed border-indigo-200 bg-slate-900 shadow-inner mb-3.5 group">
+                            <img id="form-cover-preview"
+                                 src="@currentCoverUrl"
+                                 alt="Cover Preview"
+                                 class="w-full h-full object-cover" />
+                            <div class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-bold gap-2">
+                                <i class="fas fa-search-plus"></i> Pratinjau Tampilan Cover
+                            </div>
+                        </div>
+
+                        <!-- File Input & Reset Controls -->
+                        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+                            <div class="flex-1">
+                                <input type="file"
+                                       name="CoverPicture"
+                                       id="cover-file-input"
+                                       accept="image/*"
+                                       class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer transition-all"
+                                       onchange="previewCoverFile(event)" />
+                            </div>
+                            <button type="button"
+                                    id="btn-reset-cover"
+                                    onclick="resetToDefaultCover()"
+                                    class="px-3.5 py-2 rounded-xl text-xs font-bold text-slate-600 bg-white hover:bg-slate-100 border border-slate-200 shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                                    title="Gunakan ilustrasi background kreatif default sistem">
+                                <i class="fas fa-undo text-slate-400"></i>
+                                <span>Gunakan Cover Default</span>
+                            </button>
+                        </div>
+                        <p class="text-[11px] text-slate-400 mt-2 leading-relaxed">
+                            Foto cover akan tampil memanjang di bagian atas kartu profil Anda. Mendukung file JPG, PNG, atau WEBP.
+                        </p>
                     </div>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-lock text-emerald-500 mr-1.5"></i>Password Baru
-                        </label>
-                        <input type="password" name="NewPassword" required placeholder="Min. 6 karakter"
-                               class="w-full px-4 py-3 rounded-xl border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800">
+                    <!-- SECTION B: UPLOAD FOTO PROFIL (AVATAR) -->
+                    <div class="p-5 bg-gradient-to-br from-indigo-50/50 via-purple-50/30 to-slate-50/50 rounded-2xl border border-indigo-100/80">
+                        <div class="flex items-center justify-between mb-3">
+                            <label class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2">
+                                <i class="fas fa-camera text-indigo-600"></i>
+                                <span>Foto Profil (Avatar)</span>
+                            </label>
+                            <span class="text-[11px] text-slate-400 font-medium">Format Persegi (Maks 5MB)</span>
+                        </div>
+
+                        <div class="flex items-center gap-4">
+                            <!-- Avatar Preview Box -->
+                            <div class="w-18 h-18 sm:w-20 sm:h-20 rounded-2xl bg-white border-2 border-indigo-200 overflow-hidden flex items-center justify-center flex-shrink-0 shadow-md">
+                                <img id="preview-img"
+                                     src="@(string.IsNullOrEmpty(Model.ProfilePictureUrl) ? "/images/default-avatar.png" : Model.ProfilePictureUrl)"
+                                     alt="Preview Avatar"
+                                     class="@(string.IsNullOrEmpty(Model.ProfilePictureUrl) ? "hidden" : "") w-full h-full object-cover" />
+                                <div id="preview-placeholder"
+                                     class="@(string.IsNullOrEmpty(Model.ProfilePictureUrl) ? "" : "hidden") text-white text-base sm:text-lg font-black w-full h-full flex items-center justify-center"
+                                     style="background: @Model.AvatarColor">
+                                    @Model.Initials
+                                </div>
+                            </div>
+
+                            <!-- Avatar Upload Controls -->
+                            <div class="flex-1 min-w-0">
+                                <input type="file"
+                                       name="ProfilePicture"
+                                       id="avatar-file-input"
+                                       accept="image/*"
+                                       class="block w-full text-xs text-slate-500 file:mr-3 file:py-2 file:px-3.5 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-indigo-600 file:text-white hover:file:bg-indigo-700 cursor-pointer transition-all"
+                                       onchange="previewAvatarFile(event)" />
+                                <p class="text-[11px] text-slate-400 mt-1.5">
+                                    Pilih foto persegi untuk hasil terbaik. Format: JPG, PNG, WEBP.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Avatar Color Customization (When no photo is uploaded) -->
+                        <div class="mt-4 pt-3.5 border-t border-indigo-100/60">
+                            <label class="block text-xs font-bold text-slate-700 mb-2">
+                                <i class="fas fa-palette text-indigo-500 mr-1"></i> Warna Background Avatar (Inisial)
+                            </label>
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <input type="color"
+                                       name="AvatarColor"
+                                       id="color-input"
+                                       value="@Model.AvatarColor"
+                                       class="w-9 h-9 rounded-xl border border-indigo-200 cursor-pointer"
+                                       onchange="updateAvatarPreview(this.value)">
+                                <div class="flex gap-2 flex-wrap">
+                                    @foreach (var color in avatarColors)
+                                    {
+                                        <button type="button"
+                                                onclick="setColor('@color')"
+                                                class="w-7 h-7 rounded-xl border-2 @(Model.AvatarColor == color ? "border-slate-800 scale-110 shadow-sm" : "border-white") shadow-2xs hover:scale-110 transition-all cursor-pointer"
+                                                style="background:@color"
+                                                title="Pilih warna @color"></button>
+                                    }
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mb-5">
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-lock text-emerald-500 mr-1.5"></i>Konfirmasi Password Baru
-                        </label>
-                        <input type="password" name="ConfirmPassword" required placeholder="Ulangi password baru"
-                               class="w-full px-4 py-3 rounded-xl border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800">
+                    <!-- SECTION C: INFORMASI PRIBADI -->
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                <i class="fas fa-user text-indigo-500 mr-1"></i> Nama Lengkap <span class="text-rose-500">*</span>
+                            </label>
+                            <input type="text"
+                                   name="FullName"
+                                   value="@Model.FullName"
+                                   required
+                                   placeholder="Contoh: Budi Pratama"
+                                   class="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 text-xs font-semibold transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                <i class="fas fa-briefcase text-indigo-500 mr-1"></i> Jabatan / Posisi Kerja
+                            </label>
+                            <input type="text"
+                                   name="JobTitle"
+                                   value="@Model.JobTitle"
+                                   placeholder="Contoh: Senior Fullstack Engineer"
+                                   class="w-full px-4 py-3 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 text-xs font-semibold transition-all">
+                        </div>
                     </div>
 
-                    <button type="submit"
-                            class="w-full bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold py-3 rounded-xl hover:shadow-lg hover:shadow-emerald-200 transition-all">
-                        <i class="fas fa-key mr-2"></i>Ubah Password
-                    </button>
-                </form>
-
-                <!-- Logout -->
-                <div class="mt-5 pt-5 border-t border-slate-100">
-                    <form method="post" asp-action="Logout" asp-controller="Account">
-                        @Html.AntiForgeryToken()
+                    <!-- SUBMIT BUTTON -->
+                    <div class="pt-2">
                         <button type="submit"
-                                class="w-full bg-red-50 hover:bg-red-100 text-red-600 font-semibold py-3 rounded-xl border border-red-200 transition-all flex items-center justify-center gap-2">
-                            <i class="fas fa-sign-out-alt"></i>Keluar dari Akun
+                                class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:to-purple-700 text-white font-bold py-3.5 px-6 rounded-2xl shadow-md hover:shadow-indigo-200 transition-all cursor-pointer text-xs uppercase tracking-wider">
+                            <i class="fas fa-save"></i>
+                            <span>Simpan Profil &amp; Foto &amp; Cover</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- ───────────────────────────────────────────────────────────── -->
+        <!-- SIDE COLUMN: GANTI PASSWORD & INFORMASI AKUN (5 COLS ON LAPTOP)-->
+        <!-- ───────────────────────────────────────────────────────────── -->
+        <div class="lg:col-span-5 space-y-6">
+
+            <!-- Card: Ganti Password -->
+            <div id="change-password" class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden scroll-mt-6">
+                <div class="bg-gradient-to-r from-emerald-600 to-teal-600 px-6 py-4.5 text-white flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-2xl bg-white/20 text-white flex items-center justify-center text-base font-bold backdrop-blur-md shadow-inner">
+                            <i class="fas fa-lock"></i>
+                        </div>
+                        <div>
+                            <h3 class="text-sm font-black tracking-tight">Ganti Password</h3>
+                            <p class="text-[11px] text-emerald-100">Perbarui kata sandi keamanan akun Anda</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="p-6">
+                    <form method="post" asp-action="ChangePassword" asp-controller="Account" class="space-y-4">
+                        @Html.AntiForgeryToken()
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                <i class="fas fa-key text-emerald-500 mr-1"></i> Password Lama
+                            </label>
+                            <input type="password"
+                                   name="CurrentPassword"
+                                   required
+                                   placeholder="Masukkan password saat ini"
+                                   class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-xs font-semibold transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                <i class="fas fa-lock text-emerald-500 mr-1"></i> Password Baru
+                            </label>
+                            <input type="password"
+                                   name="NewPassword"
+                                   required
+                                   placeholder="Minimal 6 karakter"
+                                   class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-xs font-semibold transition-all">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                <i class="fas fa-shield-alt text-emerald-500 mr-1"></i> Konfirmasi Password Baru
+                            </label>
+                            <input type="password"
+                                   name="ConfirmPassword"
+                                   required
+                                   placeholder="Ulangi password baru"
+                                   class="w-full px-4 py-2.5 rounded-2xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-xs font-semibold transition-all">
+                        </div>
+
+                        <button type="submit"
+                                class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-bold py-3 px-4 rounded-2xl shadow-sm hover:shadow-emerald-200 transition-all cursor-pointer text-xs uppercase tracking-wider">
+                            <i class="fas fa-key"></i>
+                            <span>Ubah Password</span>
                         </button>
                     </form>
                 </div>
             </div>
+
+            <!-- Card: Informasi Akun & Sesi -->
+            <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 p-6 space-y-4">
+                <h4 class="text-xs font-black text-slate-800 uppercase tracking-wider flex items-center gap-2 pb-3 border-b border-slate-100">
+                    <i class="fas fa-id-badge text-indigo-500"></i>
+                    <span>Informasi Akun &amp; Sesi</span>
+                </h4>
+
+                <div class="space-y-3 text-xs">
+                    <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                        <span class="text-slate-500 font-semibold">Alamat Email</span>
+                        <span class="font-mono font-bold text-slate-800 truncate max-w-[180px]">@Model.Email</span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                        <span class="text-slate-500 font-semibold">Status Akun</span>
+                        <span class="px-2 py-0.5 rounded-full text-[11px] font-extrabold bg-emerald-100 text-emerald-800 border border-emerald-200 flex items-center gap-1">
+                            <i class="fas fa-check-circle text-emerald-600"></i> Terverifikasi
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                        <span class="text-slate-500 font-semibold">Tanggal Terdaftar</span>
+                        <span class="font-bold text-slate-700">@Model.CreatedAt.ToString("dd MMMM yyyy")</span>
+                    </div>
+                </div>
+
+                <!-- Form Logout -->
+                <div class="pt-2 border-t border-slate-100">
+                    <form method="post" asp-action="Logout" asp-controller="Account">
+                        @Html.AntiForgeryToken()
+                        <button type="submit"
+                                class="w-full bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold py-2.5 rounded-2xl border border-rose-200 transition-all flex items-center justify-center gap-2 text-xs cursor-pointer">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Keluar dari Akun (Logout)</span>
+                        </button>
+                    </form>
+                </div>
+            </div>
+
         </div>
-        </div>
+
     </div>
 
     <!-- ═══════════════════════════════════════════════════════ -->
-    <!-- BADGES & ACHIEVEMENTS SHOWCASE                          -->
+    <!-- 3. BADGES & ACHIEVEMENTS SHOWCASE (WIDE GRID)            -->
     <!-- ═══════════════════════════════════════════════════════ -->
-    <div class="mt-6 bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
-        <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-6 py-4 flex items-center justify-between text-white">
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 px-6 py-4.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-white">
             <div class="flex items-center gap-3">
-                <div class="w-9 h-9 rounded-2xl bg-white/20 text-white flex items-center justify-center text-base font-black backdrop-blur-md border border-white/20 shadow-inner">
+                <div class="w-10 h-10 rounded-2xl bg-white/20 text-white flex items-center justify-center text-lg font-black backdrop-blur-md border border-white/20 shadow-inner">
                     <i class="fas fa-medal"></i>
                 </div>
                 <div>
                     <h3 class="text-base font-black text-white flex items-center gap-2">
-                        <span>Koleksi Badge & Pencapaian</span>
-                        <span class="text-xs px-2.5 py-0.5 rounded-full bg-white/20 text-white font-bold backdrop-blur-md">
+                        <span>Koleksi Badge &amp; Pencapaian</span>
+                        <span class="text-xs px-2.5 py-0.5 rounded-full bg-white/25 text-white font-bold backdrop-blur-md">
                             @(Model.Gamification?.UnlockedBadgesCount ?? 0) / @(Model.Gamification?.TotalBadgesCount ?? 0) Terbuka
                         </span>
                     </h3>
-                    <p class="text-xs text-amber-100">Kumpulkan EXP dari tugas, jam kerja, dan raih penghargaan prestasi kerja!</p>
+                    <p class="text-xs text-amber-100">Kumpulkan EXP dari tugas dan jam kerja untuk membuka penghargaan prestasi</p>
                 </div>
             </div>
 
             <!-- Filter Badges -->
-            <div class="flex items-center bg-white/20 p-1 rounded-xl backdrop-blur-md text-xs font-bold gap-1">
-                <button type="button" onclick="filterBadges('all')" id="filter-all" class="px-3 py-1 rounded-lg bg-white text-amber-900 shadow-sm transition-all">Semua</button>
-                <button type="button" onclick="filterBadges('unlocked')" id="filter-unlocked" class="px-3 py-1 rounded-lg text-white hover:bg-white/10 transition-all">Terbuka (@(Model.Gamification?.UnlockedBadgesCount ?? 0))</button>
-                <button type="button" onclick="filterBadges('locked')" id="filter-locked" class="px-3 py-1 rounded-lg text-white hover:bg-white/10 transition-all">Terkunci (@((Model.Gamification?.TotalBadgesCount ?? 0) - (Model.Gamification?.UnlockedBadgesCount ?? 0)))</button>
+            <div class="flex items-center bg-white/20 p-1 rounded-2xl backdrop-blur-md text-xs font-bold gap-1 self-stretch sm:self-auto justify-center">
+                <button type="button" onclick="filterBadges('all')" id="filter-all" class="px-3.5 py-1.5 rounded-xl bg-white text-amber-900 shadow-sm transition-all cursor-pointer">Semua</button>
+                <button type="button" onclick="filterBadges('unlocked')" id="filter-unlocked" class="px-3.5 py-1.5 rounded-xl text-white hover:bg-white/10 transition-all cursor-pointer">Terbuka (@(Model.Gamification?.UnlockedBadgesCount ?? 0))</button>
+                <button type="button" onclick="filterBadges('locked')" id="filter-locked" class="px-3.5 py-1.5 rounded-xl text-white hover:bg-white/10 transition-all cursor-pointer">Terkunci (@((Model.Gamification?.TotalBadgesCount ?? 0) - (Model.Gamification?.UnlockedBadgesCount ?? 0)))</button>
             </div>
         </div>
 
-        <div class="p-6">
+        <div class="p-6 sm:p-8">
             @if (Model.Gamification?.Badges != null && Model.Gamification.Badges.Any())
             {
-                <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4" id="badgesGrid">
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="badgesGrid">
                     @foreach (var badge in Model.Gamification.Badges)
                     {
                         var rarityBadgeClass = badge.Rarity switch
@@ -283,10 +519,10 @@
                         if (badge.IsUnlocked)
                         {
                             <!-- UNLOCKED BADGE CARD -->
-                            <div class="badge-card badge-unlocked relative bg-gradient-to-b from-white to-amber-50/30 rounded-2xl p-4 border-2 border-amber-300/80 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between">
+                            <div class="badge-card badge-unlocked relative bg-gradient-to-b from-white to-amber-50/40 rounded-3xl p-4.5 border-2 border-amber-300/80 shadow-xs hover:shadow-md hover:-translate-y-0.5 transition-all flex flex-col justify-between">
                                 @if (badge.IsFeatured)
                                 {
-                                    <div class="absolute -top-2.5 -right-2 px-2 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-amber-950 border border-amber-300 shadow-sm flex items-center gap-1">
+                                    <div class="absolute -top-2.5 -right-2 px-2.5 py-0.5 rounded-full text-[10px] font-black bg-amber-400 text-amber-950 border border-amber-300 shadow-sm flex items-center gap-1">
                                         <i class="fas fa-star text-amber-800 text-[9px]"></i> Disematkan
                                     </div>
                                 }
@@ -298,14 +534,12 @@
                                             <i class="@badge.Icon"></i>
                                         </div>
                                         <div class="flex-1 min-w-0">
-                                            <div class="flex items-center gap-1.5 flex-wrap">
-                                                <h4 class="font-extrabold text-slate-800 text-sm truncate">@badge.Name</h4>
-                                            </div>
+                                            <h4 class="font-extrabold text-slate-800 text-sm truncate">@badge.Name</h4>
                                             <div class="flex items-center gap-1.5 mt-0.5">
-                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold border @rarityBadgeClass">
+                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold border @rarityBadgeClass">
                                                     @badge.Rarity.ToString().ToUpper()
                                                 </span>
-                                                <span class="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-200">
+                                                <span class="text-[10px] font-extrabold text-amber-700 bg-amber-100 px-1.5 py-0.5 rounded-md border border-amber-200">
                                                     +@badge.Points EXP
                                                 </span>
                                             </div>
@@ -314,7 +548,7 @@
                                     <p class="text-xs text-slate-600 leading-relaxed mb-3">@badge.Description</p>
                                 </div>
 
-                                <div class="pt-2.5 border-t border-amber-200/60 flex items-center justify-between text-[11px] text-slate-500">
+                                <div class="pt-3 border-t border-amber-200/60 flex items-center justify-between text-[11px] text-slate-500">
                                     <span class="text-emerald-600 font-semibold flex items-center gap-1">
                                         <i class="fas fa-check-circle"></i> @(badge.UnlockedAt.HasValue ? badge.UnlockedAt.Value.ToString("dd MMM yyyy") : "Terbuka")
                                     </span>
@@ -326,13 +560,13 @@
                                             <input type="hidden" name="id" value="@badge.UserBadgeId.Value" />
                                             @if (badge.IsFeatured)
                                             {
-                                                <button type="submit" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-amber-400 text-amber-950 hover:bg-amber-500 transition-all flex items-center gap-1" title="Lepas Pin">
+                                                <button type="submit" class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-amber-400 text-amber-950 hover:bg-amber-500 transition-all flex items-center gap-1 cursor-pointer" title="Lepas Pin">
                                                     <i class="fas fa-check"></i> Utama
                                                 </button>
                                             }
                                             else
                                             {
-                                                <button type="submit" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-800 transition-all flex items-center gap-1" title="Jadikan Badge Utama di Avatar">
+                                                <button type="submit" class="px-2.5 py-1 rounded-xl text-[10px] font-bold bg-slate-100 hover:bg-amber-100 text-slate-600 hover:text-amber-800 transition-all flex items-center gap-1 cursor-pointer" title="Jadikan Badge Utama di Avatar">
                                                     <i class="far fa-star"></i> Pin Avatar
                                                 </button>
                                             }
@@ -344,7 +578,7 @@
                         else
                         {
                             <!-- LOCKED BADGE CARD -->
-                            <div class="badge-card badge-locked relative bg-slate-50/80 rounded-2xl p-4 border border-slate-200 shadow-2xs opacity-80 hover:opacity-100 transition-all flex flex-col justify-between">
+                            <div class="badge-card badge-locked relative bg-slate-50/90 rounded-3xl p-4.5 border border-slate-200 shadow-2xs opacity-80 hover:opacity-100 transition-all flex flex-col justify-between">
                                 <div>
                                     <div class="flex items-start gap-3 mb-2.5">
                                         <div class="w-12 h-12 rounded-2xl flex items-center justify-center bg-slate-200 text-slate-400 text-xl flex-shrink-0 border border-slate-300">
@@ -353,10 +587,10 @@
                                         <div class="flex-1 min-w-0">
                                             <h4 class="font-bold text-slate-600 text-sm truncate">@badge.Name</h4>
                                             <div class="flex items-center gap-1.5 mt-0.5">
-                                                <span class="px-1.5 py-0.5 rounded text-[9px] font-bold border @rarityBadgeClass">
+                                                <span class="px-1.5 py-0.5 rounded-md text-[9px] font-bold border @rarityBadgeClass">
                                                     @badge.Rarity.ToString().ToUpper()
                                                 </span>
-                                                <span class="text-[10px] font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
+                                                <span class="text-[10px] font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded-md">
                                                     +@badge.Points EXP
                                                 </span>
                                             </div>
@@ -365,7 +599,7 @@
                                     <p class="text-xs text-slate-500 leading-relaxed mb-3">@badge.Description</p>
                                 </div>
 
-                                <div class="pt-2.5 border-t border-slate-200 space-y-1.5">
+                                <div class="pt-3 border-t border-slate-200 space-y-1.5">
                                     <div class="flex items-center justify-between text-[10px] font-bold text-slate-500">
                                         <span>Progress: @badge.CurrentProgress / @badge.TriggerThreshold</span>
                                         <span>@badge.ProgressPercent%</span>
@@ -381,35 +615,38 @@
             }
             else
             {
-                <div class="text-center py-8 text-slate-400">
-                    <i class="fas fa-medal text-3xl text-slate-300 mb-2"></i>
-                    <p class="text-sm">Belum ada badge yang tersedia dalam sistem.</p>
+                <div class="text-center py-10 text-slate-400">
+                    <i class="fas fa-medal text-4xl text-slate-300 mb-2"></i>
+                    <p class="text-xs">Belum ada badge yang tersedia dalam sistem.</p>
                 </div>
             }
         </div>
     </div>
 
-    <!-- THEME CUSTOMIZATION CARD (16 THEMES: 10 LIGHT & 6 DARK) -->
-    <div class="mt-6 bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
-        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 px-6 py-4 flex items-center justify-between text-white">
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 4. THEME CUSTOMIZATION CARD (16 MODERN THEMES)          -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-200/80 overflow-hidden">
+        <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-purple-950 px-6 py-4.5 flex items-center justify-between text-white">
             <div class="flex items-center gap-3">
-                <div class="w-8 h-8 rounded-xl bg-indigo-500/30 text-indigo-300 flex items-center justify-center text-sm font-bold border border-indigo-400/30">
+                <div class="w-9 h-9 rounded-2xl bg-indigo-500/30 text-indigo-300 flex items-center justify-center text-sm font-bold border border-indigo-400/30">
                     <i class="fas fa-palette"></i>
                 </div>
                 <div>
-                    <h3 class="text-sm font-black text-white">Kostumasi Warna & Tema Aplikasi</h3>
-                    <p class="text-[11px] text-indigo-200">Pilih dari 16 tema modern (Tema Terang & Dark Mode) sesuai kenyamanan visual Anda</p>
+                    <h3 class="text-sm font-black text-white">Kostumasi Warna &amp; Tema Aplikasi</h3>
+                    <p class="text-[11px] text-indigo-200">Pilih dari 16 preset tema modern (Light &amp; Dark Mode) sesuai preferensi Anda</p>
                 </div>
             </div>
-            <span class="text-xs px-2.5 py-1 rounded-lg bg-white/10 text-indigo-200 font-semibold border border-white/10">16 Pilihan Tema</span>
+            <span class="text-xs px-3 py-1 rounded-xl bg-white/10 text-indigo-200 font-semibold border border-white/10">16 Pilihan Tema</span>
         </div>
 
-        <div class="p-6">
-            <div id="profileThemeCardsGrid" class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3.5">
+        <div class="p-6 sm:p-8">
+            <div id="profileThemeCardsGrid" class="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3.5">
                 <!-- Populated dynamically by ThemeManager.js -->
             </div>
         </div>
     </div>
+
 </div>
 
 @section Scripts {
@@ -429,21 +666,21 @@ function filterBadges(type) {
     // Reset button styles
     [btnAll, btnUnlocked, btnLocked].forEach(b => {
         if (b) {
-            b.className = "px-3 py-1 rounded-lg text-white hover:bg-white/10 transition-all";
+            b.className = "px-3.5 py-1.5 rounded-xl text-white hover:bg-white/10 transition-all cursor-pointer";
         }
     });
 
     if (type === 'all') {
-        if (btnAll) btnAll.className = "px-3 py-1 rounded-lg bg-white text-amber-900 shadow-sm transition-all";
+        if (btnAll) btnAll.className = "px-3.5 py-1.5 rounded-xl bg-white text-amber-900 shadow-sm transition-all cursor-pointer";
         cards.forEach(c => c.classList.remove('hidden'));
     } else if (type === 'unlocked') {
-        if (btnUnlocked) btnUnlocked.className = "px-3 py-1 rounded-lg bg-white text-amber-900 shadow-sm transition-all";
+        if (btnUnlocked) btnUnlocked.className = "px-3.5 py-1.5 rounded-xl bg-white text-amber-900 shadow-sm transition-all cursor-pointer";
         cards.forEach(c => {
             if (c.classList.contains('badge-unlocked')) c.classList.remove('hidden');
             else c.classList.add('hidden');
         });
     } else if (type === 'locked') {
-        if (btnLocked) btnLocked.className = "px-3 py-1 rounded-lg bg-white text-amber-900 shadow-sm transition-all";
+        if (btnLocked) btnLocked.className = "px-3.5 py-1.5 rounded-xl bg-white text-amber-900 shadow-sm transition-all cursor-pointer";
         cards.forEach(c => {
             if (c.classList.contains('badge-locked')) c.classList.remove('hidden');
             else c.classList.add('hidden');
@@ -453,14 +690,18 @@ function filterBadges(type) {
 
 function updateAvatarPreview(color) {
     const previewEl = document.getElementById('avatar-preview');
+    const placeholder = document.getElementById('preview-placeholder');
     if (previewEl) previewEl.style.background = color;
+    if (placeholder) placeholder.style.background = color;
 }
+
 function setColor(color) {
     document.getElementById('color-input').value = color;
     updateAvatarPreview(color);
 }
 
-function previewFile(e) {
+// Live Preview for Avatar Image
+function previewAvatarFile(e) {
     const file = e.target.files[0];
     if (file) {
         const reader = new FileReader();
@@ -470,17 +711,61 @@ function previewFile(e) {
             const headerImg = document.getElementById('header-avatar-img');
             const headerAvatar = document.getElementById('avatar-preview');
 
-            previewImg.src = event.target.result;
-            previewImg.classList.remove('hidden');
+            if (previewImg) {
+                previewImg.src = event.target.result;
+                previewImg.classList.remove('hidden');
+            }
             if (placeholder) placeholder.classList.add('hidden');
 
             if (headerImg) {
                 headerImg.src = event.target.result;
                 headerImg.classList.remove('hidden');
-                if (headerAvatar) headerAvatar.classList.add('hidden');
+            }
+            if (headerAvatar) headerAvatar.classList.add('hidden');
+        };
+        reader.readAsDataURL(file);
+    }
+}
+
+// Live Preview for Cover Background Banner
+function previewCoverFile(e) {
+    const file = e.target.files[0];
+    if (file) {
+        const reader = new FileReader();
+        reader.onload = function(event) {
+            const heroCover = document.getElementById('hero-cover-img');
+            const formCover = document.getElementById('form-cover-preview');
+            const removeInput = document.getElementById('remove-cover-input');
+            const badge = document.getElementById('badge-custom-cover');
+
+            if (heroCover) heroCover.src = event.target.result;
+            if (formCover) formCover.src = event.target.result;
+            if (removeInput) removeInput.value = "false";
+            if (badge) {
+                badge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold text-emerald-300 bg-emerald-950/50 backdrop-blur-md border border-emerald-500/30 inline-flex items-center gap-1";
+                badge.innerHTML = '<i class="fas fa-check-circle"></i> Pratinjau Cover Baru';
             }
         };
         reader.readAsDataURL(file);
+    }
+}
+
+// Reset to Creative Default Cover
+function resetToDefaultCover() {
+    const defaultCover = "/images/default-profile-cover.svg";
+    const heroCover = document.getElementById('hero-cover-img');
+    const formCover = document.getElementById('form-cover-preview');
+    const fileInput = document.getElementById('cover-file-input');
+    const removeInput = document.getElementById('remove-cover-input');
+    const badge = document.getElementById('badge-custom-cover');
+
+    if (fileInput) fileInput.value = "";
+    if (removeInput) removeInput.value = "true";
+    if (heroCover) heroCover.src = defaultCover;
+    if (formCover) formCover.src = defaultCover;
+    if (badge) {
+        badge.className = "px-2.5 py-0.5 rounded-full text-[11px] font-bold text-indigo-200 bg-indigo-950/50 backdrop-blur-md border border-indigo-400/30 inline-flex items-center gap-1";
+        badge.innerHTML = '<i class="fas fa-paint-brush"></i> Cover Default Kreatif';
     }
 }
 </script>

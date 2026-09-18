@@ -1,7 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
 
 namespace TrackerKerja.Controllers.Api
@@ -9,13 +12,16 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/notes")]
     [Produces("application/json")]
+    [Authorize]
     public class NotesApiController : ControllerBase
     {
         private readonly AppDbContext _db;
+        private readonly UserManager<AppUser> _userManager;
 
-        public NotesApiController(AppDbContext db)
+        public NotesApiController(AppDbContext db, UserManager<AppUser> userManager)
         {
             _db = db;
+            _userManager = userManager;
         }
 
         /// <summary>
@@ -33,12 +39,21 @@ namespace TrackerKerja.Controllers.Api
             [FromQuery] int? taskId,
             [FromQuery] string? search)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
             var query = _db.Notes
                 .Include(n => n.AuthorUser)
                 .Include(n => n.Task)
                 .Include(n => n.Attachments)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (!isAdmin && currentUser != null)
+            {
+                query = query.Where(n => n.CompanyId == userCompanyId || (n.AuthorUser != null && n.AuthorUser.CompanyId == userCompanyId));
+            }
 
             if (!string.IsNullOrWhiteSpace(category))
                 query = query.Where(n => n.Category == category);
@@ -73,6 +88,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetById(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var note = await _db.Notes
                 .Include(n => n.AuthorUser)
                 .Include(n => n.Task)
@@ -83,6 +101,11 @@ namespace TrackerKerja.Controllers.Api
             if (note == null)
             {
                 return NotFound(ApiResponse<NoteResponseDto>.Fail($"Catatan dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanViewNote(currentUser, isAdmin, note))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<NoteResponseDto>.Fail("Akses ditolak: Anda tidak memiliki izin untuk melihat catatan ini."));
             }
 
             return Ok(ApiResponse<NoteResponseDto>.Ok(MapToResponseDto(note), "Detail catatan berhasil diambil."));
@@ -97,6 +120,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> Create([FromBody] CreateNoteRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var userCompanyId = currentUser?.CompanyId;
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
@@ -108,11 +134,6 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<NoteResponseDto>.Fail($"Tugas dengan ID {dto.TaskId.Value} tidak ditemukan."));
             }
 
-            if (!string.IsNullOrWhiteSpace(dto.AuthorUserId) && !await _db.Users.AnyAsync(u => u.Id == dto.AuthorUserId))
-            {
-                return BadRequest(ApiResponse<NoteResponseDto>.Fail($"Pengguna dengan ID '{dto.AuthorUserId}' tidak ditemukan."));
-            }
-
             var note = new WorkNote
             {
                 Title = dto.Title.Trim(),
@@ -121,7 +142,8 @@ namespace TrackerKerja.Controllers.Api
                 Color = string.IsNullOrWhiteSpace(dto.Color) ? "#6366F1" : dto.Color.Trim(),
                 IsPinned = dto.IsPinned,
                 TaskId = dto.TaskId,
-                AuthorUserId = dto.AuthorUserId,
+                AuthorUserId = currentUser?.Id ?? dto.AuthorUserId,
+                CompanyId = userCompanyId,
                 CreatedAt = DateTime.Now,
                 UpdatedAt = DateTime.Now
             };
@@ -150,6 +172,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Update(int id, [FromBody] UpdateNoteRequestDto dto)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             if (!ModelState.IsValid)
             {
                 var errors = ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList();
@@ -160,6 +185,11 @@ namespace TrackerKerja.Controllers.Api
             if (note == null)
             {
                 return NotFound(ApiResponse<NoteResponseDto>.Fail($"Catatan dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanEditNote(currentUser, isAdmin, note))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<NoteResponseDto>.Fail("Akses ditolak: Anda tidak memiliki wewenang untuk mengubah catatan ini."));
             }
 
             if (dto.TaskId.HasValue && !await _db.Tasks.AnyAsync(t => t.Id == dto.TaskId.Value))
@@ -197,10 +227,18 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> TogglePin(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var note = await _db.Notes.FirstOrDefaultAsync(n => n.Id == id);
             if (note == null)
             {
                 return NotFound(ApiResponse<NoteResponseDto>.Fail($"Catatan dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanEditNote(currentUser, isAdmin, note))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<NoteResponseDto>.Fail("Akses ditolak."));
             }
 
             note.IsPinned = !note.IsPinned;
@@ -251,6 +289,9 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UploadAttachment(int id, [FromForm] FileUploadDto upload)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var file = upload?.File;
             if (file == null || file.Length == 0)
             {
@@ -261,6 +302,11 @@ namespace TrackerKerja.Controllers.Api
             if (note == null)
             {
                 return NotFound(ApiResponse<object>.Fail($"Catatan dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanEditNote(currentUser, isAdmin, note))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak."));
             }
 
             var uploadsFolder = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "uploads", "notes");
@@ -313,6 +359,20 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteAttachment(int id, int attachmentId)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
+            var note = await _db.Notes.FirstOrDefaultAsync(n => n.Id == id);
+            if (note == null)
+            {
+                return NotFound(ApiResponse<object>.Fail($"Catatan dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanEditNote(currentUser, isAdmin, note))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak."));
+            }
+
             var attachment = await _db.NoteAttachments.FirstOrDefaultAsync(a => a.Id == attachmentId && a.NoteId == id);
             if (attachment == null)
             {
@@ -341,10 +401,18 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> Delete(int id)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var note = await _db.Notes.Include(n => n.Attachments).FirstOrDefaultAsync(n => n.Id == id);
             if (note == null)
             {
                 return NotFound(ApiResponse<object>.Fail($"Catatan dengan ID {id} tidak ditemukan."));
+            }
+
+            if (!TaskPermissionHelper.CanEditNote(currentUser, isAdmin, note))
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akses ditolak."));
             }
 
             _db.Notes.Remove(note);

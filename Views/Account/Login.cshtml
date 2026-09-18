@@ -213,11 +213,6 @@
                     <p class="text-xs text-white/80 font-medium">Enterprise Project & Team Productivity</p>
                 </div>
             </div>
-            
-            <a href="/swagger" target="_blank" class="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white/10 hover:bg-white/20 text-white border border-white/20 text-xs font-semibold transition-all">
-                <i class="fas fa-code text-white/90 text-xs"></i>
-                <span>API Docs</span>
-            </a>
         </header>
 
         <!-- Center Showcase: Large Lottie Animation & Typography -->
@@ -302,6 +297,37 @@
                 </h1>
                 <p class="theme-subtext text-sm mt-2">Masukkan email dan kata sandi untuk masuk ke akun Anda.</p>
             </div>
+
+            <!-- Status & Info Alerts -->
+            @if (TempData["Info"] != null)
+            {
+                <div class="mb-6 p-4 bg-amber-500/10 border border-amber-500/30 rounded-2xl">
+                    <div class="flex items-start gap-3 text-amber-500 text-xs font-semibold">
+                        <i class="fas fa-clock text-base flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold">Menunggu Persetujuan:</span>
+                            <p class="mt-1 font-normal leading-relaxed text-amber-400">
+                                @TempData["Info"]
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
+
+            @if (TempData["Success"] != null)
+            {
+                <div class="mb-6 p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl">
+                    <div class="flex items-start gap-3 text-emerald-500 text-xs font-semibold">
+                        <i class="fas fa-check-circle text-base flex-shrink-0 mt-0.5"></i>
+                        <div>
+                            <span class="font-bold">Berhasil:</span>
+                            <p class="mt-1 font-normal leading-relaxed text-emerald-400">
+                                @TempData["Success"]
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            }
 
             <!-- Validation Error Alert -->
             @if (!ViewData.ModelState.IsValid)
@@ -398,12 +424,6 @@
                         Daftar Akun Baru &rarr;
                     </a>
                 </p>
-                <div>
-                    <a href="/swagger" target="_blank" class="theme-subtext inline-flex items-center gap-1.5 text-[11px] font-semibold hover:text-indigo-500 transition-colors">
-                        <i class="fas fa-file-code text-indigo-500"></i>
-                        <span>Dokumentasi REST API (Swagger UI)</span>
-                    </a>
-                </div>
             </div>
         </div>
 

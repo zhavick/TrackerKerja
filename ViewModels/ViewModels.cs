@@ -137,6 +137,7 @@ namespace TrackerKerja.ViewModels
         public string? PhoneNumber { get; set; }
         public string? AvatarColor { get; set; } = "#6366F1";
         public string Role { get; set; } = "User";
+        public int? CompanyId { get; set; }
         public string? Password { get; set; }
     }
 

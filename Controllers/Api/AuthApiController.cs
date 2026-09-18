@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
 using TrackerKerja.ViewModels;
+using TrackerKerja.Services;
 
 namespace TrackerKerja.Controllers.Api
 {
@@ -14,17 +15,24 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/auth")]
     [Produces("application/json")]
+    [Authorize]
     public class AuthApiController : ControllerBase
     {
         private readonly SignInManager<AppUser> _signInManager;
         private readonly UserManager<AppUser> _userManager;
         private readonly AppDbContext _db;
+        private readonly IJwtService _jwtService;
 
-        public AuthApiController(SignInManager<AppUser> signInManager, UserManager<AppUser> userManager, AppDbContext db)
+        public AuthApiController(
+            SignInManager<AppUser> signInManager,
+            UserManager<AppUser> userManager,
+            AppDbContext db,
+            IJwtService jwtService)
         {
             _signInManager = signInManager;
             _userManager = userManager;
             _db = db;
+            _jwtService = jwtService;
         }
 
         /// <summary>
@@ -50,6 +58,12 @@ namespace TrackerKerja.Controllers.Api
                 return Unauthorized(ApiResponse<object>.Fail("Email atau password yang Anda masukkan tidak valid."));
             }
 
+            var isPasswordValid = await _userManager.CheckPasswordAsync(user, dto.Password);
+            if (isPasswordValid && !user.IsApproved)
+            {
+                return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<object>.Fail("Akun Anda sedang menunggu persetujuan (approval) dari Administrator sebelum dapat digunakan untuk login."));
+            }
+
             var result = await _signInManager.PasswordSignInAsync(user.UserName!, dto.Password, dto.RememberMe, lockoutOnFailure: true);
 
             if (result.Succeeded)
@@ -57,9 +71,26 @@ namespace TrackerKerja.Controllers.Api
                 var roles = await _userManager.GetRolesAsync(user);
                 var primaryRole = roles.FirstOrDefault() ?? "User";
 
+                // Generate JWT Token
+                var token = _jwtService.GenerateToken(user, roles, out var expiresAt);
+
+                // Set jwt_token cookie for browser clients
+                Response.Cookies.Append("jwt_token", token, new CookieOptions
+                {
+                    HttpOnly = true,
+                    Secure = Request.IsHttps,
+                    SameSite = SameSiteMode.Lax,
+                    Expires = expiresAt
+                });
+
+                var company = user.CompanyId.HasValue ? await _db.Companies.FindAsync(user.CompanyId.Value) : null;
+
                 var response = new LoginResponseDto
                 {
                     IsSuccess = true,
+                    Token = token,
+                    TokenType = "Bearer",
+                    ExpiresAt = expiresAt,
                     UserId = user.Id,
                     Email = user.Email ?? "",
                     FullName = user.FullName,
@@ -67,6 +98,8 @@ namespace TrackerKerja.Controllers.Api
                     Role = primaryRole,
                     AvatarColor = user.AvatarColor,
                     ProfilePictureUrl = user.ProfilePictureUrl,
+                    CompanyId = user.CompanyId,
+                    CompanyName = company?.Name,
                     Message = $"Selamat datang, {user.FullName}!"
                 };
 
@@ -88,6 +121,7 @@ namespace TrackerKerja.Controllers.Api
         [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status200OK)]
         public async Task<IActionResult> Logout()
         {
+            Response.Cookies.Delete("jwt_token");
             await _signInManager.SignOutAsync();
             return Ok(ApiResponse<object>.Ok(new { isLoggedOut = true }, "Sesi login berhasil diakhiri."));
         }
@@ -115,6 +149,8 @@ namespace TrackerKerja.Controllers.Api
                 .Where(s => s.Task != null && s.Task.AssignedToUserId == user.Id)
                 .SumAsync(s => (long?)s.Duration) ?? 0;
 
+            var company = user.CompanyId.HasValue ? await _db.Companies.FindAsync(user.CompanyId.Value) : null;
+
             var profile = new UserProfileDto
             {
                 Id = user.Id,
@@ -125,6 +161,9 @@ namespace TrackerKerja.Controllers.Api
                 Role = primaryRole,
                 AvatarColor = user.AvatarColor,
                 ProfilePictureUrl = user.ProfilePictureUrl,
+                CoverPictureUrl = user.CoverPictureUrl,
+                CompanyId = user.CompanyId,
+                CompanyName = company?.Name,
                 CreatedAt = user.CreatedAt,
                 TotalAssignedTasks = totalTasks,
                 CompletedTasks = doneTasks,
@@ -164,7 +203,16 @@ namespace TrackerKerja.Controllers.Api
             }
 
             await _signInManager.RefreshSignInAsync(user);
-            return Ok(ApiResponse<object>.Ok(new { updated = true }, "Password berhasil diperbarui."));
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = _jwtService.GenerateToken(user, roles, out var expiresAt);
+            Response.Cookies.Append("jwt_token", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = Request.IsHttps,
+                SameSite = SameSiteMode.Lax,
+                Expires = expiresAt
+            });
+            return Ok(ApiResponse<object>.Ok(new { updated = true, token, tokenType = "Bearer", expiresAt }, "Password berhasil diperbarui."));
         }
 
         /// <summary>
@@ -194,6 +242,7 @@ namespace TrackerKerja.Controllers.Api
             if (!string.IsNullOrWhiteSpace(dto.PhoneNumber)) user.PhoneNumber = dto.PhoneNumber.Trim();
             if (!string.IsNullOrWhiteSpace(dto.AvatarColor)) user.AvatarColor = dto.AvatarColor.Trim();
             if (!string.IsNullOrWhiteSpace(dto.ProfilePictureUrl)) user.ProfilePictureUrl = dto.ProfilePictureUrl.Trim();
+            if (dto.CoverPictureUrl != null) user.CoverPictureUrl = string.IsNullOrWhiteSpace(dto.CoverPictureUrl) ? null : dto.CoverPictureUrl.Trim();
 
             var result = await _userManager.UpdateAsync(user);
             if (!result.Succeeded)
@@ -201,6 +250,16 @@ namespace TrackerKerja.Controllers.Api
                 var errors = result.Errors.Select(e => e.Description).ToList();
                 return BadRequest(ApiResponse<object>.Fail("Gagal memperbarui profil pengguna.", errors));
             }
+
+            var roles = await _userManager.GetRolesAsync(user);
+            var token = _jwtService.GenerateToken(user, roles, out var expiresAt);
+            Response.Cookies.Append("jwt_token", token, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = Request.IsHttps,
+                SameSite = SameSiteMode.Lax,
+                Expires = expiresAt
+            });
 
             return await GetCurrentUser();
         }

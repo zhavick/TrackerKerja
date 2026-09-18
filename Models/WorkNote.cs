@@ -28,6 +28,10 @@ namespace TrackerKerja.Models
         public string? AuthorUserId { get; set; }
         public AppUser? AuthorUser { get; set; }
 
+        // Company / Team Multi-Tenancy
+        public int? CompanyId { get; set; }
+        public virtual Company? Company { get; set; }
+
         // Optional Linked Task (Null if Standalone)
         public int? TaskId { get; set; }
         public WorkTask? Task { get; set; }

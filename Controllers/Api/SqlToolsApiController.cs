@@ -1,4 +1,5 @@
 using System.Text;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
@@ -13,6 +14,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/sql-tools")]
     [Produces("application/json")]
+    [Authorize(Roles = "Admin")]
     public class SqlToolsApiController : ControllerBase
     {
         private readonly AppDbContext _db;

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
@@ -12,6 +13,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/master-data")]
     [Produces("application/json")]
+    [Authorize]
     public class MasterDataApiController : ControllerBase
     {
         private readonly AppDbContext _db;
@@ -42,54 +44,62 @@ namespace TrackerKerja.Controllers.Api
                 })
                 .ToListAsync();
 
-            var priorities = await _db.MasterPriorities
+            var taskSummaries = await _db.Tasks
+                .AsNoTracking()
+                .Select(t => new { t.Priority, t.Status, t.Milestone })
+                .ToListAsync();
+
+            var rawPriorities = await _db.MasterPriorities
                 .AsNoTracking()
                 .OrderBy(p => p.OrderIndex)
-                .Select(p => new MasterPriorityResponseDto
-                {
-                    Id = p.Id,
-                    Name = p.Name,
-                    Color = p.Color,
-                    Icon = p.Icon,
-                    OrderIndex = p.OrderIndex,
-                    Description = p.Description,
-                    IsDefault = p.IsDefault,
-                    TasksCount = _db.Tasks.Count(t => t.Priority.ToString() == p.Name)
-                })
                 .ToListAsync();
 
-            var statuses = await _db.MasterStatuses
+            var priorities = rawPriorities.Select(p => new MasterPriorityResponseDto
+            {
+                Id = p.Id,
+                Name = p.Name,
+                Color = p.Color,
+                Icon = p.Icon,
+                OrderIndex = p.OrderIndex,
+                Description = p.Description,
+                IsDefault = p.IsDefault,
+                TasksCount = taskSummaries.Count(t => t.Priority.ToString().Equals(p.Name, StringComparison.OrdinalIgnoreCase))
+            }).ToList();
+
+            var rawStatuses = await _db.MasterStatuses
                 .AsNoTracking()
                 .OrderBy(s => s.OrderIndex)
-                .Select(s => new MasterStatusResponseDto
-                {
-                    Id = s.Id,
-                    Name = s.Name,
-                    Color = s.Color,
-                    IsDoneState = s.IsDoneState,
-                    OrderIndex = s.OrderIndex,
-                    Description = s.Description,
-                    IsDefault = s.IsDefault,
-                    TasksCount = _db.Tasks.Count(t => t.Status.ToString() == s.Name)
-                })
                 .ToListAsync();
 
-            var milestones = await _db.MasterMilestones
+            var statuses = rawStatuses.Select(s => new MasterStatusResponseDto
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Color = s.Color,
+                IsDoneState = s.IsDoneState,
+                OrderIndex = s.OrderIndex,
+                Description = s.Description,
+                IsDefault = s.IsDefault,
+                TasksCount = taskSummaries.Count(t => t.Status.ToString().Equals(s.Name, StringComparison.OrdinalIgnoreCase))
+            }).ToList();
+
+            var rawMilestones = await _db.MasterMilestones
                 .AsNoTracking()
                 .OrderBy(m => m.OrderIndex)
-                .Select(m => new MasterMilestoneResponseDto
-                {
-                    Id = m.Id,
-                    Name = m.Name,
-                    Phase = m.Phase,
-                    Color = m.Color,
-                    Icon = m.Icon,
-                    OrderIndex = m.OrderIndex,
-                    Description = m.Description,
-                    IsDefault = m.IsDefault,
-                    TasksCount = _db.Tasks.Count(t => t.Milestone == m.Name)
-                })
                 .ToListAsync();
+
+            var milestones = rawMilestones.Select(m => new MasterMilestoneResponseDto
+            {
+                Id = m.Id,
+                Name = m.Name,
+                Phase = m.Phase,
+                Color = m.Color,
+                Icon = m.Icon,
+                OrderIndex = m.OrderIndex,
+                Description = m.Description,
+                IsDefault = m.IsDefault,
+                TasksCount = taskSummaries.Count(t => string.Equals(t.Milestone, m.Name, StringComparison.OrdinalIgnoreCase))
+            }).ToList();
 
             var summary = new MasterDataSummaryDto
             {

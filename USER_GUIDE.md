@@ -57,12 +57,14 @@
     - 10.3 [Penyimpanan Snippet Kueri SQL Terkait Tugas](#103-penyimpanan-snippet-kueri-sql-terkait-tugas)
 11. [Modul Laporan & Analitik Kinerja](#11-modul-laporan--analitik-kinerja)
 12. [Modul Anggota Tim & Gamifikasi Prestasi](#12-modul-anggota-tim--gamifikasi-prestasi)
-13. [Modul Master Data, Sinkronisasi Multi-Instance & Backup](#13-modul-master-data-sinkronisasi-multi-instance--backup)
+13. [Modul Master Data, Konfigurasi Email & Backup](#13-modul-master-data-konfigurasi-email--backup)
     - 13.1 [Master Kategori, Prioritas, dan Status](#131-master-kategori-prioritas-dan-status)
     - 13.2 [Master Milestone SDLC Waterfall](#132-master-milestone-sdlc-waterfall)
     - 13.3 [Master Hari Libur Nasional](#133-master-hari-libur-nasional)
     - 13.4 [Sinkronisasi Multi-Instance ke Host Induk (Online Push & SQL Import/Export)](#134-sinkronisasi-multi-instance-ke-host-induk-online-push--sql-importexport)
     - 13.5 [Backup & Export Database (.db & .sql)](#135-backup--export-database-db--sql)
+    - 13.6 [Integrasi Server Email (SMTP) & Uji Koneksi](#136-integrasi-server-email-smtp--uji-koneksi)
+    - 13.7 [Manajemen Template Email Event & Live Preview](#137-manajemen-template-email-event--live-preview)
 14. [Tips & Pertanyaan Umum (FAQ)](#14-tips--pertanyaan-umum-faq)
 
 ---
@@ -71,16 +73,35 @@
 
 **Work Tracker Pro (TrackerKerja)** adalah aplikasi manajemen pekerjaan terpadu yang dirancang untuk mempermudah tim dalam merencanakan tugas, mencatat waktu kerja secara akurat (*timesheet*), mengelola absensi kehadiran, mendokumentasikan kendala dan solusi teknis, mengolah payload data/SQL, serta menghasilkan laporan kerja siap pakai.
 
-### 1.1 Halaman Masuk (Login)
-1. Buka peramban web dan akses alamat aplikasi TrackerKerja.
-2. Masukkan **Alamat Email** dan **Kata Sandi (Password)** Anda yang telah didaftarkan.
-3. Beri tanda centang pada opsi **Ingat Saya (Remember Me)** jika Anda ingin sesi login tetap tersimpan pada perangkat pribadi.
-4. Klik tombol **Masuk (Login)** untuk masuk ke Dashboard utama.
+### 1.1 Halaman Masuk (Login) & Pendaftaran Pengguna Baru
+1. **Masuk ke Aplikasi (Login)**:
+   - Buka peramban web dan akses alamat aplikasi TrackerKerja.
+   - Masukkan **Alamat Email** dan **Kata Sandi (Password)** Anda yang telah terverifikasi.
+   - Beri tanda centang pada opsi **Ingat Saya (Remember Me)** jika Anda ingin sesi login tetap tersimpan pada perangkat pribadi.
+   - Klik tombol **Masuk (Login)** untuk masuk ke Dashboard utama.
+
+2. **Pendaftaran Pengguna Baru (Registrasi Akun Mandiri)**:
+   - Pada halaman login, klik tombol **Daftar Akun Baru**.
+   - Isi formulir pendaftaran:
+     - **Nama Lengkap**: Nama lengkap Anda.
+     - **Alamat Email**: Email aktif kantor atau pribadi.
+     - **Jabatan / Posisi**: Peran kerja Anda (misal: *Lead Developer*, *Quality Assurance*, *System Analyst*).
+     - **Organisasi / Perusahaan**: Pilih nama perusahaan yang sudah terdaftar atau pilih *Buat Perusahaan Baru* untuk mendaftarkan nama/kode perusahaan tim Anda.
+     - **Kata Sandi & Konfirmasi Kata Sandi**: Minimal 6 karakter dengan kombinasi huruf dan angka.
+   - Klik **Daftar Sekarang**.
+
+3. **Alur Persetujuan Administrator (Admin Approval)**:
+   - Setelah formulir registrasi dikirimkan, akun baru Anda akan berstatus **Menunggu Persetujuan (Pending Approval)**.
+   - Anda **belum dapat login** ke aplikasi sampai Administrator meninjau dan menyetujui akun Anda.
+   - Sistem akan secara otomatis mengirimkan notifikasi email ke Administrator.
+   - Begitu Administrator menyetujui akun Anda, Anda akan menerima email pemberitahuan resmi bahwa akun telah aktif dan siap digunakan untuk login.
+   - *(Bagi Administrator)*: Untuk meninjau pendaftaran baru, buka menu **Anggota Tim (`/Member`)**, buka tab **Menunggu Persetujuan**, lalu klik tombol hijau **Setujui (Approve)** atau tombol merah **Tolak (Reject)** jika pendaftaran tidak valid.
 
 ### 1.2 Tata Letak Antarmuka & Navigasi
-- **Bilah Samping (Sidebar)**: Berisi menu navigasi utama aplikasi (Dashboard, Tugas, Kanban, Proyek, Timesheet, Absensi, Kalender, Catatan, JSON Tools, SQL Tools, Laporan, Anggota Tim, dan Master Data).
-- **Bilah Atas (Topbar)**: Berisi judul halaman aktif, kotak pencarian global, tombol aksi cepat (Tugas Baru, Import Excel), tombol **Panduan Pengguna**, lonceng notifikasi cerdas, serta menu profil akun.
-- **Panel Timer Samping**: Menampilkan daftar sesi kerja yang sedang berjalan secara *real-time* dan dapat dikontrol kapan saja.
+Aplikasi TrackerKerja dirancang dengan antarmuka yang bersih, modern, dan ergonomis:
+- **Bilah Samping (Sidebar)**: Pusat navigasi seluruh modul kerja (Dashboard, Tugas, Kanban, Proyek, Timesheet, Absensi, Kalender, Catatan, JSON Tools, SQL Tools, Laporan, Anggota Tim, Master Data, Konfigurasi Sistem, **Swagger API**, dan **Panduan Pengguna PDF**).
+- **Bilah Atas (Topbar)**: Menampilkan judul halaman aktif, badge nama perusahaan/tim Anda, kotak pencarian cepat global, tombol aksi cepat *Import Excel*, lonceng notifikasi tugas cerdas, pemilih 16 tema tampilan dinamis, serta kartu avatar profil akun.
+- **Panel Timer Samping**: Menampilkan daftar sesi kerja yang sedang berjalan secara *real-time* dan dapat dikontrol (Stop/Pause) kapan saja.
 
 ### 1.3 Kustomisasi Tema & Tampilan (16 Pilihan Tema)
 Aplikasi menyediakan 16 pilihan tema warna yang dapat dipilih sesuai preferensi kenyamanan mata Anda:
@@ -378,12 +399,55 @@ Fitur ini memungkinkan instance lokal atau laptop cabang melakukan sinkronisasi 
 - **Export Script SQL (.sql)**: Mengunduh skrip DDL dan DML lengkap yang siap direstore ke database manapun.
 - **Kompresi Database (VACUUM)**: Mengoptimalkan dan mengklaim kembali ruang kosong file SQLite.
 
+### 13.6 Integrasi Server Email (SMTP) & Uji Koneksi
+Modul ini memungkinkan sistem TrackerKerja mengirimkan email notifikasi otomatis kepada pengguna dan administrator untuk event-event krusial:
+1. **Mengonfigurasi Server SMTP**:
+   - Buka menu **Konfigurasi Sistem (`/Configuration`)**.
+   - Pada kartu **Server Mail (SMTP) & Pengiriman Email**, masukkan parameter koneksi server email:
+     - **Host SMTP / Mail Server**: Alamat host mail provider Anda (contoh: `smtp.gmail.com`, `smtp.office365.com`, atau `smtp.mailtrap.io`).
+     - **Port SMTP**: Port koneksi (contoh: `587` untuk STARTTLS, `465` untuk SSL/TLS murni, atau `2525`).
+     - **Email Pengirim**: Alamat email yang digunakan untuk mengirim pesan (contoh: `notifications@perusahaan.com`).
+     - **Nama Pengirim**: Nama identitas pengirim email (contoh: `Work Tracker Notification Engine`).
+     - **Kata Sandi Email (App Password)**: Password akun atau App Password khusus aplikasi. Kata sandi yang tersimpan akan disamarkan (`••••••••`).
+     - **Aktifkan Enkripsi SSL / TLS**: Centang opsi ini untuk keamanan enkripsi data transmisi (sangat disarankan).
+     - **Status Integrasi**: Pastikan sakelar aktif untuk mengizinkan sistem mengirimkan email secara otomatis.
+   - Klik **Simpan Pengaturan SMTP**.
+
+2. **Melakukan Uji Koneksi Email (Test Connection & Diagnostics)**:
+   - Pada kartu sebelah kanan **Uji Koneksi & Diagnostik SMTP**:
+     - Masukkan alamat email tujuan pengujian pada kolom **Email Penerima Uji Coba**.
+     - Klik tombol **Kirim Email Percobaan**.
+     - Sistem akan melakukan *handshake* langsung ke server mail dan mengukur latensi pengiriman dalam milidetik (*latency ms*).
+     - Hasil uji koneksi dan log diagnostik teknis (*Diagnostics Box*) akan ditampilkan langsung di layar (misal respon `250 OK` dan status enkripsi TLS).
+
+### 13.7 Manajemen Template Email Event & Live Preview
+Sistem menyediakan sub-modul khusus untuk mengatur format dan isi pesan email untuk setiap peristiwa (*event*) yang terjadi:
+1. **Memilih & Memfilter Template**:
+   - Pada kartu **Template Email Notifikasi & Pengingat Event**, pilih kategori template:
+     - **Semua Event**: Menampilkan seluruh template.
+     - **Autentikasi**: Template pendaftaran akun, approval, penolakan, dan reset password.
+     - **Admin Alert**: Template pemberitahuan pendaftaran baru khusus untuk Administrator.
+     - **Manajemen Tugas**: Template penugasan PIC tugas baru dan pembaruan status tugas.
+2. **Menyesuaikan Template (Subjek & Isi Pesan)**:
+   - Klik tombol **Edit Template** pada kartu event yang ingin diubah.
+   - Pada modal editor:
+     - Ubah **Subjek Email** sesuai kebutuhan format tim Anda.
+     - Ubah **Isi Pesan (Format HTML)**. Anda dapat mengatur tata letak, warna tombol, dan susunan paragraf.
+   - **Menggunakan Variabel Placeholder**:
+     - Klik pada chip variabel yang tersedia (misal `{FullName}`, `{TaskTitle}`, `{ProjectName}`, `{ActionUrl}`, `{DueDate}`) untuk menyalinnya secara instan, lalu tempelkan ke dalam subjek atau isi pesan. Saat email dikirim, sistem akan otomatis mengganti tag ini dengan data yang sebenarnya.
+   - Klik tombol **Simpan Template**.
+3. **Pratinjau Langsung (Live Preview Modal)**:
+   - Klik tombol **Pratinjau (Preview)** pada kartu template.
+   - Sistem akan me-render template lengkap dengan data contoh secara real-time sehingga Anda dapat memastikan tampilan email tampak rapi, profesional, dan responsif.
+4. **Memulihkan Template Bawaan (Reset ke Default)**:
+   - Jika Anda ingin mengembalikan format template ke rancangan default pabrik, klik tombol **Reset ke Default** di pojok kanan atas sub-modul template.
+
 ---
 
 ## 14. Tips & Pertanyaan Umum (FAQ)
 
 ### Q1: Bagaimana cara mencetak atau menyimpan panduan ini ke format PDF?
-> **Jawaban**: Klik tombol **📖 Panduan** pada bilah atas aplikasi, lalu klik tombol **🖨️ Cetak / Simpan PDF**. Pada jendela print peramban, pilih tujuan printer sebagai **Save as PDF (Simpan sebagai PDF)** dan klik **Save**.
+> **Jawaban**: Klik menu **📖 Panduan Pengguna** pada bilah samping (Sidebar) navigasi aplikasi di bagian bawah (*Akun & Bantuan*). Pada jendela modal panduan yang terbuka, klik tombol **🖨️ Cetak / Simpan PDF**. Pada jendela print peramban, pilih tujuan printer sebagai **Save as PDF (Simpan sebagai PDF)** dan klik **Save**.
 
 ### Q2: Mengapa di Kalender saya hanya melihat tugas milik saya sendiri?
 > **Jawaban**: Untuk anggota tim reguler, kalender secara default disaring khusus untuk tugas yang ditugaskan kepada Anda agar Anda dapat fokus pada jadwal kerja pribadi. Administrator memiliki opsi dropdown untuk melihat tugas seluruh tim.

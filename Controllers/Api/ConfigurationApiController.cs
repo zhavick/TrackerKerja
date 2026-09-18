@@ -1,5 +1,6 @@
 using System.Data.Common;
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -12,6 +13,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/configuration")]
     [Produces("application/json")]
+    [Authorize(Roles = "Admin")]
     public class ConfigurationApiController : ControllerBase
     {
         private readonly AppDbContext _db;

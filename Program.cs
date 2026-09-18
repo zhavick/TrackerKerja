@@ -5,6 +5,10 @@ using TrackerKerja.Filters;
 using TrackerKerja.Services;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.OpenApi.Models;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using System.Security.Claims;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -58,6 +62,31 @@ builder.Services.AddSwaggerGen(options =>
     {
         options.IncludeXmlComments(xmlPath);
     }
+
+    // JWT Bearer Authentication definition in Swagger UI
+    options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
+    {
+        Name = "Authorization",
+        Description = "Masukkan token JWT dengan format: Bearer {token}",
+        In = ParameterLocation.Header,
+        Type = SecuritySchemeType.Http,
+        Scheme = "Bearer",
+        BearerFormat = "JWT"
+    });
+    options.AddSecurityRequirement(new OpenApiSecurityRequirement
+    {
+        {
+            new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                }
+            },
+            Array.Empty<string>()
+        }
+    });
 });
 
 // Ensure SQLite database directory exists if specified in connection string
@@ -87,6 +116,8 @@ builder.Services.AddScoped<IGamificationService, GamificationService>();
 builder.Services.AddScoped<IDatabaseExportService, DatabaseExportService>();
 builder.Services.AddScoped<IDatabaseSyncService, DatabaseSyncService>();
 builder.Services.AddScoped<IExcelSyncService, ExcelSyncService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddScoped<IJwtService, JwtService>();
 
 // Add session support (for Import preview)
 builder.Services.AddSession(options =>
@@ -127,6 +158,133 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.SlidingExpiration = true;
 });
 
+// JWT Configuration & Dual-Scheme Authentication
+var jwtKey = builder.Configuration["Jwt:Key"] ?? "TrackerKerja-SuperSecretKey-MustBeAtLeast32CharsLong-2026-SecureJWT!";
+var jwtIssuer = builder.Configuration["Jwt:Issuer"] ?? "TrackerKerja";
+var jwtAudience = builder.Configuration["Jwt:Audience"] ?? "TrackerKerjaClient";
+var keyBytes = Encoding.UTF8.GetBytes(jwtKey);
+
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultScheme = "JWT_OR_COOKIE";
+    options.DefaultAuthenticateScheme = "JWT_OR_COOKIE";
+    options.DefaultChallengeScheme = "JWT_OR_COOKIE";
+})
+.AddPolicyScheme("JWT_OR_COOKIE", "JWT_OR_COOKIE", options =>
+{
+    options.ForwardDefaultSelector = context =>
+    {
+        // 1. If Authorization header with Bearer is present -> use JwtBearer
+        string? authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+        if (!string.IsNullOrEmpty(authHeader) && authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+        {
+            return JwtBearerDefaults.AuthenticationScheme;
+        }
+
+        // 2. If it's an API route or from Swagger -> MUST use JwtBearer (challenges with 401 Unauthorized if missing token)
+        if (context.Request.Path.StartsWithSegments("/api") ||
+            context.Request.Headers["Referer"].ToString().Contains("/swagger", StringComparison.OrdinalIgnoreCase))
+        {
+            return JwtBearerDefaults.AuthenticationScheme;
+        }
+
+        // 3. For Web MVC routes, if jwt_token cookie is present -> use JwtBearer
+        if (context.Request.Cookies.ContainsKey("jwt_token"))
+        {
+            return JwtBearerDefaults.AuthenticationScheme;
+        }
+
+        // 4. Otherwise use Identity Application Cookie
+        return IdentityConstants.ApplicationScheme;
+    };
+})
+.AddJwtBearer(options =>
+{
+    options.RequireHttpsMetadata = false;
+    options.SaveToken = true;
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = true,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        ValidAudience = jwtAudience,
+        IssuerSigningKey = new SymmetricSecurityKey(keyBytes),
+        ClockSkew = TimeSpan.Zero,
+        NameClaimType = ClaimTypes.Name,
+        RoleClaimType = ClaimTypes.Role
+    };
+
+    options.Events = new JwtBearerEvents
+    {
+        OnMessageReceived = context =>
+        {
+            var isSwagger = context.Request.Headers["Referer"].ToString().Contains("/swagger", StringComparison.OrdinalIgnoreCase);
+            var isApi = context.Request.Path.StartsWithSegments("/api");
+
+            var authHeader = context.Request.Headers["Authorization"].FirstOrDefault();
+            if (!string.IsNullOrEmpty(authHeader))
+            {
+                // Handle "Bearer {token}", "Bearer Bearer {token}", or raw token
+                if (authHeader.StartsWith("Bearer Bearer ", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Token = authHeader.Substring("Bearer Bearer ".Length).Trim();
+                }
+                else if (authHeader.StartsWith("Bearer ", StringComparison.OrdinalIgnoreCase))
+                {
+                    context.Token = authHeader.Substring("Bearer ".Length).Trim();
+                }
+                else
+                {
+                    context.Token = authHeader.Trim();
+                }
+            }
+            else
+            {
+                // For direct API calls or Swagger UI: STRICTLY REQUIRE Authorization Header!
+                // Do NOT fall back to cookie!
+                if (!isSwagger && !isApi)
+                {
+                    if (context.Request.Cookies.TryGetValue("jwt_token", out var cookieToken) && !string.IsNullOrEmpty(cookieToken))
+                    {
+                        context.Token = cookieToken;
+                    }
+                }
+            }
+            return Task.CompletedTask;
+        },
+        OnChallenge = async context =>
+        {
+            var isApi = context.Request.Path.StartsWithSegments("/api");
+            var isSwagger = context.Request.Headers["Referer"].ToString().Contains("/swagger", StringComparison.OrdinalIgnoreCase);
+
+            if (isApi || isSwagger || context.Request.Headers.Accept.ToString().Contains("application/json") ||
+                context.Request.Headers["X-Requested-With"] == "XMLHttpRequest")
+            {
+                context.HandleResponse();
+                context.Response.StatusCode = StatusCodes.Status401Unauthorized;
+                context.Response.ContentType = "application/json";
+
+                var errorResponse = new
+                {
+                    success = false,
+                    message = "Akses Ditolak: Anda belum melakukan Authorize dengan token JWT. " +
+                              "Pada Swagger UI, klik tombol 'Authorize' di kanan atas dan masukkan token JWT Bearer Anda terlebih dahulu.",
+                    statusCode = 401
+                };
+
+                await context.Response.WriteAsync(System.Text.Json.JsonSerializer.Serialize(errorResponse));
+            }
+            else
+            {
+                context.HandleResponse();
+                context.Response.Redirect($"/Account/Login?ReturnUrl={Uri.EscapeDataString(context.Request.Path + context.Request.QueryString)}");
+            }
+        }
+    };
+});
+
 var app = builder.Build();
 
 // Ensure upload folders exist
@@ -153,6 +311,46 @@ using (var scope = app.Services.CreateScope())
     try { db.Database.ExecuteSqlRaw("UPDATE Tasks SET Milestone = 'Implementation' WHERE Milestone IS NULL OR Milestone = '';"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Categories ADD COLUMN Description TEXT;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Sessions ADD COLUMN UserId TEXT;"); } catch { }
+
+    // Multi-Tenancy Companies Table & Columns
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS Companies (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT NOT NULL,
+                Code TEXT NULL,
+                Description TEXT NULL,
+                CreatedAt TEXT NOT NULL
+            );");
+    } catch { }
+
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE AspNetUsers ADD COLUMN CompanyId INTEGER;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE AspNetUsers ADD COLUMN IsApproved INTEGER NOT NULL DEFAULT 1;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE AspNetUsers ADD COLUMN ApprovedAt TEXT NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE AspNetUsers ADD COLUMN ApprovedByUserId TEXT NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE AspNetUsers ADD COLUMN RejectionReason TEXT NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE AspNetUsers ADD COLUMN CoverPictureUrl TEXT NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN CompanyId INTEGER;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Tasks ADD COLUMN CompanyId INTEGER;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Notes ADD COLUMN CompanyId INTEGER;"); } catch { }
+
+    if (!db.Companies.Any())
+    {
+        db.Companies.Add(new Company
+        {
+            Name = "PT Elistec Teknologi",
+            Code = "ELISTEC",
+            Description = "Tim Inti Pengembangan Sistem TrackerKerja",
+            CreatedAt = DateTime.Now
+        });
+        db.SaveChanges();
+    }
+
+    try { db.Database.ExecuteSqlRaw("UPDATE AspNetUsers SET CompanyId = 1 WHERE CompanyId IS NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("UPDATE Projects SET CompanyId = 1 WHERE CompanyId IS NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("UPDATE Tasks SET CompanyId = 1 WHERE CompanyId IS NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("UPDATE Notes SET CompanyId = 1 WHERE CompanyId IS NULL;"); } catch { }
 
     try
     {
@@ -264,6 +462,26 @@ using (var scope = app.Services.CreateScope())
             CREATE INDEX IF NOT EXISTS IX_Attendances_UserId_Date ON Attendances (UserId, Date);");
     } catch { }
 
+    // EmailTemplates Table
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS EmailTemplates (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                EventCode TEXT NOT NULL,
+                EventName TEXT NOT NULL,
+                Category TEXT NULL,
+                Subject TEXT NOT NULL,
+                BodyHtml TEXT NOT NULL,
+                AvailableVariables TEXT NULL,
+                IsActive INTEGER NOT NULL DEFAULT 1,
+                CreatedAt TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL,
+                UpdatedByUserId TEXT NULL
+            );
+            CREATE UNIQUE INDEX IF NOT EXISTS IX_EmailTemplates_EventCode ON EmailTemplates (EventCode);");
+    } catch { }
+
     if (!db.SystemSettings.Any(s => s.Key == "GlobalBaseUrl"))
     {
         db.SystemSettings.Add(new SystemSetting
@@ -309,6 +527,229 @@ using (var scope = app.Services.CreateScope())
             Description = "Peran instance: child (pengisian) atau host (induk)",
             UpdatedAt = DateTime.Now
         });
+        db.SaveChanges();
+    }
+
+    // Default Email SMTP System Settings
+    if (!db.SystemSettings.Any(s => s.Key == "Email_SmtpHost"))
+    {
+        db.SystemSettings.AddRange(
+            new SystemSetting { Key = "Email_SmtpHost", Value = "smtp.gmail.com", Description = "Host / server SMTP untuk pengiriman email", UpdatedAt = DateTime.Now },
+            new SystemSetting { Key = "Email_SmtpPort", Value = "587", Description = "Port SMTP (contoh: 587 untuk STARTTLS, 465 untuk SSL)", UpdatedAt = DateTime.Now },
+            new SystemSetting { Key = "Email_SenderEmail", Value = "notifications@trackerkerja.com", Description = "Alamat email pengirim default", UpdatedAt = DateTime.Now },
+            new SystemSetting { Key = "Email_SenderName", Value = "Work Tracker Pro", Description = "Nama tampilan pengirim (Display Name)", UpdatedAt = DateTime.Now },
+            new SystemSetting { Key = "Email_SenderPassword", Value = "", Description = "Password / App Password email pengirim", UpdatedAt = DateTime.Now },
+            new SystemSetting { Key = "Email_EnableSsl", Value = "true", Description = "Aktifkan enkripsi SSL / TLS", UpdatedAt = DateTime.Now },
+            new SystemSetting { Key = "Email_RequireAuth", Value = "true", Description = "Memerlukan autentikasi username & password", UpdatedAt = DateTime.Now },
+            new SystemSetting { Key = "Email_IsEnabled", Value = "true", Description = "Status aktif integrasi pengiriman email", UpdatedAt = DateTime.Now }
+        );
+        db.SaveChanges();
+    }
+
+    // Seed Default Email Templates
+    if (!db.EmailTemplates.Any())
+    {
+        db.EmailTemplates.AddRange(
+            new EmailTemplate
+            {
+                EventCode = "USER_REGISTERED",
+                EventName = "Pendaftaran Akun Baru (Menunggu Approval)",
+                Category = "Account",
+                Subject = "[{AppName}] Pendaftaran Akun Berhasil — Menunggu Persetujuan Administrator",
+                BodyHtml = @"<div style=""font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;color:#1e293b;"">
+    <div style=""text-align:center;margin-bottom:24px;"">
+        <div style=""display:inline-block;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:10px 18px;border-radius:12px;font-weight:900;font-size:15px;"">🚀 {AppName}</div>
+        <h2 style=""font-size:20px;font-weight:800;color:#0f172a;margin-top:16px;margin-bottom:4px;"">Pendaftaran Akun Berhasil!</h2>
+        <p style=""font-size:13px;color:#64748b;margin:0;"">Halo <strong>{FullName}</strong>, terima kasih telah mendaftar di sistem.</p>
+    </div>
+    <div style=""background:#fffbeb;border:1px solid #fef3c7;border-radius:12px;padding:16px;margin-bottom:20px;"">
+        <h4 style=""font-size:13px;font-weight:700;color:#92400e;margin-top:0;margin-bottom:8px;"">⏳ Menunggu Persetujuan Administrator</h4>
+        <p style=""font-size:12px;color:#b45309;line-height:1.6;margin:0;"">Akun Anda saat ini sedang dalam antrean persetujuan (Admin Approval). Anda akan menerima email konfirmasi begitu Administrator menyetujui akun Anda.</p>
+    </div>
+    <div style=""background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;font-size:12px;"">
+        <p style=""margin:4px 0;""><strong>Email Terdaftar:</strong> {Email}</p>
+        <p style=""margin:4px 0;""><strong>Jabatan:</strong> {JobTitle}</p>
+        <p style=""margin:4px 0;""><strong>Afiliasi Tim / Perusahaan:</strong> {CompanyName}</p>
+        <p style=""margin:4px 0;""><strong>Tanggal Pendaftaran:</strong> {CurrentDate} {CurrentTime}</p>
+    </div>
+    <div style=""text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;"">
+        <p style=""margin:0;"">&copy; {CurrentYear} {AppName} &bull; <a href=""{AppUrl}"" style=""color:#6366f1;text-decoration:none;"">{AppUrl}</a></p>
+    </div>
+</div>",
+                AvailableVariables = "{FullName}, {Email}, {JobTitle}, {CompanyName}, {AppName}, {AppUrl}, {ActionUrl}, {CurrentDate}, {CurrentTime}, {CurrentYear}",
+                IsActive = true,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            },
+            new EmailTemplate
+            {
+                EventCode = "USER_APPROVED",
+                EventName = "Persetujuan Akun (Approval Success)",
+                Category = "Account",
+                Subject = "[{AppName}] Selamat! Akun Anda Telah Disetujui & Siap Digunakan",
+                BodyHtml = @"<div style=""font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;color:#1e293b;"">
+    <div style=""text-align:center;margin-bottom:24px;"">
+        <div style=""display:inline-block;background:linear-gradient(135deg,#10B981,#059669);color:#fff;padding:10px 18px;border-radius:12px;font-weight:900;font-size:15px;"">🎉 Akun Telah Aktif</div>
+        <h2 style=""font-size:20px;font-weight:800;color:#0f172a;margin-top:16px;margin-bottom:4px;"">Selamat Datang di {AppName}!</h2>
+        <p style=""font-size:13px;color:#64748b;margin:0;"">Halo <strong>{FullName}</strong>, akun Anda telah disetujui oleh Administrator.</p>
+    </div>
+    <div style=""background:#ecfdf5;border:1px solid #d1fae5;border-radius:12px;padding:16px;margin-bottom:20px;font-size:12px;color:#065f46;line-height:1.6;"">
+        Akun login Anda untuk tim <strong>{CompanyName}</strong> kini telah aktif. Anda dapat masuk dan mulai mengelola tugas, proyek, presensi harian, dan timesheet.
+    </div>
+    <div style=""text-align:center;margin:24px 0;"">
+        <a href=""{ActionUrl}"" style=""display:inline-block;background:linear-gradient(135deg,#6366F1,#4F46E5);color:#ffffff;text-decoration:none;font-size:13px;font-weight:800;padding:12px 28px;border-radius:12px;box-shadow:0 4px 12px rgba(99,102,241,0.3);"">🚀 Masuk ke Portal Sekarang</a>
+    </div>
+    <div style=""text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;"">
+        <p style=""margin:0;"">&copy; {CurrentYear} {AppName} &bull; <a href=""{AppUrl}"" style=""color:#6366f1;text-decoration:none;"">{AppUrl}</a></p>
+    </div>
+</div>",
+                AvailableVariables = "{FullName}, {Email}, {CompanyName}, {AppName}, {AppUrl}, {ActionUrl}, {CurrentDate}, {CurrentYear}",
+                IsActive = true,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            },
+            new EmailTemplate
+            {
+                EventCode = "USER_REJECTED",
+                EventName = "Penolakan Pendaftaran Akun",
+                Category = "Account",
+                Subject = "[{AppName}] Pemberitahuan Status Pendaftaran Akun",
+                BodyHtml = @"<div style=""font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;color:#1e293b;"">
+    <div style=""text-align:center;margin-bottom:24px;"">
+        <div style=""display:inline-block;background:#fee2e2;color:#b91c1c;padding:10px 18px;border-radius:12px;font-weight:900;font-size:15px;"">Pemberitahuan Pendaftaran</div>
+        <h2 style=""font-size:18px;font-weight:800;color:#0f172a;margin-top:16px;margin-bottom:4px;"">Status Pendaftaran Akun</h2>
+        <p style=""font-size:13px;color:#64748b;margin:0;"">Halo <strong>{FullName}</strong> ({Email})</p>
+    </div>
+    <div style=""background:#fef2f2;border:1px solid #fee2e2;border-radius:12px;padding:16px;margin-bottom:20px;font-size:12px;color:#991b1b;line-height:1.6;"">
+        Mohon maaf, pendaftaran akun Anda di <strong>{AppName}</strong> belum dapat disetujui oleh Administrator saat ini.<br/><br/>
+        <strong>Catatan Administrator:</strong><br/>
+        <em>{RejectionReason}</em>
+    </div>
+    <div style=""text-align:center;margin-top:24px;padding-top:16px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;"">
+        <p style=""margin:0;"">&copy; {CurrentYear} {AppName} &bull; <a href=""{AppUrl}"" style=""color:#6366f1;text-decoration:none;"">{AppUrl}</a></p>
+    </div>
+</div>",
+                AvailableVariables = "{FullName}, {Email}, {RejectionReason}, {AppName}, {AppUrl}, {CurrentDate}, {CurrentYear}",
+                IsActive = true,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            },
+            new EmailTemplate
+            {
+                EventCode = "ADMIN_NEW_USER_ALERT",
+                EventName = "Alert Administrator: Pendaftar Baru",
+                Category = "Account",
+                Subject = "[Admin Alert] Pendaftar Pengguna Baru Menunggu Approval: {FullName}",
+                BodyHtml = @"<div style=""font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;color:#1e293b;"">
+    <div style=""text-align:center;margin-bottom:20px;"">
+        <div style=""display:inline-block;background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;padding:8px 16px;border-radius:10px;font-weight:900;font-size:14px;"">🛡️ Admin Notification</div>
+        <h2 style=""font-size:18px;font-weight:800;color:#0f172a;margin-top:14px;margin-bottom:4px;"">Pendaftar Baru Memerlukan Persetujuan</h2>
+        <p style=""font-size:12px;color:#64748b;margin:0;"">Terdapat akun pengguna baru yang baru saja mendaftar secara mandiri.</p>
+    </div>
+    <div style=""background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;font-size:12px;"">
+        <p style=""margin:4px 0;""><strong>Nama Lengkap:</strong> {FullName}</p>
+        <p style=""margin:4px 0;""><strong>Email:</strong> {Email}</p>
+        <p style=""margin:4px 0;""><strong>Jabatan:</strong> {JobTitle}</p>
+        <p style=""margin:4px 0;""><strong>Afiliasi Tim:</strong> {CompanyName}</p>
+        <p style=""margin:4px 0;""><strong>Waktu:</strong> {CurrentDate} {CurrentTime}</p>
+    </div>
+    <div style=""text-align:center;margin:20px 0;"">
+        <a href=""{ActionUrl}"" style=""display:inline-block;background:#4F46E5;color:#ffffff;text-decoration:none;font-size:12px;font-weight:800;padding:10px 24px;border-radius:10px;"">Tinjau &amp; Setujui Member di Direktori &rarr;</a>
+    </div>
+    <div style=""text-align:center;margin-top:20px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;"">
+        <p style=""margin:0;"">&copy; {CurrentYear} {AppName} Administrator Security Hub</p>
+    </div>
+</div>",
+                AvailableVariables = "{FullName}, {Email}, {JobTitle}, {CompanyName}, {AppName}, {AppUrl}, {ActionUrl}, {CurrentDate}, {CurrentTime}, {CurrentYear}",
+                IsActive = true,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            },
+            new EmailTemplate
+            {
+                EventCode = "TASK_ASSIGNED",
+                EventName = "Penugasan Tugas Baru (Task Assigned)",
+                Category = "Tasks",
+                Subject = "[Tugas Baru] {TaskCode}: {TaskTitle}",
+                BodyHtml = @"<div style=""font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;color:#1e293b;"">
+    <div style=""text-align:center;margin-bottom:20px;"">
+        <div style=""display:inline-block;background:linear-gradient(135deg,#6366F1,#8B5CF6);color:#fff;padding:8px 16px;border-radius:10px;font-weight:900;font-size:14px;"">📋 Penugasan Tugas Baru</div>
+        <h2 style=""font-size:18px;font-weight:800;color:#0f172a;margin-top:14px;margin-bottom:4px;"">{TaskTitle}</h2>
+        <p style=""font-size:12px;color:#64748b;margin:0;"">Halo <strong>{AssigneeName}</strong>, Anda telah ditugaskan pada tugas berikut.</p>
+    </div>
+    <div style=""background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;font-size:12px;"">
+        <p style=""margin:4px 0;""><strong>Kode Tugas:</strong> <span style=""font-family:monospace;background:#e0e7ff;color:#3730a3;padding:2px 6px;border-radius:4px;"">{TaskCode}</span></p>
+        <p style=""margin:4px 0;""><strong>Proyek:</strong> {ProjectName}</p>
+        <p style=""margin:4px 0;""><strong>Prioritas:</strong> {Priority}</p>
+        <p style=""margin:4px 0;""><strong>Milestone SDLC:</strong> {Milestone}</p>
+        <p style=""margin:4px 0;""><strong>Batas Waktu (Deadline):</strong> {DueDate}</p>
+        <p style=""margin:4px 0;""><strong>Diberikan Oleh:</strong> {CreatedByName}</p>
+    </div>
+    <div style=""text-align:center;margin:20px 0;"">
+        <a href=""{ActionUrl}"" style=""display:inline-block;background:#4F46E5;color:#ffffff;text-decoration:none;font-size:12px;font-weight:800;padding:10px 24px;border-radius:10px;"">Lihat Detail Tugas &amp; Mulai Timer &rarr;</a>
+    </div>
+    <div style=""text-align:center;margin-top:20px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;"">
+        <p style=""margin:0;"">&copy; {CurrentYear} {AppName} &bull; <a href=""{AppUrl}"" style=""color:#6366f1;text-decoration:none;"">{AppUrl}</a></p>
+    </div>
+</div>",
+                AvailableVariables = "{TaskCode}, {TaskTitle}, {ProjectName}, {Priority}, {Milestone}, {DueDate}, {AssigneeName}, {CreatedByName}, {AppName}, {AppUrl}, {ActionUrl}, {CurrentDate}, {CurrentYear}",
+                IsActive = true,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            },
+            new EmailTemplate
+            {
+                EventCode = "TASK_STATUS_CHANGED",
+                EventName = "Perubahan Status Tugas",
+                Category = "Tasks",
+                Subject = "[Update Tugas] {TaskCode} Diperbarui Menjadi {Status}",
+                BodyHtml = @"<div style=""font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;color:#1e293b;"">
+    <div style=""text-align:center;margin-bottom:20px;"">
+        <div style=""display:inline-block;background:#e0e7ff;color:#3730a3;padding:8px 16px;border-radius:10px;font-weight:900;font-size:14px;"">🔄 Perubahan Status Tugas</div>
+        <h2 style=""font-size:18px;font-weight:800;color:#0f172a;margin-top:14px;margin-bottom:4px;"">{TaskTitle}</h2>
+        <p style=""font-size:12px;color:#64748b;margin:0;"">Status tugas <strong style=""font-family:monospace;"">{TaskCode}</strong> telah diperbarui menjadi <strong>{Status}</strong>.</p>
+    </div>
+    <div style=""text-align:center;margin:20px 0;"">
+        <a href=""{ActionUrl}"" style=""display:inline-block;background:#4F46E5;color:#ffffff;text-decoration:none;font-size:12px;font-weight:800;padding:10px 24px;border-radius:10px;"">Buka Detail Tugas &rarr;</a>
+    </div>
+    <div style=""text-align:center;margin-top:20px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;"">
+        <p style=""margin:0;"">&copy; {CurrentYear} {AppName} &bull; <a href=""{AppUrl}"" style=""color:#6366f1;text-decoration:none;"">{AppUrl}</a></p>
+    </div>
+</div>",
+                AvailableVariables = "{TaskCode}, {TaskTitle}, {Status}, {ProjectName}, {AssigneeName}, {AppName}, {AppUrl}, {ActionUrl}, {CurrentDate}, {CurrentYear}",
+                IsActive = true,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            },
+            new EmailTemplate
+            {
+                EventCode = "PASSWORD_RESET_NOTIFICATION",
+                EventName = "Pemberitahuan Reset Password Akun",
+                Category = "Account",
+                Subject = "[{AppName}] Kata Sandi Akun Anda Berhasil Diperbarui",
+                BodyHtml = @"<div style=""font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;padding:24px;background:#ffffff;border-radius:16px;border:1px solid #e2e8f0;color:#1e293b;"">
+    <div style=""text-align:center;margin-bottom:20px;"">
+        <div style=""display:inline-block;background:#fef3c7;color:#92400e;padding:8px 16px;border-radius:10px;font-weight:900;font-size:14px;"">🔑 Keamanan Akun</div>
+        <h2 style=""font-size:18px;font-weight:800;color:#0f172a;margin-top:14px;margin-bottom:4px;"">Kata Sandi Baru Telah Disetel</h2>
+        <p style=""font-size:12px;color:#64748b;margin:0;"">Halo <strong>{FullName}</strong>, kata sandi login Anda telah diperbarui oleh Administrator.</p>
+    </div>
+    <div style=""background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;font-size:12px;"">
+        <p style=""margin:4px 0;""><strong>Email Login:</strong> {Email}</p>
+        <p style=""margin:4px 0;""><strong>Kata Sandi Baru:</strong> <span style=""font-family:monospace;font-weight:bold;color:#4f46e5;background:#eef2ff;padding:2px 8px;border-radius:6px;"">{NewPassword}</span></p>
+    </div>
+    <div style=""text-align:center;margin:20px 0;"">
+        <a href=""{ActionUrl}"" style=""display:inline-block;background:#4F46E5;color:#ffffff;text-decoration:none;font-size:12px;font-weight:800;padding:10px 24px;border-radius:10px;"">Masuk dan Ubah Kata Sandi &rarr;</a>
+    </div>
+    <div style=""text-align:center;margin-top:20px;padding-top:14px;border-top:1px solid #e2e8f0;font-size:11px;color:#94a3b8;"">
+        <p style=""margin:0;"">&copy; {CurrentYear} {AppName} &bull; <a href=""{AppUrl}"" style=""color:#6366f1;text-decoration:none;"">{AppUrl}</a></p>
+    </div>
+</div>",
+                AvailableVariables = "{FullName}, {Email}, {NewPassword}, {AppName}, {AppUrl}, {ActionUrl}, {CurrentDate}, {CurrentYear}",
+                IsActive = true,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            }
+        );
         db.SaveChanges();
     }
 
@@ -419,7 +860,9 @@ using (var scope = app.Services.CreateScope())
             JobTitle = "System Administrator",
             AvatarColor = "#6366F1",
             CreatedAt = DateTime.Now,
-            EmailConfirmed = true
+            EmailConfirmed = true,
+            IsApproved = true,
+            ApprovedAt = DateTime.Now
         };
         var result = await userManager.CreateAsync(adminUser, "Admin123!");
         if (result.Succeeded)
@@ -450,8 +893,11 @@ using (var scope = app.Services.CreateScope())
                 FullName = name,
                 JobTitle = job,
                 AvatarColor = color,
+                CompanyId = 1,
                 CreatedAt = DateTime.Now,
-                EmailConfirmed = true
+                EmailConfirmed = true,
+                IsApproved = true,
+                ApprovedAt = DateTime.Now
             };
             var res = await userManager.CreateAsync(newUser, "Password123!");
             if (res.Succeeded)
@@ -626,6 +1072,7 @@ app.UseSwaggerUI(options =>
     options.RoutePrefix = "swagger";
     options.DocumentTitle = "Work Tracker Pro - Swagger API Documentation";
     options.DisplayRequestDuration();
+    options.EnablePersistAuthorization();
 });
 
 app.UseRouting();

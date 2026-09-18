@@ -59,18 +59,33 @@
 - **Format Standar (9 Kolom)**: Ekspor/impor dengan fitur penugasan PIC dinamis (*bulk reassign*) dan filter periode/proyek.
 - **Format ARMS Enterprise (21 Kolom)**: Integrasi penuh dengan template Waterfall SDLC Milestone (*Requirement Analysis*, *System Design*, *Implementation*, *Testing & QA*, *Deployment*, *Maintenance*).
 
-### 👥 9. Manajemen Tim & Keamanan Akun
-- **Direktori Anggota**: Kartu profil tim, statistik penyelesaian tugas, dan total jam kerja.
-- **Admin Password Reset**: Administrator dapat mereset kata sandi anggota tim secara langsung dari antarmuka Web UI maupun REST API.
+### 👥 9. Manajemen Tim, Approval Pendaftaran & Multi-Tenancy
+- **Alur Persetujuan Registrasi (Admin Approval)**: Pendaftaran pengguna baru melalui web form maupun REST API memerlukan persetujuan Administrator terlebih dahulu sebelum akun dapat digunakan untuk login.
+- **Pemeriksaan Status Akun & Notifikasi**: Pengguna yang belum disetujui diblokir dari login (HTTP 403 Forbidden pada API dan alert informatif pada web). Admin dapat menyetujui (*Approve*) atau menolak (*Reject* disertai alasan penolakan).
+- **Isolasi Multi-Tenancy Perusahaan**: Setiap pengguna, proyek, tugas, dan catatan terasosiasi dengan entitas Perusahaan/Organisasi (`Company`), menjaga privasi data antar tim.
+- **Direktori Anggota & Analitik Kontribusi**: Kartu profil tim, statistik penyelesaian tugas, dan total jam kerja.
+- **Admin Password Reset**: Administrator dapat mereset kata sandi anggota tim secara langsung dari antarmuka Web UI maupun REST API disertai notifikasi email otomatis.
 - **Role-Based Access Control (RBAC)**: Pemisahan hak akses antara Administrator dan Anggota Tim (*User*).
 - **Global Audit Trail Filter**: Pencatatan otomatis setiap aksi controller ke database SQLite lengkap dengan visualisasi grafik aktivitas.
 
-### 🛠️ 10. Developer Tools & RESTful API
-- **SQL Formatter & Beautifier**: Alat bantu pemformatan dan validasi sintaks SQL kueri multi-dialek.
-- **JSON Payload Tools**: Pemformatan, validasi sintaks, dan penyimpanan template payload JSON.
-- **85+ Endpoint RESTful**: Terintegrasi penuh dengan Swagger OpenAPI v3.1 interaktif ([http://localhost:5000/swagger](http://localhost:5000/swagger)) dan Postman Collection.
+### 📧 10. Integrasi Server Email (SMTP) & Template Event
+- **Pengaturan Server SMTP Dinamis**: Pengaturan host mail, port (25, 465, 587, 2525), email pengirim, display name pengirim, password (masked), dan enkripsi SSL/TLS yang tersimpan di database tanpa perlu merestart aplikasi.
+- **Uji Koneksi Mandiri (Test Connection & Diagnostics)**: Fasilitas pengujian koneksi langsung ke server SMTP dengan pengukuran latensi pengiriman (ms) dan pencatatan log diagnostik handshake protokol mail.
+- **Sub-Modul Template Email Berbasis Event**:
+  - Filter kategori (*Authentication, Admin Alert, Task Management*).
+  - 7 Template default bawaan sistem (`USER_REGISTERED`, `ADMIN_NEW_USER_ALERT`, `USER_APPROVED`, `USER_REJECTED`, `PASSWORD_RESET_NOTIFICATION`, `TASK_ASSIGNED`, `TASK_STATUS_CHANGED`).
+  - Dukungan variabel placeholder dinamis (`{FullName}`, `{TaskTitle}`, `{ProjectName}`, `{ActionUrl}`, `{DueDate}`, dll.) dengan chips yang dapat disalin 1-klik.
+  - Modal editor HTML dan modal live rendering preview.
+  - Kemampuan reset template ke versi default kapan saja.
+- **Background-Safe Dispatcher**: Pengiriman email berlangsung asinkron di latar belakang (*non-blocking*) sehingga kegagalan mail server tidak pernah mengganggu alur kerja pengguna.
 
-### 🎨 11. Sistem Tema Dinamis (16 Tema)
+### 🛠️ 11. Developer Tools & RESTful API
+- **SQL Formatter & Beautifier**: Alat bantu pemformatan dan validasi sintaks SQL kueri multi-dialek (15+ engine).
+- **JSON Payload Tools**: Pemformatan, validasi sintaks, minifikasi, dan penyimpanan template payload JSON.
+- **95+ Endpoint RESTful**: Terintegrasi penuh dengan Swagger OpenAPI v3.1 interaktif ([http://localhost:5000/swagger](http://localhost:5000/swagger)) dan Postman Collection.
+- **Antarmuka Minimalis & Ergonomis**: Topbar header dirancang bersih dan lega, sementara tautan dokumentasi Swagger API dan Buku Panduan Pengguna (PDF) tersedia praktis melalui Bilah Samping (Sidebar).
+
+### 🎨 12. Sistem Tema Dinamis (16 Tema)
 - **10 Tema Terang**: *Indigo Violet*, *Oceanic Cyan*, *Emerald Forest*, *Sunset Orange*, *Rose Pink*, *Midnight Dark*, *Cyberpunk Neon*, *Royal Amethyst*, *Slate Minimal*, *Warm Amber*.
 - **6 Tema Gelap**: Terintegrasi instan dengan CSS custom tokens.
 

@@ -4,8 +4,9 @@
 
     string[] monthNames = { "", "Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember" };
     string[] dayNamesIndo = { "Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu" };
-    var today = DateTime.Today;
+    var today = TrackerKerja.Helpers.DateTimeHelper.Today;
     var currentDayIndo = dayNamesIndo[(int)today.DayOfWeek];
+    var nowGmt7 = TrackerKerja.Helpers.DateTimeHelper.Now;
 }
 
 <!-- Top Header & Actions -->
@@ -63,7 +64,7 @@
                     <span class="text-xs font-extrabold text-teal-700 uppercase tracking-wider bg-teal-100 px-2.5 py-0.5 rounded-full">
                         @currentDayIndo, @today.ToString("dd MMMM yyyy")
                     </span>
-                    <span class="text-xs text-slate-400 font-mono" id="live-digital-clock">@DateTime.Now.ToString("HH:mm:ss")</span>
+                    <span class="text-xs text-slate-400 font-mono" id="live-digital-clock">@nowGmt7.ToString("HH:mm:ss")</span>
                 </div>
                 <h3 class="text-lg font-black text-slate-800 mt-1">Status Presensi Anda Hari Ini</h3>
                 <p class="text-xs text-slate-500">
@@ -217,7 +218,7 @@
         <!-- Year Selector -->
         <div class="sm:col-span-2">
             <select name="year" onchange="this.form.submit()" class="select2 select2-compact w-full" data-placeholder="Pilih Tahun">
-                @for (int y = DateTime.Today.Year - 2; y <= DateTime.Today.Year + 1; y++)
+                @for (int y = today.Year - 2; y <= today.Year + 1; y++)
                 {
                     <option value="@y" selected="@(Model.Year == y)">@y</option>
                 }
@@ -498,7 +499,7 @@
 
             <div class="mb-3">
                 <label class="block text-xs font-bold text-slate-700 mb-1">Tanggal</label>
-                <input type="date" name="Date" id="manualDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" required
+                <input type="date" name="Date" id="manualDate" value="@today.ToString("yyyy-MM-dd")" required
                        class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-teal-400 focus:outline-none">
             </div>
 
@@ -605,12 +606,12 @@
             <div class="grid grid-cols-2 gap-3 mb-3">
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Dari Tanggal</label>
-                    <input type="date" name="StartDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" required
+                    <input type="date" name="StartDate" value="@today.ToString("yyyy-MM-dd")" required
                            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-400 focus:outline-none">
                 </div>
                 <div>
                     <label class="block text-xs font-bold text-slate-700 mb-1">Sampai Tanggal</label>
-                    <input type="date" name="EndDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" required
+                    <input type="date" name="EndDate" value="@today.ToString("yyyy-MM-dd")" required
                            class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs font-bold text-slate-800 focus:ring-2 focus:ring-amber-400 focus:outline-none">
                 </div>
             </div>
@@ -640,22 +641,28 @@
 </div>
 
 <script>
-    // Real-time clock update
+    // Real-time clock update in GMT+7 (WIB: UTC+7)
+    function getGmt7Now() {
+        const d = new Date();
+        const utcMs = d.getTime() + (d.getTimezoneOffset() * 60000);
+        return new Date(utcMs + (7 * 3600000));
+    }
+
     setInterval(function() {
         const el = document.getElementById('live-digital-clock');
         if (el) {
-            const now = new Date();
+            const now = getGmt7Now();
             const h = String(now.getHours()).padStart(2, '0');
             const m = String(now.getMinutes()).padStart(2, '0');
             const s = String(now.getSeconds()).padStart(2, '0');
-            el.innerText = `${h}:${m}:${s}`;
+            el.innerText = `${h}:${m}:${s} WIB`;
         }
     }, 1000);
 
     function openManualAttendanceModal() {
         document.getElementById('manualId').value = "0";
         document.getElementById('manualModalTitle').innerText = "Catat Presensi Harian Manual";
-        document.getElementById('manualDate').value = "@DateTime.Today.ToString("yyyy-MM-dd")";
+        document.getElementById('manualDate').value = "@today.ToString("yyyy-MM-dd")";
         document.getElementById('manualType').value = "1";
         document.getElementById('manualLocation').value = "1";
         document.getElementById('manualClockIn').value = "08:30";

@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
@@ -14,6 +15,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/notifications")]
     [Produces("application/json")]
+    [Authorize]
     public class NotificationsApiController : ControllerBase
     {
         private readonly AppDbContext _db;

@@ -1,7 +1,9 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
+using TrackerKerja.Helpers;
 using TrackerKerja.Models;
 using TrackerKerja.ViewModels;
 
@@ -10,6 +12,7 @@ namespace TrackerKerja.Controllers.Api
     [ApiController]
     [Route("api/attendance")]
     [Produces("application/json")]
+    [Authorize]
     public class AttendanceApiController : ControllerBase
     {
         private readonly AppDbContext _db;
@@ -32,10 +35,19 @@ namespace TrackerKerja.Controllers.Api
             [FromQuery] DateTime? endDate,
             [FromQuery] string? type)
         {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+
             var query = _db.Attendances
                 .Include(a => a.User)
                 .AsNoTracking()
                 .AsQueryable();
+
+            if (!isAdmin)
+            {
+                var companyId = currentUser?.CompanyId;
+                query = query.Where(a => a.User != null && a.User.CompanyId == companyId);
+            }
 
             if (!string.IsNullOrEmpty(userId))
                 query = query.Where(a => a.UserId == userId);
@@ -93,7 +105,7 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<AttendanceResponseDto?>.Fail("UserId tidak terdefinisi."));
             }
 
-            var today = DateTime.Today;
+            var today = DateTimeHelper.Today;
             var record = await _db.Attendances
                 .Include(a => a.User)
                 .AsNoTracking()
@@ -141,7 +153,8 @@ namespace TrackerKerja.Controllers.Api
                 if (currentUser == null) return Unauthorized();
             }
 
-            var today = DateTime.Today;
+            var today = DateTimeHelper.Today;
+            var nowGmt7 = DateTimeHelper.Now;
             var existing = await _db.Attendances.FirstOrDefaultAsync(a => a.UserId == currentUser.Id && a.Date == today);
 
             if (existing != null && existing.ClockIn.HasValue)
@@ -160,11 +173,11 @@ namespace TrackerKerja.Controllers.Api
                     Date = today,
                     Type = AttendanceType.Present,
                     WorkLocation = locType,
-                    ClockIn = DateTime.Now,
+                    ClockIn = nowGmt7,
                     Notes = request.Notes,
                     Status = AttendanceApprovalStatus.Approved,
-                    CreatedAt = DateTime.Now,
-                    UpdatedAt = DateTime.Now
+                    CreatedAt = nowGmt7,
+                    UpdatedAt = nowGmt7
                 };
                 _db.Attendances.Add(existing);
             }
@@ -172,9 +185,9 @@ namespace TrackerKerja.Controllers.Api
             {
                 existing.Type = AttendanceType.Present;
                 existing.WorkLocation = locType;
-                existing.ClockIn = DateTime.Now;
+                existing.ClockIn = nowGmt7;
                 existing.Notes = request.Notes ?? existing.Notes;
-                existing.UpdatedAt = DateTime.Now;
+                existing.UpdatedAt = nowGmt7;
             }
 
             await _db.SaveChangesAsync();
@@ -215,7 +228,7 @@ namespace TrackerKerja.Controllers.Api
                 if (currentUser == null) return Unauthorized();
             }
 
-            var today = DateTime.Today;
+            var today = DateTimeHelper.Today;
             var record = await _db.Attendances.FirstOrDefaultAsync(a => a.UserId == currentUser.Id && a.Date == today);
 
             if (record == null || !record.ClockIn.HasValue)
@@ -223,7 +236,7 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<AttendanceResponseDto>.Fail("Anda belum melakukan clock-in hari ini."));
             }
 
-            var now = DateTime.Now;
+            var now = DateTimeHelper.Now;
             record.ClockOut = now;
             var duration = (now - record.ClockIn.Value).TotalHours;
             record.TotalHours = Math.Max(0, Math.Round(duration, 2));
@@ -232,7 +245,7 @@ namespace TrackerKerja.Controllers.Api
             {
                 record.Notes = string.IsNullOrEmpty(record.Notes) ? request.Notes : $"{record.Notes} | {request.Notes}";
             }
-            record.UpdatedAt = DateTime.Now;
+            record.UpdatedAt = now;
 
             await _db.SaveChangesAsync();
 
@@ -266,6 +279,7 @@ namespace TrackerKerja.Controllers.Api
         public async Task<IActionResult> SubmitLeave([FromBody] LeaveApiRequestDto request)
         {
             var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
             var targetUserId = request.UserId ?? currentUser?.Id;
 
             if (string.IsNullOrEmpty(targetUserId))
@@ -279,6 +293,15 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<int>.Fail("Target user tidak valid."));
             }
 
+            if (!isAdmin && targetUserId != currentUser?.Id)
+            {
+                var targetUser = await _db.Users.FindAsync(targetUserId);
+                if (targetUser == null || targetUser.CompanyId != currentUser?.CompanyId)
+                {
+                    return StatusCode(StatusCodes.Status403Forbidden, ApiResponse<int>.Fail("Akses ditolak."));
+                }
+            }
+
             if (request.EndDate < request.StartDate)
             {
                 return BadRequest(ApiResponse<int>.Fail("Tanggal selesai tidak boleh lebih awal dari tanggal mulai."));
@@ -286,6 +309,7 @@ namespace TrackerKerja.Controllers.Api
 
             var daysCount = 0;
             var curDate = request.StartDate.Date;
+            var nowGmt7 = DateTimeHelper.Now;
             while (curDate <= request.EndDate.Date)
             {
                 if (curDate.DayOfWeek != DayOfWeek.Sunday)
@@ -300,7 +324,7 @@ namespace TrackerKerja.Controllers.Api
                         existing.TotalHours = 0;
                         existing.LeaveReason = request.LeaveReason;
                         existing.Notes = request.Notes;
-                        existing.UpdatedAt = DateTime.Now;
+                        existing.UpdatedAt = nowGmt7;
                     }
                     else
                     {
@@ -313,8 +337,8 @@ namespace TrackerKerja.Controllers.Api
                             LeaveReason = request.LeaveReason,
                             Notes = request.Notes,
                             Status = AttendanceApprovalStatus.Approved,
-                            CreatedAt = DateTime.Now,
-                            UpdatedAt = DateTime.Now
+                            CreatedAt = nowGmt7,
+                            UpdatedAt = nowGmt7
                         });
                     }
                     daysCount++;

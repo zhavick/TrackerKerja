@@ -441,6 +441,12 @@ namespace TrackerKerja.Controllers
             return RedirectToAction(nameof(Index));
         }
 
+        [HttpGet]
+        public IActionResult Details(int id)
+        {
+            return RedirectToAction(nameof(Edit), new { id });
+        }
+
         public async Task<IActionResult> Edit(int id)
         {
             var task = await _db.Tasks
@@ -490,7 +496,13 @@ namespace TrackerKerja.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> Edit(int id, WorkTask model)
+        public async Task<IActionResult> Edit(
+            int id, 
+            WorkTask model, 
+            int? manualHours = 0, 
+            int? manualMinutes = 0, 
+            string? manualSessionDate = null, 
+            string? manualNotes = null)
         {
             if (id != model.Id) return BadRequest();
 
@@ -532,6 +544,20 @@ namespace TrackerKerja.Controllers
                     tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId));
                 }
 
+                var taskWithSessions = await _db.Tasks
+                    .Include(t => t.Sessions)
+                    .Include(t => t.Notes)
+                        .ThenInclude(n => n.AuthorUser)
+                    .Include(t => t.ChildTasks)
+                    .FirstOrDefaultAsync(t => t.Id == id);
+
+                if (taskWithSessions != null)
+                {
+                    model.Sessions = taskWithSessions.Sessions;
+                    model.Notes = taskWithSessions.Notes;
+                    model.ChildTasks = taskWithSessions.ChildTasks;
+                }
+
                 return View(new TaskFormViewModel
                 {
                     Task = model,
@@ -563,7 +589,38 @@ namespace TrackerKerja.Controllers
 
             model.UpdatedAt = DateTime.Now;
             _db.Tasks.Update(model);
+
+            // Process unified manual work hours logging if filled
+            var h = Math.Max(0, manualHours ?? 0);
+            var m = Math.Max(0, Math.Min(59, manualMinutes ?? 0));
+            var totalSeconds = (long)(h * 3600 + m * 60);
+            bool sessionAdded = false;
+
+            if (totalSeconds > 0)
+            {
+                DateTime date = DateTime.Now;
+                if (!string.IsNullOrEmpty(manualSessionDate) && DateTime.TryParse(manualSessionDate, out var parsedDate))
+                {
+                    date = parsedDate;
+                }
+
+                var session = new WorkSession
+                {
+                    TaskId = model.Id,
+                    UserId = currentUser?.Id,
+                    StartTime = date,
+                    EndTime = date.AddSeconds(totalSeconds),
+                    Duration = totalSeconds,
+                    Notes = string.IsNullOrWhiteSpace(manualNotes) ? "Log manual saat perbarui tugas" : manualNotes.Trim()
+                };
+
+                _db.Sessions.Add(session);
+                sessionAdded = true;
+            }
+
             await _db.SaveChangesAsync();
+
+            var durationMsg = sessionAdded ? $" (Waktu kerja +{h} jam {m} menit berhasil dicatat)" : "";
 
             // Evaluate Gamification Badges
             if (!string.IsNullOrEmpty(model.AssignedToUserId))
@@ -571,12 +628,12 @@ namespace TrackerKerja.Controllers
                 var newBadges = await _gamificationService.EvaluateAndAwardBadgesAsync(model.AssignedToUserId);
                 if (newBadges.Any() && currentUser?.Id == model.AssignedToUserId)
                 {
-                    TempData["Success"] = $"Tugas diperbarui! 🎉 Selamat, kamu membuka badge baru: {string.Join(", ", newBadges.Select(b => b.Name))}!";
+                    TempData["Success"] = $"Tugas diperbarui!{durationMsg} 🎉 Selamat, kamu membuka badge baru: {string.Join(", ", newBadges.Select(b => b.Name))}!";
                     return RedirectToAction(nameof(Index));
                 }
             }
 
-            TempData["Success"] = "Tugas berhasil diperbarui!";
+            TempData["Success"] = $"Tugas berhasil diperbarui!{durationMsg}";
             return RedirectToAction(nameof(Index));
         }
 

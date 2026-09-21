@@ -47,7 +47,7 @@
         </div>
 
         <div class="p-6">
-            <form method="post" action="/Task/Edit/@Model.Task.Id">
+            <form method="post" action="/Task/Edit/@Model.Task.Id" id="taskEditForm">
                 @Html.AntiForgeryToken()
                 <input type="hidden" name="Id" value="@Model.Task.Id" />
 
@@ -317,12 +317,13 @@
                     </div>
                 </div>
 
-                <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                    <button type="submit"
-                            class="flex-1 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-semibold py-3 rounded-xl hover:shadow-lg hover:shadow-indigo-200 transition-all duration-200 cursor-pointer text-center">
-                        <i class="fas fa-save mr-2"></i>Simpan Perubahan
-                    </button>
-                    <a href="/Task" class="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 font-medium transition-all text-center">
+                <!-- Bottom Hint in Card 1 -->
+                <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-500">
+                    <span class="inline-flex items-center gap-2 text-slate-600 font-medium">
+                        <i class="fas fa-clock text-amber-500 text-sm"></i>
+                        Lengkapi pencatatan jam kerja di bawah, lalu klik tombol <strong>Simpan Semua Perubahan</strong>.
+                    </span>
+                    <a href="/Task" class="text-slate-400 hover:text-slate-600 font-medium transition-colors">
                         Batal
                     </a>
                 </div>
@@ -350,52 +351,72 @@
         </div>
 
         <div class="p-6">
-            <!-- Manual Log Input Form -->
-            <div class="bg-amber-50/60 rounded-2xl p-5 border border-amber-200 mb-6">
-                <h4 class="font-bold text-slate-800 text-sm mb-3 flex items-center gap-2">
-                    <i class="fas fa-plus-circle text-amber-500"></i>
-                    Tambah Log Waktu Kerja Manual
-                </h4>
-                <form method="post" action="/Task/AddManualSession" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
-                    @Html.AntiForgeryToken()
-                    <input type="hidden" name="taskId" value="@Model.Task.Id" />
+            <!-- Unified Manual Log Input Section (No Separate Form/Button) -->
+            <div class="bg-amber-50/70 rounded-2xl p-5 border border-amber-200/90 mb-6 shadow-xs">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                    <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                        <i class="fas fa-stopwatch text-amber-600"></i>
+                        Input Tambahan Jam Kerja (Disimpan Bersama Detail Tugas)
+                    </h4>
+                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-100/90 px-3 py-1 rounded-lg border border-amber-200">
+                        <i class="fas fa-info-circle text-amber-600"></i>
+                        Biarkan 0 jika hanya ingin mengubah detail tugas
+                    </span>
+                </div>
 
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
                     <!-- Hours -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Jam</label>
-                        <input type="number" name="hours" min="0" max="999" value="1" required
-                               class="w-full px-3 py-2 rounded-xl border border-amber-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">
+                            <i class="fas fa-hourglass-half text-amber-500 mr-1"></i>Jam
+                        </label>
+                        <input type="number" name="manualHours" id="manualHours" form="taskEditForm" min="0" max="999" value="0"
+                               class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
                     </div>
 
                     <!-- Minutes -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Menit</label>
-                        <input type="number" name="minutes" min="0" max="59" value="0" required
-                               class="w-full px-3 py-2 rounded-xl border border-amber-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">
+                            <i class="fas fa-clock text-amber-500 mr-1"></i>Menit
+                        </label>
+                        <input type="number" name="manualMinutes" id="manualMinutes" form="taskEditForm" min="0" max="59" value="0"
+                               class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
                     </div>
 
                     <!-- Date -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Tanggal Pengerjaan</label>
-                        <input type="date" name="sessionDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" required
-                               class="w-full px-3 py-2 rounded-xl border border-amber-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">
+                            <i class="fas fa-calendar-alt text-amber-500 mr-1"></i>Tanggal Pengerjaan
+                        </label>
+                        <input type="date" name="manualSessionDate" id="manualSessionDate" form="taskEditForm" value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                               class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
                     </div>
 
                     <!-- Notes -->
                     <div>
-                        <label class="block text-xs font-semibold text-slate-600 mb-1">Catatan / Keterangan</label>
-                        <input type="text" name="notes" placeholder="Contoh: Coding fitur auth"
-                               class="w-full px-3 py-2 rounded-xl border border-amber-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white">
+                        <label class="block text-xs font-semibold text-slate-700 mb-1">
+                            <i class="fas fa-comment-alt text-amber-500 mr-1"></i>Catatan / Keterangan
+                        </label>
+                        <input type="text" name="manualNotes" id="manualNotes" form="taskEditForm" placeholder="Opsional: contoh 'Coding modul auth'"
+                               class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
                     </div>
+                </div>
 
-                    <!-- Submit Button -->
-                    <div class="flex items-end">
-                        <button type="submit"
-                                class="w-full bg-gradient-to-r from-amber-500 to-orange-600 text-white font-bold py-2 px-3 rounded-xl text-sm hover:shadow-md transition-all">
-                            <i class="fas fa-plus mr-1"></i>Tambah Waktu
-                        </button>
+                <!-- Quick Presets -->
+                <div class="flex items-center justify-between gap-2 flex-wrap pt-2.5 border-t border-amber-200/70 text-xs">
+                    <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-slate-500 font-medium text-[11px] mr-1">Preset Cepat:</span>
+                        <button type="button" onclick="setManualTime(0, 30)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer">+30 Menit</button>
+                        <button type="button" onclick="setManualTime(1, 0)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer">+1 Jam</button>
+                        <button type="button" onclick="setManualTime(2, 0)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer">+2 Jam</button>
+                        <button type="button" onclick="setManualTime(4, 0)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer">+4 Jam</button>
+                        <button type="button" onclick="setManualTime(0, 0)" class="px-2.5 py-1 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg text-slate-600 font-semibold text-[11px] transition-all cursor-pointer">Reset (0)</button>
                     </div>
-                </form>
+                    <p class="text-[11px] text-amber-700 italic flex items-center gap-1">
+                        <i class="fas fa-check text-[10px]"></i>
+                        Waktu kerja di atas akan otomatis disimpan saat tombol "Simpan Semua Perubahan" ditekan.
+                    </p>
+                </div>
             </div>
 
             <!-- Sessions History Table -->
@@ -489,6 +510,38 @@
                     </div>
                 }
             </div>
+        </div>
+    </div>
+
+    <!-- SINGLE UNIFIED SAVE ACTION BAR -->
+    <div class="sticky bottom-4 z-30 bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-indigo-100 shadow-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 transition-all">
+        <div class="flex items-center gap-3">
+            <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-200">
+                <i class="fas fa-save text-lg"></i>
+            </div>
+            <div>
+                <div class="flex items-center gap-2">
+                    <p class="font-bold text-slate-800 text-sm sm:text-base line-clamp-1">
+                        @Model.Task.Title
+                    </p>
+                    <span class="font-mono text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 font-bold shrink-0">@Model.Task.TaskCode</span>
+                </div>
+                <p class="text-xs text-slate-500 mt-0.5">
+                    Total Durasi: <strong class="font-mono text-indigo-600 font-bold">@Model.Task.TotalDurationFormatted</strong>
+                    <span class="text-slate-300 mx-1.5">•</span>
+                    Status: <strong class="font-semibold text-slate-700">@Model.Task.Status</strong> (@Model.Task.Progress%)
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+            <a href="/Task" class="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 font-semibold text-sm transition-all text-center">
+                Batal
+            </a>
+            <button type="submit" form="taskEditForm" id="btnSaveTaskUnified"
+                    class="flex-1 sm:flex-none bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-7 py-3 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 cursor-pointer flex items-center justify-center gap-2.5 text-sm sm:text-base">
+                <i class="fas fa-save text-base"></i>
+                <span>Simpan Semua Perubahan</span>
+            </button>
         </div>
     </div>
 
@@ -615,6 +668,34 @@
             } else if (e.target.value === 'InProgress' && parseInt(editSlider?.value || 0) === 100) {
                 updateEditProgress(50);
             }
+        });
+    }
+
+    // Set manual hours and minutes quickly via preset buttons
+    function setManualTime(hours, minutes) {
+        const hInput = document.getElementById('manualHours');
+        const mInput = document.getElementById('manualMinutes');
+        if (hInput) hInput.value = hours;
+        if (mInput) mInput.value = minutes;
+    }
+
+    // Ensure manual work time fields are included on submission
+    const taskEditForm = document.getElementById('taskEditForm');
+    if (taskEditForm) {
+        taskEditForm.addEventListener('submit', function() {
+            ['manualHours', 'manualMinutes', 'manualSessionDate', 'manualNotes'].forEach(function(fieldId) {
+                const inputEl = document.getElementById(fieldId);
+                if (inputEl && !taskEditForm.contains(inputEl)) {
+                    let existing = taskEditForm.querySelector(`input[name="${fieldId}"][type="hidden"]`);
+                    if (!existing) {
+                        existing = document.createElement('input');
+                        existing.type = 'hidden';
+                        existing.name = fieldId;
+                        taskEditForm.appendChild(existing);
+                    }
+                    existing.value = inputEl.value;
+                }
+            });
         });
     }
 </script>

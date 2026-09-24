@@ -13,6 +13,7 @@ ensure_directories() {
     mkdir -p ./db_data
     mkdir -p ./uploads/notes
     mkdir -p ./uploads/avatars
+    mkdir -p ./uploads/covers
 }
 
 case "$ACTION" in

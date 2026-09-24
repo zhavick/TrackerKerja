@@ -24,3 +24,7 @@ data/
 *.log
 scratch/
 .system_generated/
+~$*
+*.tmp
+tracker.zip
+

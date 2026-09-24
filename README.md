@@ -1,93 +1,58 @@
 # 🚀 Work Tracker Pro (TrackerKerja)
 
-> **Enterprise Work Task Management, Multi-Timer Timesheet Tracking, Attendance Management, Technical Documentation, & Team Performance Analytics Platform**
+> **Enterprise Work Task Management, Multi-Timer Timesheet Tracking, Attendance Management, Technical Documentation, & Team Performance Analytics Platform (v3.6 Enterprise Security Edition)**
 
 [![ASP.NET Core 8.0](https://img.shields.io/badge/ASP.NET%20Core-8.0%20MVC-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Entity Framework Core](https://img.shields.io/badge/EF%20Core-SQLite-blue?logo=sqlite&logoColor=white)](https://learn.microsoft.com/ef/core/)
 [![ClosedXML](https://img.shields.io/badge/ClosedXML-0.104.2-emerald?logo=microsoft-excel&logoColor=white)](https://github.com/ClosedXML/ClosedXML)
 [![Docker](https://img.shields.io/badge/Docker-Ready-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
-[![REST API](https://img.shields.io/badge/REST%20API-OpenAPI%20%2F%20Swagger-85EA2D?logo=swagger&logoColor=black)](http://localhost:5000/swagger)
+[![REST API](https://img.shields.io/badge/REST%20API-100%2B%20Endpoints-85EA2D?logo=swagger&logoColor=black)](http://localhost:5000/swagger)
+[![JWT Bearer](https://img.shields.io/badge/Auth-Cookie%20%2B%20JWT%20Bearer-orange?logo=jsonwebtokens&logoColor=white)](http://localhost:5000/swagger)
+[![Themes & Fonts](https://img.shields.io/badge/Themes%20%26%20Fonts-40%20Themes%20%7C%205%20Fonts-pink)](http://localhost:5000)
 [![GitHub](https://img.shields.io/badge/GitHub-zhavick%2FTrackerKerja-181717?logo=github&logoColor=white)](https://github.com/zhavick/TrackerKerja.git)
-[![Responsive UI](https://img.shields.io/badge/Responsive-Mobile%20%26%20Desktop-purple)](http://localhost:5000)
 
 ---
 
-## 🌟 Fitur Utama Sistem
+## 🌟 Fitur Unggulan Sistem (v3.6)
 
-### 📱 1. Antarmuka Multi-Device & Mobile-Friendly
-- **Off-Canvas Sidebar Drawer**: Sidebar desktop otomatis bertransformasi menjadi drawer elegan dengan *backdrop blur* pada layar smartphone & tablet.
-- **Glassmorphic Bottom Navigation**: Navigasi bawah melayang khusus smartphone dengan 5 tombol aksi cepat (*Home*, *Tugas*, *Elevated Glowing Add +*, *Proyek*, *Menu*).
-- **Mobile Segmented Kanban Switcher**: Tab pil interaktif (`📋 Todo`, `🔄 In Progress`, `✅ Done`) untuk kemudahan switching kolom tanpa scrolling vertikal panjang.
-- **Formulir & Filter Responsif**: Grid adaptif 1-kolom di mobile dan 2-kolom di desktop dengan *touch target* yang nyaman.
+### 🔐 1. Keamanan Enterprise & Autentikasi Ganda (Dual Auth)
+- **Dual Authentication Pipeline**: Integrasi Cookie Session terenkripsi untuk peramban web dan **JWT Bearer Token** untuk RESTful API dan integrasi eksternal.
+- **Strict Swagger JWT Authorization**: Dokumentasi OpenAPI/Swagger UI di `/swagger` dilengkapi tombol modal **Authorize** untuk menguji endpoint berotentikasi Bearer JWT.
+- **Keamanan Sesi & Auto-Logout Inaktivitas 1 Jam (`session-manager.js`)**: Pemantauan idle real-time, dialog peringatan interaktif 5 menit dengan hitung mundur detik, dan proteksi redirect otomatis ke `/Account/Login?reason=timeout`.
+- **Halaman Login Lottie Modern**: Redesain visual modern dengan animasi Lottie, toggle mode gelap/terang instan tanpa reload, dan dropdown perusahaan Select2.
 
-### ⏱️ 2. Timesheet, Multi-Timer Serentak & Laporan Excel Personal
-- **Multi-Timer Serentak per Pengguna**: Setiap pengguna dapat menjalankan timer pada beberapa tugas sekaligus tanpa saling menimpa (*active timer sync*).
-- **Pencatatan Waktu Fleksibel**: Mendukung timer otomatis detik/menit dan input sesi manual.
-- **Laporan Timesheet Personal (ClosedXML .xlsx)**:
-  - **Sheet 1 ("Timesheet Personal")**: Metadata karyawan, tabel detail sesi waktu kerja, dan formula grand total otomatis `=SUM(...)`.
-  - **Sheet 2 ("Rekap per Proyek")**: Alokasi jam kerja dan persentase kontribusi per proyek.
-  - **Proteksi Privasi**: Pengguna hanya dapat mengakses dan mengunduh rekaman waktu miliknya sendiri.
+### 🎨 2. 40 Tema Eye-Friendly & 5 Google Fonts Switcher
+- **40 Tema Tampilan Dinamis**: 22 Tema Terang + 18 Tema Gelap ramah mata (*eye-friendly* dengan kontras seimbang) bertenaga CSS custom tokens (`themes.css`).
+- **Global Font Switcher**: 5 opsi Google Fonts pilihan (*Inter, Plus Jakarta Sans, Outfit, Poppins, Roboto*) yang dapat diganti secara instan tanpa reload halaman dan tersimpan di `localStorage` (*Anti-FOUC*).
+- **Tur Interaktif Layar (*Interactive Onboarding Tour*)**: 6 spotlight interaktif yang memandu pengguna baru memahami alur operasional aplikasi (`onboarding-tour.js`).
+- **Paginasi Grid Tabel AJAX (*Zero Reload*)**: Navigasi tabel Tugas, Anggota Tim, Presensi, Audit Trail, dan Timesheet instan tanpa reload halaman (`ajax-grid-manager.js`).
 
-### 📅 3. Kalender Tugas Dinamis dengan Filter Berbasis Peran
-- **Penyaringan Berbasis Peran (RBAC)**:
-  - **Member Reguler**: Kalender secara otomatis dan ketat hanya menampilkan tugas yang ditugaskan kepada member tersebut (*Tugas Saya*).
-  - **Administrator**: Memiliki dropdown filter di header kalender untuk beralih instan antara **🌐 Semua Tugas Tim** dan **👤 Tugas Saya Sendiri**.
-- **Live Refetch Tanpa Refresh**: Pergantian filter memicu pengambilan data event FullCalendar secara asinkron tanpa memuat ulang halaman.
-- **Modal & Tooltip PIC Lengkap**: Menampilkan status, prioritas, deadline, proyek, serta nama dan avatar Penanggung Jawab (PIC).
+### 👥 3. Direktori Anggota Tim, Banner Cover Profil & Hapus Akun Permanen
+- **Pure Grid Card Layout**: Kartu anggota tim berstruktur grid responsif dengan proteksi anti-overflow (*text-ellipsis* dan tooltip hover).
+- **Kustomisasi Banner Sampul Profil (`CoverPictureUrl`)**: Unggah gambar cover banner profil atau gunakan template vektor SVG default (`default-profile-cover.svg`).
+- **Fitur Hapus Permanen Akun (*Permanent User Deletion*)**: Khusus peran Administrator dengan proteksi konfirmasi ganda verifikasi nama target dan kata sandi admin.
+- **Admin Password Reset**: Fasilitas reset kata sandi langsung dari kartu anggota disertai notifikasi email otomatis.
 
-### 🕒 4. Manajemen Presensi & Absensi Kerja (Attendance)
-- **Pencatatan Kehadiran Harian**: Check-in dan Check-out harian dengan status kehadiran fleksibel (*Hadir, WFH, Sakit, Izin, Cuti, Libur, Terlambat*).
-- **Rekonsiliasi Presensi Tim**: Fasilitas pemantauan riwayat absensi bulanan untuk efisiensi evaluasi produktivitas.
+### ⏱️ 4. Timesheet, Multi-Timer & Penyatuan Form Edit Tugas
+- **Penyatuan Formulir Edit Tugas & Timesheet Manual (`SaveTaskAndSession`)**: Satu tombol simpan terpadu untuk memperbarui detail tugas dan mencatat sesi jam kerja manual baru sekaligus.
+- **Multi-Timer Serentak**: Menjalankan beberapa timer tugas bersamaan tanpa saling mengganggu antar pengguna.
+- **Laporan Excel Timesheet Resmi (ClosedXML)**: Ekspor multi-sheet dengan rincian harian, rekapitulasi per proyek, konversi Man-Days, dan formula otomatis.
 
 ### 🔄 5. Sinkronisasi Multi-Instance Host Induk & File Attachments
-- **Online Push & Pull Sync**: Kemampuan mengirim (Push) dan menarik (Pull) data tugas, sesi kerja, dan seluruh berkas lampiran (`uploads/notes/*`, `uploads/avatars/*`) antara instance lokal dengan Host Induk secara real-time via REST API.
-- **Full Package (.zip) Export & Import**: Ekspor arsip paket mandiri berstruktur standar (`manifest.json`, `sync_data.sql`, direktori `uploads/`) untuk migrasi data dan berkas pada jaringan tertutup (*air-gapped*).
-- **Manual SQL Export & Import**: Ekspor skrip SQL DDL & DML komprehensif atau file biner SQLite `.db` untuk migrasi offline database.
+- **Online Push & Pull Sync dengan File Streaming**: Sinkronisasi transaksi database dan seluruh berkas fisik lampiran (`uploads/notes/*`, `uploads/avatars/*`, `uploads/covers/*`) menggunakan Base64 streaming melalui REST API.
+- **Paket ZIP Offline Mandiri**: Ekspor dan impor paket arsip lengkap (`manifest.json`, `sync_data.sql`, folder `uploads/`) untuk instalasi jaringan tertutup (*air-gapped*).
 
-### 📋 6. Manajemen Tugas, Parenting & Kanban Board
-- **Hierarki Tugas**: Relasi tugas induk (*Parent Task*) dan sub-tugas (*Child Task*).
-- **Kendala & Solusi**: Kolom khusus pencatatan hambatan operasional dan solusi pemecahan teknis.
-- **Progress Interaktif 0–100%**: Slider interaktif dengan preset cepat (0%, 25%, 50%, 75%, 100%) serta sinkronisasi otomatis status *Done*.
-- **Drag & Drop Kanban**: Pembaruan status kartu secara real-time bertenaga SortableJS.
+### 📧 6. Integrasi Server Email (SMTP) & 7 Template Event
+- **Konfigurasi SMTP Dinamis**: Pengaturan host mail, port, kredensial, dan SSL/TLS tersimpan di database tanpa perlu restart aplikasi.
+- **Uji Koneksi Mandiri**: Live diagnostik handshake SMTP dan pengukuran latensi koneksi.
+- **7 Template Email Event**: Template pendaftaran, persetujuan akun, penolakan, reset password, penugasan tugas, dan perubahan status dengan live HTML rendering preview.
 
-### 📁 7. Dokumentasi Kerja & Penyimpanan Multi-File
-- **Rich Text Editor**: Editor Quill.js untuk notula meeting, spesifikasi teknis, dan catatan tugas.
-- **Struktur Folder Pengguna**: Lampiran multi-file diisolasi rapi di direktori `wwwroot/uploads/notes/{username}/`.
-- **Note Pinning**: Kemampuan menyematkan catatan penting di bagian atas dashboard.
-
-### 📑 8. Ekspor & Impor Excel Enterprise
-- **Format Standar (9 Kolom)**: Ekspor/impor dengan fitur penugasan PIC dinamis (*bulk reassign*) dan filter periode/proyek.
-- **Format ARMS Enterprise (21 Kolom)**: Integrasi penuh dengan template Waterfall SDLC Milestone (*Requirement Analysis*, *System Design*, *Implementation*, *Testing & QA*, *Deployment*, *Maintenance*).
-
-### 👥 9. Manajemen Tim, Approval Pendaftaran & Multi-Tenancy
-- **Alur Persetujuan Registrasi (Admin Approval)**: Pendaftaran pengguna baru melalui web form maupun REST API memerlukan persetujuan Administrator terlebih dahulu sebelum akun dapat digunakan untuk login.
-- **Pemeriksaan Status Akun & Notifikasi**: Pengguna yang belum disetujui diblokir dari login (HTTP 403 Forbidden pada API dan alert informatif pada web). Admin dapat menyetujui (*Approve*) atau menolak (*Reject* disertai alasan penolakan).
-- **Isolasi Multi-Tenancy Perusahaan**: Setiap pengguna, proyek, tugas, dan catatan terasosiasi dengan entitas Perusahaan/Organisasi (`Company`), menjaga privasi data antar tim.
-- **Direktori Anggota & Analitik Kontribusi**: Kartu profil tim, statistik penyelesaian tugas, dan total jam kerja.
-- **Admin Password Reset**: Administrator dapat mereset kata sandi anggota tim secara langsung dari antarmuka Web UI maupun REST API disertai notifikasi email otomatis.
-- **Role-Based Access Control (RBAC)**: Pemisahan hak akses antara Administrator dan Anggota Tim (*User*).
-- **Global Audit Trail Filter**: Pencatatan otomatis setiap aksi controller ke database SQLite lengkap dengan visualisasi grafik aktivitas.
-
-### 📧 10. Integrasi Server Email (SMTP) & Template Event
-- **Pengaturan Server SMTP Dinamis**: Pengaturan host mail, port (25, 465, 587, 2525), email pengirim, display name pengirim, password (masked), dan enkripsi SSL/TLS yang tersimpan di database tanpa perlu merestart aplikasi.
-- **Uji Koneksi Mandiri (Test Connection & Diagnostics)**: Fasilitas pengujian koneksi langsung ke server SMTP dengan pengukuran latensi pengiriman (ms) dan pencatatan log diagnostik handshake protokol mail.
-- **Sub-Modul Template Email Berbasis Event**:
-  - Filter kategori (*Authentication, Admin Alert, Task Management*).
-  - 7 Template default bawaan sistem (`USER_REGISTERED`, `ADMIN_NEW_USER_ALERT`, `USER_APPROVED`, `USER_REJECTED`, `PASSWORD_RESET_NOTIFICATION`, `TASK_ASSIGNED`, `TASK_STATUS_CHANGED`).
-  - Dukungan variabel placeholder dinamis (`{FullName}`, `{TaskTitle}`, `{ProjectName}`, `{ActionUrl}`, `{DueDate}`, dll.) dengan chips yang dapat disalin 1-klik.
-  - Modal editor HTML dan modal live rendering preview.
-  - Kemampuan reset template ke versi default kapan saja.
-- **Background-Safe Dispatcher**: Pengiriman email berlangsung asinkron di latar belakang (*non-blocking*) sehingga kegagalan mail server tidak pernah mengganggu alur kerja pengguna.
-
-### 🛠️ 11. Developer Tools & RESTful API
-- **SQL Formatter & Beautifier**: Alat bantu pemformatan dan validasi sintaks SQL kueri multi-dialek (15+ engine).
-- **JSON Payload Tools**: Pemformatan, validasi sintaks, minifikasi, dan penyimpanan template payload JSON.
-- **95+ Endpoint RESTful**: Terintegrasi penuh dengan Swagger OpenAPI v3.1 interaktif ([http://localhost:5000/swagger](http://localhost:5000/swagger)) dan Postman Collection.
-- **Antarmuka Minimalis & Ergonomis**: Topbar header dirancang bersih dan lega, sementara tautan dokumentasi Swagger API dan Buku Panduan Pengguna (PDF) tersedia praktis melalui Bilah Samping (Sidebar).
-
-### 🎨 12. Sistem Tema Dinamis (16 Tema)
-- **10 Tema Terang**: *Indigo Violet*, *Oceanic Cyan*, *Emerald Forest*, *Sunset Orange*, *Rose Pink*, *Midnight Dark*, *Cyberpunk Neon*, *Royal Amethyst*, *Slate Minimal*, *Warm Amber*.
-- **6 Tema Gelap**: Terintegrasi instan dengan CSS custom tokens.
+### 📋 7. Manajemen Tugas, Proyek, Presensi & Developer Tools
+- **Hierarki Parent-Child Tasks & Kanban Board SortableJS**.
+- **Pencatatan Kendala (Obstacle) & Solusi (Solution)** untuk evaluasi sprint.
+- **Presensi Terintegrasi (Check In/Out, WFH, Sakit, Izin, Cuti)** & Rekonsiliasi Tim.
+- **Developer Tools Terpadu**: SQL Beautifier/Formatter mendukung 15+ dialek database dan JSON Payload Tools.
+- **Ekspor/Impor Excel Ganda**: Format Standar 9-kolom dan Format ARMS 21-kolom.
 
 ---
 
@@ -95,14 +60,14 @@
 
 | Komponen | Teknologi | Keterangan |
 | :--- | :--- | :--- |
-| **Framework Backend** | ASP.NET Core 8.0 MVC & Web API | C# 12, Kestrel Web Server |
-| **Database & ORM** | SQLite + Entity Framework Core 8.0 | Auto-migration & database seeder |
-| **Containerization** | Docker & Docker Compose | Multi-stage build .NET 8, persistent volumes |
+| **Framework Backend** | ASP.NET Core 8.0 MVC & Web API | C# 12, Kestrel Web Server, .NET 8 LTS |
+| **Database & ORM** | SQLite + Entity Framework Core 8.0 | Auto-migration & Database Seeder |
+| **Autentikasi & Keamanan** | Dual Auth: Cookie + JWT Bearer | Identity PBKDF2, Strict Swagger JWT, Inactivity Guard (60 min) |
+| **Containerization** | Docker & Docker Compose | Multi-stage build, persistent data volumes (`./db_data`, `./uploads`) |
 | **Engine Spreadsheet** | ClosedXML 0.104.2 | Format ARMS 21-kolom, Timesheet multi-sheet, Standard 9-kolom |
-| **Dokumentasi API** | Swashbuckle OpenAPI (Swagger v3.1) | Interactive REST API explorer |
-| **Styling & Theme** | Tailwind CSS + Custom CSS Variables | Dynamic token system (`themes.css`, `site.css`) |
-| **Client Libraries** | SortableJS, FullCalendar, Chart.js, Quill.js | Interaktivitas UI modern |
-| **Keamanan** | ASP.NET Core Identity & RBAC | Cookie authentication, Password hashing, Audit Filter |
+| **Dokumentasi API** | Swashbuckle OpenAPI (Swagger v3.1) | 100+ Endpoints terproteksi dengan Authorize Bearer Modal |
+| **Styling & Theme** | Tailwind CSS + CSS Custom Tokens | 40 Dynamic Themes (22 Light + 18 Dark), 5 Google Fonts |
+| **Client Libraries** | SortableJS, FullCalendar, Chart.js, Quill.js, Lottie | Interaktivitas UI modern dan responsif |
 
 ---
 
@@ -187,6 +152,13 @@ Untuk mengunggah kode terbaru ke GitHub menggunakan Personal Access Token (PAT):
 
 ## 📚 Referensi Dokumentasi Lengkap
 
-- 🐳 **[DOCKER_GUIDE.md](file:///c:/TEMP/VSCODE/TrackerKerja/DOCKER_GUIDE.md)**: Panduan lengkap Docker, volume data, backup, dan perintah maintenance.
+### Format Markdown (.md)
+- 📐 **[FSD_WORK_TRACKER_PRO.md](file:///c:/TEMP/VSCODE/TrackerKerja/FSD_WORK_TRACKER_PRO.md)**: Dokumen Spesifikasi Fungsional (FSD), arsitektur modul, diagram Mermaid, dan alur bisnis.
+- 📘 **[TSD_WORK_TRACKER_PRO.md](file:///c:/TEMP/VSCODE/TrackerKerja/TSD_WORK_TRACKER_PRO.md)**: Dokumen Spesifikasi Teknis (TSD), controller & API retrieval procedures, arsitektur basis data, ERD, dan sample data.
 - 📖 **[USER_GUIDE.md](file:///c:/TEMP/VSCODE/TrackerKerja/USER_GUIDE.md)**: Panduan pengguna menyeluruh dengan alur kerja seluruh fitur dan modul.
-- 📐 **[FSD_WORK_TRACKER_PRO.md](file:///c:/TEMP/VSCODE/TrackerKerja/FSD_WORK_TRACKER_PRO.md)**: Dokumen Spesifikasi Fungsional (FSD), arsitektur modul, diagram Mermaid, dan skema database ERD.
+- 🐳 **[DOCKER_GUIDE.md](file:///c:/TEMP/VSCODE/TrackerKerja/DOCKER_GUIDE.md)**: Panduan lengkap Docker, volume data, backup, dan perintah maintenance.
+
+### Format Microsoft Word (.docx - Tampilan Eksekutif & Profesional)
+- 📄 **[FSD_WORK_TRACKER_PRO.docx](file:///c:/TEMP/VSCODE/TrackerKerja/FSD_WORK_TRACKER_PRO.docx)**: Dokumen FSD resmi berformat Microsoft Word dengan Cover Page, Running Header/Footer, dan Tabel Terformat.
+- 📄 **[TSD_WORK_TRACKER_PRO.docx](file:///c:/TEMP/VSCODE/TrackerKerja/TSD_WORK_TRACKER_PRO.docx)**: Dokumen TSD resmi berformat Microsoft Word mencakup seluruh spesifikasi API, controller, prosedur, skema 21 tabel, dan sample data.
+- 📄 **[USER_GUIDE_WORK_TRACKER_PRO.docx](file:///c:/TEMP/VSCODE/TrackerKerja/USER_GUIDE_WORK_TRACKER_PRO.docx)** (atau **[USER_GUIDE.docx](file:///c:/TEMP/VSCODE/TrackerKerja/USER_GUIDE.docx)**): Buku panduan operasional pengguna lengkap siap cetak/distribusi.

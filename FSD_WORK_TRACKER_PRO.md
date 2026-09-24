@@ -5,14 +5,14 @@
 
 ### INFORMASI DOKUMEN
 - **Nama Aplikasi**: Work Tracker Pro (TrackerKerja)
-- **Versi Dokumen**: 3.5 (Enterprise Email Integration, Admin Approval, & Multi-Tenancy Edition)
+- **Versi Dokumen**: 3.6 (Enterprise Security, Dual Auth, Multi-Instance & UI Ergonomics Edition)
 - **Status**: Disetujui & Terimplementasi Penuh (Production-Ready)
 - **Target Platform**: Web Application (ASP.NET Core 8.0 MVC / REST API / Docker Linux Container)
 - **Basis Data**: Entity Framework Core 8.0 dengan SQLite Database Engine (`/app/data/trackerkerja.db` via `./db_data` volume)
 - **Engine Spreadsheet**: ClosedXML 0.104.2 (Format ARMS 21-kolom, Template Standar 9-kolom, & Timesheet Personal)
-- **Dokumentasi REST API**: OpenAPI 3.0 via Swashbuckle Swagger UI (`/swagger`) & Postman Collection
+- **Dokumentasi REST API**: OpenAPI 3.0 via Swashbuckle Swagger UI (`/swagger`) dengan Strict JWT Bearer Authorization & Postman Collection
 - **Repositori Source Code**: [https://github.com/zhavick/TrackerKerja.git](https://github.com/zhavick/TrackerKerja.git)
-- **Tanggal Rilis & Pembaruan**: 17 September 2026
+- **Tanggal Rilis & Pembaruan**: 24 September 2026
 
 ---
 
@@ -22,27 +22,29 @@
 3. [Entity Relationship Diagram (ERD) & Struktur Database](#3-entity-relationship-diagram-erd--struktur-database)
 4. [Role-Based Access Control (RBAC) & Matriks Hak Akses](#4-role-based-access-control-rbac--matriks-hak-akses)
 5. [Flow Proses & Spesifikasi Modul](#5-flow-proses--spesifikasi-modul)
-   - [5.1 Modul Autentikasi, Admin Approval & Multi-Tenancy](#51-modul-autentikasi-admin-approval--multi-tenancy)
-     - [5.1.1 Alur Persetujuan Registrasi Pengguna Baru (Admin Approval Workflow)](#511-alur-persetujuan-registrasi-pengguna-baru-admin-approval-workflow)
-     - [5.1.2 Modul Multi-Tenancy Organisasi & Perusahaan (Company Isolation)](#512-modul-multi-tenancy-organisasi--perusahaan-company-isolation)
+   - [5.1 Modul Autentikasi Ganda (Dual Auth), Keamanan Sesi, Admin Approval & Multi-Tenancy](#51-modul-autentikasi-ganda-dual-auth-keamanan-sesi-admin-approval--multi-tenancy)
+     - [5.1.1 Arsitektur Autentikasi Ganda: Cookie Web & JWT Bearer Token](#511-arsitektur-autentikasi-ganda-cookie-web--jwt-bearer-token)
+     - [5.1.2 Keamanan Sesi & Auto-Logout Inaktivitas 1 Jam](#512-keamanan-sesi--auto-logout-inaktivitas-1-jam)
+     - [5.1.3 Alur Persetujuan Registrasi Pengguna Baru (Admin Approval Workflow)](#513-alur-persetujuan-registrasi-pengguna-baru-admin-approval-workflow)
+     - [5.1.4 Modul Multi-Tenancy Organisasi & Perusahaan (Company Isolation)](#514-modul-multi-tenancy-organisasi--perusahaan-company-isolation)
    - [5.2 Modul Sistem Desain Responsif & Mobile Navigation](#52-modul-sistem-desain-responsif--mobile-navigation)
-   - [5.3 Modul Sistem Tema Tampilan Dinamis (16 Tema)](#53-modul-sistem-tema-tampilan-dinamis-16-tema)
+   - [5.3 Modul Sistem Tema Tampilan Dinamis (40 Tema) & Global Font Switcher (5 Google Fonts)](#53-modul-sistem-tema-tampilan-dinamis-40-tema--global-font-switcher-5-google-fonts)
    - [5.4 Modul Manajemen Proyek & Kategori](#54-modul-manajemen-proyek--kategori)
-   - [5.5 Modul Manajemen Tugas & Struktur Parenting](#55-modul-manajemen-tugas--struktur-parenting)
+   - [5.5 Modul Manajemen Tugas, Struktur Parenting & Penyatuan Timesheet Manual](#55-modul-manajemen-tugas-struktur-parenting--penyatuan-timesheet-manual)
    - [5.6 Modul Kanban Board Interaktif & Mobile Segmented Switcher](#56-modul-kanban-board-interaktif--mobile-segmented-switcher)
    - [5.7 Modul Timesheet, Multi-Timer Serentak & Laporan Personal Excel (.xlsx)](#57-modul-timesheet-multi-timer-serentak--laporan-personal-excel-xlsx)
    - [5.8 Modul Presensi & Rekonsiliasi Absensi Tim (Attendance Management)](#58-modul-presensi--rekonsiliasi-absensi-tim-attendance-management)
    - [5.9 Modul Catatan & Multi-File Upload Terorganisir Folder Pengguna](#59-modul-catatan--multi-file-upload-terorganisir-folder-pengguna)
    - [5.10 Modul Import & Export Excel (Filter Periode, Format Standar, Format ARMS)](#510-modul-import--export-excel-filter-periode-format-standar-format-arms)
-   - [5.11 Modul Anggota Tim (Member), Analitik Kontribusi & Admin Password Reset](#511-modul-anggota-tim-member-analitik-kontribusi--admin-password-reset)
+   - [5.11 Modul Anggota Tim (Member), Direktori Pure Grid Card, Banner Profil & Hapus Permanen Akun](#511-modul-anggota-tim-member-direktori-pure-grid-card-banner-profil--hapus-permanen-akun)
    - [5.12 Modul Audit Trail & Aktivitas Sistem](#512-modul-audit-trail--aktivitas-sistem)
    - [5.13 Modul Master Data (Prioritas, Status & Milestone SDLC)](#513-modul-master-data-prioritas-status--milestone-sdlc)
    - [5.14 Modul Kalender Tugas Interaktif & Role-Based Scope Filter](#514-modul-kalender-tugas-interaktif--role-based-scope-filter)
    - [5.15 Modul SQL Beautifier & Query Tools](#515-modul-sql-beautifier--query-tools)
-   - [5.16 Modul Multi-Instance Synchronization (Host Induk Sync)](#516-modul-multi-instance-synchronization-host-induk-sync)
-   - [5.17 Modul RESTful API & Swagger OpenAPI Documentation](#517-modul-restful-api--swagger-openapi-documentation)
+   - [5.16 Modul Multi-Instance Synchronization & File Attachment Sync (Host Induk Sync)](#516-modul-multi-instance-synchronization--file-attachment-sync-host-induk-sync)
+   - [5.17 Modul RESTful API (100+ Endpoints) & Strict Swagger JWT Bearer Authorization](#517-modul-restful-api-100-endpoints--strict-swagger-jwt-bearer-authorization)
    - [5.18 Modul Integrasi Server Email (SMTP) & Sub-Modul Template Email Event](#518-modul-integrasi-server-email-smtp--sub-modul-template-email-event)
-   - [5.19 Pembaruan Navigasi & Ergonomi Antarmuka (Topbar & Sidebar)](#519-pembaruan-navigasi--ergonomi-antarmuka-topbar--sidebar)
+   - [5.19 Pembaruan Navigasi, Ergonomi Antarmuka, Halaman Login Lottie, Onboarding Tour & AJAX Grid Table Pagination](#519-pembaruan-navigasi-ergonomi-antarmuka-halaman-login-lottie-onboarding-tour--ajax-grid-table-pagination)
 6. [Spesifikasi Non-Fungsional, Keamanan & Privasi Data](#6-spesifikasi-non-fungsional-keamanan--privasi-data)
 7. [Panduan Docker Containerization, Git Repository & Deployment](#7-panduan-docker-containerization-git-repository--deployment)
 
@@ -69,41 +71,44 @@
 
 ## 2. ARSITEKTUR SISTEM & INFRASTRUKTUR CONTAINER
 
-Aplikasi dibangun menggunakan pola arsitektur **Multi-Tier Model-View-Controller (MVC) & RESTful Web API** yang di-enkapsulasi di dalam **Docker Container**:
+Aplikasi dibangun menggunakan pola arsitektur **Multi-Tier Model-View-Controller (MVC) & RESTful Web API** yang di-enkapsulasi di dalam **Docker Container** dengan proteksi keamanan terstandarisasi enterprise:
 
 ```mermaid
 flowchart TB
     subgraph ClientTier["1. PRESENTATION TIER (CLIENT-SIDE / RESPONSIVE)"]
         UI_Desktop["Desktop Web Interface (Sidebar & Multi-Column Grid)"]
         UI_Mobile["Mobile & Tablet UI (Off-Canvas Drawer, Glass Bottom Nav)"]
-        CSS_Engine["Dynamic Theme Engine (16 Palet Warna / CSS Custom Tokens)"]
-        JS_Libs["SortableJS / FullCalendar / Chart.js / Quill.js / CodeMirror"]
-        API_Consumers["REST API Clients / Swagger UI / Postman / Node Sync"]
+        ThemeFont_Engine["Theme & Font Engine (40 Tema Tampilan & 5 Google Fonts)"]
+        Session_Guard["Session Inactivity Guard (session-manager.js - 1 Jam Timeout)"]
+        Grid_Manager["AJAX Grid Table Manager (ajax-grid-manager.js - Zero Reload)"]
+        Tour_Engine["Interactive Onboarding Tour (onboarding-tour.js - 6 Spotlights)"]
+        JS_Libs["SortableJS / FullCalendar / Chart.js / Quill.js / CodeMirror / Lottie"]
+        API_Consumers["REST API Clients / Swagger UI (Bearer JWT) / Postman / Node Sync"]
     end
 
     subgraph ContainerTier["2. APPLICATION CONTAINER TIER (DOCKER / ASP.NET CORE 8.0)"]
         Kestrel["Kestrel Web Server (Listening on Port 5000 / 8080)"]
-        Pipeline["ASP.NET Core Middleware Pipeline (Auth, Routing, Session)"]
+        Pipeline["ASP.NET Core Middleware Pipeline (Dual Auth: Cookie + JWT Bearer, Routing, CORS)"]
         AuditFilter["Global AuditLogActionFilter (Audit Trail Logger)"]
         
         subgraph ControllersGroup["Controllers Layer"]
-            MVC_Controllers["MVC Controllers:\n- HomeController / TaskController / ProjectController\n- NoteController / TimesheetController / AttendanceController\n- ImportController / CalendarController / SqlToolsController\n- MemberController / AuditTrailController / MasterDataController\n- ConfigurationController / JsonToolsController / UserGuideController"]
-            API_Controllers["REST API Controllers (/api/*):\n- AuthApiController / TasksApiController / ProjectsApiController\n- NotesApiController / TimesheetsApiController / AttendanceApiController\n- CalendarApiController / SqlToolsApiController / SyncApiController\n- MembersApiController / ReportsApiController / MasterDataApiController\n- ConfigurationApiController / NotificationsApiController"]
+            MVC_Controllers["MVC Controllers:\n- HomeController / TaskController / ProjectController\n- NoteController / TimesheetController / AttendanceController\n- ImportController / CalendarController / SqlToolsController\n- MemberController / AuditTrailController / MasterDataController\n- ConfigurationController / JsonToolsController / UserGuideController\n- AccountController (Dual Auth & Login Lottie Redesign)"]
+            API_Controllers["REST API Controllers (/api/*):\n- AuthApiController / TasksApiController / ProjectsApiController\n- NotesApiController / TimesheetsApiController / AttendanceApiController\n- CalendarApiController / SqlToolsApiController / SyncApiController\n- MembersApiController / ReportsApiController / MasterDataApiController\n- ConfigurationApiController / NotificationsApiController / EmailConfigApiController"]
         end
 
-        SwaggerEngine["Swashbuckle OpenAPI / Swagger Engine (/swagger)"]
-        Services["Domain Engines & Services:\n- ClosedXML Spreadsheet Engine (ARMS, Standard, Timesheet)\n- User Folder Storage Engine (wwwroot/uploads)\n- Active Multi-Timer Synchronizer\n- DatabaseSyncService & ExcelSyncService (Host Induk Sync)\n- Attendance & WorkHour Calculator Engine"]
-        EFCore["Entity Framework Core 8.0 (AppDbContext)"]
+        SwaggerEngine["Swashbuckle OpenAPI / Strict Swagger Engine (JWT Bearer Authorize Modal)"]
+        Services["Domain Engines & Services:\n- ClosedXML Spreadsheet Engine (ARMS 21-Kolom, Standard, Timesheet)\n- Storage & Cover Engine (wwwroot/uploads/{avatars, covers, notes})\n- Active Multi-Timer Synchronizer (Concurrent Timer Session)\n- DatabaseSyncService & FileAttachmentSyncService (Host Induk Sync)\n- Background-Safe EmailService (SMTP Engine with 7 Event Templates)\n- Attendance & WorkHour Calculator Engine\n- TaskPermissionService & JwtService (Token Generator & Validator)"]
+        EFCore["Entity Framework Core 8.0 (AppDbContext SQLite Engine)"]
     end
 
     subgraph HostPersistence["3. STORAGE & HOST PERSISTENCE TIER (DOCKER VOLUMES)"]
         DB_Volume[("Host Volume: ./db_data/\nContainer: /app/data/trackerkerja.db\n(SQLite Database Engine)")]
-        Upload_Volume["Host Volume: ./uploads/\nContainer: /app/wwwroot/uploads/\n- /uploads/avatars/\n- /uploads/notes/{username}/"]
+        Upload_Volume["Host Volume: ./uploads/\nContainer: /app/wwwroot/uploads/\n- /uploads/avatars/\n- /uploads/covers/\n- /uploads/notes/{username}/"]
     end
 
     UI_Desktop <--> |HTTP GET & POST / AJAX| Kestrel
     UI_Mobile <--> |HTTP GET & POST / Touch Gestures| Kestrel
-    API_Consumers <--> |REST JSON / HTTPS| Kestrel
+    API_Consumers <--> |REST JSON with Bearer JWT / HTTPS| Kestrel
 
     Kestrel --> Pipeline
     Pipeline --> AuditFilter
@@ -133,6 +138,7 @@ erDiagram
     AspNetUsers ||--o{ WorkNotes : "authors"
     AspNetUsers ||--o{ NoteAttachments : "uploads"
     AspNetUsers ||--o{ AuditLogs : "triggers"
+    AspNetUsers ||--o{ UserBadges : "earns"
 
     Projects ||--o{ WorkTasks : "contains"
     Categories ||--o{ WorkTasks : "classifies"
@@ -177,12 +183,22 @@ erDiagram
         string JobTitle
         string AvatarColor
         string ProfilePictureUrl
+        string CoverPictureUrl
         int CompanyId FK
         bool IsApproved
         datetime ApprovedAt
         string ApprovedByUserId
         string RejectionReason
         datetime CreatedAt
+    }
+
+    UserBadges {
+        int Id PK
+        string UserId FK
+        int BadgeId FK
+        datetime UnlockedAt
+        bool IsFeatured
+        string AwardedBy
     }
 
     Projects {
@@ -320,6 +336,7 @@ erDiagram
 | **Login, Profil & Dashboard** | ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
 | **Buat & Ubah Tugas Sendiri** | ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
 | **Ubah Tugas Anggota Lain** | ✅ Akses Penuh | ✅ Akses *(Elevated)* | ✅ Akses *(Elevated)* | ❌ Dilarang |
+| **Penyatuan Edit Tugas & Jam Kerja**| ✅ Akses Penuh | ✅ Akses *(Elevated)* | ✅ Akses *(Elevated)* | ✅ Akses *(Tugas Sendiri)* |
 | **Mulai Timer pada Tugas Lain**| ✅ Akses Penuh | ✅ Akses *(Elevated)* | ✅ Akses *(Elevated)* | ❌ Dilarang |
 | **Multi-Timer Serentak Sendiri**| ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
 | **Presensi Mandiri (Check-in/out)**| ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
@@ -327,6 +344,7 @@ erDiagram
 | **Filter Kalender: Semua Tim**| ✅ Akses Penuh | ❌ Terkunci Mandiri | ❌ Terkunci Mandiri | ❌ Terkunci Mandiri |
 | **Filter Kalender: Tugas Sendiri**| ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
 | **SQL Beautifier & Query Tools**| ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
+| **Kustomisasi Banner Cover Profil**| ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
 | **Multi-Instance Host Induk Sync**| ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
 | **Ekspor Timesheet Personal** | ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
 | **Hapus Tugas Sendiri** | ✅ Akses Penuh | ✅ Akses | ✅ Akses | ✅ Akses |
@@ -335,19 +353,40 @@ erDiagram
 | **Manajemen Proyek (CRUD)** | ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
 | **Import Tugas Excel** | ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
 | **Manajemen Member & Reset Password**| ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
+| **Hapus Permanen Anggota (Permanent Delete)**| ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
 | **Master Data (Prioritas, Status, SDLC)**| ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
 | **Konfigurasi & Audit Trail**| ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
+| **Pengaturan SMTP & Email Templates**| ✅ Akses Penuh | ❌ Dilarang | ❌ Dilarang | ❌ Dilarang |
 
 ---
 
 ## 5. FLOW PROSES & SPESIFIKASI MODUL
 
-### 5.1 Modul Autentikasi, Admin Approval & Multi-Tenancy
-- Menggunakan **ASP.NET Core Identity** dengan penyimpanan terintegrasi EF Core SQLite.
-- Manajemen password hashing (PBKDF2), lockout policies, dan cookie session persistence 7 hari (*Sliding Expiration*).
-- Upload foto avatar unik tersimpan di direktori `wwwroot/uploads/avatars/`.
+### 5.1 Modul Autentikasi Ganda (Dual Auth), Keamanan Sesi, Admin Approval & Multi-Tenancy
+- Menggunakan **ASP.NET Core Identity** terintegrasi EF Core SQLite, dikombinasikan dengan sistem arsitektur otentikasi ganda modern (*Dual Authentication Pipeline*).
+- Manajemen password hashing (PBKDF2), lockout policies, dan token manajemen.
+- Upload foto avatar tersimpan di `wwwroot/uploads/avatars/` dan cover profil di `wwwroot/uploads/covers/`.
 
-#### 5.1.1 Alur Persetujuan Registrasi Pengguna Baru (Admin Approval Workflow)
+#### 5.1.1 Arsitektur Autentikasi Ganda: Cookie Web & JWT Bearer Token
+- **Cookie Session untuk Web Browser**:
+  - Menggunakan skema `IdentityConstants.ApplicationScheme` dengan cookie terenkripsi (`AspNetCore.Identity.Application`).
+  - Dilengkapi *Sliding Expiration* dan proteksi `SameSite = Lax` serta `HttpOnly`.
+- **JWT (JSON Web Token) untuk RESTful API & Integrasi**:
+  - Menggunakan skema `JwtBearerDefaults.AuthenticationScheme` dengan algoritma enkripsi simetris `HmacSha256` (`Jwt__Key`).
+  - Endpoint `POST /api/auth/login` menghasilkan token JWT lengkap dengan klaim standar (`sub`, `email`, `jti`, `name`, `role`, `companyId`) dan waktu kedaluwarsa dinamis.
+  - Seluruh REST API (`/api/*`) mewajibkan header `Authorization: Bearer <token>` atau API Key terproteksi.
+  - Integrasi OpenAPI/Swagger UI menyertakan tombol dialog modal *Authorize* standar industri untuk pengujian endpoint API berotentikasi Bearer JWT.
+
+#### 5.1.2 Keamanan Sesi & Auto-Logout Inaktivitas 1 Jam
+- **Mesin Deteksi Idle Client-Side (`session-manager.js`)**:
+  - Mengawasi interaksi pengguna secara real-time melalui event handler (`mousedown`, `mousemove`, `keydown`, `scroll`, `touchstart`, `click`) dengan mekanisme *event throttling* 3000ms untuk efisiensi CPU.
+  - **Batas Waktu Inaktivitas (Timeout)**: 60 menit (1 Jam) tanpa aktivitas pengguna.
+  - **Peringatan Dini Interaktif (Warning Modal)**: Pada menit ke-55 (5 menit sebelum penguncian sesi), sistem menampilkan dialog modal peringatan dengan hitung mundur detik visual (*visual countdown timer*) dan tombol aksi "Lanjutkan Sesi".
+  - **Penguncian & Pengalihan Otomatis**: Jika hitung mundur berakhir tanpa interaksi, sistem secara otomatis menghapus sesi lokal dan mengalihkan pengguna ke `/Account/Login?reason=timeout` disertai banner pemberitahuan sesi kedaluwarsa demi keamanan data kerja.
+- **Tombol Profil Dropdown Navbar**:
+  - Tombol profil dropdown navbar (`#userProfileDropdownBtn`) menampilkan avatar, nama lengkap, badge jabatan, menu pintasan ke profil, kustomisasi cover, pemilih tema, dan tombol logout aman.
+
+#### 5.1.3 Alur Persetujuan Registrasi Pengguna Baru (Admin Approval Workflow)
 - **Registrasi Akun Baru**: Pengguna mendaftar melalui form web (`/Account/Register`) atau REST API (`POST /api/auth/register`). Akun baru secara bawaan memiliki atribut `IsApproved = false`.
 - **Proteksi Akses (Blocking)**:
   - Sebelum disetujui, akun tidak diizinkan masuk ke sistem.
@@ -360,7 +399,7 @@ erDiagram
   - **Persetujuan (Approve)**: Admin menekan tombol *Setujui Akun* atau memanggil API `POST /api/members/{id}/approve`. Field `IsApproved` diubah menjadi `true`, `ApprovedAt` mencatat waktu persetujuan, dan `ApprovedByUserId` mencatat admin penanggung jawab. Sistem secara otomatis mengirimkan email konfirmasi `USER_APPROVED` kepada pengguna bersangkutan.
   - **Penolakan (Reject)**: Admin dapat menolak pendaftaran disertai catatan alasan penolakan (`RejectionReason`) melalui Web UI atau API `POST /api/members/{id}/reject`. Sistem mengirimkan email pemberitahuan penolakan `USER_REJECTED` dan menghapus rekaman registrasi akun.
 
-#### 5.1.2 Modul Multi-Tenancy Organisasi & Perusahaan (Company Isolation)
+#### 5.1.4 Modul Multi-Tenancy Organisasi & Perusahaan (Company Isolation)
 - Setiap pengguna, proyek, tugas, dan catatan kerja terhubung ke entitas Perusahaan/Organisasi (`CompanyId`).
 - Pada saat pendaftaran, pengguna dapat memilih untuk bergabung dengan perusahaan yang sudah ada (`CompanyOption = existing`) atau mendaftarkan nama/kode perusahaan baru (`CompanyOption = new`).
 - **Isolasi Data**: Pengguna reguler hanya dapat melihat dan mengakses proyek, tugas, dan catatan yang berada dalam lingkup perusahaan yang sama. Administrator memiliki visibilitas penuh terhadap seluruh entitas untuk keperluan audit dan pengawasan lintas tim.
@@ -370,20 +409,32 @@ erDiagram
 - **Glassmorphic Bottom Navigation**: Navigasi bawah melayang khusus smartphone dengan 5 tombol utama (*Home*, *Tugas*, *Elevated +*, *Proyek*, *Menu*).
 - **Safe Area Inset**: Mengakomodasi gesture navigation dan notch smartphone modern.
 
-### 5.3 Modul Sistem Tema Tampilan Dinamis (16 Tema)
-- **10 Tema Terang**: *Indigo Nebula* (Default), *Emerald Forest*, *Ocean Azure*, *Sunset Crimson*, *Cyberpunk Neon*, *Royal Amethyst*, *Amber Gold*, *Slate Minimalist*, *Nordic Teal*, *Midnight Titanium*.
-- **6 Tema Gelap**: *Midnight OLED*, *Cyberpunk Synthwave*, *Emerald Matrix*, *Dracula Eclipse*, *Abyssal Ocean*, *Solar Ember*.
-- Dikelola melalui CSS Custom Property Token System (`themes.css`) tanpa reload halaman.
+### 5.3 Modul Sistem Tema Tampilan Dinamis (40 Tema) & Global Font Switcher (5 Google Fonts)
+- **40 Tema Tampilan Eye-Friendly**:
+  - **22 Tema Terang (Light Themes)**: *Indigo Nebula* (Default), *Emerald Forest*, *Ocean Azure*, *Sunset Crimson*, *Cyberpunk Neon*, *Royal Amethyst*, *Amber Gold*, *Slate Minimalist*, *Nordic Teal*, *Midnight Titanium*, serta 12 varian tema terang eye-friendly dengan kontras seimbang.
+  - **18 Tema Gelap (Dark Themes)**: *Nordic Frost*, *Midnight OLED*, *Cyberpunk Synthwave*, *Emerald Matrix*, *Dracula Eclipse*, *Abyssal Ocean*, *Solar Ember*, dan varian tema gelap ramah mata (*eye-friendly dark*).
+  - Dikelola melalui CSS Custom Property Token System (`themes.css` & `theme-manager.js`) tanpa perlu memuat ulang halaman.
+- **Global Font Switcher (5 Google Fonts)**:
+  - Pengguna dapat mengganti tipografi seluruh aplikasi secara instan melalui pemilih font pada menu tema:
+    1. **Inter** (`inter`): Standar UI modern, sangat seimbang, tajam & nyaman dibaca pada semua resolusi.
+    2. **Plus Jakarta Sans** (`jakarta`): Font geometris kontemporer, ramah & elegan khas aplikasi SaaS modern.
+    3. **Outfit** (`outfit`): Tipografi sans-serif modern dengan lekukan halus dan visual berkelas tinggi.
+    4. **Poppins** (`poppins`): Bentuk geometris rounded yang bersahabat, energik, dan mudah dipindai mata.
+    5. **Roboto** (`roboto`): Klasik Google yang presisi, efisien dengan densitas informasi tinggi.
+  - Menggunakan script Anti-FOUC di tag `<head>` agar tema dan font langsung teraplikasi sebelum perenderan DOM, mencegah kedipan visual saat halaman dimuat.
 
 ### 5.4 Modul Manajemen Proyek & Kategori
 - Pengelompokan tugas berdasarkan proyek multi-bulan dan kategori pekerjaan teknis.
 - Perhitungan agregasi progress penyelesaian proyek secara dinamis.
 
-### 5.5 Modul Manajemen Tugas & Struktur Parenting
+### 5.5 Modul Manajemen Tugas, Struktur Parenting & Penyatuan Timesheet Manual
 - **Parent-Child Hierarchy**: Kemampuan menghubungkan sub-tugas ke tugas induk.
 - **Log Kendala & Solusi**: Kolom `Obstacle` dan `Solution` untuk dokumentasi teknis hambatan kerja.
 - **Progress Slider (0–100%)**: Tombol cepat (0%, 25%, 50%, 75%, 100%) dengan auto-sync status *Done*.
 - **Filter Periode Ekspor**: Ekspor tugas berdasarkan rentang waktu fleksibel (*Today, Yesterday, Last 7 Days, Last 30 Days, This Month, Last Month, Custom*).
+- **Penyatuan Formulir Edit Tugas & Pengisian Jam Kerja Manual (`SaveTaskAndSession`)**:
+  - Form pada `Views/Task/Edit.cshtml` mengintegrasikan kolom input pencatatan jam kerja manual: *Durasi Jam*, *Durasi Menit*, *Tanggal Sesi Kerja*, dan *Catatan Sesi*.
+  - Aksi simpan tunggal mengeksekusi method `Edit` pada `TaskController.cs` yang memvalidasi dan memperbarui data tugas sekaligus mencatat entitas `WorkSessions` baru secara atomik dalam satu request transaksi database, mengeliminasi kebutuhan navigasi ganda ke menu timesheet terpisah.
 
 ### 5.6 Modul Kanban Board Interaktif & Mobile Segmented Switcher
 - Papan visual bertenaga **SortableJS** dengan drag-and-drop kartu real-time.
@@ -415,8 +466,17 @@ erDiagram
 - **Format Standar (9 Kolom)**: Fitur wizard preview interaktif dan penugasan PIC massal (*Bulk Assign*).
 - **Format ARMS Enterprise (21 Kolom)**: Ekspor dan impor tugas berstandar enterprise dengan pemetaan SDLC Waterfall Milestone.
 
-### 5.11 Modul Anggota Tim (Member), Analitik Kontribusi & Admin Password Reset
-- Kartu direktori anggota dengan grafik kontribusi dan jam kerja.
+### 5.11 Modul Anggota Tim (Member), Direktori Pure Grid Card, Banner Profil & Hapus Permanen Akun
+- **Direktori Pure Grid Card Layout**:
+  - Tampilan direktori tim berbasis *Pure Grid Card* responsif (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`) dengan visual kartu tim modern, avatar inisial berwarna, badge jabatan, dan ringkasan metrik jam kerja.
+  - Proteksi *Anti-Overflow & Truncation* pada kartu anggota untuk menjamin estetika tata letak tetap rapi pada teks nama, email, dan jabatan yang panjang tanpa merusak layout.
+- **Kustomisasi Banner Cover Profil (`CoverPictureUrl`)**:
+  - Pengguna dapat mengunggah gambar sampul (cover banner) kustom untuk mempercantik halaman profil pribadi (`/Account/Profile`).
+  - Penyimpanan file cover terorganisir di `wwwroot/uploads/covers/` dengan fallback visual ke vektor SVG modern (`default-profile-cover.svg`).
+- **Fitur Hapus Permanen Pengguna (*Permanent User Deletion*)**:
+  - Disediakan khusus untuk peran Administrator melalui tombol aksi berbahaya (*danger action*) pada detail anggota.
+  - Dilengkapi mekanisme konfirmasi verifikasi ganda (*Double Confirmation Modal*) yang mewajibkan admin mengetikkan nama lengkap pengguna target dan menginput kata sandi admin untuk mencegah ketidaksengajaan.
+  - Menghapus akun pengguna dari basis data ASP.NET Identity, membersihkan relasi terkait, dan membebaskan penugasan tugas secara aman.
 - **Admin Direct Password Reset**: Administrator dapat mereset kata sandi anggota tim secara langsung via Web UI atau REST API `POST /api/members/{id}/reset-password`.
 
 ### 5.12 Modul Audit Trail & Aktivitas Sistem
@@ -455,18 +515,18 @@ erDiagram
 - Menghubungkan beberapa instance TrackerKerja terdistribusi (misalnya laptop tim lokal atau node cabang) ke satu **Server Host Induk** terpusat dengan sinkronisasi basis data dan berkas lampiran (*file attachments & uploads*).
 - **Cakupan Entitas & Berkas Sinkronisasi**:
   - **Data Database**: *Users*, *Projects*, *Categories*, *Tasks*, *Sessions*, *Notes*, *Attachments*, *AttendanceRecords*, *AuditLogs*, dan *Master Data*.
-  - **Berkas Fisik (Uploads)**: Seluruh lampiran catatan pada `wwwroot/uploads/notes/{username}/*`, foto avatar profil `wwwroot/uploads/avatars/*`, dan file statis terkait.
+  - **Berkas Fisik (Uploads)**: Seluruh lampiran catatan pada `wwwroot/uploads/notes/{username}/*`, foto avatar profil `wwwroot/uploads/avatars/*`, cover profil `wwwroot/uploads/covers/*`, dan file statis terkait.
 - **Metode Sinkronisasi Komprehensif**:
   1. **Metode 1: Online REST API Sync (Push & Pull dengan Base64 File Streaming)**:
      - **Push Sync ke Host**: Mengirimkan transaksi database DML beserta paket arsip berkas lampiran yang dikonversi ke Base64 (`FilesZipBase64`) ke endpoint `/api/sync/receive` di server Host Induk.
      - **Pull Sync dari Host**: Mengambil dan menyelaraskan seluruh data transaksi dan berkas lampiran terbaru dari server Host Induk ke instance lokal.
-     - **Autentikasi & Keamanan**: Menggunakan **API Secret Key** (`X-Sync-Key` / `ApiSecretKey`), opsi *Allow Untrusted SSL Certificates*, dan proteksi ukuran request hingga 200MB.
+     - **Autentikasi & Keamanan**: Menggunakan **API Secret Key** (`X-Sync-Key` / `ApiSecretKey`), Authorization Bearer Token, opsi *Allow Untrusted SSL Certificates*, dan proteksi ukuran request hingga 200MB.
      - **Dukungan Opsi Berkas**: Opsi toggle *Sertakan Berkas Uploads & Lampiran* (`IncludeFiles` / `SyncFiles = true|false`) untuk efisiensi bandwidth bila hanya sinkronisasi data teks.
   2. **Metode 2: Full Package Archive Export & Import (.zip / Offline Air-Gapped)**:
      - **Export Full Package (.zip)**: Menghasilkan paket arsip `.zip` mandiri berstruktur standar yang berisi:
        - `manifest.json`: Metadata instance pengirim, versi, timestamp, statistik tabel, dan total file/ukuran.
        - `sync_data.sql`: Script SQL DML transaksional terurut sesuai dependensi foreign key.
-       - `uploads/`: Direktori lengkap berkas lampiran catatan dan avatar.
+       - `uploads/`: Direktori lengkap berkas lampiran catatan, avatar, dan cover.
      - **Import Full Package (.zip / .sql)**: Menerima unggahan berkas `.zip` (full package) maupun berkas `.sql` mandiri. Sistem otomatis mengekstrak berkas lampiran ke direktori fisik target dan mengeksekusi SQL script secara atomik (*Transaction Rollback on Error*).
   3. **Metode 3: Manual SQL Dump (.sql)**:
      - Ekspor skrip SQL DML murni untuk migrasi data tabular tanpa berkas fisik.
@@ -479,18 +539,21 @@ erDiagram
   - `GET /api/sync/export-package` — Mengunduh arsip paket sinkronisasi `.zip` (SQL + Berkas Lampiran).
   - `POST /api/sync/import-package` — Mengunggah dan mengeksekusi paket arsip `.zip` atau skrip `.sql`.
 
-### 5.17 Modul RESTful API & Swagger OpenAPI Documentation
-- 95+ endpoint RESTful dengan respons terstandarisasi JSON:
+### 5.17 Modul RESTful API (100+ Endpoints) & Strict Swagger JWT Bearer Authorization
+- 100+ endpoint RESTful dengan respons terstandarisasi JSON:
 ```json
 {
   "isSuccess": true,
   "message": "Operation description",
   "data": { },
   "errors": null,
-  "timestamp": "2026-09-17T15:00:00Z"
+  "timestamp": "2026-09-24T10:00:00Z"
 }
 ```
-- Swagger UI interaktif di `/swagger` dan berkas Postman Collection & Environment.
+- **Strict Swagger JWT Bearer Authorization**:
+  - Seluruh endpoint API terproteksi mewajibkan token JWT melalui header `Authorization: Bearer <token>`.
+  - Swagger UI interaktif di `/swagger` dilengkapi tombol modal **Authorize** untuk memasukkan JWT Bearer Token langsung di browser.
+  - Dilengkapi berkas Postman Collection & Environment siap pakai untuk otomasi pengujian.
 
 ### 5.18 Modul Integrasi Server Email (SMTP) & Sub-Modul Template Email Event
 - **Latar Belakang & Arsitektur**:
@@ -541,11 +604,18 @@ erDiagram
   - `DELETE /api/email-config/templates/{id}` — Menghapus template email kustom.
   - `POST /api/email-config/templates/{id}/preview` — Melakukan render pratinjau live template.
 
-### 5.19 Pembaruan Navigasi & Ergonomi Antarmuka (Topbar & Sidebar)
-- **Topbar Minimalis & Fokus Kerja**:
-  - Tombol aksi tautan eksternal pada bilah atas (Header Actions) dirampingkan dengan menghapus tombol *Swagger API*, *Tur Aplikasi*, dan *Panduan Pengguna* dari topbar utama.
-  - Tata letak bilah atas kini lebih lega, elegan, dan fokus menampilkan judul halaman aktif, badge nama perusahaan, kotak pencarian global, tombol *Import Excel*, lonceng notifikasi, pemilih 16 tema dinamis, dan kartu profil.
-- **Sentralisasi Navigasi Bantuan pada Sidebar**:
+### 5.19 Pembaruan Navigasi, Ergonomi Antarmuka, Halaman Login Lottie, Onboarding Tour & AJAX Grid Table Pagination
+- **Redesain Halaman Login Modern**:
+  - Mengintegrasikan animasi Lottie interaktif berkualitas tinggi, mode gelap/terang instan tanpa reload, dan dropdown perusahaan bertenaga Select2.
+  - Dilengkapi banner notifikasi status sesi (`?reason=timeout`, pending approval, atau gagal masuk).
+- **Tur Interaktif Layar (*Interactive Onboarding Tour* - `onboarding-tour.js`)**:
+  - 6 spotlight navigasi interaktif memandu pengguna baru memahami alur operasional: Ringkasan Metrik Dashboard, Manajemen Tugas & Multi-Timer, Kalender Kerja, Presensi Mandiri, SQL Beautifier, dan Theme & Font Switcher.
+  - Dapat diakses kembali sewaktu-waktu melalui menu profil navbar atau pintasan bantuan.
+- **Paginasi Grid Tabel AJAX (*Zero Reload* - `ajax-grid-manager.js`)**:
+  - Mengimplementasikan navigasi tabel instan tanpa memuat ulang halaman (*zero reload*) untuk tabel Tugas, Anggota Tim, Presensi, Audit Trail, dan Timesheet.
+  - Terintegrasi penuh dengan browser history API (`history.pushState`) sehingga URL tetap dapat di-bookmark dan dibagikan secara akurat.
+- **Topbar Minimalis & Sentralisasi Navigasi Bantuan**:
+  - Bilah atas fokus menampilkan judul halaman aktif, badge nama perusahaan, kotak pencarian global, tombol *Import Excel*, lonceng notifikasi, pemilih 40 tema dinamis & 5 font, dan tombol profil dropdown.
   - Tautan dokumentasi **Swagger REST API** dan **Buku Panduan Pengguna (PDF)** dipusatkan pada Bilah Samping (Sidebar) bagian bawah (*Akun & Bantuan*).
   - Fitur **Tur Aplikasi (Interactive Onboarding Tour)** dapat diakses kapan saja melalui menu profil pengguna atau pintasan bantuan.
 
@@ -593,6 +663,9 @@ services:
       - ASPNETCORE_URLS=http://+:5000
       - ConnectionStrings__DefaultConnection=Data Source=data/trackerkerja.db
       - GlobalBaseUrl=http://localhost:5000
+      - Jwt__Key=TrackerKerja_SuperSecretKey_Production_2026_Min256BitsLongKey!
+      - Jwt__Issuer=TrackerKerja
+      - Jwt__Audience=TrackerKerjaClient
     volumes:
       - ./db_data:/app/data
       - ./uploads:/app/wwwroot/uploads

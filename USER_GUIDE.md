@@ -1,18 +1,19 @@
 # Buku Panduan Pengguna (User Guide)
 # Work Tracker Pro (TrackerKerja)
 
-> **Versi Aplikasi**: 3.3 (Enterprise Multi-Instance Edition)  
+> **Versi Aplikasi**: 3.6 (Enterprise Security, Dual Auth & Multi-Instance Edition)  
 > **Target Pengguna**: Seluruh Karyawan, System Analyst, Developer, QA, Technical Writer, Project Lead, dan Administrator  
-> **Terakhir Diperbarui**: September 2026  
+> **Terakhir Diperbarui**: 24 September 2026  
 
 ---
 
 ## Daftar Isi Panduan
 
 1. [Pengenalan & Memulai Aplikasi](#1-pengenalan--memulai-aplikasi)
-   - 1.1 [Halaman Masuk (Login)](#11-halaman-masuk-login)
-   - 1.2 [Tata Letak Antarmuka & Navigasi](#12-tata-letak-antarmuka--navigasi)
-   - 1.3 [Kustomisasi Tema & Tampilan (16 Pilihan Tema)](#13-kustomisasi-tema--tampilan-16-pilihan-tema)
+   - 1.1 [Halaman Masuk (Login Modern Lottie & Admin Approval)](#11-halaman-masuk-login-modern-lottie--admin-approval)
+   - 1.2 [Tata Letak Antarmuka, Topbar Minimalis, Tur Layar & Paginasi Grid AJAX](#12-tata-letak-antarmuka-topbar-minimalis-tur-layar--paginasi-grid-ajax)
+   - 1.3 [Kustomisasi 40 Tema Tampilan & 5 Google Fonts Switcher](#13-kustomisasi-40-tema-tampilan--5-google-fonts-switcher)
+   - 1.4 [Keamanan Sesi, Peringatan 5 Menit & Auto-Logout Inaktivitas 1 Jam](#14-keamanan-sesi-peringatan-5-menit--auto-logout-inaktivitas-1-jam)
 2. [Dashboard & Ringkasan Kinerja](#2-dashboard--ringkasan-kinerja)
    - 2.1 [Kartu Metrik & Statistik Pribadi](#21-kartu-metrik--statistik-pribadi)
    - 2.2 [Pemberitahuan & Notifikasi Lonceng](#22-pemberitahuan--notifikasi-lonceng)
@@ -24,7 +25,8 @@
    - 3.4 [Sub-Task (Hierarki Tugas Induk & Anak)](#34-sub-task-hierarki-tugas-induk--anak)
    - 3.5 [Mencatat Kendala (Obstacle) & Solusi Teknis](#35-mencatat-kendala-obstacle--solusi-teknis)
    - 3.6 [Papan Kanban Interaktif (Geser & Letakkan)](#36-papan-kanban-interaktif-geser--letakkan)
-   - 3.7 [Import Data Tugas dari Excel (Format Standar 22 Kolom)](#37-import-data-tugas-dari-excel-format-standar-22-kolom)
+   - 3.7 [Import Data Tugas dari Excel (Format Standar & Format ARMS)](#37-import-data-tugas-dari-excel-format-standar--format-arms)
+   - 3.8 [Penyatuan Formulir Edit Tugas & Pengisian Jam Kerja Manual (Satu Tombol Simpan)](#38-penyatuan-formulir-edit-tugas--pengisian-jam-kerja-manual-satu-tombol-simpan)
 4. [Modul Project (Manajemen Proyek)](#4-modul-project-manajemen-proyek)
    - 4.1 [Membuat & Mengelola Proyek](#41-membuat--mengelola-proyek)
    - 4.2 [Memantau Linimasa, Tenggat Waktu & Progres Proyek](#42-memantau-linimasa-tenggat-waktu--progres-proyek)
@@ -56,15 +58,14 @@
     - 10.2 [Validasi Sintaks & Minifikasi Kueri](#102-validasi-sintaks--minifikasi-kueri)
     - 10.3 [Penyimpanan Snippet Kueri SQL Terkait Tugas](#103-penyimpanan-snippet-kueri-sql-terkait-tugas)
 11. [Modul Laporan & Analitik Kinerja](#11-modul-laporan--analitik-kinerja)
-12. [Modul Anggota Tim & Gamifikasi Prestasi](#12-modul-anggota-tim--gamifikasi-prestasi)
-13. [Modul Master Data, Konfigurasi Email & Backup](#13-modul-master-data-konfigurasi-email--backup)
+12. [Modul Anggota Tim (Member), Pure Grid Card, Banner Cover & Hapus Permanen Akun](#12-modul-anggota-tim-member-pure-grid-card-banner-cover--hapus-permanen-akun)
+13. [Modul Master Data, Sinkronisasi Multi-Instance, Email & Backup](#13-modul-master-data-sinkronisasi-multi-instance-email--backup)
     - 13.1 [Master Kategori, Prioritas, dan Status](#131-master-kategori-prioritas-dan-status)
     - 13.2 [Master Milestone SDLC Waterfall](#132-master-milestone-sdlc-waterfall)
     - 13.3 [Master Hari Libur Nasional](#133-master-hari-libur-nasional)
-    - 13.4 [Sinkronisasi Multi-Instance ke Host Induk (Online Push & SQL Import/Export)](#134-sinkronisasi-multi-instance-ke-host-induk-online-push--sql-importexport)
+    - 13.4 [Sinkronisasi Multi-Instance ke Host Induk (Online Streaming Base64 & Paket ZIP)](#134-sinkronisasi-multi-instance-ke-host-induk-online-streaming-base64--paket-zip)
     - 13.5 [Backup & Export Database (.db & .sql)](#135-backup--export-database-db--sql)
-    - 13.6 [Integrasi Server Email (SMTP) & Uji Koneksi](#136-integrasi-server-email-smtp--uji-koneksi)
-    - 13.7 [Manajemen Template Email Event & Live Preview](#137-manajemen-template-email-event--live-preview)
+    - 13.6 [Integrasi Server Email (SMTP), Diagnostik Koneksi & 7 Template Event](#136-integrasi-server-email-smtp-diagnostik-koneksi--7-template-event)
 14. [Tips & Pertanyaan Umum (FAQ)](#14-tips--pertanyaan-umum-faq)
 
 ---
@@ -73,12 +74,14 @@
 
 **Work Tracker Pro (TrackerKerja)** adalah aplikasi manajemen pekerjaan terpadu yang dirancang untuk mempermudah tim dalam merencanakan tugas, mencatat waktu kerja secara akurat (*timesheet*), mengelola absensi kehadiran, mendokumentasikan kendala dan solusi teknis, mengolah payload data/SQL, serta menghasilkan laporan kerja siap pakai.
 
-### 1.1 Halaman Masuk (Login) & Pendaftaran Pengguna Baru
+### 1.1 Halaman Masuk (Login Modern Lottie & Admin Approval)
 1. **Masuk ke Aplikasi (Login)**:
    - Buka peramban web dan akses alamat aplikasi TrackerKerja.
+   - Halaman login dilengkapi animasi visual **Lottie modern**, tombol sakelar instan **Mode Gelap / Terang** di pojok kanan atas tanpa reload, dan dropdown perusahaan bertenaga **Select2**.
    - Masukkan **Alamat Email** dan **Kata Sandi (Password)** Anda yang telah terverifikasi.
    - Beri tanda centang pada opsi **Ingat Saya (Remember Me)** jika Anda ingin sesi login tetap tersimpan pada perangkat pribadi.
    - Klik tombol **Masuk (Login)** untuk masuk ke Dashboard utama.
+   - *Catatan Keamanan*: Jika sesi Anda kedaluwarsa karena tidak ada aktivitas selama 1 jam, sistem otomatis mengalihkan Anda kembali ke halaman ini dengan notifikasi kuning: *"Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam. Silakan masuk kembali."*
 
 2. **Pendaftaran Pengguna Baru (Registrasi Akun Mandiri)**:
    - Pada halaman login, klik tombol **Daftar Akun Baru**.
@@ -97,17 +100,39 @@
    - Begitu Administrator menyetujui akun Anda, Anda akan menerima email pemberitahuan resmi bahwa akun telah aktif dan siap digunakan untuk login.
    - *(Bagi Administrator)*: Untuk meninjau pendaftaran baru, buka menu **Anggota Tim (`/Member`)**, buka tab **Menunggu Persetujuan**, lalu klik tombol hijau **Setujui (Approve)** atau tombol merah **Tolak (Reject)** jika pendaftaran tidak valid.
 
-### 1.2 Tata Letak Antarmuka & Navigasi
+### 1.2 Tata Letak Antarmuka, Topbar Minimalis, Tur Layar & Paginasi Grid AJAX
 Aplikasi TrackerKerja dirancang dengan antarmuka yang bersih, modern, dan ergonomis:
 - **Bilah Samping (Sidebar)**: Pusat navigasi seluruh modul kerja (Dashboard, Tugas, Kanban, Proyek, Timesheet, Absensi, Kalender, Catatan, JSON Tools, SQL Tools, Laporan, Anggota Tim, Master Data, Konfigurasi Sistem, **Swagger API**, dan **Panduan Pengguna PDF**).
-- **Bilah Atas (Topbar)**: Menampilkan judul halaman aktif, badge nama perusahaan/tim Anda, kotak pencarian cepat global, tombol aksi cepat *Import Excel*, lonceng notifikasi tugas cerdas, pemilih 16 tema tampilan dinamis, serta kartu avatar profil akun.
-- **Panel Timer Samping**: Menampilkan daftar sesi kerja yang sedang berjalan secara *real-time* dan dapat dikontrol (Stop/Pause) kapan saja.
+- **Bilah Atas (Topbar)**: Menampilkan judul halaman aktif, badge nama perusahaan/tim Anda, kotak pencarian cepat global, tombol aksi cepat *Import Excel*, lonceng notifikasi tugas cerdas, pemilih 40 tema dinamis & 5 font, serta kartu avatar profil akun dengan tombol dropdown navigasi lengkap.
+- **Tur Interaktif Layar (*Interactive Onboarding Tour*)**:
+  - Saat pertama kali menggunakan aplikasi atau kapan saja dibutuhkan, Anda dapat memulai tur interaktif 6 langkah yang menyoroti modul-modul esensial.
+  - Untuk memulai tur, klik menu profil Anda lalu pilih **Mulai Tur Aplikasi**, atau klik tombol bantuan di halaman panduan pengguna.
+- **Paginasi Grid Tabel AJAX (*Zero Reload* - `ajax-grid-manager.js`)**:
+  - Seluruh tabel utama (Tugas, Anggota Tim, Presensi, Audit Trail, dan Timesheet) mendukung navigasi halaman instan tanpa perlu memuat ulang seluruh halaman peramban web (*zero page reload*).
+  - Pilihan sorting kolom, pencarian, dan perpindahan nomor halaman terjadi secara mulus dengan tetap mempertahankan posisi scroll dan status filter.
 
-### 1.3 Kustomisasi Tema & Tampilan (16 Pilihan Tema)
-Aplikasi menyediakan 16 pilihan tema warna yang dapat dipilih sesuai preferensi kenyamanan mata Anda:
-1. Klik avatar profil Anda di pojok kanan atas atau buka menu **Profil Akun**.
-2. Pilih palet tema yang diinginkan (tersedia tema bernuansa *Light Mode* seperti Indigo Modern, Emerald Green, Rose Coral, Amber Sunset, Ocean Breeze, hingga tema *Dark Mode* seperti Dark OLED, Matrix Cyber, Midnight Purple, dan Slate Pro).
-3. Tampilan aplikasi akan berubah secara instan tanpa perlu memuat ulang halaman.
+### 1.3 Kustomisasi 40 Tema Tampilan & 5 Google Fonts Switcher
+Aplikasi menyediakan 40 pilihan tema warna eye-friendly dan 5 opsi jenis huruf Google Fonts:
+1. **Pemilih Tema Cepat (40 Tema)**:
+   - Klik tombol **Tema** di bilah atas (Topbar) atau melalui menu profil.
+   - **22 Tema Terang (Light Themes)**: Indigo Nebula, Emerald Forest, Ocean Azure, Sunset Crimson, Cyberpunk Neon, Royal Amethyst, Amber Gold, Slate Minimalist, Nordic Teal, Midnight Titanium, dan 12 tema eye-friendly lainnya.
+   - **18 Tema Gelap (Dark Themes)**: Nordic Frost, Midnight OLED, Cyberpunk Synthwave, Emerald Matrix, Dracula Eclipse, Abyssal Ocean, Solar Ember, dan tema ramah mata malam hari lainnya.
+   - Seluruh elemen warna berganti seketika (*instant CSS transition*).
+2. **Global Font Switcher (5 Pilihan Google Fonts)**:
+   - Pada panel tema, pilih jenis font yang paling nyaman untuk dibaca:
+     - **Inter** (Default): Seimbang, tajam, dan sangat mudah dibaca di layar kerja.
+     - **Plus Jakarta Sans**: Tipografi geometris modern bergaya enterprise SaaS.
+     - **Outfit**: Sans-serif kontemporer dengan kurva visual halus berkelas.
+     - **Poppins**: Rounded energik yang ramah dan nyaman dipindai mata.
+     - **Roboto**: Presisi tinggi dengan keterbacaan data yang rapat dan rapi.
+   - Pilihan tema dan font Anda otomatis disimpan di penyimpanan lokal peramban (*localStorage*) dan langsung aktif saat membuka halaman berikutnya tanpa kedipan layar (*Anti-FOUC*).
+
+### 1.4 Keamanan Sesi, Peringatan 5 Menit & Auto-Logout Inaktivitas 1 Jam
+Untuk melindungi kerahasiaan data proyek dan jam kerja dari akses tanpa izin pada perangkat yang ditinggalkan:
+- **Deteksi Inaktivitas Cerdas (`session-manager.js`)**: Sistem secara konstan mendeteksi interaksi pengguna (pergerakan mouse, ketikan keyboard, scroll layar, dan sentuhan).
+- **Peringatan 5 Menit Sebelum Logout**: Jika tidak terdeteksi aktivitas selama **55 menit**, sebuah dialog modal peringatan akan muncul di tengah layar menampilkan hitung mundur waktu tersisa (300 detik) dan tombol **"Lanjutkan Sesi"**.
+- **Perpanjangan Sesi**: Cukup gerakkan kursor atau klik tombol "Lanjutkan Sesi", timer inaktivitas akan di-reset kembali ke awal (60 menit).
+- **Auto-Logout Otomatis**: Jika pengguna tetap tidak merespons hingga menit ke-60, sesi kerja akan dikunci secara otomatis demi keamanan dan diarahkan ke halaman login dengan informasi sesi berakhir.
 
 ---
 
@@ -186,13 +211,25 @@ Buka menu **Kanban** (`/Kanban`) untuk visualisasi alur kerja bergaya kartu:
 - **Drag & Drop**: Cukup klik dan tahan kartu tugas, lalu geser ke kolom status yang diinginkan. Status tugas di database akan otomatis diperbarui.
 - **Tampilan Mobile**: Pada layar ponsel, tersedia tombol tab pintar di bagian atas untuk berpindah antar kolom secara cepat dan rapi.
 
-### 3.7 Import Data Tugas dari Excel (Format Standar 22 Kolom)
-Aplikasi mendukung impor banyak tugas sekaligus melalui berkas spreadsheet Excel `.xlsx` menggunakan format standar 22 kolom (*Proposed Tracker / Enterprise Format*):
-1. Buka menu **Import Task** (`/Import`).
-2. Klik tombol **Download Template Excel (22 Kolom)** untuk mengunduh berkas template siap pakai.
-3. Isi data tugas pada lembar kerja Excel dan unggah berkas yang telah diisi pada area *Drag & Drop*.
-4. Pada halaman **Preview Data**, sistem akan otomatis mencocokkan PIC ke akun pengguna terdaftar.
-5. Klik **Konfirmasi Import Task** untuk menyimpan seluruh data tugas secara instan.
+### 3.7 Import Data Tugas dari Excel (Format Standar & Format ARMS)
+Aplikasi mendukung impor banyak tugas sekaligus melalui berkas spreadsheet Excel `.xlsx` menggunakan dua standar format:
+1. **Format Standar (9 Kolom)**: Sangat cocok untuk migrasi cepat daftar backlog tugas, dilengkapi wizard preview interaktif dan tombol penugasan massal (*Bulk Assign* PIC).
+2. **Format ARMS Enterprise (21 Kolom)**: Format terstruktur enterprise yang memetakan kode tugas, modul, prioritas, status, PIC penugasan, stakeholder, kendala (*obstacle*), solusi (*solution*), catatan, serta tahapan siklus Waterfall SDLC Milestone.
+3. **Cara Melakukan Impor**:
+   - Buka menu **Import Task** (`/Import`).
+   - Unduh template Excel yang diinginkan (*Template 9-Kolom* atau *Template ARMS 21-Kolom*).
+   - Unggah berkas yang telah diisi, tinjau tabel pratinjau data, lalu klik **Konfirmasi Import Task**.
+
+### 3.8 Penyatuan Formulir Edit Tugas & Pengisian Jam Kerja Manual (Satu Tombol Simpan)
+Untuk mempercepat alur kerja harian pengembang dan analis sistem:
+- Pada halaman **Ubah Tugas** (`/Task/Edit/{id}`), selain memperbarui rincian tugas (judul, status, progress, kendala, solusi), formulir kini menyediakan seksi terintegrasi **Catat Jam Kerja Sesi Ini (Manual Timesheet)**.
+- Anda dapat langsung mengisi:
+  - **Durasi Jam & Menit**: Misal *2 Jam 30 Menit*.
+  - **Tanggal Sesi Kerja**: Tanggal saat pekerjaan dilakukan (default: hari ini).
+  - **Catatan Aktivitas Sesi**: Rincian teknis pekerjaan yang baru saja diselesaikan.
+- **Tombol Aksi Tunggal ("Simpan Perubahan & Sesi Kerja Manual")**:
+  - Cukup satu kali klik, sistem secara atomik akan memperbarui informasi tugas di tabel `WorkTasks` dan sekaligus membuat entri log sesi kerja baru di tabel `WorkSessions`.
+  - Anda tidak perlu lagi berpindah bolak-balik antara menu Tugas dan menu Timesheet terpisah.
 
 ---
 
@@ -355,16 +392,32 @@ Buka menu **Laporan** (`/Report`) untuk evaluasi produktivitas:
 
 ---
 
-## 12. Modul Anggota Tim & Gamifikasi Prestasi
+## 12. Modul Anggota Tim (Member), Pure Grid Card, Banner Cover & Hapus Permanen Akun
 
 Buka menu **Anggota Tim** (`/Member`):
-- **Kartu Profil & Level Kontribusi**: Statistik penyelesaian tugas dan akumulasi jam kerja.
-- **Badge Prestasi**: Penghargaan otomatis dan manual atas pencapaian kinerja tim.
-- **Manajemen Pengguna (Khusus Admin)**: Menambah anggota tim baru, mereset kata sandi akun, atau menonaktifkan akun yang sudah tidak bertugas.
+- **Direktori Pure Grid Card Layout**:
+  - Seluruh anggota tim disajikan dalam format kartu grid modern dan rapi (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`).
+  - Dilengkapi sistem *Anti-Overflow*: Teks nama panjang, email, dan jabatan otomatis dipotong secara estetis (*ellipsis*) dan dapat dilihat lengkap melalui tooltip saat kursor diarahkan (*hover*).
+  - Menampilkan ringkasan metrik beban kerja, tugas selesai, dan total jam kerja yang terekam.
+- **Kustomisasi Banner Cover Profil Karyawan**:
+  - Setiap pengguna dapat mempercantik tampilan profilnya melalui menu **Profil Akun** (`/Account/Profile`).
+  - Unggah berkas gambar foto sampul (*Cover Banner*) dengan format JPG/PNG/WebP.
+  - Tersedia opsi untuk menghapus cover kustom dan kembali ke banner vektor SVG default (`default-profile-cover.svg`).
+- **Badge Prestasi & Gamifikasi**:
+  - Anggota tim dapat meraih lencana prestasi (*badges*) otomatis berdasarkan produktivitas kerja dan pencapaian milestone.
+- **Admin Direct Password Reset**:
+  - Administrator dapat mereset kata sandi akun anggota secara langsung melalui antarmuka kartu anggota tanpa menunggu proses pemulihan email.
+- **Hapus Permanen Akun (*Permanent User Deletion*)**:
+  - Disediakan khusus bagi peran **Administrator** untuk membersihkan akun uji coba atau akun yang sudah tidak relevan.
+  - **Mekanisme Proteksi Ganda (Double Verification)**:
+    1. Klik tombol merah **Hapus Permanen** pada kartu atau detail anggota.
+    2. Jendela modal konfirmasi keamanan akan terbuka dan mewajibkan Admin mengetikkan nama lengkap pengguna target secara persis.
+    3. Masukkan kata sandi Administrator untuk mengesahkan tindakan.
+    4. Sistem akan menghapus rekaman pengguna dari basis data ASP.NET Identity secara aman dan membebaskan penugasan tugas yang terkait.
 
 ---
 
-## 13. Modul Master Data, Sinkronisasi Multi-Instance & Backup
+## 13. Modul Master Data, Sinkronisasi Multi-Instance, Email & Backup
 
 Khusus untuk peran **Administrator**, menu **Master Data** (`/MasterData`) dan **Konfigurasi** (`/Configuration`):
 
@@ -377,11 +430,11 @@ Khusus untuk peran **Administrator**, menu **Master Data** (`/MasterData`) dan *
 ### 13.3 Master Hari Libur Nasional
 - Mengelola daftar hari libur resmi yang terintegrasi otomatis dengan laporan Timesheet Excel.
 
-### 13.4 Sinkronisasi Multi-Instance ke Host Induk (Online Push/Pull & Paket Zip Berkas)
+### 13.4 Sinkronisasi Multi-Instance ke Host Induk (Online Streaming Base64 & Paket ZIP)
 Fitur ini memungkinkan instance lokal atau laptop cabang melakukan sinkronisasi data pekerjaan dan seluruh berkas lampiran ke atau dari Server Host Induk terpusat:
 - **1. Online Push Sync (Kirim ke Host)**:
-  - Masukkan URL Host Induk (contoh: `https://host-tracker.perusahaan.com`) dan **API Secret Key**.
-  - Aktifkan tombol toggle **"Sertakan Berkas Uploads & Lampiran"** agar seluruh file lampiran catatan (`uploads/notes/*`) dan avatar profil (`uploads/avatars/*`) ikut dikemas dan dikirimkan ke server induk.
+  - Masukkan URL Host Induk (contoh: `https://host-tracker.perusahaan.com`) dan **API Secret Key** (`X-Sync-Key`) atau token JWT Bearer.
+  - Aktifkan tombol toggle **"Sertakan Berkas Uploads & Lampiran"** agar seluruh berkas lampiran catatan (`uploads/notes/*`), avatar profil (`uploads/avatars/*`), dan banner sampul (`uploads/covers/*`) ikut dikemas (Base64 streaming) dan dikirimkan ke server induk.
   - Klik **"Test Koneksi"** untuk memverifikasi kesiapan host dan melihat statistik data/file di server tujuan.
   - Klik **"Mulai Push Sync ke Host"** untuk menjalankan sinkronisasi data dan berkas secara otomatis.
 - **2. Online Pull Sync (Tarik dari Host)**:
@@ -389,7 +442,7 @@ Fitur ini memungkinkan instance lokal atau laptop cabang melakukan sinkronisasi 
   - Klik tombol **"Tarik Data dari Host (Pull Sync)"**.
 - **3. Ekspor Paket Lengkap (.zip Offline)**:
   - Klik tombol **"Unduh Paket Sinkronisasi (.zip)"** pada tab *Ekspor Paket*.
-  - Menghasilkan file `.zip` terstruktur berisi `manifest.json`, `sync_data.sql` DML terurut, dan seluruh folder berkas `uploads/`.
+  - Menghasilkan file `.zip` terstruktur berisi `manifest.json`, `sync_data.sql` DML terurut, dan seluruh folder berkas `uploads/` (catatan, avatar, cover).
 - **4. Impor Paket (.zip / .sql)**:
   - Buka tab *Impor Data / Paket*, lalu unggah file `.zip` (Full Package) atau `.sql` (Dump SQL).
   - Sistem akan mengekstrak berkas lampiran ke folder target secara aman serta mengeksekusi script transaksi database secara otomatis.

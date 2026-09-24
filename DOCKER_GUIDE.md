@@ -126,7 +126,7 @@ Aplikasi menggunakan **SQLite** dan file upload lokal. Agar data tidak hilang sa
 | Direktori Host | Direktori Container | Fungsi |
 | :--- | :--- | :--- |
 | `./db_data/` | `/app/data/` | Menyimpan file database `trackerkerja.db` |
-| `./uploads/` | `/app/wwwroot/uploads/` | Menyimpan foto avatar dan lampiran berkas catatan |
+| `./uploads/` | `/app/wwwroot/uploads/` | Menyimpan foto avatar (`avatars/`), cover profil (`covers/`), dan lampiran catatan (`notes/`) |
 
 ### Inisialisasi Data dari Lingkungan Lokal:
 Jika Anda sudah memiliki database `trackerkerja.db` dan folder `wwwroot/uploads` di lokal dan ingin langsung menggunakannya di Docker:
@@ -153,6 +153,13 @@ Anda dapat mengatur variabel lingkungan di file `docker-compose.yml` atau parame
 | `ASPNETCORE_URLS` | `http://+:5000` | Port binding aplikasi di dalam container |
 | `ConnectionStrings__DefaultConnection` | `Data Source=data/trackerkerja.db` | Path file SQLite di dalam container volume |
 | `GlobalBaseUrl` | `http://localhost:5000` | URL publik sistem untuk link tautan email notifikasi, Swagger, dan webhook |
+| `Jwt__Key` | *(Secret 256-bit)* | Kunci rahasia penandatanganan HMAC-SHA256 untuk Dual Auth JWT Bearer Token |
+| `Jwt__Issuer` | `TrackerKerja` | Identitas penerbit (*Issuer*) token JWT |
+| `Jwt__Audience` | `TrackerKerjaClient` | Target penerima (*Audience*) token JWT |
+
+### 🔐 Autentikasi Ganda & Strict Swagger JWT di Docker
+- **Dual Authentication**: Web UI berjalan menggunakan cookie sesi terenkripsi, sementara integrasi API dan sinkronisasi data antar node menggunakan **JWT Bearer Token**.
+- **Strict Swagger JWT Authorization**: Buka [http://localhost:5000/swagger](http://localhost:5000/swagger), klik tombol hijau **Authorize**, lalu masukkan token JWT yang diperoleh dari endpoint `POST /api/auth/login` (format: `Bearer <token>`).
 
 ### 📧 Konfigurasi Integrasi Email (SMTP) dalam Docker
 Konfigurasi integrasi email (Host Mail, Port, Email Pengirim, Password Aplikasi, SSL/TLS) **disimpan secara dinamis dan persisten di database SQLite (`./db_data/trackerkerja.db`)**.
@@ -189,13 +196,26 @@ ports:
 ```
 Akses aplikasi melalui `http://localhost:5050`.
 
-### 2. Backup Database
+### 2. Backup Database & Paket ZIP Lengkap
 Cukup copy file `./db_data/trackerkerja.db` ke tempat aman:
 ```powershell
 Copy-Item ./db_data/trackerkerja.db ./backup_$(Get-Date -Format 'yyyyMMdd_HHmmss').db
 ```
+Anda juga dapat menggunakan fitur **Ekspor Paket Lengkap (.zip)** pada menu `/Configuration` untuk mencadangkan database SQLite beserta seluruh berkas fisik lampiran (`uploads/notes`, `uploads/avatars`, `uploads/covers`) dalam satu berkas arsip terpadu.
 
-### 3. Masuk ke Shell Container untuk Debug
+### 3. Jaringan Container untuk Sinkronisasi Multi-Instance
+Jika Anda menjalankan node Parent dan node Child dalam Docker pada mesin yang sama atau lingkungan LAN:
+- **Akses Host dari Container**: Gunakan `http://host.docker.internal:5000` (pada Docker Desktop Windows/Mac) atau gunakan IP bridge gateway Docker (pada Linux: `http://172.17.0.1:5000` atau IP LAN server host).
+- **Konfigurasi SSL Kustom**: Jika server Host Induk menggunakan sertifikat SSL *self-signed*, aktifkan toggle **"Allow Untrusted SSL"** pada antarmuka sinkronisasi Child (`/Configuration`) agar koneksi REST API streaming tidak terblokir.
+
+### 4. Penanganan Hak Akses Folder di Linux (Permission Denied)
+Jika container gagal membaca/menulis database SQLite di Linux:
+```bash
+sudo chown -R 1000:1000 ./db_data ./uploads
+sudo chmod -R 775 ./db_data ./uploads
+```
+
+### 5. Masuk ke Shell Container untuk Debug
 ```bash
 docker exec -it trackerkerja_app /bin/bash
 # atau

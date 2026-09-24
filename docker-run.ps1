@@ -20,7 +20,12 @@ function Ensure-Directories {
         New-Item -ItemType Directory -Path "./uploads" -Force | Out-Null
         New-Item -ItemType Directory -Path "./uploads/notes" -Force | Out-Null
         New-Item -ItemType Directory -Path "./uploads/avatars" -Force | Out-Null
+        New-Item -ItemType Directory -Path "./uploads/covers" -Force | Out-Null
         Write-Host "[+] Created ./uploads directories for file storage persistence." -ForegroundColor Green
+    } else {
+        if (-not (Test-Path -Path "./uploads/covers")) {
+            New-Item -ItemType Directory -Path "./uploads/covers" -Force | Out-Null
+        }
     }
 }
 

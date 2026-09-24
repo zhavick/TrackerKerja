@@ -43,7 +43,8 @@ COPY --from=publish /app/publish .
 # Pre-create persistent data directories
 RUN mkdir -p /app/data \
     && mkdir -p /app/wwwroot/uploads/notes \
-    && mkdir -p /app/wwwroot/uploads/avatars
+    && mkdir -p /app/wwwroot/uploads/avatars \
+    && mkdir -p /app/wwwroot/uploads/covers
 
 # Volume mounts for persistent SQLite database and user file uploads
 VOLUME ["/app/data", "/app/wwwroot/uploads"]

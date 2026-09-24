@@ -13,6 +13,9 @@ services:
       - ASPNETCORE_URLS=http://+:5000
       - ConnectionStrings__DefaultConnection=Data Source=data/trackerkerja.db
       - GlobalBaseUrl=http://localhost:5000
+      - Jwt__Key=TrackerKerja_SuperSecretKey_Production_2026_Min256BitsLongKey!
+      - Jwt__Issuer=TrackerKerja
+      - Jwt__Audience=TrackerKerjaClient
     volumes:
       - ./db_data:/app/data
       - ./uploads:/app/wwwroot/uploads

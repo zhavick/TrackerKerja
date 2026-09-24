@@ -20,8 +20,8 @@
                 </div>
             </div>
             <div class="flex md:flex-col items-end justify-between gap-2 border-t md:border-t-0 md:border-l border-white/20 pt-3 md:pt-0 md:pl-6 text-xs text-indigo-200 print:text-slate-600">
-                <div><strong class="text-white print:text-black">Versi:</strong> 3.3 Enterprise</div>
-                <div><strong class="text-white print:text-black">Pembaruan:</strong> September 2026</div>
+                <div><strong class="text-white print:text-black">Versi:</strong> 3.6 Enterprise Security & Multi-Instance</div>
+                <div><strong class="text-white print:text-black">Pembaruan:</strong> 24 September 2026</div>
                 <div><strong class="text-white print:text-black">Sifat:</strong> Panduan Operasional Tim</div>
             </div>
         </div>
@@ -87,34 +87,37 @@
             <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-black text-base shadow-xs">1</div>
             <div>
                 <h2 class="text-xl font-black text-slate-900">Pengenalan & Memulai Aplikasi</h2>
-                <p class="text-xs text-slate-400">Langkah awal masuk dan mengenali antarmuka aplikasi</p>
+                <p class="text-xs text-slate-400">Langkah awal masuk, keamanan sesi, 40 tema eye-friendly, dan font switcher</p>
             </div>
         </div>
 
         <p class="text-sm">
-            <strong>Work Tracker Pro</strong> adalah platform manajemen pekerjaan terpadu, pencatatan waktu (*timesheet*), presensi kehadiran, pelacakan kendala dan solusi teknis, serta kalender kerja tim.
+            <strong>Work Tracker Pro</strong> adalah platform manajemen pekerjaan terpadu, pencatatan waktu (*timesheet*), presensi kehadiran, pelacakan kendala dan solusi teknis, serta kalender kerja tim terintegrasi.
         </p>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
                 <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <i class="fas fa-sign-in-alt text-indigo-500"></i> Cara Masuk (Login)
+                    <i class="fas fa-sign-in-alt text-indigo-500"></i> Halaman Masuk (Login) Modern & Keamanan
                 </h3>
                 <ol class="text-xs text-slate-600 space-y-1.5 list-decimal pl-4">
-                    <li>Buka aplikasi melalui peramban web (Chrome, Edge, Safari, Firefox).</li>
-                    <li>Ketikkan <strong>Email</strong> dan <strong>Kata Sandi</strong> yang telah didaftarkan oleh Administrator.</li>
-                    <li>Centang opsi <em>Ingat Saya</em> jika menggunakan komputer pribadi.</li>
-                    <li>Klik tombol <strong>Masuk (Login)</strong>.</li>
+                    <li>Buka aplikasi via peramban web (Chrome, Edge, Safari, Firefox).</li>
+                    <li>Dilengkapi animasi <strong>Lottie interaktif</strong>, tombol sakelar instan <strong>Mode Gelap / Terang</strong> tanpa reload, dan dropdown perusahaan Select2.</li>
+                    <li>Ketikkan <strong>Email</strong> dan <strong>Kata Sandi</strong> yang telah disetujui Administrator.</li>
+                    <li><strong>Keamanan Sesi 1 Jam</strong>: Jika Anda tidak aktif selama 55 menit, muncul modal peringatan dengan hitung mundur 5 menit. Jika diabaikan hingga 60 menit, sistem mengunci sesi otomatis ke halaman login demi perlindungan data.</li>
                 </ol>
             </div>
 
             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-2">
                 <h3 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                    <i class="fas fa-palette text-purple-500"></i> Pilihan Tema Tampilan (16 Tema)
+                    <i class="fas fa-palette text-purple-500"></i> 40 Tema Eye-Friendly & 5 Font Switcher
                 </h3>
                 <p class="text-xs text-slate-600">
-                    Aplikasi menyediakan 16 pilihan tema warna (Light Mode dan Dark Mode). Anda dapat memilih tema favorit pada menu <strong>Profil Akun</strong> di pojok kanan atas untuk kenyamanan bekerja.
+                    Aplikasi menyediakan <strong>40 pilihan tema tampilan</strong> (22 Tema Terang + 18 Tema Gelap Eye-Friendly) serta <strong>5 pilihan Google Fonts</strong> (<em>Inter, Plus Jakarta Sans, Outfit, Poppins, Roboto</em>) yang dapat diubah instan melalui tombol <strong>Tema</strong> di topbar.
                 </p>
+                <div class="pt-1 flex items-center gap-2 text-[11px] text-indigo-600 font-semibold">
+                    <i class="fas fa-bolt"></i> Paginasi Grid AJAX: Navigasi tabel tanpa memuat ulang halaman (*zero reload*).
+                </div>
             </div>
         </div>
     </section>
@@ -180,12 +183,22 @@
 
                 <div class="p-4 rounded-2xl bg-indigo-50/50 border border-indigo-200/80 space-y-2">
                     <h3 class="font-bold text-indigo-900 text-sm flex items-center gap-2">
-                        <i class="fas fa-file-excel text-emerald-600"></i> Import Data Tugas Excel (22 Kolom)
+                        <i class="fas fa-file-excel text-emerald-600"></i> Import Data Tugas Excel (21 & 9 Kolom)
                     </h3>
                     <p class="text-xs text-slate-600">
-                        Buka menu <strong>Import Task</strong> (`/Import`) > <strong>Download Template Excel (22 Kolom)</strong>. Isi data tugas lengkap (proyek, judul, prioritas, status, PIC penugasan, stakeholder, kendala, solusi, dan notes) lalu unggah untuk import instan.
+                        Buka menu <strong>Import Task</strong> (`/Import`) untuk mengunduh template Excel format standar (9 kolom) atau enterprise ARMS (21 kolom). Isi data tugas lengkap lalu unggah untuk import massal instan.
                     </p>
                 </div>
+            </div>
+
+            <!-- Unified Task & Manual Timesheet Banner -->
+            <div class="p-4 rounded-2xl bg-emerald-50/70 border border-emerald-200/90 space-y-1.5">
+                <h3 class="font-bold text-emerald-950 text-sm flex items-center gap-2">
+                    <i class="fas fa-check-double text-emerald-600"></i> Penyatuan Edit Tugas & Pengisian Jam Kerja Manual (Satu Tombol Simpan)
+                </h3>
+                <p class="text-xs text-slate-700 leading-relaxed">
+                    Pada formulir <strong>Ubah Tugas</strong> (`/Task/Edit/{id}`), kini tersedia kolom pencatatan jam kerja manual langsung di bawah detail tugas (<em>Durasi Jam & Menit, Tanggal Kerja, dan Catatan Sesi</em>). Tombol tunggal <strong>"Simpan Perubahan & Sesi Kerja Manual"</strong> akan memperbarui data tugas dan mencatat riwayat jam kerja secara bersamaan dalam satu transaksi instan.
+                </p>
             </div>
         </div>
     </section>
@@ -408,7 +421,7 @@
             </div>
             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
                 <h3 class="font-bold text-slate-800 text-sm">🔄 Sinkronisasi Host & Berkas</h3>
-                <p>Kirim (Push) atau tarik (Pull) data tugas, sesi, dan berkas lampiran catatan/avatar ke Host Induk secara online atau ekspor/impor paket <code>.zip</code>.</p>
+                <p>Kirim (Push) atau tarik (Pull) basis data dan seluruh berkas lampiran fisik (catatan, foto avatar, gambar cover) ke Host Induk via online Base64 streaming atau paket <code>.zip</code>.</p>
             </div>
             <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 space-y-1.5">
                 <h3 class="font-bold text-slate-800 text-sm">💾 Backup Database (.db & .sql)</h3>
@@ -425,7 +438,7 @@
             <div class="w-10 h-10 rounded-2xl bg-slate-100 text-slate-700 flex items-center justify-center font-black text-base shadow-xs">10</div>
             <div>
                 <h2 class="text-xl font-black text-slate-900">Pertanyaan Umum (FAQ) & Tips Singkat</h2>
-                <p class="text-xs text-slate-400">Solusi cepat atas pertanyaan yang sering diajukan</p>
+                <p class="text-xs text-slate-400">Solusi cepat atas pertanyaan yang sering diajukan seputar v3.6</p>
             </div>
         </div>
 
@@ -441,8 +454,13 @@
             </div>
 
             <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
-                <strong class="text-slate-800 block mb-1">Q: Mengapa saya tidak bisa menghapus anggota tim tertentu?</strong>
-                <p class="text-slate-600">Pengguna yang telah memiliki riwayat tugas atau catatan jam kerja tidak dapat dihapus untuk melindungi integritas data pelaporan. Gunakan opsi <em>Nonaktifkan (Inactivate)</em> akun; pengguna yang nonaktif otomatis disembunyikan dari Dashboard.</p>
+                <strong class="text-slate-800 block mb-1">Q: Bagaimana cara menghapus akun anggota tim yang sudah tidak aktif?</strong>
+                <p class="text-slate-600">Administrator dapat menonaktifkan akun anggota atau menggunakan fitur <strong>Hapus Permanen Akun (*Permanent User Deletion*)</strong>. Fitur hapus permanen dilindungi dialog konfirmasi ganda (wajib mengetikkan nama anggota dan password Admin) untuk membersihkan akun secara aman.</p>
+            </div>
+
+            <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80">
+                <strong class="text-slate-800 block mb-1">Q: Apa yang terjadi jika komputer ditinggalkan menyala tanpa aktivitas?</strong>
+                <p class="text-slate-600">Sistem dilengkapi perlindungan inaktivitas 1 jam. Pada menit ke-55, muncul modal peringatan dengan hitung mundur 5 menit. Jika tidak ada respons, sistem otomatis mengunci sesi dan mengarahkan ke halaman login demi menjaga kerahasiaan data.</p>
             </div>
         </div>
     </section>

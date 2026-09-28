@@ -6,9 +6,17 @@
 
 const FONTS_CONFIG = [
     {
+        id: "outfit",
+        name: "Outfit",
+        badge: "Default UI",
+        desc: "Tipografi sans-serif modern dengan lekukan halus dan visual berkelas tinggi.",
+        fontFamily: "'Outfit', sans-serif",
+        sample: "Work Tracker Pro 2026 - Efisiensi & Produktivitas Tim"
+    },
+    {
         id: "inter",
         name: "Inter",
-        badge: "Default UI",
+        badge: "Classic UI",
         desc: "Standar UI modern, sangat seimbang, tajam & nyaman dibaca pada semua resolusi.",
         fontFamily: "'Inter', system-ui, sans-serif",
         sample: "Work Tracker Pro 2026 - Efisiensi & Produktivitas Tim"
@@ -19,14 +27,6 @@ const FONTS_CONFIG = [
         badge: "Modern Enterprise",
         desc: "Font geometris kontemporer, ramah & elegan khas aplikasi SaaS modern.",
         fontFamily: "'Plus Jakarta Sans', sans-serif",
-        sample: "Work Tracker Pro 2026 - Efisiensi & Produktivitas Tim"
-    },
-    {
-        id: "outfit",
-        name: "Outfit",
-        badge: "Contemporary",
-        desc: "Tipografi sans-serif modern dengan lekukan halus dan visual berkelas tinggi.",
-        fontFamily: "'Outfit', sans-serif",
         sample: "Work Tracker Pro 2026 - Efisiensi & Produktivitas Tim"
     },
     {
@@ -415,17 +415,20 @@ const THEMES_CONFIG = [
 
 const ThemeManager = {
     currentTheme: "indigo",
-    currentFont: "inter",
+    currentFont: "outfit",
+    activeDropdownTab: "themes",
     dropdownOpen: false,
 
     init: function () {
         this.currentTheme = localStorage.getItem('app_theme') || 'indigo';
-        this.currentFont = localStorage.getItem('app_font') || 'inter';
+        this.currentFont = localStorage.getItem('app_font') || 'outfit';
 
         this.applyTheme(this.currentTheme);
         this.applyFont(this.currentFont);
         this.renderDropdown();
+        this.renderFontDropdown();
         this.updateTopbarSwatch();
+        this.updateFontLabels();
 
         // Close dropdown when clicked outside
         document.addEventListener('click', (e) => {
@@ -435,6 +438,38 @@ const ThemeManager = {
                 this.closeDropdown();
             }
         });
+    },
+
+    // ── UNIFIED DROPDOWN TABS (TEMA vs FONT) ──────────────────────
+    switchDropdownTab: function (tab) {
+        this.activeDropdownTab = tab;
+        const tabThemes = document.getElementById('tabBtnDropdownThemes');
+        const tabFonts = document.getElementById('tabBtnDropdownFonts');
+        const gridThemes = document.getElementById('themeDropdownGrid');
+        const gridFonts = document.getElementById('fontDropdownGrid');
+
+        if (tab === 'themes') {
+            if (tabThemes) {
+                tabThemes.className = 'flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-800 shadow-2xs cursor-pointer';
+            }
+            if (tabFonts) {
+                tabFonts.className = 'flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer';
+            }
+            if (gridThemes) gridThemes.classList.remove('hidden');
+            if (gridFonts) gridFonts.classList.add('hidden');
+        } else {
+            if (tabFonts) {
+                tabFonts.className = 'flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-800 shadow-2xs cursor-pointer';
+            }
+            if (tabThemes) {
+                tabThemes.className = 'flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer';
+            }
+            if (gridThemes) gridThemes.classList.add('hidden');
+            if (gridFonts) {
+                gridFonts.classList.remove('hidden');
+                this.renderFontDropdown();
+            }
+        }
     },
 
     // ── THEME MANAGEMENT ──────────────────────────────────────────
@@ -561,6 +596,9 @@ const ThemeManager = {
         document.documentElement.setAttribute('data-font', font.id);
         localStorage.setItem('app_font', font.id);
 
+        this.updateFontLabels();
+        this.renderFontDropdown();
+
         // Update active badge in configuration page if open
         const fontCards = document.querySelectorAll('.font-preview-card');
         fontCards.forEach(card => {
@@ -576,6 +614,44 @@ const ThemeManager = {
                 const badge = card.querySelector('.font-active-indicator');
                 if (badge) badge.classList.add('hidden');
             }
+        });
+    },
+
+    updateFontLabels: function () {
+        const label = document.getElementById('topbar-current-font-label');
+        const font = FONTS_CONFIG.find(f => f.id === this.currentFont) || FONTS_CONFIG[0];
+        if (label && font) {
+            label.textContent = font.name;
+        }
+    },
+
+    renderFontDropdown: function () {
+        const grid = document.getElementById('fontDropdownGrid');
+        if (!grid) return;
+        grid.innerHTML = '';
+
+        FONTS_CONFIG.forEach(font => {
+            const isSelected = font.id === this.currentFont;
+            const card = document.createElement('div');
+            card.className = `p-2.5 rounded-2xl cursor-pointer transition-all border ${
+                isSelected
+                    ? 'bg-indigo-50/90 dark:bg-indigo-950/60 border-2 border-indigo-500 shadow-xs'
+                    : 'hover:bg-slate-50 dark:hover:bg-slate-800/80 border-slate-100 dark:border-slate-800/60'
+            }`;
+            card.onclick = () => {
+                this.setGlobalFont(font.id, true);
+            };
+            card.innerHTML = `
+                <div class="flex items-center justify-between mb-1">
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-black text-slate-800 dark:text-white" style="font-family: ${font.fontFamily}">${font.name}</span>
+                        <span class="text-[9px] font-bold px-1.5 py-0.2 rounded-full ${isSelected ? 'bg-indigo-600 text-white' : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'}">${font.badge}</span>
+                    </div>
+                    ${isSelected ? '<i class="fas fa-check-circle text-indigo-500 text-xs"></i>' : '<span class="text-[10px] text-slate-400 font-semibold">Terapkan</span>'}
+                </div>
+                <p class="text-[10px] text-slate-500 dark:text-slate-400 line-clamp-1 italic" style="font-family: ${font.fontFamily}">"${font.sample}"</p>
+            `;
+            grid.appendChild(card);
         });
     },
 

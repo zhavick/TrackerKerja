@@ -85,11 +85,11 @@
     <!-- Fuse.js -->
     <script src="https://cdn.jsdelivr.net/npm/fuse.js@7.0.0/dist/fuse.min.js"></script>
 
-    <!-- Anti-FOUC Immediate Theme & Font Applicator -->
+    <!-- Anti-FOUC Immediate Theme & Font Applicator (Outfit Default) -->
     <script>
         (function () {
             var theme = localStorage.getItem('app_theme') || 'indigo';
-            var font = localStorage.getItem('app_font') || 'inter';
+            var font = localStorage.getItem('app_font') || 'outfit';
             document.documentElement.setAttribute('data-theme', theme);
             document.documentElement.setAttribute('data-font', font);
         })();
@@ -101,7 +101,7 @@
     <link rel="stylesheet" href="~/css/onboarding-tour.css" />
 
     <style>
-        body { font-family: 'Inter', sans-serif; }
+        body { font-family: 'Outfit', sans-serif; }
         .sidebar-link { transition: all 0.2s ease; }
         .sidebar-link:hover { transform: translateX(4px); }
         .sidebar-link.active { background: rgba(99,102,241,0.25); border-left: 3px solid #818CF8; }
@@ -430,36 +430,64 @@
                     </div>
                 </div>
 
-                <!-- Dynamic Theme Switcher Dropdown (40 Themes) -->
+                <!-- Dynamic Unified Theme & Font Switcher Dropdown (40 Themes + 5 Fonts) -->
                 <div class="relative z-50">
                     <button type="button" id="themeDropdownBtn" onclick="ThemeManager.toggleDropdown()" data-tour="theme"
                             class="flex items-center gap-1.5 sm:gap-2 px-2.5 sm:px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold shadow-xs hover:border-indigo-300 transition-all cursor-pointer"
-                            title="Pilih dan ganti 40 jenis tema tampilan (Light & Dark Theme Eye-Friendly)">
+                            title="Personalisasi 40 Tema Dinamis & 5 Tipografi Font Global">
                         <span id="topbar-theme-swatch" class="w-3.5 h-3.5 rounded-full shadow-xs border border-white flex-shrink-0" style="background: #6366F1"></span>
-                        <span id="topbar-theme-label" class="hidden md:inline font-bold text-slate-700">Tema</span>
-                        <i class="fas fa-palette text-indigo-500 text-xs ml-0.5"></i>
+                        <span id="topbar-theme-label" class="hidden md:inline font-bold text-slate-700">Tema &amp; Font</span>
+                        <i class="fas fa-sliders text-indigo-500 text-xs ml-0.5"></i>
                     </button>
 
-                    <!-- Theme Dropdown Floating Menu -->
-                    <div id="themeDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-96 max-w-[400px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-4 z-[9999] animate-fadeIn" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
-                        <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
+                    <!-- Theme & Font Unified Dropdown Floating Menu -->
+                    <div id="themeDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-96 max-w-[420px] bg-white rounded-3xl shadow-2xl border border-slate-200/80 p-4 z-[9999] animate-fadeIn" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                        <div class="flex items-center justify-between pb-3 mb-2.5 border-b border-slate-100">
                             <div class="flex items-center gap-2">
                                 <div class="w-7 h-7 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-xs">
                                     <i class="fas fa-palette"></i>
                                 </div>
                                 <div>
-                                    <h4 class="text-xs font-black text-slate-800">Kostumasi Tema (40 Pilihan)</h4>
-                                    <p class="text-[10px] text-slate-400">18 Tema Gelap &amp; 22 Tema Terang Eye-Friendly</p>
+                                    <h4 class="text-xs font-black text-slate-800">Personalisasi Tampilan</h4>
+                                    <p class="text-[10px] text-slate-400">40 Tema Dinamis &amp; 5 Font Global</p>
                                 </div>
                             </div>
                             <button type="button" onclick="ThemeManager.closeDropdown()" class="text-slate-400 hover:text-slate-600 text-xs p-1 cursor-pointer">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
+
+                        <!-- Segmented Switcher: Tema vs Font -->
+                        <div class="flex items-center p-1 bg-slate-100 rounded-xl mb-3 border border-slate-200/60">
+                            <button type="button" id="tabBtnDropdownThemes" onclick="ThemeManager.switchDropdownTab('themes')"
+                                    class="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-800 shadow-2xs cursor-pointer">
+                                <i class="fas fa-palette text-indigo-500 text-[11px]"></i>
+                                <span>Tema (40)</span>
+                            </button>
+                            <button type="button" id="tabBtnDropdownFonts" onclick="ThemeManager.switchDropdownTab('fonts')"
+                                    class="flex-1 flex items-center justify-center gap-1.5 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">
+                                <i class="fas fa-font text-purple-500 text-[11px]"></i>
+                                <span>Font (5)</span>
+                            </button>
+                        </div>
                         
                         <!-- 40 Theme Choices List/Grid -->
-                        <div id="themeDropdownGrid" class="space-y-1.5 max-h-[400px] overflow-y-auto pr-1">
+                        <div id="themeDropdownGrid" class="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
                             <!-- Populated dynamically by ThemeManager.js -->
+                        </div>
+
+                        <!-- 5 Font Choices List/Grid -->
+                        <div id="fontDropdownGrid" class="hidden space-y-2 max-h-[380px] overflow-y-auto pr-1">
+                            <!-- Populated dynamically by ThemeManager.js -->
+                        </div>
+
+                        <!-- Footer Link to Configuration -->
+                        <div class="mt-3 pt-2.5 border-t border-slate-100 flex items-center justify-between text-[11px]">
+                            <span class="text-slate-400">Font aktif: <strong id="topbar-current-font-label" class="text-indigo-600 font-bold">Outfit</strong></span>
+                            <a href="/Configuration#tab-cfg-theme-font" onclick="ThemeManager.closeDropdown()" class="text-indigo-600 hover:underline font-bold flex items-center gap-1">
+                                <span>Pengaturan Lengkap</span>
+                                <i class="fas fa-arrow-right text-[9px]"></i>
+                            </a>
                         </div>
                     </div>
                 </div>

@@ -76,35 +76,71 @@
     </div>
 }
 
+
 <!-- ========================================================================= -->
+<!-- CONFIGURATION TABS NAVIGATION BAR (MODULAR GROUPING) -->
+<!-- ========================================================================= -->
+<div class="bg-white rounded-2xl p-1.5 shadow-sm border border-slate-200 mb-6 flex items-center gap-1.5 overflow-x-auto scrollbar-none" id="configNavTabs">
+    <button type="button" onclick="switchConfigTab('tab-cfg-sync')" id="btn-tab-cfg-sync"
+            class="config-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap bg-indigo-600 text-white shadow-sm cursor-pointer">
+        <i class="fas fa-sync-alt"></i>
+        <span>1. Sinkronisasi Host &amp; Cabang</span>
+    </button>
+    <button type="button" onclick="switchConfigTab('tab-cfg-theme-font')" id="btn-tab-cfg-theme-font"
+            class="config-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer">
+        <i class="fas fa-palette text-purple-500"></i>
+        <span>2. Personalisasi Tema &amp; Font</span>
+    </button>
+    <button type="button" onclick="switchConfigTab('tab-cfg-database')" id="btn-tab-cfg-database"
+            class="config-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer">
+        <i class="fas fa-database text-emerald-500"></i>
+        <span>3. Database &amp; Pemeliharaan</span>
+    </button>
+    <button type="button" onclick="switchConfigTab('tab-cfg-email')" id="btn-tab-cfg-email"
+            class="config-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer">
+        <i class="fas fa-envelope text-blue-500"></i>
+        <span>4. Server Email &amp; Notifikasi</span>
+    </button>
+    <button type="button" onclick="switchConfigTab('tab-cfg-general')" id="btn-tab-cfg-general"
+            class="config-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer">
+        <i class="fas fa-globe text-amber-500"></i>
+        <span>5. Umum &amp; Swagger API</span>
+    </button>
+</div>
+
+
+
+<!-- TAB 1: SINKRONISASI HOST INDUK & CABANG -->
+<div id="tab-cfg-sync" class="config-tab-pane space-y-6">
+    <!-- ========================================================================= -->
 <!-- 1. FEATURED SECTION: SINKRONISASI MULTI-INSTANCE & HOST INDUK -->
 <!-- ========================================================================= -->
-<div class="bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-6 sm:p-7 text-white shadow-xl border border-indigo-500/20 mb-8 relative overflow-hidden">
+<div class="theme-sync-card bg-white dark:bg-slate-900 rounded-3xl p-6 sm:p-7 text-slate-800 dark:text-white shadow-sm border border-slate-200 dark:border-slate-800 mb-6 relative overflow-hidden">
     <!-- Decorative background elements -->
     <div class="absolute -right-16 -bottom-16 w-64 h-64 rounded-full bg-indigo-500/10 blur-3xl pointer-events-none"></div>
     <div class="absolute -left-16 -top-16 w-64 h-64 rounded-full bg-cyan-500/10 blur-3xl pointer-events-none"></div>
 
-    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-5 border-b border-slate-700/60 relative z-10">
+    <div class="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 pb-5 border-b border-slate-200 dark:border-slate-700/60 relative z-10">
         <div class="flex items-center gap-3.5">
             <div class="w-12 h-12 rounded-2xl bg-gradient-to-tr from-cyan-500 to-indigo-600 flex items-center justify-center text-xl text-white shadow-lg shadow-cyan-500/20">
                 <i class="fas fa-sync-alt animate-spin-slow"></i>
             </div>
             <div>
                 <div class="flex items-center gap-2.5">
-                    <h2 class="text-lg font-black tracking-tight text-white">Sinkronisasi Host Induk &amp; Cabang</h2>
+                    <h2 class="text-lg font-black tracking-tight text-slate-800 dark:text-white">Sinkronisasi Host Induk &amp; Cabang</h2>
                     <span class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-indigo-500/30 text-indigo-200 border border-indigo-400/30">
                         <i class="fas fa-cloud text-[9px] text-cyan-400"></i> Multi-Location Ready
                     </span>
                 </div>
-                <p class="text-xs text-slate-300 mt-0.5">
-                    Sinkronisasi data terpusat antara aplikasi berjalan (Child / <code class="text-cyan-300 font-mono bg-indigo-900/60 px-1 py-0.2 rounded">https://tracker.saidilmuna.space/</code>) dan Host Induk Server Lokal
+                <p class="text-xs text-slate-500 dark:text-slate-300 mt-0.5">
+                    Sinkronisasi data terpusat antara aplikasi berjalan (Child / <code class="text-indigo-600 dark:text-cyan-300 font-mono bg-indigo-50 dark:bg-indigo-900/60 px-1 py-0.2 rounded border border-indigo-200 dark:border-transparent">https://tracker.saidilmuna.space/</code>) dan Host Induk Server Lokal
                 </p>
             </div>
         </div>
 
         <div class="flex items-center gap-2">
             <button type="button" onclick="testHostIndukConnection()" id="btn-ping-host"
-                    class="flex items-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer">
+                    class="flex items-center gap-2 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 px-3.5 py-2 rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer">
                 <i class="fas fa-plug text-cyan-400" id="ping-icon"></i>
                 <span id="ping-text">Test Koneksi Host</span>
             </button>
@@ -114,19 +150,19 @@
 
     <!-- Sync Mode Tabs -->
     <div class="mt-5">
-        <div class="flex items-center gap-2 p-1 bg-slate-800/80 rounded-2xl max-w-fit border border-slate-700/60 mb-5">
+        <div class="flex items-center gap-2 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-2xl max-w-fit border border-slate-200 dark:border-slate-700/60 mb-5">
             <button type="button" onclick="switchSyncTab('tab-online')" id="tab-btn-online"
                     class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all bg-indigo-600 text-white shadow-md cursor-pointer">
                 <i class="fas fa-bolt text-amber-300"></i>
                 <span>1. Mode Online API (Push / Pull)</span>
             </button>
             <button type="button" onclick="switchSyncTab('tab-manual-export')" id="tab-btn-manual-export"
-                    class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white cursor-pointer">
+                    class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer">
                 <i class="fas fa-file-archive text-cyan-400"></i>
                 <span>2. Ekspor Paket Lengkap (.zip / .sql)</span>
             </button>
             <button type="button" onclick="switchSyncTab('tab-host-receiver')" id="tab-btn-host-receiver"
-                    class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-400 hover:text-white cursor-pointer">
+                    class="flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white cursor-pointer">
                 <i class="fas fa-server text-emerald-400"></i>
                 <span>3. Host Induk (Impor Paket &amp; Bersihkan)</span>
             </button>
@@ -136,35 +172,35 @@
         <div id="tab-online" class="space-y-5">
             <div class="grid grid-cols-1 lg:grid-cols-12 gap-5">
                 <!-- Host Settings Form (Left: 7 Cols) -->
-                <div class="lg:col-span-7 bg-slate-800/50 rounded-2xl p-5 border border-slate-700/60 space-y-4">
+                <div class="lg:col-span-7 theme-sync-inner-panel bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-5 border border-slate-200 dark:border-slate-700/60 space-y-4">
                     <form method="post" asp-action="UpdateSyncSettings" asp-controller="Configuration" id="form-sync-settings" class="space-y-4">
                         @Html.AntiForgeryToken()
 
                         <div class="flex items-center justify-between">
-                            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <h3 class="text-xs font-bold text-slate-700 dark:text-slate-200 uppercase tracking-wider flex items-center gap-2">
                                 <i class="fas fa-cogs text-indigo-400"></i> Konfigurasi Target Host Induk &amp; Keamanan
                             </h3>
                             <span class="text-[11px] text-slate-400">Role: <span class="text-cyan-300 font-bold uppercase">@hostSyncRole</span></span>
                         </div>
 
                         <div>
-                            <label class="block text-xs font-bold text-slate-300 mb-1">
+                            <label class="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
                                 Target Host Induk URL (Alamat Server Lokal / Endpoint Induk)
                             </label>
                             <div class="relative">
                                 <i class="fas fa-network-wired absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                                 <input type="url" id="syncHostUrlInput" name="TargetHostUrl" value="@hostSyncTargetUrl" required
                                        placeholder="http://192.168.1.100:5000 atau https://host-induk-anda.com"
-                                       class="w-full pl-9 pr-3 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                                       class="w-full pl-9 pr-3 py-2.5 bg-white dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-400">
                             </div>
-                            <p class="text-[11px] text-slate-400 mt-1">
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                                 Alamat server Host Induk yang menjalankan REST API penerima sinkronisasi (<code class="text-cyan-400">/api/sync/receive</code>).
                             </p>
                         </div>
 
                         <div>
                             <div class="flex items-center justify-between mb-1">
-                                <label class="block text-xs font-bold text-slate-300">
+                                <label class="block text-xs font-bold text-slate-700 dark:text-slate-300">
                                     Secret API Key Sinkronisasi (Shared Token)
                                 </label>
                                 <div class="flex items-center gap-2">
@@ -180,17 +216,17 @@
                                 <i class="fas fa-key absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
                                 <input type="password" id="syncApiKeyInput" name="ApiKey" value="@hostSyncApiKey" required
                                        placeholder="TK-SYNC-SECRET-KEY-..."
-                                       class="w-full pl-9 pr-10 py-2.5 bg-slate-900/90 border border-slate-700 rounded-xl text-xs font-mono text-white focus:outline-none focus:ring-2 focus:ring-cyan-400">
+                                       class="w-full pl-9 pr-10 py-2.5 bg-white dark:bg-slate-900/90 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-mono text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-cyan-400">
                                 <button type="button" onclick="toggleApiKeyVisibility()" class="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white text-xs cursor-pointer">
                                     <i class="fas fa-eye" id="toggle-key-icon"></i>
                                 </button>
                             </div>
-                            <p class="text-[11px] text-slate-400 mt-1">
+                            <p class="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                                 Token rahasia ini harus <strong>sama persis</strong> antara child aplikasi dan Host Induk sebagai otorisasi keamanan.
                             </p>
                         </div>
 
-                        <div class="flex items-center justify-between pt-2 border-t border-slate-700/60">
+                        <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-700/60">
                             <input type="hidden" name="Role" value="@hostSyncRole" id="syncRoleInput" />
                             <div class="text-[11px] text-slate-400">
                                 @if (lastSyncAt.HasValue)
@@ -202,7 +238,7 @@
                                     <span>Belum pernah melakukan sinkronisasi API</span>
                                 }
                             </div>
-                            <button type="submit" class="px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer">
+                            <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold transition-all shadow-xs cursor-pointer">
                                 <i class="fas fa-save mr-1.5 text-indigo-400"></i>Simpan Konfigurasi
                             </button>
                         </div>
@@ -210,30 +246,30 @@
                 </div>
 
                 <!-- Submit / Push / Pull Action Card (Right: 5 Cols) -->
-                <div class="lg:col-span-5 bg-gradient-to-br from-indigo-900/70 to-purple-900/70 rounded-2xl p-5 border border-indigo-500/30 flex flex-col justify-between">
+                <div class="lg:col-span-5 bg-gradient-to-br from-indigo-50/90 to-purple-50/90 dark:from-indigo-950/70 dark:to-purple-950/70 rounded-2xl p-5 border border-indigo-200 dark:border-indigo-500/30 flex flex-col justify-between">
                     <div>
-                        <div class="flex items-center justify-between pb-3 border-b border-indigo-500/30 mb-3">
-                            <span class="text-xs font-black uppercase tracking-wider text-indigo-200 flex items-center gap-1.5">
+                        <div class="flex items-center justify-between pb-3 border-b border-indigo-200 dark:border-indigo-500/30 mb-3">
+                            <span class="text-xs font-black uppercase tracking-wider text-indigo-900 dark:text-indigo-200 flex items-center gap-1.5">
                                 <i class="fas fa-sync-alt text-cyan-400 animate-spin-slow"></i> Eksekusi Sinkronisasi Online
                             </span>
                             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
                         </div>
-                        <p class="text-xs text-slate-200 leading-relaxed mb-4">
+                        <p class="text-xs text-slate-600 dark:text-slate-200 leading-relaxed mb-4">
                             Kirim atau tarik seluruh rekaman tugas, sesi timesheet, proyek, kategori, catatan, dan <strong>berkas lampiran upload (avatar &amp; file catatan)</strong> melalui API aman terenkripsi.
                         </p>
 
-                        <div class="space-y-2.5 mb-4 bg-slate-900/60 rounded-xl p-3 border border-slate-800 text-xs">
+                        <div class="space-y-2.5 mb-4 bg-white/80 dark:bg-slate-900/60 rounded-xl p-3 border border-indigo-100 dark:border-slate-800 text-xs">
                             <label class="flex items-center gap-2 cursor-pointer select-none">
                                 <input type="checkbox" id="pushCleanBeforeSync" checked class="rounded text-indigo-500 focus:ring-indigo-400">
-                                <span class="text-slate-200 font-medium text-[11px]">Bersihkan data lama di target (Clean Slate)</span>
+                                <span class="text-slate-700 dark:text-slate-200 font-medium text-[11px]">Bersihkan data lama di target (Clean Slate)</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer select-none">
                                 <input type="checkbox" id="pushBackupBeforeSync" checked class="rounded text-indigo-500 focus:ring-indigo-400">
-                                <span class="text-slate-200 font-medium text-[11px]">Buat backup snapshot di target sebelum proses</span>
+                                <span class="text-slate-700 dark:text-slate-200 font-medium text-[11px]">Buat backup snapshot di target sebelum proses</span>
                             </label>
                             <label class="flex items-center gap-2 cursor-pointer select-none">
                                 <input type="checkbox" id="pushSyncFiles" checked class="rounded text-emerald-400 focus:ring-emerald-400">
-                                <span class="text-emerald-300 font-bold text-[11px]">
+                                <span class="text-emerald-600 dark:text-emerald-300 font-bold text-[11px]">
                                     <i class="fas fa-paperclip mr-1"></i>Sertakan Berkas Upload &amp; Lampiran Catatan
                                 </span>
                             </label>
@@ -256,7 +292,7 @@
                         </button>
 
                         <button type="button" onclick="executeOnlinePullSync()" id="btn-pull-sync"
-                                class="w-full flex items-center justify-center gap-2 bg-slate-800/90 hover:bg-slate-700 text-slate-200 border border-slate-600 text-xs font-bold py-2.5 px-4 rounded-xl transition-all cursor-pointer">
+                                class="w-full flex items-center justify-center gap-2 bg-white dark:bg-slate-800/90 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-600 text-xs font-bold py-2.5 px-4 rounded-xl transition-all cursor-pointer">
                             <i class="fas fa-cloud-download-alt text-cyan-400"></i>
                             <span>Tarik Data &amp; Berkas dari Host Induk (Pull)</span>
                         </button>
@@ -264,150 +300,13 @@
                 </div>
             </div>
         </div>
-
-        <!-- TAB 2: EKSPOR MANUAL PAKET (OFFLINE FALLBACK DENGAN BERKAS) -->
-        <div id="tab-manual-export" class="hidden space-y-4">
-            <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/60">
-                <div class="flex items-start justify-between gap-4 mb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-cyan-500/20 text-cyan-400 flex items-center justify-center text-lg">
-                            <i class="fas fa-archive"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-white">Ekspor Paket Sinkronisasi Lengkap (.zip / .sql)</h3>
-                            <p class="text-xs text-slate-400">Unduh seluruh database berserta berkas lampiran catatan &amp; foto avatar untuk dipindahkan secara offline</p>
-                        </div>
-                    </div>
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-cyan-500/20 text-cyan-300 border border-cyan-500/30">
-                        Offline Fallback
-                    </span>
-                </div>
-
-                <p class="text-xs text-slate-300 leading-relaxed mb-5 max-w-3xl">
-                    Jika server lokal Host Induk berada di balik router/firewall kantor tanpa IP Publik atau koneksi langsung, unduh <strong>Paket Lengkap (.zip)</strong> dari instance online ini (<code class="text-cyan-300 font-mono">tracker.saidilmuna.space</code>), lalu buka menu <strong>"Host Induk (Impor Paket &amp; Bersihkan)"</strong> di server lokal Anda untuk mengunggah paket ini. Seluruh data transaksi dan file fisik lampiran akan otomatis terpasang.
-                </p>
-
-                <div class="space-y-4">
-                    <!-- Option 1: Full Zip Package (Recommended) -->
-                    <div class="p-4 bg-slate-900/70 rounded-2xl border border-indigo-500/30">
-                        <div class="flex items-center justify-between mb-2">
-                            <div class="flex items-center gap-2">
-                                <span class="px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 text-[10px] font-bold uppercase">Direkomendasikan</span>
-                                <span class="text-xs font-bold text-white">1. Paket Lengkap Sinkronisasi (.zip - Database + Berkas Uploads)</span>
-                            </div>
-                            <span class="text-[11px] text-slate-400">Termasuk Lampiran Catatan &amp; Avatar</span>
-                        </div>
-                        <p class="text-[11px] text-slate-400 mb-3">
-                            Mengemas naskah SQL SQLite serta seluruh berkas pada folder <code class="text-cyan-400">wwwroot/uploads</code> ke dalam satu arsip terkompresi.
-                        </p>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
-                            <a href="/Configuration/ExportSyncPackage?cleanBeforeSync=true"
-                               class="flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-md transition-all cursor-pointer">
-                                <i class="fas fa-file-archive"></i>
-                                <span>Unduh Paket .zip (Clean Slate)</span>
-                            </a>
-                            <a href="/Configuration/ExportSyncPackage?cleanBeforeSync=false"
-                               class="flex items-center justify-center gap-2 bg-slate-700 hover:bg-slate-600 text-slate-200 border border-slate-600 text-xs font-bold py-2.5 px-4 rounded-xl transition-all cursor-pointer">
-                                <i class="fas fa-copy"></i>
-                                <span>Unduh Paket .zip (Merge)</span>
-                            </a>
-                        </div>
-                    </div>
-
-                    <!-- Option 2: SQL Only -->
-                    <div class="p-4 bg-slate-900/40 rounded-2xl border border-slate-800">
-                        <div class="flex items-center justify-between mb-2">
-                            <span class="text-xs font-bold text-slate-300">2. Naskah SQL Saja (.sql - Hanya Data Database)</span>
-                            <span class="text-[11px] text-slate-500">Tanpa Berkas Fisik</span>
-                        </div>
-                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-xl">
-                            <a href="/Configuration/ExportSyncSql?cleanBeforeSync=true"
-                               class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer">
-                                <i class="fas fa-file-code text-cyan-400"></i>
-                                <span>Unduh SQL Saja (Clean Slate)</span>
-                            </a>
-                            <a href="/Configuration/ExportSyncSql?cleanBeforeSync=false"
-                               class="flex items-center justify-center gap-2 bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 text-xs font-bold py-2 px-3 rounded-xl transition-all cursor-pointer">
-                                <i class="fas fa-file-code text-indigo-400"></i>
-                                <span>Unduh SQL Saja (Merge)</span>
-                            </a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- TAB 3: HOST INDUK RECEIVER (UNGGAH PAKET .ZIP / .SQL & BERSIHKAN DATA) -->
-        <div id="tab-host-receiver" class="hidden space-y-4">
-            <div class="bg-slate-800/50 rounded-2xl p-5 border border-slate-700/60">
-                <div class="flex items-start justify-between gap-4 mb-4">
-                    <div class="flex items-center gap-3">
-                        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-lg">
-                            <i class="fas fa-server"></i>
-                        </div>
-                        <div>
-                            <h3 class="text-sm font-bold text-white">Panel Penerima Host Induk (Impor Paket .zip / .sql &amp; Pembersihan)</h3>
-                            <p class="text-xs text-slate-400">Jalankan di server Host Induk untuk menerapkan paket sinkronisasi beserta berkas lampiran</p>
-                        </div>
-                    </div>
-                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                        Host Receiver
-                    </span>
-                </div>
-
-                <form method="post" asp-action="UploadAndSyncPackage" asp-controller="Configuration" enctype="multipart/form-data" id="form-upload-package-sync" class="space-y-4">
-                    @Html.AntiForgeryToken()
-
-                    <!-- File Dropzone Input -->
-                    <div class="border-2 border-dashed border-slate-700 hover:border-emerald-500 rounded-2xl p-6 text-center transition-all bg-slate-900/60 cursor-pointer"
-                         onclick="document.getElementById('packageFileInput').click()">
-                        <i class="fas fa-cloud-upload-alt text-3xl text-emerald-400 mb-2"></i>
-                        <h4 class="text-xs font-bold text-slate-200" id="packageFileLabel">Pilih atau Drag &amp; Drop berkas paket (.zip) atau naskah SQL (.sql) dari Child</h4>
-                        <p class="text-[11px] text-slate-400 mt-1">Mendukung berkas paket lengkap .zip (SQL + Folder Uploads) atau berkas naskah .sql</p>
-                        <input type="file" id="packageFileInput" name="packageFile" accept=".zip,.sql" class="hidden" onchange="handlePackageFileSelect(this)" required>
-                    </div>
-
-                    <!-- Options Checkbox -->
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-slate-900/80 p-4 rounded-xl border border-slate-800 text-xs">
-                        <label class="flex items-start gap-2.5 cursor-pointer select-none">
-                            <input type="checkbox" name="cleanBeforeSync" value="true" checked class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-400">
-                            <div>
-                                <span class="text-slate-200 font-bold block">1. Bersihkan Data Lama (Clean Slate)</span>
-                                <span class="text-slate-400 text-[11px]">Membersihkan data transaksi lama di Host Induk sebelum menerapkan paket.</span>
-                            </div>
-                        </label>
-
-                        <label class="flex items-start gap-2.5 cursor-pointer select-none">
-                            <input type="checkbox" name="backupBeforeSync" value="true" checked class="mt-0.5 rounded text-emerald-500 focus:ring-emerald-400">
-                            <div>
-                                <span class="text-slate-200 font-bold block">2. Buat Snapshot Backup (.db)</span>
-                                <span class="text-slate-400 text-[11px]">Membuat salinan cadangan otomatis di folder backups/ sebelum eksekusi dimulai.</span>
-                            </div>
-                        </label>
-                    </div>
-
-                    <div class="flex items-center justify-end gap-3 pt-2">
-                        <button type="submit" id="btn-submit-upload-package" disabled
-                                class="flex items-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold py-2.5 px-5 rounded-xl shadow-md transition-all cursor-pointer">
-                            <i class="fas fa-play"></i>
-                            <span>Jalankan Sinkronisasi Paket &amp; Berkas</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
 </div>
 
-<!-- ========================================================================= -->
-<!-- 2. MAIN GRID: GLOBAL BASE URL & DATABASE CAPACITY / MAINTENANCE -->
-<!-- ========================================================================= -->
-<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-    <!-- LEFT COLUMN: Global Base URL & API Doc (2 Cols) -->
-    <div class="lg:col-span-2 space-y-6">
 
-        <!-- 0. FONT & TYPOGRAPHY CONFIGURATION (5 GOOGLE FONTS) -->
+<!-- TAB 2: PERSONALISASI TEMA & FONT -->
+<div id="tab-cfg-theme-font" class="config-tab-pane hidden space-y-6">
+    <!-- 0. FONT & TYPOGRAPHY CONFIGURATION (5 GOOGLE FONTS) -->
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
             <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
                 <div class="flex items-center gap-3">
@@ -427,16 +326,16 @@
             <!-- Font Preview Cards Grid -->
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-4" id="fontPreviewGrid">
                 
-                <!-- 1. Inter -->
+                <!-- 1. Outfit (Default UI) -->
                 <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
-                     data-font-id="inter" onclick="selectAndApplyFont('inter')"
-                     style="font-family: 'Inter', sans-serif;">
+                     data-font-id="outfit" onclick="selectAndApplyFont('outfit')"
+                     style="font-family: 'Outfit', sans-serif;">
                     <div>
                         <div class="flex items-center justify-between mb-1.5">
-                            <span class="font-black text-sm text-slate-800">Inter</span>
-                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Default UI</span>
+                            <span class="font-black text-sm text-slate-800">Outfit</span>
+                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">Default UI</span>
                         </div>
-                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Standar UI modern, sangat seimbang, tajam &amp; nyaman dibaca.</p>
+                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Sans-serif kontemporer dengan lekukan halus dan berkelas.</p>
                         <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
                             Work Tracker Pro 2026<br>
                             <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
@@ -477,16 +376,16 @@
                     </div>
                 </div>
 
-                <!-- 3. Outfit -->
+                <!-- 2. Inter -->
                 <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
-                     data-font-id="outfit" onclick="selectAndApplyFont('outfit')"
-                     style="font-family: 'Outfit', sans-serif;">
+                     data-font-id="inter" onclick="selectAndApplyFont('inter')"
+                     style="font-family: 'Inter', sans-serif;">
                     <div>
                         <div class="flex items-center justify-between mb-1.5">
-                            <span class="font-black text-sm text-slate-800">Outfit</span>
-                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">Contemporary</span>
+                            <span class="font-black text-sm text-slate-800">Inter</span>
+                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Classic UI</span>
                         </div>
-                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Sans-serif kontemporer dengan lekukan halus dan berkelas.</p>
+                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Standar UI modern, sangat seimbang, tajam &amp; nyaman dibaca.</p>
                         <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
                             Work Tracker Pro 2026<br>
                             <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
@@ -501,7 +400,6 @@
                         </button>
                     </div>
                 </div>
-
                 <!-- 4. Poppins -->
                 <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
                      data-font-id="poppins" onclick="selectAndApplyFont('poppins')"
@@ -562,154 +460,312 @@
                 </div>
             </div>
         </div>
-
-        <!-- 1. GLOBAL BASE URL SETTING -->
+    
+        <!-- THEME SELECTION & COLOR PALETTE SHOWCASE (40 THEMES) -->
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
-            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-3">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base font-bold">
-                        <i class="fas fa-globe"></i>
+                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center text-base font-bold shadow-md shadow-purple-200">
+                        <i class="fas fa-palette"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-slate-800">Global Base URL Setting</h3>
-                        <p class="text-xs text-slate-400">URL dasar aplikasi untuk integrasi REST API, Swagger, dan Webhook</p>
+                        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
+                            <span>Koleksi Tema Dinamis (40 Pilihan Eye-Friendly)</span>
+                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
+                                18 Gelap + 22 Terang
+                            </span>
+                        </h3>
+                        <p class="text-xs text-slate-400">Pilih tema antarmuka visual aplikasi yang nyaman di mata dengan palet warna seimbang</p>
                     </div>
                 </div>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-                    Aktif
-                </span>
-            </div>
 
-            <form method="post" asp-action="UpdateBaseUrl" asp-controller="Configuration" class="space-y-4">
-                @Html.AntiForgeryToken()
-                <div>
-                    <label for="baseUrlInput" class="block text-xs font-bold text-slate-700 mb-1.5">
-                        Global Application Base URL
-                    </label>
-                    <div class="relative">
-                        <i class="fas fa-link absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
-                        <input type="url" id="baseUrlInput" name="baseUrl" value="@baseUrl" required
-                               placeholder="http://localhost:5000 atau https://domain-anda.com"
-                               class="w-full pl-9 pr-24 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                        <button type="button" onclick="detectCurrentHost()"
-                                class="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-[11px] font-bold transition-all cursor-pointer">
-                            Auto Detect
-                        </button>
-                    </div>
-                    <p class="text-[11px] text-slate-400 mt-1.5">
-                        Terakhir diperbarui: <span class="font-semibold text-slate-600">@(((DateTime)ViewBag.BaseUrlUpdatedAt).ToString("dd MMM yyyy HH:mm:ss"))</span>
-                    </p>
-                </div>
-
-                <div class="flex items-center justify-between pt-2">
-                    <div class="text-xs text-slate-500">
-                        <span>Preview API Endpoint: </span>
-                        <code class="text-indigo-600 font-mono font-bold bg-indigo-50 px-1.5 py-0.5 rounded" id="preview-api-url">@baseUrl/api/tasks</code>
-                    </div>
-                    <button type="submit"
-                            class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-indigo-200 transition-all cursor-pointer">
-                        <i class="fas fa-save"></i>
-                        <span>Simpan URL Base</span>
+                <!-- Theme Filter Buttons -->
+                <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/60 self-stretch sm:self-auto">
+                    <button type="button" onclick="renderConfigThemeGallery('all')" id="filter-btn-all"
+                            class="theme-filter-btn flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-800 shadow-2xs cursor-pointer">
+                        <span>Semua (40)</span>
+                    </button>
+                    <button type="button" onclick="renderConfigThemeGallery('dark')" id="filter-btn-dark"
+                            class="theme-filter-btn flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">
+                        <i class="fas fa-moon text-indigo-400 mr-1"></i>
+                        <span>Gelap (18)</span>
+                    </button>
+                    <button type="button" onclick="renderConfigThemeGallery('light')" id="filter-btn-light"
+                            class="theme-filter-btn flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">
+                        <i class="fas fa-sun text-amber-400 mr-1"></i>
+                        <span>Terang (22)</span>
                     </button>
                 </div>
-            </form>
+            </div>
 
-            <!-- Code Integration Snippets -->
-            <div class="mt-6 pt-5 border-t border-slate-100">
-                <h4 class="text-xs font-bold text-slate-700 mb-2.5 flex items-center gap-2">
-                    <i class="fas fa-code text-indigo-500"></i>
-                    Contoh Integrasi API Menggunakan Base URL Ini
-                </h4>
-                <div class="bg-slate-900 rounded-2xl p-4 text-xs font-mono text-slate-200 overflow-x-auto relative">
-                    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px] text-slate-400">
-                        <span>cURL / HTTP Request</span>
-                        <button onclick="copyCodeSnippet()" class="hover:text-white transition-colors text-slate-400 cursor-pointer" title="Salin Snippet">
-                            <i class="fas fa-copy mr-1"></i>Salin
-                        </button>
-                    </div>
-                    <pre id="code-snippet" class="text-[11px] leading-relaxed text-indigo-300">curl -X GET "@baseUrl/api/tasks?pageSize=10" \
-  -H "Accept: application/json"</pre>
+            <!-- Dynamic Theme Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-4" id="configThemeGallery">
+                <!-- Dynamically populated by renderConfigThemeGallery() -->
+            </div>
+
+            <!-- Info Note -->
+            <div class="p-3 bg-purple-50/70 rounded-2xl border border-purple-100 text-xs text-slate-600 flex items-center justify-between gap-3">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-magic text-purple-600"></i>
+                    <span>Tema yang dipilih tersimpan di profil peramban (Anti-FOUC) dan dapat diganti sewaktu-waktu dari tombol <strong>"Tema &amp; Font"</strong> di bilah atas.</span>
                 </div>
             </div>
         </div>
 
-        <!-- 2. API DOC & SWAGGER OVERVIEW -->
+</div>
+
+
+
+<!-- TAB 3: DATABASE & PEMELIHARAAN -->
+<div id="tab-cfg-database" class="config-tab-pane hidden space-y-6">
+    
+    <!-- ROW 1: CAPACITY, BACKUP & RESTORE -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1">
+            <!-- 4. DATABASE CAPACITY INFO -->
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
+            <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
+                <div class="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center text-base font-bold">
+                    <i class="fas fa-chart-pie"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-slate-800">Kapasitas Database</h3>
+                    <p class="text-xs text-slate-400">Informasi storage file SQLite &amp; tabel</p>
+                </div>
+            </div>
+
+            <!-- Storage Metrics Cards -->
+            <div class="space-y-3 mb-5">
+                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                    <div>
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Ukuran File Database</span>
+                        <span class="text-lg font-black text-slate-800">@ViewBag.FileSizeFormatted</span>
+                    </div>
+                    <span class="text-xs font-mono font-semibold text-slate-500 bg-white px-2 py-1 rounded-lg border border-slate-200">
+                        @ViewBag.DatabaseFileName
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2.5">
+                    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Ruang Kosong</span>
+                        <span class="text-xs font-black text-amber-600">@ViewBag.ReclaimableFormatted</span>
+                        <span class="text-[10px] text-slate-400 block">(@ViewBag.FreelistCount halaman)</span>
+                    </div>
+                    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
+                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Lampiran File</span>
+                        <span class="text-xs font-black text-indigo-600">@ViewBag.AttachmentsSizeFormatted</span>
+                        <span class="text-[10px] text-slate-400 block">folder uploads</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Table Record Statistics -->
+            <div>
+                <h4 class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
+                    <span>Jumlah Baris per Tabel</span>
+                    <span class="text-[10px] text-slate-400 font-medium">Auto Count</span>
+                </h4>
+                <div class="space-y-1.5 max-h-56 overflow-y-auto pr-1 text-xs">
+                    @foreach (var stat in tableStats)
+                    {
+                        <div class="db-capacity-stat-row flex items-center justify-between py-1.5 px-3 rounded-xl transition-colors">
+                            <span class="font-medium text-slate-700 dark:text-slate-200">@stat.Key</span>
+                            <span class="db-capacity-stat-badge font-mono font-bold px-2.5 py-0.5 rounded-lg text-[11px] shadow-2xs">@stat.Value</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+        </div>
+        <div class="lg:col-span-1">
+            <!-- 3. BACKUP & EXPORT DATABASE -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-emerald-100">
             <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base font-bold">
-                        <i class="fas fa-book-open"></i>
+                        <i class="fas fa-file-export"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-slate-800">Dokumentasi REST API &amp; Swagger</h3>
-                        <p class="text-xs text-slate-400">Spesifikasi OpenAPI 3.0 interaktif untuk seluruh modul sistem</p>
+                        <h3 class="font-bold text-sm text-slate-800">Backup &amp; Export Database</h3>
+                        <p class="text-xs text-slate-400">Unduh snapshot biner (.db) atau skrip SQL (.sql)</p>
                     </div>
                 </div>
-                <a href="/swagger" target="_blank"
-                   class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all">
-                    <span>Buka Swagger</span>
-                    <i class="fas fa-external-link-alt text-[10px]"></i>
-                </a>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <i class="fas fa-shield-alt text-emerald-500 text-[10px]"></i> SQLite Ready
+                </span>
             </div>
 
-            <!-- Swagger Modules Grid -->
-            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
-                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Tasks</span>
-                    <span class="text-xs font-mono font-bold text-indigo-600">/api/tasks</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD &amp; Summary</span>
+            <div class="space-y-3">
+                <!-- Option 1: Binary .db file -->
+                <div class="p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 transition-all">
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <div>
+                            <span class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                                <i class="fas fa-database text-emerald-600 text-xs"></i> 1. File Database SQLite (.db)
+                            </span>
+                            <span class="text-[11px] text-slate-500 block mt-0.5">
+                                Snapshot biner utuh dari file database aktif.
+                            </span>
+                        </div>
+                    </div>
+                    <a href="/Configuration/ExportDatabaseFile"
+                       class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-xs transition-all cursor-pointer">
+                        <i class="fas fa-download"></i>
+                        <span>Unduh File Database (.db)</span>
+                    </a>
                 </div>
-                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Projects</span>
-                    <span class="text-xs font-mono font-bold text-amber-600">/api/projects</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD &amp; Proyeksi</span>
-                </div>
-                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Sync</span>
-                    <span class="text-xs font-mono font-bold text-cyan-600">/api/sync</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Ping, Push &amp; Receive</span>
-                </div>
-                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Timesheets</span>
-                    <span class="text-xs font-mono font-bold text-emerald-600">/api/timesheets</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Live Timer &amp; Logs</span>
-                </div>
-                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Members</span>
-                    <span class="text-xs font-mono font-bold text-teal-600">/api/members</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Manajemen Tim</span>
-                </div>
-                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Reports</span>
-                    <span class="text-xs font-mono font-bold text-blue-600">/api/reports</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Gantt &amp; Dashboard</span>
-                </div>
-                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Audit</span>
-                    <span class="text-xs font-mono font-bold text-rose-600">/api/audit-trail</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">Logs &amp; Pembersihan</span>
-                </div>
-                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
-                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Configuration</span>
-                    <span class="text-xs font-mono font-bold text-indigo-600">/api/configuration</span>
-                    <span class="text-[10px] text-slate-400 block mt-0.5">DB Shrink &amp; Settings</span>
-                </div>
-            </div>
 
-            <!-- OpenAPI JSON Endpoint link -->
-            <div class="flex items-center justify-between p-3 bg-indigo-50/60 rounded-2xl border border-indigo-100 text-xs">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-file-code text-indigo-500"></i>
-                    <span class="font-semibold text-slate-700">Raw OpenAPI JSON Specification:</span>
+                <!-- Option 2: SQL Script (DDL + Data) -->
+                <div class="p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 transition-all">
+                    <div class="flex items-start justify-between gap-3 mb-2">
+                        <div>
+                            <span class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
+                                <i class="fas fa-file-code text-cyan-600 text-xs"></i> 2. Script SQL (DDL Schema &amp; Data)
+                            </span>
+                            <span class="text-[11px] text-slate-500 block mt-0.5">
+                                Naskah SQL terstruktur berisi <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">CREATE TABLE</code> dan <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">INSERT INTO</code>.
+                            </span>
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        <a href="/Configuration/ExportSqlScript"
+                           class="flex items-center justify-center gap-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-xs transition-all cursor-pointer text-center">
+                            <i class="fas fa-download text-xs"></i>
+                            <span>Unduh .sql</span>
+                        </a>
+                        <button type="button" onclick="previewSqlDump()"
+                                class="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold py-2 px-3 rounded-xl shadow-xs transition-all cursor-pointer">
+                            <i class="fas fa-eye text-indigo-500 text-xs"></i>
+                            <span>Preview SQL</span>
+                        </button>
+                    </div>
                 </div>
-                <a href="/swagger/v1/swagger.json" target="_blank" class="font-mono font-bold text-indigo-600 hover:text-indigo-800">
-                    /swagger/v1/swagger.json &rarr;
-                </a>
             </div>
         </div>
+        </div>
+        <div class="lg:col-span-1">
+            <!-- 3.5. RESTORE DATABASE (.DB / .SQL) -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-amber-100">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-base font-bold shadow-xs">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800">Restore Database</h3>
+                        <p class="text-xs text-slate-400">Pulihkan dari file SQLite (.db) atau skrip SQL (.sql)</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    <i class="fas fa-exclamation-triangle text-amber-500 text-[10px]"></i> Timpa Data
+                </span>
+            </div>
 
-        <!-- ========================================================================= -->
+            <form method="post" asp-action="RestoreDatabase" asp-controller="Configuration" enctype="multipart/form-data" id="form-restore-database" class="space-y-4">
+                @Html.AntiForgeryToken()
+
+                <!-- File Dropzone Input -->
+                <div class="border-2 border-dashed border-slate-200 hover:border-amber-400 bg-slate-50/70 hover:bg-amber-50/20 rounded-2xl p-4 text-center transition-all cursor-pointer"
+                     onclick="document.getElementById('restoreFileInput').click()">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg transition-all" id="restoreFileIconBox">
+                        <i class="fas fa-file-upload" id="restoreFileIcon"></i>
+                    </div>
+                    <h4 class="text-xs font-bold text-slate-800" id="restoreFileNameLabel">Pilih atau Drag &amp; Drop berkas .db atau .sql</h4>
+                    <p class="text-[11px] text-slate-500 mt-0.5" id="restoreFileSizeLabel">Mendukung berkas binary SQLite (.db) atau skrip SQL (.sql)</p>
+                    <input type="file" id="restoreFileInput" name="restoreFile" accept=".db,.sql" class="hidden" onchange="handleRestoreFileSelect(this)" required>
+                </div>
+
+                <!-- Safety Option Checkbox -->
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs">
+                    <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input type="checkbox" name="backupBeforeRestore" value="true" checked class="mt-0.5 rounded text-amber-600 focus:ring-amber-400">
+                        <div>
+                            <span class="text-slate-800 font-bold block">Buat Backup Otomatis Sebelum Restore</span>
+                            <span class="text-slate-500 text-[11px] block mt-0.5">Menyimpan snapshot database saat ini ke folder <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">backups/</code> sebelum proses restore dijalankan.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Warning Notice Box -->
+                <div class="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-800 text-[11px] flex items-start gap-2">
+                    <i class="fas fa-info-circle text-amber-600 mt-0.5 shrink-0"></i>
+                    <span><strong>Perhatian:</strong> Proses restore akan menggantikan seluruh tabel &amp; data aktif. Pastikan opsi backup otomatis di atas tetap tercentang demi keamanan data Anda.</span>
+                </div>
+
+                <div>
+                    <button type="button" id="btn-submit-restore" onclick="confirmDatabaseRestore()" disabled
+                            class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-xs transition-all cursor-pointer">
+                        <i class="fas fa-undo-alt"></i>
+                        <span id="btn-restore-text">Pulihkan Database Sekarang</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+        </div>
+    </div>
+
+    <!-- ROW 2: SHRINK & MAINTENANCE -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div class="lg:col-span-1">
+            <!-- 5. SHRINK DATABASE (VACUUM) -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
+            <div class="flex items-center gap-3 pb-3 mb-3 border-b border-slate-100">
+                <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-base font-bold">
+                    <i class="fas fa-compress-alt"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-slate-800">Shrink / Kompresi Database</h3>
+                    <p class="text-xs text-slate-400">Jalankan VACUUM untuk mengklaim ruang kosong</p>
+                </div>
+            </div>
+
+            <form method="post" asp-action="ShrinkDatabase" asp-controller="Configuration"
+                  data-confirm="Jalankan proses VACUUM pada database SQLite sekarang? Database akan dikompresi untuk mereklamasi ruang kosong dan mengoptimalkan performa."
+                  data-confirm-title="Shrink Database (VACUUM)"
+                  data-confirm-btn="<i class='fas fa-broom mr-1.5'></i>Ya, Jalankan VACUUM">
+                @Html.AntiForgeryToken()
+                <button type="submit" id="btn-shrink"
+                        class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md shadow-amber-200 transition-all cursor-pointer">
+                    <i class="fas fa-broom"></i>
+                    <span>Jalankan Shrink Database (VACUUM)</span>
+                </button>
+            </form>
+        </div>
+        </div>
+        <div class="lg:col-span-2">
+            <!-- 6. RESET DATABASE (MAINTENANCE) -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-rose-100">
+            <div class="flex items-center gap-3 pb-3 mb-3 border-b border-slate-100">
+                <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-base font-bold">
+                    <i class="fas fa-trash-restore"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-sm text-slate-800">Reset Data Database</h3>
+                    <p class="text-xs text-slate-400">Pembersihan data transaksi atau factory reset</p>
+                </div>
+            </div>
+
+            <button type="button" onclick="openResetModal()"
+                    class="w-full flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-2.5 px-4 rounded-xl text-xs transition-all cursor-pointer">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span>Menu Reset Database...</span>
+            </button>
+        </div>
+
+    </div>
+
+</div>
+        </div>
+    </div>
+
+</div>
+
+
+
+<!-- TAB 4: SERVER EMAIL & NOTIFIKASI -->
+<div id="tab-cfg-email" class="config-tab-pane hidden space-y-6">
+    <!-- ========================================================================= -->
         <!-- 3. EMAIL SMTP SERVER INTEGRATION & TEST CONNECTION -->
         <!-- ========================================================================= -->
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
@@ -907,8 +963,7 @@
                 </div>
             </div>
         </div>
-
-        <!-- ========================================================================= -->
+    <!-- ========================================================================= -->
         <!-- 4. EMAIL TEMPLATE MANAGEMENT & EVENT NOTIFICATION -->
         <!-- ========================================================================= -->
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
@@ -1023,233 +1078,164 @@
 
     <!-- RIGHT COLUMN: Database Capacity, Export & Maintenance (1 Col) -->
     <div class="space-y-6">
+</div>
 
-        <!-- 3. BACKUP & EXPORT DATABASE -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-emerald-100">
+
+
+<!-- TAB 5: UMUM & SWAGGER API -->
+<div id="tab-cfg-general" class="config-tab-pane hidden space-y-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div>
+            <!-- 1. GLOBAL BASE URL SETTING -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
             <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base font-bold">
-                        <i class="fas fa-file-export"></i>
+                    <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base font-bold">
+                        <i class="fas fa-globe"></i>
                     </div>
                     <div>
-                        <h3 class="font-bold text-sm text-slate-800">Backup &amp; Export Database</h3>
-                        <p class="text-xs text-slate-400">Unduh snapshot biner (.db) atau skrip SQL (.sql)</p>
+                        <h3 class="font-bold text-sm text-slate-800">Global Base URL Setting</h3>
+                        <p class="text-xs text-slate-400">URL dasar aplikasi untuk integrasi REST API, Swagger, dan Webhook</p>
                     </div>
                 </div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                    <i class="fas fa-shield-alt text-emerald-500 text-[10px]"></i> SQLite Ready
+                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Aktif
                 </span>
             </div>
 
-            <div class="space-y-3">
-                <!-- Option 1: Binary .db file -->
-                <div class="p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 transition-all">
-                    <div class="flex items-start justify-between gap-3 mb-2">
-                        <div>
-                            <span class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
-                                <i class="fas fa-database text-emerald-600 text-xs"></i> 1. File Database SQLite (.db)
-                            </span>
-                            <span class="text-[11px] text-slate-500 block mt-0.5">
-                                Snapshot biner utuh dari file database aktif.
-                            </span>
-                        </div>
-                    </div>
-                    <a href="/Configuration/ExportDatabaseFile"
-                       class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-xs transition-all cursor-pointer">
-                        <i class="fas fa-download"></i>
-                        <span>Unduh File Database (.db)</span>
-                    </a>
-                </div>
-
-                <!-- Option 2: SQL Script (DDL + Data) -->
-                <div class="p-3.5 rounded-2xl bg-slate-50 hover:bg-slate-100/80 border border-slate-200/80 transition-all">
-                    <div class="flex items-start justify-between gap-3 mb-2">
-                        <div>
-                            <span class="font-bold text-xs text-slate-800 flex items-center gap-1.5">
-                                <i class="fas fa-file-code text-cyan-600 text-xs"></i> 2. Script SQL (DDL Schema &amp; Data)
-                            </span>
-                            <span class="text-[11px] text-slate-500 block mt-0.5">
-                                Naskah SQL terstruktur berisi <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">CREATE TABLE</code> dan <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">INSERT INTO</code>.
-                            </span>
-                        </div>
-                    </div>
-                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                        <a href="/Configuration/ExportSqlScript"
-                           class="flex items-center justify-center gap-1.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-700 hover:to-blue-700 text-white text-xs font-bold py-2 px-3 rounded-xl shadow-xs transition-all cursor-pointer text-center">
-                            <i class="fas fa-download text-xs"></i>
-                            <span>Unduh .sql</span>
-                        </a>
-                        <button type="button" onclick="previewSqlDump()"
-                                class="flex items-center justify-center gap-1.5 bg-white hover:bg-slate-100 text-slate-700 border border-slate-300 text-xs font-bold py-2 px-3 rounded-xl shadow-xs transition-all cursor-pointer">
-                            <i class="fas fa-eye text-indigo-500 text-xs"></i>
-                            <span>Preview SQL</span>
+            <form method="post" asp-action="UpdateBaseUrl" asp-controller="Configuration" class="space-y-4">
+                @Html.AntiForgeryToken()
+                <div>
+                    <label for="baseUrlInput" class="block text-xs font-bold text-slate-700 mb-1.5">
+                        Global Application Base URL
+                    </label>
+                    <div class="relative">
+                        <i class="fas fa-link absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                        <input type="url" id="baseUrlInput" name="baseUrl" value="@baseUrl" required
+                               placeholder="http://localhost:5000 atau https://domain-anda.com"
+                               class="w-full pl-9 pr-24 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-mono font-medium focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                        <button type="button" onclick="detectCurrentHost()"
+                                class="absolute right-2 top-1/2 -translate-y-1/2 px-2.5 py-1 bg-white hover:bg-slate-100 text-slate-600 border border-slate-200 rounded-lg text-[11px] font-bold transition-all cursor-pointer">
+                            Auto Detect
                         </button>
                     </div>
+                    <p class="text-[11px] text-slate-400 mt-1.5">
+                        Terakhir diperbarui: <span class="font-semibold text-slate-600">@(((DateTime)ViewBag.BaseUrlUpdatedAt).ToString("dd MMM yyyy HH:mm:ss"))</span>
+                    </p>
                 </div>
-            </div>
-        </div>
 
-        <!-- 3.5. RESTORE DATABASE (.DB / .SQL) -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-amber-100">
-            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-base font-bold shadow-xs">
-                        <i class="fas fa-history"></i>
+                <div class="flex items-center justify-between pt-2">
+                    <div class="text-xs text-slate-500">
+                        <span>Preview API Endpoint: </span>
+                        <code class="text-indigo-600 font-mono font-bold bg-indigo-50 px-1.5 py-0.5 rounded" id="preview-api-url">@baseUrl/api/tasks</code>
                     </div>
-                    <div>
-                        <h3 class="font-bold text-sm text-slate-800">Restore Database</h3>
-                        <p class="text-xs text-slate-400">Pulihkan dari file SQLite (.db) atau skrip SQL (.sql)</p>
-                    </div>
-                </div>
-                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                    <i class="fas fa-exclamation-triangle text-amber-500 text-[10px]"></i> Timpa Data
-                </span>
-            </div>
-
-            <form method="post" asp-action="RestoreDatabase" asp-controller="Configuration" enctype="multipart/form-data" id="form-restore-database" class="space-y-4">
-                @Html.AntiForgeryToken()
-
-                <!-- File Dropzone Input -->
-                <div class="border-2 border-dashed border-slate-200 hover:border-amber-400 bg-slate-50/70 hover:bg-amber-50/20 rounded-2xl p-4 text-center transition-all cursor-pointer"
-                     onclick="document.getElementById('restoreFileInput').click()">
-                    <div class="w-10 h-10 mx-auto mb-2 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg transition-all" id="restoreFileIconBox">
-                        <i class="fas fa-file-upload" id="restoreFileIcon"></i>
-                    </div>
-                    <h4 class="text-xs font-bold text-slate-800" id="restoreFileNameLabel">Pilih atau Drag &amp; Drop berkas .db atau .sql</h4>
-                    <p class="text-[11px] text-slate-500 mt-0.5" id="restoreFileSizeLabel">Mendukung berkas binary SQLite (.db) atau skrip SQL (.sql)</p>
-                    <input type="file" id="restoreFileInput" name="restoreFile" accept=".db,.sql" class="hidden" onchange="handleRestoreFileSelect(this)" required>
-                </div>
-
-                <!-- Safety Option Checkbox -->
-                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs">
-                    <label class="flex items-start gap-2.5 cursor-pointer select-none">
-                        <input type="checkbox" name="backupBeforeRestore" value="true" checked class="mt-0.5 rounded text-amber-600 focus:ring-amber-400">
-                        <div>
-                            <span class="text-slate-800 font-bold block">Buat Backup Otomatis Sebelum Restore</span>
-                            <span class="text-slate-500 text-[11px] block mt-0.5">Menyimpan snapshot database saat ini ke folder <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">backups/</code> sebelum proses restore dijalankan.</span>
-                        </div>
-                    </label>
-                </div>
-
-                <!-- Warning Notice Box -->
-                <div class="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-800 text-[11px] flex items-start gap-2">
-                    <i class="fas fa-info-circle text-amber-600 mt-0.5 shrink-0"></i>
-                    <span><strong>Perhatian:</strong> Proses restore akan menggantikan seluruh tabel &amp; data aktif. Pastikan opsi backup otomatis di atas tetap tercentang demi keamanan data Anda.</span>
-                </div>
-
-                <div>
-                    <button type="button" id="btn-submit-restore" onclick="confirmDatabaseRestore()" disabled
-                            class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-xs transition-all cursor-pointer">
-                        <i class="fas fa-undo-alt"></i>
-                        <span id="btn-restore-text">Pulihkan Database Sekarang</span>
+                    <button type="submit"
+                            class="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-sm hover:shadow-indigo-200 transition-all cursor-pointer">
+                        <i class="fas fa-save"></i>
+                        <span>Simpan URL Base</span>
                     </button>
                 </div>
             </form>
-        </div>
 
-        <!-- 4. DATABASE CAPACITY INFO -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
-            <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
-                <div class="w-10 h-10 rounded-2xl bg-cyan-50 text-cyan-600 flex items-center justify-center text-base font-bold">
-                    <i class="fas fa-chart-pie"></i>
-                </div>
-                <div>
-                    <h3 class="font-bold text-sm text-slate-800">Kapasitas Database</h3>
-                    <p class="text-xs text-slate-400">Informasi storage file SQLite &amp; tabel</p>
-                </div>
-            </div>
-
-            <!-- Storage Metrics Cards -->
-            <div class="space-y-3 mb-5">
-                <div class="flex items-center justify-between p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                    <div>
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Ukuran File Database</span>
-                        <span class="text-lg font-black text-slate-800">@ViewBag.FileSizeFormatted</span>
-                    </div>
-                    <span class="text-xs font-mono font-semibold text-slate-500 bg-white px-2 py-1 rounded-lg border border-slate-200">
-                        @ViewBag.DatabaseFileName
-                    </span>
-                </div>
-
-                <div class="grid grid-cols-2 gap-2.5">
-                    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Ruang Kosong</span>
-                        <span class="text-xs font-black text-amber-600">@ViewBag.ReclaimableFormatted</span>
-                        <span class="text-[10px] text-slate-400 block">(@ViewBag.FreelistCount halaman)</span>
-                    </div>
-                    <div class="p-3 rounded-2xl bg-slate-50 border border-slate-100">
-                        <span class="text-[10px] text-slate-400 font-bold uppercase tracking-wider block">Lampiran File</span>
-                        <span class="text-xs font-black text-indigo-600">@ViewBag.AttachmentsSizeFormatted</span>
-                        <span class="text-[10px] text-slate-400 block">folder uploads</span>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Table Record Statistics -->
-            <div>
-                <h4 class="text-xs font-bold text-slate-700 mb-2 flex items-center justify-between">
-                    <span>Jumlah Baris per Tabel</span>
-                    <span class="text-[10px] text-slate-400 font-medium">Auto Count</span>
+            <!-- Code Integration Snippets -->
+            <div class="mt-6 pt-5 border-t border-slate-100">
+                <h4 class="text-xs font-bold text-slate-700 mb-2.5 flex items-center gap-2">
+                    <i class="fas fa-code text-indigo-500"></i>
+                    Contoh Integrasi API Menggunakan Base URL Ini
                 </h4>
-                <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1 text-xs">
-                    @foreach (var stat in tableStats)
-                    {
-                        <div class="flex items-center justify-between py-1 px-2.5 rounded-lg bg-slate-50/70 hover:bg-slate-100 transition-colors">
-                            <span class="text-slate-600">@stat.Key</span>
-                            <span class="font-mono font-bold text-slate-800 bg-white px-2 py-0.5 rounded border border-slate-200 text-[11px]">@stat.Value</span>
-                        </div>
-                    }
+                <div class="bg-slate-900 rounded-2xl p-4 text-xs font-mono text-slate-200 overflow-x-auto relative">
+                    <div class="flex items-center justify-between pb-2 mb-2 border-b border-slate-800 text-[11px] text-slate-400">
+                        <span>cURL / HTTP Request</span>
+                        <button onclick="copyCodeSnippet()" class="hover:text-white transition-colors text-slate-400 cursor-pointer" title="Salin Snippet">
+                            <i class="fas fa-copy mr-1"></i>Salin
+                        </button>
+                    </div>
+                    <pre id="code-snippet" class="text-[11px] leading-relaxed text-indigo-300">curl -X GET "@baseUrl/api/tasks?pageSize=10" \
+  -H "Accept: application/json"</pre>
                 </div>
             </div>
         </div>
-
-        <!-- 5. SHRINK DATABASE (VACUUM) -->
+        </div>
+        <div>
+            <!-- 2. API DOC & SWAGGER OVERVIEW -->
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
-            <div class="flex items-center gap-3 pb-3 mb-3 border-b border-slate-100">
-                <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-base font-bold">
-                    <i class="fas fa-compress-alt"></i>
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-base font-bold">
+                        <i class="fas fa-book-open"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800">Dokumentasi REST API &amp; Swagger</h3>
+                        <p class="text-xs text-slate-400">Spesifikasi OpenAPI 3.0 interaktif untuk seluruh modul sistem</p>
+                    </div>
                 </div>
-                <div>
-                    <h3 class="font-bold text-sm text-slate-800">Shrink / Kompresi Database</h3>
-                    <p class="text-xs text-slate-400">Jalankan VACUUM untuk mengklaim ruang kosong</p>
+                <a href="/swagger" target="_blank"
+                   class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold shadow-sm transition-all">
+                    <span>Buka Swagger</span>
+                    <i class="fas fa-external-link-alt text-[10px]"></i>
+                </a>
+            </div>
+
+            <!-- Swagger Modules Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Tasks</span>
+                    <span class="text-xs font-mono font-bold text-indigo-600">/api/tasks</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD &amp; Summary</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Projects</span>
+                    <span class="text-xs font-mono font-bold text-amber-600">/api/projects</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">CRUD &amp; Proyeksi</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Sync</span>
+                    <span class="text-xs font-mono font-bold text-cyan-600">/api/sync</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Ping, Push &amp; Receive</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Timesheets</span>
+                    <span class="text-xs font-mono font-bold text-emerald-600">/api/timesheets</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Live Timer &amp; Logs</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Members</span>
+                    <span class="text-xs font-mono font-bold text-teal-600">/api/members</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Manajemen Tim</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Reports</span>
+                    <span class="text-xs font-mono font-bold text-blue-600">/api/reports</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Gantt &amp; Dashboard</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Modul Audit</span>
+                    <span class="text-xs font-mono font-bold text-rose-600">/api/audit-trail</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">Logs &amp; Pembersihan</span>
+                </div>
+                <div class="p-3 bg-slate-50 rounded-2xl border border-slate-100">
+                    <span class="text-[11px] font-bold text-slate-400 block uppercase tracking-wider">Configuration</span>
+                    <span class="text-xs font-mono font-bold text-indigo-600">/api/configuration</span>
+                    <span class="text-[10px] text-slate-400 block mt-0.5">DB Shrink &amp; Settings</span>
                 </div>
             </div>
 
-            <form method="post" asp-action="ShrinkDatabase" asp-controller="Configuration"
-                  data-confirm="Jalankan proses VACUUM pada database SQLite sekarang? Database akan dikompresi untuk mereklamasi ruang kosong dan mengoptimalkan performa."
-                  data-confirm-title="Shrink Database (VACUUM)"
-                  data-confirm-btn="<i class='fas fa-broom mr-1.5'></i>Ya, Jalankan VACUUM">
-                @Html.AntiForgeryToken()
-                <button type="submit" id="btn-shrink"
-                        class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-bold py-2.5 px-4 rounded-xl text-xs shadow-md shadow-amber-200 transition-all cursor-pointer">
-                    <i class="fas fa-broom"></i>
-                    <span>Jalankan Shrink Database (VACUUM)</span>
-                </button>
-            </form>
-        </div>
-
-        <!-- 6. RESET DATABASE (MAINTENANCE) -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-rose-100">
-            <div class="flex items-center gap-3 pb-3 mb-3 border-b border-slate-100">
-                <div class="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center text-base font-bold">
-                    <i class="fas fa-trash-restore"></i>
+            <!-- OpenAPI JSON Endpoint link -->
+            <div class="flex items-center justify-between p-3 bg-indigo-50/60 rounded-2xl border border-indigo-100 text-xs">
+                <div class="flex items-center gap-2">
+                    <i class="fas fa-file-code text-indigo-500"></i>
+                    <span class="font-semibold text-slate-700">Raw OpenAPI JSON Specification:</span>
                 </div>
-                <div>
-                    <h3 class="font-bold text-sm text-slate-800">Reset Data Database</h3>
-                    <p class="text-xs text-slate-400">Pembersihan data transaksi atau factory reset</p>
-                </div>
+                <a href="/swagger/v1/swagger.json" target="_blank" class="font-mono font-bold text-indigo-600 hover:text-indigo-800">
+                    /swagger/v1/swagger.json &rarr;
+                </a>
             </div>
-
-            <button type="button" onclick="openResetModal()"
-                    class="w-full flex items-center justify-center gap-2 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 font-bold py-2.5 px-4 rounded-xl text-xs transition-all cursor-pointer">
-                <i class="fas fa-exclamation-triangle"></i>
-                <span>Menu Reset Database...</span>
-            </button>
         </div>
-
+        </div>
     </div>
-
 </div>
+
 
 <!-- RESET CONFIRMATION MODAL -->
 <div id="reset-modal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 hidden">
@@ -2353,11 +2339,132 @@ async function testSendFromPreview() {
 }
 
 // Ensure active font is highlighted on page load
+
+// =========================================================================
+// TAB NAVIGATION LOGIC & THEME GALLERY INITIALIZATION
+// =========================================================================
+function switchConfigTab(tabKey) {
+    const panes = document.querySelectorAll('.config-tab-pane');
+    panes.forEach(pane => pane.classList.add('hidden'));
+
+    const targetPane = document.getElementById(tabKey);
+    if (targetPane) {
+        targetPane.classList.remove('hidden');
+    }
+
+    const buttons = document.querySelectorAll('.config-tab-btn');
+    buttons.forEach(btn => {
+        btn.classList.remove('bg-indigo-600', 'text-white', 'shadow-sm');
+        btn.classList.add('text-slate-600');
+    });
+
+    const activeBtn = document.getElementById('btn-' + tabKey);
+    if (activeBtn) {
+        activeBtn.classList.remove('text-slate-600');
+        activeBtn.classList.add('bg-indigo-600', 'text-white', 'shadow-sm');
+    }
+
+    localStorage.setItem('active_config_tab', tabKey);
+    if (history.replaceState) {
+        history.replaceState(null, null, '#' + tabKey);
+    }
+
+    if (tabKey === 'tab-cfg-theme-font') {
+        renderConfigThemeGallery();
+    }
+}
+
+function renderConfigThemeGallery(filterCategory = 'all') {
+    const container = document.getElementById('configThemeGallery');
+    if (!container || typeof THEMES_CONFIG === 'undefined') return;
+    container.innerHTML = '';
+
+    // Update filter button styling
+    ['all', 'dark', 'light'].forEach(cat => {
+        const btn = document.getElementById('filter-btn-' + cat);
+        if (btn) {
+            if (cat === filterCategory) {
+                btn.className = 'theme-filter-btn flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-800 shadow-2xs cursor-pointer';
+            } else {
+                btn.className = 'theme-filter-btn flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer';
+            }
+        }
+    });
+
+    const filtered = filterCategory === 'all' 
+        ? THEMES_CONFIG 
+        : THEMES_CONFIG.filter(t => t.category === filterCategory);
+
+    filtered.forEach(theme => {
+        const isCurrent = (typeof ThemeManager !== 'undefined') && (theme.id === ThemeManager.currentTheme);
+        const card = document.createElement('div');
+        card.className = `p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md ${
+            isCurrent 
+                ? 'bg-indigo-50/80 border-2 border-indigo-500 shadow-sm' 
+                : 'bg-white hover:bg-slate-50 border-slate-200'
+        }`;
+        card.onclick = () => {
+            if (typeof ThemeManager !== 'undefined') {
+                ThemeManager.applyTheme(theme.id);
+                renderConfigThemeGallery(filterCategory);
+                if (typeof Swal !== 'undefined') {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Tema Diterapkan!',
+                        text: `Tema ${theme.name} sekarang aktif.`,
+                        confirmButtonColor: '#6366F1',
+                        timer: 1500,
+                        timerProgressBar: true
+                    });
+                }
+            }
+        };
+
+        const swatches = theme.colors.map(c => 
+            `<span class="w-4 h-4 rounded-full shadow-2xs border border-white/40" style="background-color: ${c}"></span>`
+        ).join('');
+
+        card.innerHTML = `
+            <div>
+                <div class="flex items-center justify-between mb-2">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center text-xs text-white shadow-xs" 
+                             style="background: linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]});">
+                            <i class="fas ${theme.icon}"></i>
+                        </div>
+                        <div>
+                            <span class="font-black text-sm text-slate-800 block">${theme.name}</span>
+                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${theme.category === 'dark' ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'}">${theme.tag}</span>
+                        </div>
+                    </div>
+                    ${isCurrent ? '<span class="text-xs text-indigo-600 font-bold flex items-center gap-1"><i class="fas fa-check-circle"></i> Aktif</span>' : ''}
+                </div>
+                <p class="text-[11px] text-slate-500 mb-3 line-clamp-2">${theme.desc}</p>
+            </div>
+            <div class="flex items-center justify-between pt-2.5 border-t border-slate-100">
+                <div class="flex items-center gap-1">
+                    ${swatches}
+                </div>
+                <button type="button" class="text-[11px] font-bold text-indigo-600 hover:underline">
+                    ${isCurrent ? 'Tema Aktif' : 'Terapkan →'}
+                </button>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+}
+
+
 document.addEventListener('DOMContentLoaded', function () {
-    const savedFont = localStorage.getItem('app_font') || '@currentAppFont' || 'inter';
+    const savedFont = localStorage.getItem('app_font') || '@currentAppFont' || 'outfit';
     if (typeof ThemeManager !== 'undefined') {
         ThemeManager.applyFont(savedFont);
     }
+
+    // Initialize active tab from hash or localStorage
+    const hash = window.location.hash ? window.location.hash.substring(1) : null;
+    const savedTab = hash || localStorage.getItem('active_config_tab') || 'tab-cfg-sync';
+    switchConfigTab(savedTab);
 });
 
 document.addEventListener('keydown', e => {

@@ -50,7 +50,7 @@ namespace TrackerKerja.Controllers
 
             // 1.5. Global App Typography Font
             var fontSetting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GlobalAppFont");
-            ViewBag.GlobalAppFont = fontSetting?.Value ?? "inter";
+            ViewBag.GlobalAppFont = fontSetting?.Value ?? "outfit";
 
             // 2. Database Capacity Info
             var dbPath = GetDbFilePath();

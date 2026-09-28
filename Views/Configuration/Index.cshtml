@@ -1089,6 +1089,64 @@
             </div>
         </div>
 
+        <!-- 3.5. RESTORE DATABASE (.DB / .SQL) -->
+        <div class="bg-white rounded-3xl p-6 shadow-sm border border-amber-100">
+            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center text-base font-bold shadow-xs">
+                        <i class="fas fa-history"></i>
+                    </div>
+                    <div>
+                        <h3 class="font-bold text-sm text-slate-800">Restore Database</h3>
+                        <p class="text-xs text-slate-400">Pulihkan dari file SQLite (.db) atau skrip SQL (.sql)</p>
+                    </div>
+                </div>
+                <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                    <i class="fas fa-exclamation-triangle text-amber-500 text-[10px]"></i> Timpa Data
+                </span>
+            </div>
+
+            <form method="post" asp-action="RestoreDatabase" asp-controller="Configuration" enctype="multipart/form-data" id="form-restore-database" class="space-y-4">
+                @Html.AntiForgeryToken()
+
+                <!-- File Dropzone Input -->
+                <div class="border-2 border-dashed border-slate-200 hover:border-amber-400 bg-slate-50/70 hover:bg-amber-50/20 rounded-2xl p-4 text-center transition-all cursor-pointer"
+                     onclick="document.getElementById('restoreFileInput').click()">
+                    <div class="w-10 h-10 mx-auto mb-2 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg transition-all" id="restoreFileIconBox">
+                        <i class="fas fa-file-upload" id="restoreFileIcon"></i>
+                    </div>
+                    <h4 class="text-xs font-bold text-slate-800" id="restoreFileNameLabel">Pilih atau Drag &amp; Drop berkas .db atau .sql</h4>
+                    <p class="text-[11px] text-slate-500 mt-0.5" id="restoreFileSizeLabel">Mendukung berkas binary SQLite (.db) atau skrip SQL (.sql)</p>
+                    <input type="file" id="restoreFileInput" name="restoreFile" accept=".db,.sql" class="hidden" onchange="handleRestoreFileSelect(this)" required>
+                </div>
+
+                <!-- Safety Option Checkbox -->
+                <div class="p-3.5 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs">
+                    <label class="flex items-start gap-2.5 cursor-pointer select-none">
+                        <input type="checkbox" name="backupBeforeRestore" value="true" checked class="mt-0.5 rounded text-amber-600 focus:ring-amber-400">
+                        <div>
+                            <span class="text-slate-800 font-bold block">Buat Backup Otomatis Sebelum Restore</span>
+                            <span class="text-slate-500 text-[11px] block mt-0.5">Menyimpan snapshot database saat ini ke folder <code class="bg-white px-1 py-0.2 rounded border text-[10px] text-slate-700">backups/</code> sebelum proses restore dijalankan.</span>
+                        </div>
+                    </label>
+                </div>
+
+                <!-- Warning Notice Box -->
+                <div class="p-3 rounded-xl bg-amber-50/80 border border-amber-200 text-amber-800 text-[11px] flex items-start gap-2">
+                    <i class="fas fa-info-circle text-amber-600 mt-0.5 shrink-0"></i>
+                    <span><strong>Perhatian:</strong> Proses restore akan menggantikan seluruh tabel &amp; data aktif. Pastikan opsi backup otomatis di atas tetap tercentang demi keamanan data Anda.</span>
+                </div>
+
+                <div>
+                    <button type="button" id="btn-submit-restore" onclick="confirmDatabaseRestore()" disabled
+                            class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 disabled:opacity-40 disabled:cursor-not-allowed text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-xs transition-all cursor-pointer">
+                        <i class="fas fa-undo-alt"></i>
+                        <span id="btn-restore-text">Pulihkan Database Sekarang</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
         <!-- 4. DATABASE CAPACITY INFO -->
         <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
             <div class="flex items-center gap-3 pb-4 mb-4 border-b border-slate-100">
@@ -1867,6 +1925,92 @@ document.getElementById('form-upload-sql-sync')?.addEventListener('submit', func
         }
     }
 });
+
+// =========================================================================
+// RESTORE DATABASE JAVASCRIPT HANDLERS
+// =========================================================================
+
+function handleRestoreFileSelect(input) {
+    const file = input.files && input.files[0];
+    const label = document.getElementById('restoreFileNameLabel');
+    const sizeLabel = document.getElementById('restoreFileSizeLabel');
+    const icon = document.getElementById('restoreFileIcon');
+    const iconBox = document.getElementById('restoreFileIconBox');
+    const btn = document.getElementById('btn-submit-restore');
+
+    if (file) {
+        label.innerText = file.name;
+        const sizeFormatted = file.size > 1024 * 1024 
+            ? (file.size / (1024 * 1024)).toFixed(2) + ' MB' 
+            : (file.size / 1024).toFixed(1) + ' KB';
+        sizeLabel.innerText = `Ukuran: ${sizeFormatted} • Berkas siap dipulihkan`;
+
+        if (file.name.endsWith('.db')) {
+            icon.className = 'fas fa-database';
+            iconBox.className = 'w-10 h-10 mx-auto mb-2 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-lg transition-all';
+        } else if (file.name.endsWith('.sql')) {
+            icon.className = 'fas fa-file-code';
+            iconBox.className = 'w-10 h-10 mx-auto mb-2 rounded-xl bg-cyan-100 text-cyan-600 flex items-center justify-center text-lg transition-all';
+        } else {
+            icon.className = 'fas fa-file-alt';
+            iconBox.className = 'w-10 h-10 mx-auto mb-2 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg transition-all';
+        }
+
+        btn.disabled = false;
+    } else {
+        label.innerText = 'Pilih atau Drag & Drop berkas .db atau .sql';
+        sizeLabel.innerText = 'Mendukung berkas binary SQLite (.db) atau skrip SQL (.sql)';
+        icon.className = 'fas fa-file-upload';
+        iconBox.className = 'w-10 h-10 mx-auto mb-2 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg transition-all';
+        btn.disabled = true;
+    }
+}
+
+function confirmDatabaseRestore() {
+    const fileInput = document.getElementById('restoreFileInput');
+    if (!fileInput.files || !fileInput.files[0]) {
+        if (typeof SwalAlert === 'function') {
+            SwalAlert('Berkas Belum Dipilih', 'Silakan pilih berkas database (.db atau .sql) terlebih dahulu.', 'warning');
+        } else {
+            alert('Silakan pilih berkas database (.db atau .sql) terlebih dahulu.');
+        }
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const fileName = file.name;
+    const isDb = fileName.endsWith('.db');
+
+    if (typeof Swal === 'function') {
+        Swal.fire({
+            title: 'Konfirmasi Restore Database',
+            html: `Apakah Anda yakin ingin memulihkan database dari berkas:<br><strong class="text-amber-600 font-mono text-xs">${fileName}</strong>?<br><br><span class="text-xs text-rose-500 font-semibold"><i class="fas fa-exclamation-triangle"></i> Seluruh data aktif saat ini akan digantikan dengan data dari berkas tersebut.</span>`,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#D97706',
+            cancelButtonColor: '#6B7280',
+            confirmButtonText: '<i class="fas fa-check"></i> Ya, Pulihkan Sekarang',
+            cancelButtonText: 'Batal',
+            reverseButtons: true
+        }).then((result) => {
+            if (result.isConfirmed) {
+                const btn = document.getElementById('btn-submit-restore');
+                btn.disabled = true;
+                const txt = document.getElementById('btn-restore-text');
+                if (txt) txt.innerText = 'Sedang Memproses Restore Database...';
+                document.getElementById('form-restore-database').submit();
+            }
+        });
+    } else {
+        if (confirm(`Apakah Anda yakin ingin memulihkan database dari berkas ${fileName}? Seluruh data aktif akan digantikan.`)) {
+            const btn = document.getElementById('btn-submit-restore');
+            btn.disabled = true;
+            const txt = document.getElementById('btn-restore-text');
+            if (txt) txt.innerText = 'Sedang Memproses Restore Database...';
+            document.getElementById('form-restore-database').submit();
+        }
+    }
+}
 
 // =========================================================================
 // EXISTING BASE URL & RESET MODAL LOGIC

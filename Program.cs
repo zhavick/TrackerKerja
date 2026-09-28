@@ -1104,4 +1104,10 @@ if (args.Contains("--run-sync-tests"))
     Environment.Exit(exitCode);
 }
 
+if (args.Contains("--run-restore-tests"))
+{
+    var exitCode = await TrackerKerja.Tests.RestoreTestRunner.RunAllTestsAsync();
+    Environment.Exit(exitCode);
+}
+
 app.Run();

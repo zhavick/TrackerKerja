@@ -93,7 +93,7 @@
                             @(Model.Task.ParentTaskId.HasValue ? "Sub-Task (Memiliki Induk)" : "Tugas Utama (Root Task)")
                         </span>
                     </div>
-                    <select name="ParentTaskId" id="parentTaskSelect" class="select2 w-full" data-placeholder="-- Cari & Pilih Tugas Induk (Kode/Judul/Proyek) --">
+                    <select name="ParentTaskId" id="parentTaskSelect" class="select2 w-full" data-search="true" data-placeholder="-- Cari & Pilih Tugas Induk (Ketik Kode / Judul / Proyek) --">
                         <option value="">-- (Tugas Utama / Mandiri - Tanpa Induk) --</option>
                         @foreach (var parent in Model.AvailableParentTasks)
                         {
@@ -103,7 +103,7 @@
                         }
                     </select>
                     <p class="text-[11px] text-slate-500 mt-2">
-                        <i class="fas fa-info-circle text-indigo-400 mr-1"></i>Ketik kode tugas (contoh: <code>TSK-</code>), judul, atau nama proyek untuk mencari tugas induk dengan cepat.
+                        <i class="fas fa-search text-indigo-500 mr-1"></i>Ketik kode tugas (contoh: <code>TSK-</code>), judul, atau nama proyek untuk mencari tugas induk dengan cepat.
                     </p>
                 </div>
 
@@ -281,7 +281,33 @@
     </div>
 </div>
 
+@section Scripts {
 <script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (typeof jQuery !== 'undefined') {
+            jQuery(function($) {
+                if (typeof $.fn.select2 !== 'undefined') {
+                    // Explicitly initialize parentTaskSelect with optimal search settings
+                    $('#parentTaskSelect').select2({
+                        width: '100%',
+                        placeholder: '-- Cari & Pilih Tugas Induk (Ketik Kode / Judul / Proyek) --',
+                        allowClear: true,
+                        minimumResultsForSearch: 0,
+                        language: {
+                            noResults: function() { return "Tidak ada tugas induk yang cocok"; },
+                            searching: function() { return "Mencari tugas induk..."; }
+                        }
+                    });
+
+                    // Also initialize other select2 dropdowns
+                    if (typeof window.initAppSelect2 === 'function') {
+                        window.initAppSelect2();
+                    }
+                }
+            });
+        }
+    });
+
     const slider = document.getElementById('progressSlider');
     const display = document.getElementById('progressDisplay');
     const statusSelect = document.getElementById('taskStatusSelect');
@@ -331,3 +357,4 @@
         });
     }
 </script>
+}

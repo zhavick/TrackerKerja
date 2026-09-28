@@ -365,6 +365,82 @@ namespace TrackerKerja.Controllers
             }
         }
 
+        // ── RESTORE DATABASE (.DB / .SQL) ───────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RestoreDatabase(IFormFile restoreFile, bool backupBeforeRestore = true)
+        {
+            if (restoreFile == null || restoreFile.Length == 0)
+            {
+                TempData["Error"] = "Silakan pilih berkas database (.db atau .sql) yang valid untuk dipulihkan.";
+                return RedirectToAction(nameof(Index));
+            }
+
+            var ext = Path.GetExtension(restoreFile.FileName).ToLowerInvariant();
+            if (ext != ".db" && ext != ".sql")
+            {
+                TempData["Error"] = "Format berkas tidak didukung. Harap unggah berkas dengan ekstensi .db (SQLite) atau .sql (Script SQL).";
+                return RedirectToAction(nameof(Index));
+            }
+
+            try
+            {
+                Services.DatabaseRestoreResult result;
+
+                if (ext == ".db")
+                {
+                    using var stream = restoreFile.OpenReadStream();
+                    result = await _exportService.RestoreFromBinaryAsync(stream, backupBeforeRestore);
+                }
+                else // .sql
+                {
+                    string sqlContent;
+                    using (var reader = new StreamReader(restoreFile.OpenReadStream(), System.Text.Encoding.UTF8))
+                    {
+                        sqlContent = await reader.ReadToEndAsync();
+                    }
+                    result = await _exportService.RestoreFromSqlAsync(sqlContent, backupBeforeRestore);
+                }
+
+                if (result.Success)
+                {
+                    var backupInfo = !string.IsNullOrEmpty(result.BackupFileName) 
+                        ? $" (Backup pengaman otomatis dibuat di folder backups/{result.BackupFileName})" 
+                        : "";
+                    TempData["Success"] = $"{result.Message}{backupInfo}";
+
+                    // Audit Log
+                    try
+                    {
+                        _db.AuditLogs.Add(new AuditLog
+                        {
+                            ActionName = "RestoreDatabase",
+                            ControllerName = "Configuration",
+                            HttpMethod = "POST",
+                            Path = "/Configuration/RestoreDatabase",
+                            IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                            StatusCode = 200,
+                            DurationMs = result.DurationMs,
+                            Timestamp = DateTime.Now,
+                            Details = $"Restore database dari berkas '{restoreFile.FileName}' ({ext}) berhasil. {result.AffectedTablesCount} tabel dipulihkan dalam {result.DurationMs}ms.{backupInfo}"
+                        });
+                        await _db.SaveChangesAsync();
+                    }
+                    catch { }
+                }
+                else
+                {
+                    TempData["Error"] = $"Gagal memulihkan database: {result.Message}";
+                }
+            }
+            catch (Exception ex)
+            {
+                TempData["Error"] = $"Terjadi kesalahan saat memproses restore database: {ex.Message}";
+            }
+
+            return RedirectToAction(nameof(Index));
+        }
+
         // ── SINKRONISASI HOST INDUK ACTIONS ───────────────────
         
         [HttpPost]

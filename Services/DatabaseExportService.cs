@@ -7,11 +7,23 @@ using TrackerKerja.Data;
 
 namespace TrackerKerja.Services
 {
+    public class DatabaseRestoreResult
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public string? BackupFileName { get; set; }
+        public int AffectedTablesCount { get; set; }
+        public long DurationMs { get; set; }
+        public string? ErrorDetails { get; set; }
+    }
+
     public interface IDatabaseExportService
     {
         Task<byte[]> GetDatabaseBinarySnapshotAsync();
         Task<string> GenerateFullSqlDumpAsync();
         string GetDatabaseFilePath();
+        Task<DatabaseRestoreResult> RestoreFromBinaryAsync(Stream sourceStream, bool backupBeforeRestore = true);
+        Task<DatabaseRestoreResult> RestoreFromSqlAsync(string sqlScript, bool backupBeforeRestore = true);
     }
 
     public class DatabaseExportService : IDatabaseExportService
@@ -231,6 +243,262 @@ namespace TrackerKerja.Services
             sb.AppendLine("-- ==============================================================================");
 
             return sb.ToString();
+        }
+
+        public async Task<DatabaseRestoreResult> RestoreFromBinaryAsync(Stream sourceStream, bool backupBeforeRestore = true)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            string? backupFileName = null;
+            var dbPath = GetDatabaseFilePath();
+            var tempDir = Path.GetDirectoryName(dbPath) ?? Directory.GetCurrentDirectory();
+            var tempFile = Path.Combine(tempDir, $"restore_{Guid.NewGuid():N}.tmp");
+
+            try
+            {
+                // 1. Copy uploaded stream to temp file first to inspect safely
+                using (var fs = new FileStream(tempFile, FileMode.Create, FileAccess.ReadWrite, FileShare.None))
+                {
+                    await sourceStream.CopyToAsync(fs);
+                    fs.Position = 0;
+
+                    // 2. Validate SQLite header magic bytes (16 bytes: "SQLite format 3\0")
+                    var header = new byte[16];
+                    var bytesRead = await fs.ReadAsync(header, 0, 16);
+                    if (bytesRead < 16 || Encoding.ASCII.GetString(header) != "SQLite format 3\0")
+                    {
+                        fs.Close();
+                        if (File.Exists(tempFile)) File.Delete(tempFile);
+                        return new DatabaseRestoreResult
+                        {
+                            Success = false,
+                            Message = "Berkas yang diunggah bukan file database SQLite (.db) yang valid atau berkas rusak.",
+                            DurationMs = sw.ElapsedMilliseconds
+                        };
+                    }
+                }
+
+                // 3. Pre-restore safety backup
+                if (backupBeforeRestore)
+                {
+                    try
+                    {
+                        var backupBytes = await GetDatabaseBinarySnapshotAsync();
+                        var backupsDir = Path.Combine(Directory.GetCurrentDirectory(), "backups");
+                        if (!Directory.Exists(backupsDir)) Directory.CreateDirectory(backupsDir);
+
+                        backupFileName = $"TrackerKerja_PreRestore_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+                        var backupPath = Path.Combine(backupsDir, backupFileName);
+                        await File.WriteAllBytesAsync(backupPath, backupBytes);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[DatabaseExportService] Warning creating pre-restore backup: {ex.Message}");
+                    }
+                }
+
+                // 4. Release locks on active database
+                try
+                {
+                    var currentConn = _db.Database.GetDbConnection();
+                    if (currentConn.State == System.Data.ConnectionState.Open)
+                    {
+                        using var walCmd = currentConn.CreateCommand();
+                        walCmd.CommandText = "PRAGMA wal_checkpoint(FULL);";
+                        await walCmd.ExecuteNonQueryAsync();
+                        await currentConn.CloseAsync();
+                    }
+                }
+                catch { }
+
+                // Clear all active and idle connection pools so file handle is unlocked on Windows
+                SqliteConnection.ClearAllPools();
+
+                // 5. Delete active WAL and SHM journal files
+                var walFile = dbPath + "-wal";
+                var shmFile = dbPath + "-shm";
+                if (File.Exists(walFile)) { try { File.Delete(walFile); } catch { } }
+                if (File.Exists(shmFile)) { try { File.Delete(shmFile); } catch { } }
+
+                // 6. Overwrite active DB file with retry for transient file lock
+                bool replaced = false;
+                Exception? lastEx = null;
+                for (int i = 0; i < 5; i++)
+                {
+                    try
+                    {
+                        File.Move(tempFile, dbPath, overwrite: true);
+                        replaced = true;
+                        break;
+                    }
+                    catch (Exception ex)
+                    {
+                        lastEx = ex;
+                        SqliteConnection.ClearAllPools();
+                        await Task.Delay(100);
+                    }
+                }
+
+                if (!replaced)
+                {
+                    if (File.Exists(tempFile)) File.Delete(tempFile);
+                    throw lastEx ?? new IOException("Gagal menimpa berkas database aktif karena berkas masih terkunci oleh proses lain.");
+                }
+
+                // 7. Verify new database integrity & count tables
+                int tableCount = 0;
+                var verifyConn = _db.Database.GetDbConnection();
+                await verifyConn.OpenAsync();
+                try
+                {
+                    using var cmd = verifyConn.CreateCommand();
+                    cmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';";
+                    var obj = await cmd.ExecuteScalarAsync();
+                    tableCount = obj != null ? Convert.ToInt32(obj) : 0;
+                }
+                finally
+                {
+                    await verifyConn.CloseAsync();
+                }
+
+                sw.Stop();
+                return new DatabaseRestoreResult
+                {
+                    Success = true,
+                    Message = $"Restore database SQLite (.db) berhasil dipulihkan! Terdapat {tableCount} tabel aktif dalam database.",
+                    BackupFileName = backupFileName,
+                    AffectedTablesCount = tableCount,
+                    DurationMs = sw.ElapsedMilliseconds
+                };
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                if (File.Exists(tempFile))
+                {
+                    try { File.Delete(tempFile); } catch { }
+                }
+
+                return new DatabaseRestoreResult
+                {
+                    Success = false,
+                    Message = $"Gagal memulihkan database SQLite: {ex.Message}",
+                    ErrorDetails = ex.ToString(),
+                    BackupFileName = backupFileName,
+                    DurationMs = sw.ElapsedMilliseconds
+                };
+            }
+        }
+
+        public async Task<DatabaseRestoreResult> RestoreFromSqlAsync(string sqlScript, bool backupBeforeRestore = true)
+        {
+            var sw = System.Diagnostics.Stopwatch.StartNew();
+            string? backupFileName = null;
+
+            if (string.IsNullOrWhiteSpace(sqlScript))
+            {
+                return new DatabaseRestoreResult
+                {
+                    Success = false,
+                    Message = "Script SQL restore kosong atau tidak valid."
+                };
+            }
+
+            try
+            {
+                // 1. Pre-restore safety backup
+                if (backupBeforeRestore)
+                {
+                    try
+                    {
+                        var backupBytes = await GetDatabaseBinarySnapshotAsync();
+                        var backupsDir = Path.Combine(Directory.GetCurrentDirectory(), "backups");
+                        if (!Directory.Exists(backupsDir)) Directory.CreateDirectory(backupsDir);
+
+                        backupFileName = $"TrackerKerja_PreRestore_{DateTime.Now:yyyyMMdd_HHmmss}.db";
+                        var backupPath = Path.Combine(backupsDir, backupFileName);
+                        await File.WriteAllBytesAsync(backupPath, backupBytes);
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine($"[DatabaseExportService] Warning creating pre-restore backup: {ex.Message}");
+                    }
+                }
+
+                var conn = _db.Database.GetDbConnection();
+                var wasOpen = conn.State == System.Data.ConnectionState.Open;
+                if (!wasOpen) await conn.OpenAsync();
+
+                try
+                {
+                    // Disable foreign keys temporarily during restore execution
+                    using (var fkOffCmd = conn.CreateCommand())
+                    {
+                        fkOffCmd.CommandText = "PRAGMA foreign_keys = OFF;";
+                        await fkOffCmd.ExecuteNonQueryAsync();
+                    }
+
+                    // Execute batch SQL script
+                    using (var cmd = conn.CreateCommand())
+                    {
+                        cmd.CommandText = sqlScript;
+                        cmd.CommandTimeout = 600; // 10 minutes timeout for large scripts
+                        await cmd.ExecuteNonQueryAsync();
+                    }
+
+                    // Re-enable foreign keys
+                    using (var fkOnCmd = conn.CreateCommand())
+                    {
+                        fkOnCmd.CommandText = "PRAGMA foreign_keys = ON;";
+                        await fkOnCmd.ExecuteNonQueryAsync();
+                    }
+
+                    // WAL checkpoint
+                    try
+                    {
+                        using (var chkCmd = conn.CreateCommand())
+                        {
+                            chkCmd.CommandText = "PRAGMA wal_checkpoint(FULL);";
+                            await chkCmd.ExecuteNonQueryAsync();
+                        }
+                    }
+                    catch { }
+
+                    // Count tables
+                    int tableCount = 0;
+                    using (var countCmd = conn.CreateCommand())
+                    {
+                        countCmd.CommandText = "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name NOT LIKE 'sqlite_%';";
+                        var obj = await countCmd.ExecuteScalarAsync();
+                        tableCount = obj != null ? Convert.ToInt32(obj) : 0;
+                    }
+
+                    sw.Stop();
+                    return new DatabaseRestoreResult
+                    {
+                        Success = true,
+                        Message = $"Restore database dari script SQL berhasil diterapkan! Terdapat {tableCount} tabel aktif dalam database.",
+                        BackupFileName = backupFileName,
+                        AffectedTablesCount = tableCount,
+                        DurationMs = sw.ElapsedMilliseconds
+                    };
+                }
+                finally
+                {
+                    if (!wasOpen) await conn.CloseAsync();
+                }
+            }
+            catch (Exception ex)
+            {
+                sw.Stop();
+                return new DatabaseRestoreResult
+                {
+                    Success = false,
+                    Message = $"Gagal mengeksekusi restore SQL: {ex.Message}",
+                    ErrorDetails = ex.ToString(),
+                    BackupFileName = backupFileName,
+                    DurationMs = sw.ElapsedMilliseconds
+                };
+            }
         }
     }
 }

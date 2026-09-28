@@ -178,6 +178,39 @@ namespace TrackerKerja.Controllers
         }
 
         [HttpGet]
+        public async Task<IActionResult> GetDetail(int id)
+        {
+            var log = await _db.AuditLogs.FindAsync(id);
+            if (log == null)
+            {
+                return Json(new { success = false, message = "Data aktivitas audit tidak ditemukan." });
+            }
+
+            return Json(new
+            {
+                success = true,
+                data = new
+                {
+                    id = log.Id,
+                    timestamp = log.Timestamp.ToString("dd MMMM yyyy, HH:mm:ss"),
+                    timeAgo = TrackerKerja.Helpers.DateTimeHelper.TimeAgo(log.Timestamp),
+                    userId = log.UserId,
+                    userName = string.IsNullOrEmpty(log.UserName) ? "Anonim / Sistem" : log.UserName,
+                    userEmail = string.IsNullOrEmpty(log.UserEmail) ? "-" : log.UserEmail,
+                    controllerName = log.ControllerName,
+                    actionName = log.ActionName,
+                    httpMethod = log.HttpMethod,
+                    path = log.Path,
+                    queryString = log.QueryString,
+                    ipAddress = string.IsNullOrEmpty(log.IpAddress) ? "::1 (Local)" : log.IpAddress,
+                    statusCode = log.StatusCode,
+                    durationMs = log.DurationMs,
+                    details = log.Details
+                }
+            });
+        }
+
+        [HttpGet]
         public async Task<IActionResult> ExportCsv()
         {
             var logs = await _db.AuditLogs

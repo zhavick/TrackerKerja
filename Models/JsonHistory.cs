@@ -14,6 +14,10 @@ namespace TrackerKerja.Models
         public int? TaskId { get; set; }
         public WorkTask? Task { get; set; }
 
+        [MaxLength(450)]
+        public string? UserId { get; set; }
+        public virtual AppUser? User { get; set; }
+
         public DateTime CreatedAt { get; set; } = DateTime.Now;
     }
 }

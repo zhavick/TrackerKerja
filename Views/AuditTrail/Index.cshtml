@@ -239,6 +239,7 @@
                             <th class="py-3 px-3 text-center">Status</th>
                             <th class="py-3 px-4 text-right">Durasi</th>
                             <th class="py-3 px-4">IP Address</th>
+                            <th class="py-3 px-4 text-center">Aksi</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-slate-100">
@@ -321,6 +322,13 @@
                                 <!-- IP Address -->
                                 <td class="py-3 px-4 text-xs text-slate-400 font-mono whitespace-nowrap">
                                     @(string.IsNullOrEmpty(log.IpAddress) ? "::1" : log.IpAddress)
+                                </td>
+
+                                <!-- Aksi -->
+                                <td class="py-3 px-4 text-center whitespace-nowrap">
+                                    <button type="button" onclick="showAuditDetail(@log.Id)" class="px-2.5 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all border border-indigo-200/70 shadow-sm flex items-center justify-center gap-1.5 mx-auto" title="Lihat Detail Aktivitas">
+                                        <i class="fas fa-eye text-indigo-500"></i> Detail
+                                    </button>
                                 </td>
                             </tr>
                         }
@@ -521,4 +529,273 @@
             }
         });
     });
+
+    // ── AUDIT DETAIL MODAL HANDLERS ─────────────────────────
+    let currentAuditDetailPayload = '';
+
+    function showAuditDetail(id) {
+        // Show loading state with SweetAlert or open modal with spinner
+        const modal = document.getElementById('auditDetailModal');
+        const modalContent = document.getElementById('auditDetailModalContent');
+        const modalLoading = document.getElementById('auditDetailLoading');
+        
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        modalContent.classList.add('hidden');
+        modalLoading.classList.remove('hidden');
+
+        fetch(`/AuditTrail/GetDetail?id=${id}`)
+            .then(res => res.json())
+            .then(res => {
+                if (!res.success) {
+                    closeAuditDetailModal();
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Gagal Memuat Detail',
+                        text: res.message || 'Data tidak dapat ditemukan.'
+                    });
+                    return;
+                }
+
+                const d = res.data;
+                document.getElementById('modalAuditId').textContent = '#' + d.id;
+                document.getElementById('modalAuditTimeAgo').textContent = d.timeAgo;
+                document.getElementById('modalAuditTimestamp').textContent = d.timestamp;
+
+                // Method badge
+                const methodBadge = document.getElementById('modalAuditMethod');
+                methodBadge.textContent = d.httpMethod || 'GET';
+                methodBadge.className = 'px-2.5 py-1 rounded-xl text-xs font-mono font-black border uppercase ';
+                if (d.httpMethod === 'POST') methodBadge.className += 'bg-amber-100 text-amber-800 border-amber-300';
+                else if (d.httpMethod === 'PUT') methodBadge.className += 'bg-purple-100 text-purple-800 border-purple-300';
+                else if (d.httpMethod === 'DELETE') methodBadge.className += 'bg-rose-100 text-rose-800 border-rose-300';
+                else methodBadge.className += 'bg-sky-100 text-sky-800 border-sky-300';
+
+                // Status code badge
+                const statusBadge = document.getElementById('modalAuditStatus');
+                statusBadge.textContent = d.statusCode + ' Status';
+                statusBadge.className = 'px-2.5 py-1 rounded-xl text-xs font-mono font-black border ';
+                if (d.statusCode >= 200 && d.statusCode < 300) statusBadge.className += 'bg-emerald-100 text-emerald-800 border-emerald-300';
+                else if (d.statusCode >= 300 && d.statusCode < 400) statusBadge.className += 'bg-cyan-100 text-cyan-800 border-cyan-300';
+                else if (d.statusCode >= 400 && d.statusCode < 500) statusBadge.className += 'bg-amber-100 text-amber-800 border-amber-300';
+                else statusBadge.className += 'bg-rose-100 text-rose-800 border-rose-300';
+
+                // Duration
+                document.getElementById('modalAuditDuration').textContent = (d.durationMs || 0) + ' ms';
+
+                // User Info
+                document.getElementById('modalAuditUserName').textContent = d.userName || 'Anonim / Sistem';
+                document.getElementById('modalAuditUserEmail').textContent = d.userEmail || '-';
+                document.getElementById('modalAuditUserId').textContent = d.userId || 'Guest';
+
+                // Endpoint Info
+                document.getElementById('modalAuditController').textContent = d.controllerName || '-';
+                document.getElementById('modalAuditAction').textContent = d.actionName || '-';
+                document.getElementById('modalAuditPath').textContent = d.path || '-';
+                document.getElementById('modalAuditQuery').textContent = d.queryString || '(Tidak ada)';
+                document.getElementById('modalAuditIp').textContent = d.ipAddress || '::1';
+
+                // Details / Payload
+                const payloadContainer = document.getElementById('modalAuditPayload');
+                currentAuditDetailPayload = d.details || '';
+                if (!d.details || d.details.trim() === '') {
+                    payloadContainer.innerHTML = '<span class="text-slate-400 italic">Tidak ada payload atau informasi rincian tambahan untuk aktivitas ini.</span>';
+                } else {
+                    try {
+                        // Attempt pretty-formatting JSON if it's JSON
+                        const parsed = JSON.parse(d.details);
+                        payloadContainer.textContent = JSON.stringify(parsed, null, 2);
+                    } catch {
+                        payloadContainer.textContent = d.details;
+                    }
+                }
+
+                modalLoading.classList.add('hidden');
+                modalContent.classList.remove('hidden');
+            })
+            .catch(err => {
+                closeAuditDetailModal();
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Kesalahan Sistem',
+                    text: 'Terjadi kendala saat menghubungi server.'
+                });
+            });
+    }
+
+    function closeAuditDetailModal() {
+        const modal = document.getElementById('auditDetailModal');
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+    }
+
+    function copyAuditDetails() {
+        if (!currentAuditDetailPayload) {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'info',
+                title: 'Tidak ada payload untuk disalin',
+                showConfirmButton: false,
+                timer: 2000
+            });
+            return;
+        }
+
+        navigator.clipboard.writeText(currentAuditDetailPayload).then(() => {
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Payload berhasil disalin ke clipboard!',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        }).catch(() => {
+            const textarea = document.createElement('textarea');
+            textarea.value = currentAuditDetailPayload;
+            document.body.appendChild(textarea);
+            textarea.select();
+            document.execCommand('copy');
+            document.body.removeChild(textarea);
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: 'Payload disalin!',
+                showConfirmButton: false,
+                timer: 2000
+            });
+        });
+    }
 </script>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODAL: DETAIL AUDIT TRAIL LOG                              -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="auditDetailModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 sm:p-7 max-w-2xl w-full shadow-2xl border border-indigo-100 animate-scale-in max-h-[92vh] flex flex-col">
+        <!-- Modal Header -->
+        <div class="flex items-center justify-between border-b border-slate-100 pb-4 mb-4 flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold text-lg border border-indigo-100/80 shadow-sm">
+                    <i class="fas fa-shield-halved"></i>
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-slate-800 text-base sm:text-lg">Detail Aktivitas Audit Trail</h3>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                        Log Record <span id="modalAuditId" class="font-mono font-bold text-indigo-600">#0</span> &bull; <span id="modalAuditTimeAgo">-</span>
+                    </p>
+                </div>
+            </div>
+            <button type="button" onclick="closeAuditDetailModal()" class="w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-all">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+
+        <!-- Loading Spinner -->
+        <div id="auditDetailLoading" class="py-16 text-center text-slate-400">
+            <i class="fas fa-circle-notch fa-spin text-3xl text-indigo-500 mb-2"></i>
+            <p class="text-xs font-semibold">Mengambil informasi detail audit...</p>
+        </div>
+
+        <!-- Modal Body Content -->
+        <div id="auditDetailModalContent" class="overflow-y-auto space-y-4 pr-1 hidden flex-1">
+            <!-- Badges Bar -->
+            <div class="p-3.5 bg-slate-50/80 rounded-2xl border border-slate-100 flex items-center justify-between flex-wrap gap-2">
+                <div class="flex items-center gap-2 flex-wrap">
+                    <span id="modalAuditMethod" class="px-2.5 py-1 rounded-xl text-xs font-mono font-black border uppercase bg-indigo-100 text-indigo-800 border-indigo-300">GET</span>
+                    <span id="modalAuditStatus" class="px-2.5 py-1 rounded-xl text-xs font-mono font-black border bg-emerald-100 text-emerald-800 border-emerald-300">200 OK</span>
+                    <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-xl text-xs font-semibold bg-white border border-slate-200 text-slate-600">
+                        <i class="fas fa-stopwatch text-slate-400 text-[10px]"></i>
+                        <span id="modalAuditDuration" class="font-mono font-bold">0 ms</span>
+                    </span>
+                </div>
+                <div class="text-xs font-semibold text-slate-500 flex items-center gap-1.5">
+                    <i class="fas fa-clock text-indigo-400"></i>
+                    <span id="modalAuditTimestamp" class="font-mono text-slate-700">dd MMMM yyyy, HH:mm:ss</span>
+                </div>
+            </div>
+
+            <!-- 2-Column Info Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+                <!-- User Card -->
+                <div class="p-4 rounded-2xl bg-indigo-50/30 border border-indigo-100/70 space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-bold text-indigo-900 uppercase tracking-wider">
+                        <i class="fas fa-user-circle text-indigo-500"></i> Identitas Pelaksana
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-400 uppercase font-semibold">Nama Lengkap</p>
+                        <p id="modalAuditUserName" class="text-xs font-bold text-slate-800">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-400 uppercase font-semibold">Email Pengguna</p>
+                        <p id="modalAuditUserEmail" class="text-xs font-medium text-slate-700 font-mono">-</p>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-400 uppercase font-semibold">User ID</p>
+                        <p id="modalAuditUserId" class="text-[10px] font-mono text-slate-500 truncate" title="">-</p>
+                    </div>
+                </div>
+
+                <!-- Endpoint Card -->
+                <div class="p-4 rounded-2xl bg-slate-50/60 border border-slate-200/80 space-y-2">
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-700 uppercase tracking-wider">
+                        <i class="fas fa-network-wired text-indigo-500"></i> Endpoint & Jaringan
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <p class="text-[11px] text-slate-400 uppercase font-semibold">Controller</p>
+                            <p id="modalAuditController" class="text-xs font-bold text-slate-800 font-mono">-</p>
+                        </div>
+                        <div>
+                            <p class="text-[11px] text-slate-400 uppercase font-semibold">Action</p>
+                            <p id="modalAuditAction" class="text-xs font-bold text-indigo-600 font-mono">-</p>
+                        </div>
+                    </div>
+                    <div>
+                        <p class="text-[11px] text-slate-400 uppercase font-semibold">Alamat IP Klien</p>
+                        <p id="modalAuditIp" class="text-xs font-semibold text-slate-700 font-mono">-</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Path & Query String -->
+            <div class="p-4 rounded-2xl bg-slate-50/80 border border-slate-200/80 space-y-2">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fas fa-link text-slate-400"></i> URL Path & Query Request
+                    </span>
+                </div>
+                <div class="p-2.5 bg-white rounded-xl border border-slate-200 text-xs font-mono text-slate-700 break-all select-all">
+                    <span class="font-bold text-indigo-600" id="modalAuditPath">/</span>
+                </div>
+                <div>
+                    <span class="text-[11px] font-semibold text-slate-400">Query Parameters:</span>
+                    <span id="modalAuditQuery" class="text-xs font-mono text-slate-600 ml-1 break-all">(Tidak ada)</span>
+                </div>
+            </div>
+
+            <!-- Details / Payload -->
+            <div class="p-4 rounded-2xl bg-slate-900 text-slate-200 space-y-2 shadow-inner">
+                <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-slate-300 uppercase tracking-wider flex items-center gap-1.5">
+                        <i class="fas fa-code text-indigo-400"></i> Rincian Aktivitas / Data Payload
+                    </span>
+                    <button type="button" onclick="copyAuditDetails()" class="px-2.5 py-1 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold border border-slate-700 transition-all flex items-center gap-1">
+                        <i class="fas fa-copy text-[10px]"></i> Salin
+                    </button>
+                </div>
+                <pre class="bg-slate-950 p-3.5 rounded-xl border border-slate-800 text-xs font-mono text-emerald-400 overflow-x-auto max-h-48 whitespace-pre-wrap break-all"><code id="modalAuditPayload">...</code></pre>
+            </div>
+        </div>
+
+        <!-- Modal Footer -->
+        <div class="mt-4 pt-3 border-t border-slate-100 flex items-center justify-end gap-2 flex-shrink-0">
+            <button type="button" onclick="closeAuditDetailModal()" class="px-5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs transition-colors">
+                Tutup
+            </button>
+        </div>
+    </div>
+</div>
+

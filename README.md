@@ -38,21 +38,25 @@
 - **Multi-Timer Serentak**: Menjalankan beberapa timer tugas bersamaan tanpa saling mengganggu antar pengguna.
 - **Laporan Excel Timesheet Resmi (ClosedXML)**: Ekspor multi-sheet dengan rincian harian, rekapitulasi per proyek, konversi Man-Days, dan formula otomatis.
 
-### 🔄 5. Sinkronisasi Multi-Instance Host Induk & File Attachments
-- **Online Push & Pull Sync dengan File Streaming**: Sinkronisasi transaksi database dan seluruh berkas fisik lampiran (`uploads/notes/*`, `uploads/avatars/*`, `uploads/covers/*`) menggunakan Base64 streaming melalui REST API.
-- **Paket ZIP Offline Mandiri**: Ekspor dan impor paket arsip lengkap (`manifest.json`, `sync_data.sql`, folder `uploads/`) untuk instalasi jaringan tertutup (*air-gapped*).
+### 🎮 5. Gamifikasi, Daily Check-In & Modul Klaim Hadiah
+- **Daily Check-In Harian & Aturan Streak**: Klaim poin harian rutin. Streak terjaga setiap hari; jika tidak check-in selama 2 hari berturut-turut (`gap >= 2 hari`), streak kembali ke awal (Hari 1).
+- **Hadiah Bulanan (Streak 30 Hari)**: Menyelesaikan streak 30 hari penuh (1 bulan) membuka status pencapaian bulanan, bonus 500 poin, dan hak klaim hadiah eksklusif.
+- **Koleksi 40+ Master Badge Gaul & Modern**: Lencana pencapaian dengan nama & deskripsi berbahasa Indonesia gaya modern anak muda (*Si Paling Eksekutor*, *Kopi & Keringat*, *Jawara Timesheet*, *Pawang JSON*, *Dewa SQL*, *Sultan Check-In*, dsb.).
+- **Modul Klaim Hadiah (Reward Claim)**: Saldo poin dapat ditukar ke Voucher Pulsa/E-Wallet, Kopi, Merchandise, atau Hadiah Bulanan dengan kalkulasi saldo ketat khusus dari **Poin Badge + Poin Check-In** (1 Poin = Rp 100, nilai dapat dikustomisasi di Master Data) dengan approval Administrator.
 
-### 📧 6. Integrasi Server Email (SMTP) & 7 Template Event
-- **Konfigurasi SMTP Dinamis**: Pengaturan host mail, port, kredensial, dan SSL/TLS tersimpan di database tanpa perlu restart aplikasi.
-- **Uji Koneksi Mandiri**: Live diagnostik handshake SMTP dan pengukuran latensi koneksi.
-- **7 Template Email Event**: Template pendaftaran, persetujuan akun, penolakan, reset password, penugasan tugas, dan perubahan status dengan live HTML rendering preview.
-
-### 📋 7. Manajemen Tugas, Proyek, Presensi & Developer Tools
+### 📋 6. Manajemen Tugas, Proyek, Presensi & Developer Tools
+- **Pencarian Tugas Induk Select2 (Parent Task)**: Memilih dan menghubungkan sub-tugas ke tugas induk kini dilengkapi autocomplete pencarian ketik cepat dengan Select2.
 - **Hierarki Parent-Child Tasks & Kanban Board SortableJS**.
 - **Pencatatan Kendala (Obstacle) & Solusi (Solution)** untuk evaluasi sprint.
 - **Presensi Terintegrasi (Check In/Out, WFH, Sakit, Izin, Cuti)** & Rekonsiliasi Tim.
-- **Developer Tools Terpadu**: SQL Beautifier/Formatter mendukung 15+ dialek database dan JSON Payload Tools.
+- **Developer Tools Terpadu**: SQL Beautifier/Formatter mendukung 15+ dialek database dan JSON Payload Tools dengan sistem riwayat terformat.
 - **Ekspor/Impor Excel Ganda**: Format Standar 9-kolom dan Format ARMS 21-kolom.
+
+### 🛡️ 7. Pemeliharaan Sistem, Audit Trail Detail Modal & Restore Database
+- **Popup Modal Detail Audit Trail**: Inspeksi detail aktivitas audit, parameter HTTP, IP address, waktu eksekusi, dan detail perubahan data secara instan dalam modal responsif.
+- **Backup & Restore Database Fleksibel**: Kemudahan pencadangan dan pemulihan database secara instan menggunakan berkas SQL Script (`.sql`) maupun biner SQLite Database (`.db`).
+- **Sinkronisasi Multi-Instance Host Induk**: Push & pull sinkronisasi transaksi database dan file lampiran online via REST API Base64 streaming atau offline via paket ZIP mandiri.
+- **Integrasi Server Email (SMTP)**: Diagnostik koneksi langsung dan 7 template email event dengan visual preview real-time.
 
 ---
 

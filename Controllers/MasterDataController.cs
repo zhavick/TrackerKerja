@@ -1,8 +1,10 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
 
 namespace TrackerKerja.Controllers
@@ -11,10 +13,12 @@ namespace TrackerKerja.Controllers
     public class MasterDataController : Controller
     {
         private readonly AppDbContext _db;
+        private readonly IGamificationService _gamificationService;
 
-        public MasterDataController(AppDbContext db)
+        public MasterDataController(AppDbContext db, IGamificationService gamificationService)
         {
             _db = db;
+            _gamificationService = gamificationService;
         }
 
         // ── INDEX / MAIN VIEW ──────────────────────────────────
@@ -42,7 +46,18 @@ namespace TrackerKerja.Controllers
                 Badges = await _db.MasterBadges
                     .OrderBy(b => b.OrderIndex)
                     .ThenBy(b => b.Name)
-                    .ToListAsync()
+                    .ToListAsync(),
+                Rewards = await _db.RewardItems
+                    .OrderBy(r => r.OrderIndex)
+                    .ThenBy(r => r.PointCost)
+                    .ToListAsync(),
+                Claims = await _db.RewardClaims
+                    .Include(c => c.RewardItem)
+                    .Include(c => c.User)
+                    .Include(c => c.ProcessedByUser)
+                    .OrderByDescending(c => c.ClaimedAt)
+                    .ToListAsync(),
+                GamificationSettings = await _gamificationService.GetGamificationSettingsAsync()
             };
 
             return View(model);
@@ -529,6 +544,171 @@ namespace TrackerKerja.Controllers
 
             TempData["Success"] = $"Status badge '{badge.Name}' berhasil diubah menjadi {(badge.IsActive ? "Aktif" : "Nonaktif")}.";
             return RedirectToAction(nameof(Index), new { tab = "badges" });
+        }
+
+        // ── GAMIFICATION SETTINGS ─────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> SaveGamificationSettings(GamificationSettingsDto model)
+        {
+            if (model.DailyCheckInPoints <= 0 || model.PointValueRupiah <= 0 || model.MonthlyStreakDays <= 0)
+            {
+                TempData["Error"] = "Nilai konfigurasi poin dan hari streak harus lebih dari 0.";
+                return RedirectToAction(nameof(Index), new { tab = "rewards" });
+            }
+
+            await _gamificationService.SaveGamificationSettingsAsync(model);
+            TempData["Success"] = "Konfigurasi Poin & Daily Check-In berhasil diperbarui!";
+            return RedirectToAction(nameof(Index), new { tab = "rewards" });
+        }
+
+        // ── MASTER REWARDS CRUD ────────────────────────────────
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> CreateReward(RewardItem model)
+        {
+            if (string.IsNullOrWhiteSpace(model.Name))
+            {
+                TempData["Error"] = "Nama Hadiah tidak boleh kosong.";
+                return RedirectToAction(nameof(Index), new { tab = "rewards" });
+            }
+
+            model.Name = model.Name.Trim();
+            model.Category = string.IsNullOrWhiteSpace(model.Category) ? "Voucher" : model.Category.Trim();
+            model.PointCost = Math.Max(1, model.PointCost);
+            model.Stock = Math.Max(0, model.Stock);
+            model.Icon = string.IsNullOrWhiteSpace(model.Icon) ? "fa-solid fa-gift" : model.Icon.Trim();
+            model.Color = string.IsNullOrWhiteSpace(model.Color) ? "#EC4899" : model.Color.Trim();
+            model.CreatedAt = DateTime.Now;
+
+            _db.RewardItems.Add(model);
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = $"Hadiah '{model.Name}' berhasil ditambahkan ke katalog!";
+            return RedirectToAction(nameof(Index), new { tab = "rewards" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> EditReward(RewardItem model)
+        {
+            var reward = await _db.RewardItems.FindAsync(model.Id);
+            if (reward == null)
+            {
+                TempData["Error"] = "Data hadiah tidak ditemukan.";
+                return RedirectToAction(nameof(Index), new { tab = "rewards" });
+            }
+
+            if (string.IsNullOrWhiteSpace(model.Name))
+            {
+                TempData["Error"] = "Nama Hadiah tidak boleh kosong.";
+                return RedirectToAction(nameof(Index), new { tab = "rewards" });
+            }
+
+            reward.Name = model.Name.Trim();
+            reward.Description = model.Description?.Trim();
+            reward.Category = string.IsNullOrWhiteSpace(model.Category) ? "Voucher" : model.Category.Trim();
+            reward.PointCost = Math.Max(1, model.PointCost);
+            reward.Stock = Math.Max(0, model.Stock);
+            reward.ImageUrl = model.ImageUrl?.Trim();
+            reward.Icon = string.IsNullOrWhiteSpace(model.Icon) ? "fa-solid fa-gift" : model.Icon.Trim();
+            reward.Color = string.IsNullOrWhiteSpace(model.Color) ? "#EC4899" : model.Color.Trim();
+            reward.IsMonthlyMilestoneReward = model.IsMonthlyMilestoneReward;
+            reward.IsActive = model.IsActive;
+            reward.OrderIndex = model.OrderIndex;
+
+            await _db.SaveChangesAsync();
+            TempData["Success"] = $"Hadiah '{reward.Name}' berhasil diperbarui!";
+            return RedirectToAction(nameof(Index), new { tab = "rewards" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DeleteReward(int id)
+        {
+            var reward = await _db.RewardItems.Include(r => r.Claims).FirstOrDefaultAsync(r => r.Id == id);
+            if (reward == null)
+            {
+                TempData["Error"] = "Hadiah tidak ditemukan.";
+                return RedirectToAction(nameof(Index), new { tab = "rewards" });
+            }
+
+            if (reward.Claims.Any())
+            {
+                // Soft disable if has claims history
+                reward.IsActive = false;
+                await _db.SaveChangesAsync();
+                TempData["Success"] = $"Hadiah '{reward.Name}' memiliki riwayat klaim, status diubah menjadi Nonaktif.";
+            }
+            else
+            {
+                _db.RewardItems.Remove(reward);
+                await _db.SaveChangesAsync();
+                TempData["Success"] = $"Hadiah '{reward.Name}' berhasil dihapus.";
+            }
+
+            return RedirectToAction(nameof(Index), new { tab = "rewards" });
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ToggleRewardStatus(int id)
+        {
+            var reward = await _db.RewardItems.FindAsync(id);
+            if (reward == null)
+            {
+                TempData["Error"] = "Hadiah tidak ditemukan.";
+                return RedirectToAction(nameof(Index), new { tab = "rewards" });
+            }
+
+            reward.IsActive = !reward.IsActive;
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = $"Status hadiah '{reward.Name}' berhasil diubah menjadi {(reward.IsActive ? "Aktif" : "Nonaktif")}.";
+            return RedirectToAction(nameof(Index), new { tab = "rewards" });
+        }
+
+        // ── PROCESS REWARD CLAIM (APPROVAL / REJECTION / COMPLETION) ──
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ProcessRewardClaim(int id, ClaimStatus status, string? adminNotes)
+        {
+            var claim = await _db.RewardClaims.Include(c => c.RewardItem).Include(c => c.User).FirstOrDefaultAsync(c => c.Id == id);
+            if (claim == null)
+            {
+                TempData["Error"] = "Data klaim tidak ditemukan.";
+                return RedirectToAction(nameof(Index), new { tab = "rewards" });
+            }
+
+            var previousStatus = claim.Status;
+            claim.Status = status;
+            claim.AdminNotes = adminNotes?.Trim();
+            claim.ProcessedAt = DateTime.Now;
+            claim.ProcessedByUserId = User.FindFirstValue(ClaimTypes.NameIdentifier);
+
+            // If changing to Rejected and wasn't previously rejected, refund stock
+            if (status == ClaimStatus.Rejected && previousStatus != ClaimStatus.Rejected && claim.RewardItem != null)
+            {
+                claim.RewardItem.Stock += 1;
+            }
+            // If changing from Rejected back to Approved/Pending, re-decrement stock
+            else if (previousStatus == ClaimStatus.Rejected && status != ClaimStatus.Rejected && claim.RewardItem != null && claim.RewardItem.Stock > 0)
+            {
+                claim.RewardItem.Stock -= 1;
+            }
+
+            await _db.SaveChangesAsync();
+
+            string statusText = status switch
+            {
+                ClaimStatus.Approved => "Disetujui",
+                ClaimStatus.Completed => "Selesai / Terkirim",
+                ClaimStatus.Rejected => "Ditolak (Poin dikembalikan)",
+                _ => "Diproses"
+            };
+
+            TempData["Success"] = $"Klaim hadiah dari '{claim.User?.FullName ?? "Pengguna"}' berhasil diubah menjadi '{statusText}'!";
+            return RedirectToAction(nameof(Index), new { tab = "rewards" });
         }
     }
 }

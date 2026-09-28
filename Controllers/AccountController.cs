@@ -62,8 +62,9 @@ namespace TrackerKerja.Controllers
                 }
             }
 
+            var userName = existingUser?.UserName ?? model.Email;
             var result = await _signInManager.PasswordSignInAsync(
-                model.Email, model.Password, model.RememberMe, lockoutOnFailure: true);
+                userName, model.Password, model.RememberMe, lockoutOnFailure: false);
 
             if (result.Succeeded)
             {
@@ -80,6 +81,30 @@ namespace TrackerKerja.Controllers
                         SameSite = SameSiteMode.Lax,
                         Expires = expiresAt
                     });
+
+                    // Log audit trail and evaluate gamification
+                    try
+                    {
+                        var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+                        _db.AuditLogs.Add(new AuditLog
+                        {
+                            UserId = user.Id,
+                            UserEmail = user.Email,
+                            UserName = user.UserName ?? user.FullName,
+                            ControllerName = "Account",
+                            ActionName = "Login",
+                            HttpMethod = "POST",
+                            Path = "/Account/Login",
+                            IpAddress = ip,
+                            StatusCode = 200,
+                            DurationMs = 0,
+                            Timestamp = DateTime.Now,
+                            Details = $"Pengguna {user.FullName} ({user.Email}) berhasil masuk ke sistem."
+                        });
+                        await _db.SaveChangesAsync();
+                        await _gamificationService.EvaluateAndAwardBadgesAsync(user.Id);
+                    }
+                    catch { }
                 }
 
                 if (!string.IsNullOrEmpty(model.ReturnUrl) && Url.IsLocalUrl(model.ReturnUrl))
@@ -222,6 +247,33 @@ namespace TrackerKerja.Controllers
         [Authorize]
         public async Task<IActionResult> Logout()
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                try
+                {
+                    var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+                    _db.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = user.Id,
+                        UserEmail = user.Email,
+                        UserName = user.UserName ?? user.FullName,
+                        ControllerName = "Account",
+                        ActionName = "Logout",
+                        HttpMethod = "POST",
+                        Path = "/Account/Logout",
+                        IpAddress = ip,
+                        StatusCode = 200,
+                        DurationMs = 0,
+                        Timestamp = DateTime.Now,
+                        Details = $"Pengguna {user.FullName} ({user.Email}) berhasil keluar dari sistem."
+                    });
+                    await _db.SaveChangesAsync();
+                    await _gamificationService.EvaluateAndAwardBadgesAsync(user.Id);
+                }
+                catch { }
+            }
+
             await _signInManager.SignOutAsync();
             Response.Cookies.Delete("jwt_token");
             return RedirectToAction("Login");
@@ -230,6 +282,33 @@ namespace TrackerKerja.Controllers
         [HttpGet]
         public async Task<IActionResult> Logout(string? reason = null)
         {
+            var user = await _userManager.GetUserAsync(User);
+            if (user != null)
+            {
+                try
+                {
+                    var ip = HttpContext.Connection.RemoteIpAddress?.ToString();
+                    _db.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = user.Id,
+                        UserEmail = user.Email,
+                        UserName = user.UserName ?? user.FullName,
+                        ControllerName = "Account",
+                        ActionName = "Logout",
+                        HttpMethod = "GET",
+                        Path = "/Account/Logout",
+                        IpAddress = ip,
+                        StatusCode = 200,
+                        DurationMs = 0,
+                        Timestamp = DateTime.Now,
+                        Details = $"Pengguna {user.FullName} ({user.Email}) keluar dari sistem (Reason: {reason ?? "manual"})."
+                    });
+                    await _db.SaveChangesAsync();
+                    await _gamificationService.EvaluateAndAwardBadgesAsync(user.Id);
+                }
+                catch { }
+            }
+
             await _signInManager.SignOutAsync();
             Response.Cookies.Delete("jwt_token");
             if (string.Equals(reason, "timeout", StringComparison.OrdinalIgnoreCase))

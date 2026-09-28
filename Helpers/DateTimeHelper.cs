@@ -66,5 +66,19 @@ namespace TrackerKerja.Helpers
                 return TimeZoneInfo.ConvertTimeFromUtc(DateTime.SpecifyKind(dt, DateTimeKind.Utc), WibZone);
             }
         }
+
+        /// <summary>
+        /// Gets human-readable relative time string (e.g. "Baru saja", "5 menit yang lalu").
+        /// </summary>
+        public static string TimeAgo(DateTime dt)
+        {
+            var span = DateTime.Now - dt;
+            if (span.TotalSeconds < 60) return "Baru saja";
+            if (span.TotalMinutes < 60) return $"{(int)span.TotalMinutes} menit yang lalu";
+            if (span.TotalHours < 24) return $"{(int)span.TotalHours} jam yang lalu";
+            if (span.TotalDays < 30) return $"{(int)span.TotalDays} hari yang lalu";
+            if (span.TotalDays < 365) return $"{(int)(span.TotalDays / 30)} bulan yang lalu";
+            return $"{(int)(span.TotalDays / 365)} tahun yang lalu";
+        }
     }
 }

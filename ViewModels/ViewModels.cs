@@ -193,9 +193,76 @@ namespace TrackerKerja.ViewModels
         public List<MasterStatus> Statuses { get; set; } = new();
         public List<MasterMilestone> Milestones { get; set; } = new();
         public List<MasterBadge> Badges { get; set; } = new();
+        public List<RewardItem> Rewards { get; set; } = new();
+        public List<RewardClaim> Claims { get; set; } = new();
+        public GamificationSettingsDto GamificationSettings { get; set; } = new();
     }
 
     // ── Gamification ViewModels & DTOs ─────────────────────────
+    public class GamificationSettingsDto
+    {
+        public int DailyCheckInPoints { get; set; } = 10;
+        public int PointValueRupiah { get; set; } = 100;
+        public int MonthlyStreakDays { get; set; } = 30;
+        public int MonthlyStreakBonusPoints { get; set; } = 500;
+        public int MissedDaysReset { get; set; } = 2;
+    }
+
+    public class GamificationUserPointsDto
+    {
+        public int BadgePoints { get; set; }
+        public int CheckInPoints { get; set; }
+        public int TotalEarnedPoints => BadgePoints + CheckInPoints;
+        public int SpentPoints { get; set; }
+        public int AvailablePoints => Math.Max(0, TotalEarnedPoints - SpentPoints);
+        public int PointValueRupiah { get; set; } = 100;
+        public decimal RupiahEquivalent => AvailablePoints * PointValueRupiah;
+    }
+
+    public class DailyCheckInStatusDto
+    {
+        public bool HasCheckedInToday { get; set; }
+        public int CurrentStreak { get; set; }
+        public DateTime? LastCheckInDate { get; set; }
+        public int TotalCheckIns { get; set; }
+        public int MonthlyTargetDays { get; set; } = 30;
+        public int DaysRemainingForMonthlyReward => Math.Max(0, MonthlyTargetDays - CurrentStreak);
+        public bool IsEligibleForMonthlyReward => CurrentStreak >= MonthlyTargetDays;
+        public int PointsPerCheckIn { get; set; } = 10;
+        public int PointValueRupiah { get; set; } = 100;
+        public int MonthlyBonusPoints { get; set; } = 500;
+        public int MissedDaysReset { get; set; } = 2;
+        public List<DailyCheckIn> RecentCheckIns { get; set; } = new();
+    }
+
+    public class DailyCheckInResultDto
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int PointsEarned { get; set; }
+        public int StreakDay { get; set; }
+        public bool IsMonthlyMilestone { get; set; }
+        public int AvailablePoints { get; set; }
+    }
+
+    public class RewardClaimResultDto
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public int ClaimId { get; set; }
+        public int RemainingPoints { get; set; }
+    }
+
+    public class GamificationPageViewModel
+    {
+        public GamificationProfileDto Gamification { get; set; } = new();
+        public GamificationUserPointsDto PointsSummary { get; set; } = new();
+        public DailyCheckInStatusDto CheckInStatus { get; set; } = new();
+        public List<RewardItem> Rewards { get; set; } = new();
+        public List<RewardClaim> MyClaims { get; set; } = new();
+        public string ActiveTab { get; set; } = "checkin";
+    }
+
     public class GamificationProfileDto
     {
         public int TotalExp { get; set; }

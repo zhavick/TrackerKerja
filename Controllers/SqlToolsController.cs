@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
+using System.Security.Claims;
 using System.Text.RegularExpressions;
 using System.Text;
 
@@ -12,7 +14,13 @@ namespace TrackerKerja.Controllers
     public class SqlToolsController : Controller
     {
         private readonly AppDbContext _db;
-        public SqlToolsController(AppDbContext db) { _db = db; }
+        private readonly IGamificationService _gamificationService;
+
+        public SqlToolsController(AppDbContext db, IGamificationService gamificationService)
+        {
+            _db = db;
+            _gamificationService = gamificationService;
+        }
 
         public async Task<IActionResult> Index()
         {
@@ -108,17 +116,24 @@ namespace TrackerKerja.Controllers
             if (string.IsNullOrWhiteSpace(req.Content))
                 return Json(new { success = false, error = "Konten SQL tidak boleh kosong" });
 
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var item = new SqlHistory
             {
                 Name = string.IsNullOrWhiteSpace(req.Name) ? $"SQL Query {DateTime.Now:dd/MM HH:mm}" : req.Name.Trim(),
                 Content = req.Content,
                 Dialect = string.IsNullOrWhiteSpace(req.Dialect) ? "sql" : req.Dialect.Trim(),
                 TaskId = req.TaskId,
+                UserId = userId,
                 CreatedAt = DateTime.Now
             };
 
             _db.SqlHistories.Add(item);
             await _db.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await _gamificationService.EvaluateAndAwardBadgesAsync(userId);
+            }
 
             return Json(new { success = true, id = item.Id, name = item.Name });
         }

@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Helpers;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
 
 namespace TrackerKerja.Controllers
@@ -15,11 +16,13 @@ namespace TrackerKerja.Controllers
     {
         private readonly AppDbContext _db;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IGamificationService _gamificationService;
 
-        public AttendanceController(AppDbContext db, UserManager<AppUser> userManager)
+        public AttendanceController(AppDbContext db, UserManager<AppUser> userManager, IGamificationService gamificationService)
         {
             _db = db;
             _userManager = userManager;
+            _gamificationService = gamificationService;
         }
 
         // ── INDEX / MAIN VIEW ──────────────────────────────────────
@@ -175,6 +178,7 @@ namespace TrackerKerja.Controllers
             }
 
             await _db.SaveChangesAsync();
+            await _gamificationService.EvaluateAndAwardBadgesAsync(currentUser.Id);
             TempData["Success"] = $"Jam kedatangan berhasil dicatat: {nowGmt7:HH:mm} ({location}). Semangat bekerja!";
             return RedirectToAction(nameof(Index));
         }
@@ -209,6 +213,7 @@ namespace TrackerKerja.Controllers
             record.UpdatedAt = now;
 
             await _db.SaveChangesAsync();
+            await _gamificationService.EvaluateAndAwardBadgesAsync(currentUser.Id);
             TempData["Success"] = $"Jam pulang berhasil dicatat: {now:HH:mm}. Total durasi kehadiran: {record.DurationFormatted}. Selamat beristirahat!";
             return RedirectToAction(nameof(Index));
         }
@@ -305,6 +310,7 @@ namespace TrackerKerja.Controllers
             }
 
             await _db.SaveChangesAsync();
+            await _gamificationService.EvaluateAndAwardBadgesAsync(targetUserId);
             TempData["Success"] = $"Data presensi tanggal {model.Date:dd MMM yyyy} berhasil disimpan.";
             return RedirectToAction(nameof(Index), new { month = model.Date.Month, year = model.Date.Year, memberId = targetUserId });
         }
@@ -374,6 +380,7 @@ namespace TrackerKerja.Controllers
             }
 
             await _db.SaveChangesAsync();
+            await _gamificationService.EvaluateAndAwardBadgesAsync(targetUserId);
             TempData["Success"] = $"Berhasil mencatatkan {model.LeaveReason} sebanyak {daysCount} hari kerja ({model.StartDate:dd/MM/yyyy} s/d {model.EndDate:dd/MM/yyyy}).";
             return RedirectToAction(nameof(Index), new { month = model.StartDate.Month, year = model.StartDate.Year, memberId = targetUserId });
         }

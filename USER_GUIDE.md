@@ -64,9 +64,17 @@
     - 13.2 [Master Milestone SDLC Waterfall](#132-master-milestone-sdlc-waterfall)
     - 13.3 [Master Hari Libur Nasional](#133-master-hari-libur-nasional)
     - 13.4 [Sinkronisasi Multi-Instance ke Host Induk (Online Streaming Base64 & Paket ZIP)](#134-sinkronisasi-multi-instance-ke-host-induk-online-streaming-base64--paket-zip)
-    - 13.5 [Backup & Export Database (.db & .sql)](#135-backup--export-database-db--sql)
+    - 13.5 [Backup & Restore Database (.db & .sql)](#135-backup--restore-database-db--sql)
     - 13.6 [Integrasi Server Email (SMTP), Diagnostik Koneksi & 7 Template Event](#136-integrasi-server-email-smtp-diagnostik-koneksi--7-template-event)
-14. [Tips & Pertanyaan Umum (FAQ)](#14-tips--pertanyaan-umum-faq)
+    - 13.7 [Manajemen Template Email Event & Live Preview](#137-manajemen-template-email-event--live-preview)
+    - 13.8 [Audit Trail & Modal Detail Aktivitas](#138-audit-trail--modal-detail-aktivitas)
+14. [Modul Gamifikasi, Daily Check-In & Klaim Hadiah](#14-modul-gamifikasi-daily-check-in--klaim-hadiah)
+    - 14.1 [Daily Check-In Harian & Aturan Streak (Reset 2 Hari)](#141-daily-check-in-harian--aturan-streak-reset-2-hari)
+    - 14.2 [Milestone Bulanan (Streak 30 Hari) & Hadiah Spesial](#142-milestone-bulanan-streak-30-hari--hadiah-spesial)
+    - 14.3 [Koleksi 40+ Master Badge Gaul & Modern Anak Muda](#143-koleksi-40-master-badge-gaul--modern-anak-muda)
+    - 14.4 [Katalog Hadiah & Penukaran Poin (1 Poin = Rp 100)](#144-katalog-hadiah--penukaran-poin-1-poin--rp-100)
+    - 14.5 [Manajemen Master Hadiah & Persetujuan Klaim (Admin Approval)](#145-manajemen-master-hadiah--persetujuan-klaim-admin-approval)
+15. [Tips & Pertanyaan Umum (FAQ)](#15-tips--pertanyaan-umum-faq)
 
 ---
 
@@ -191,12 +199,16 @@ Setiap tugas dilengkapi dengan slider persentase kemajuan (*progress bar*):
 - Menggeser progress ke angka **100%** secara otomatis mengubah status tugas menjadi **Done (Selesai)**.
 - Sebaliknya, mengubah status langsung ke *Done* akan otomatis mengisi progress menjadi 100%.
 
-### 3.4 Sub-Task (Hierarki Tugas Induk & Anak)
-Untuk memecah tugas besar menjadi bagian-bagian kecil:
-1. Buka detail tugas utama (tugas induk / *parent task*).
-2. Pada bagian **Sub-Tasks**, klik **Tambah Sub-Task**.
-3. Masukkan judul dan PIC sub-task.
-4. Kemajuan tugas induk akan mencerminkan rata-rata penyelesaian seluruh sub-task di bawahnya.
+### 3.4 Sub-Task & Pencarian Tugas Induk (Parent Task) via Select2
+Untuk memecah tugas besar menjadi bagian-bagian terukur atau menghubungkan tugas baru ke induknya:
+1. **Pemilihan Tugas Induk Berbasis Select2**:
+   - Pada halaman **Buat Tugas Baru** (`/Task/Create`) dan **Ubah Tugas** (`/Task/Edit/{id}`), bidang **Tugas Induk (Parent Task)** dilengkapi komponen pencarian bertenaga **Select2**.
+   - Anda tidak perlu menggulir daftar ratusan tugas; cukup **ketikkan kata kunci nama tugas atau kode proyek**, dan sistem langsung memfilter pilihan tugas yang relevan secara real-time.
+2. **Menambahkan Sub-Task dari Detail Tugas**:
+   - Buka detail tugas utama (tugas induk / *parent task*).
+   - Pada bagian **Sub-Tasks**, klik **Tambah Sub-Task**.
+   - Masukkan judul, prioritas, dan PIC sub-task.
+3. Kemajuan (*progress bar*) tugas induk akan mencerminkan rata-rata penyelesaian seluruh sub-task di bawahnya secara proporsional.
 
 ### 3.5 Mencatat Kendala (Obstacle) & Solusi Teknis
 Fitur ini sangat berguna untuk mencatat hambatan (*blocker*) selama pengerjaan:
@@ -447,10 +459,17 @@ Fitur ini memungkinkan instance lokal atau laptop cabang melakukan sinkronisasi 
   - Buka tab *Impor Data / Paket*, lalu unggah file `.zip` (Full Package) atau `.sql` (Dump SQL).
   - Sistem akan mengekstrak berkas lampiran ke folder target secara aman serta mengeksekusi script transaksi database secara otomatis.
 
-### 13.5 Backup & Export Database (.db & .sql)
-- **Export File Database (.db)**: Mengunduh berkas biner SQLite `.db` utuh untuk pencadangan offline (*full binary backup*).
-- **Export Script SQL (.sql)**: Mengunduh skrip DDL dan DML lengkap yang siap direstore ke database manapun.
-- **Kompresi Database (VACUUM)**: Mengoptimalkan dan mengklaim kembali ruang kosong file SQLite.
+### 13.5 Backup & Restore Database (.db & .sql)
+Fasilitas pencadangan dan pemulihan data instan untuk Administrator di menu **Konfigurasi Sistem (`/Configuration`)**:
+1. **Pencadangan Data (Export / Backup)**:
+   - **Export File Database (.db)**: Mengunduh berkas biner SQLite `.db` utuh untuk pencadangan offline (*full binary backup*).
+   - **Export Script SQL (.sql)**: Mengunduh skrip DDL dan DML lengkap yang siap direstore ke database manapun.
+   - **Kompresi Database (VACUUM)**: Mengoptimalkan dan mengklaim kembali ruang kosong file SQLite.
+2. **Pemulihan Data (Restore Database)**:
+   - Administrator dapat melakukan pemulihan (*restore*) database langsung melalui formulir upload pada tab konfigurasi.
+   - Mendukung berkas **SQL Script (`.sql`)** untuk eksekusi script migrasi data secara atomik.
+   - Mendukung berkas **SQLite Database (`.db`)** untuk pemulihan langsung database biner.
+   - Terdapat konfirmasi pengamanan sebelum proses restore dieksekusi demi menjaga integritas data operasional.
 
 ### 13.6 Integrasi Server Email (SMTP) & Uji Koneksi
 Modul ini memungkinkan sistem TrackerKerja mengirimkan email notifikasi otomatis kepada pengguna dan administrator untuk event-event krusial:
@@ -495,9 +514,74 @@ Sistem menyediakan sub-modul khusus untuk mengatur format dan isi pesan email un
 4. **Memulihkan Template Bawaan (Reset ke Default)**:
    - Jika Anda ingin mengembalikan format template ke rancangan default pabrik, klik tombol **Reset ke Default** di pojok kanan atas sub-modul template.
 
+### 13.8 Audit Trail & Modal Detail Aktivitas
+Setiap aksi penting (pembuatan, perubahan, penghapusan, login, logout, dsb.) tercatat secara otomatis di menu **Audit Trail (`/AuditTrail`)**:
+- **Inspeksi Detail via Popup Modal**:
+  - Pada tabel log audit, klik tombol **Lihat Detail** pada baris aktivitas yang diinginkan.
+  - Sebuah popup modal elegan akan menampilkan informasi menyeluruh: waktu kejadian, user penanggung jawab, IP address, HTTP Method, URL request, Controller & Action, status HTTP (200, 400, 500), durasi eksekusi dalam milidetik, serta payload JSON/rincian perubahan data.
+
 ---
 
-## 14. Tips & Pertanyaan Umum (FAQ)
+## 14. Modul Gamifikasi, Daily Check-In & Klaim Hadiah
+
+Modul **Gamifikasi** (`/Gamification`) hadir untuk mendorong kedisiplinan dan produktivitas tim melalui pendekatan berbasis penghargaan (*gamified reward system*).
+
+### 14.1 Daily Check-In Harian & Aturan Streak (Reset 2 Hari)
+1. **Melakukan Check-In Harian**:
+   - Buka menu **Daily Check-In & Hadiah** pada sidebar navigasi.
+   - Klik tombol **"Check-In Sekarang"** untuk mengklaim poin harian Anda (default: 10 Poin).
+   - Pengguna hanya dapat melakukan check-in 1 kali per hari kalender.
+2. **Aturan Streak Konsistensi**:
+   - Jika Anda check-in setiap hari berturut-turut, hitungan **Streak** akan terus bertambah `+1` setiap hari.
+   - **Aturan Reset 2 Hari**: Jika Anda tidak melakukan check-in selama **2 hari berturut-turut** (`gap >= 2 hari`), hitungan streak akan otomatis **kembali ke awal (Hari 1)**.
+   - Indikator kobaran api (*streak flame counter*) dan roadmap visual hari 1–30 akan memperlihatkan status konsistensi Anda.
+
+### 14.2 Milestone Bulanan (Streak 30 Hari) & Hadiah Spesial
+- **Pencapaian 1 Bulan Penuh**: Pengguna yang berhasil mempertahankan streak hingga **30 hari berturut-turut (1 bulan)** akan membuka lencana pencapaian bulanan, memperoleh bonus poin besar (default: 500 Poin), serta berhak mengklaim reward berkategori **"Hadiah Khusus Streak 30 Hari"**.
+- Setelah mencapai hari ke-30, roadmap akan memulai siklus bulan berikutnya dengan pencapaian yang tetap terekam dalam riwayat akun.
+
+### 14.3 Koleksi 40+ Master Badge Gaul & Modern Anak Muda
+Sistem menyediakan lebih dari 40 lencana prestasi dengan nama dan deskripsi berbahasa Indonesia gaya modern anak muda yang memotivasi:
+- **Kategori Tugas (Tasks)**: *Awalan Nih Bos! 🐾*, *Sat-Set 10 Task ⚡*, *Si Paling Eksekutor ⚔️*, *Sepuh Produktif 100 🏆*, *Mulai Proyekan 📋*, *Juggling 25 Task 🗂️*, *Suhu Penugasan 🏗️*.
+- **Kategori Waktu & Fokus (Timesheets)**: *Mode Fokus On 🔥*, *Kopi & Keringat ☕*, *Mulai Nyatet Waktu ⏱️*, *Jawara Timesheet ⏳*, *Speedrun Kerja 🚀*, *Dewa Waktu 🪐*.
+- **Kategori Presensi (Attendance)**: *Hadir Bos! ⏰*, *Anti Mangkir Seminggu 📅*, *Sebulan No Bolos 🛡️*, *Duta Presensi 100 🌟*.
+- **Kategori Dokumentasi (Notes)**: *Catet Biar Gak Lupa 📜*, *Gudang Catatan 🧠*, *Spill Daging 25 Info 📚*, *Kolektor Solusi 🏛️*.
+- **Kategori Developer Tools**: *Format JSON Pertama 🧩*, *Pawang JSON 🔮*, *Sultan Payload JSON 🌐*, *Query Rapi Pertama 💾*, *Penyihir SQL 🧙‍♂️*, *Dewa Query SQL ⚡*.
+- **Kategori Aktivitas & Work-Life Balance**: *Login Perdana 👋*, *Langganan Masuk 🔑*, *Member Garis Keras 🚪*, *Sultan Login 100 💎*, *Pamit Dulu Guys 🌇*, *Anti Lembur Club 🧘*, *Master Tenggo 50 🌅*.
+- **Kategori Daily Check-In**: *Absen Poin Perdana 📅*, *On Fire 7 Hari 🔥*, *No Skip 14 Hari ⚡*, *Khatam Sebulan Penuh 🏆*, *Sultan Check-In 50 🎖️*.
+- **Kategori Spesial**: *MVP Idola Kantor 🌟* (Pemberian manual dari Administrator).
+
+### 14.4 Katalog Hadiah & Penukaran Poin (1 Poin = Rp 100)
+1. **Sumber Poin Terbatas (Strict Balance)**:
+   - Saldo poin yang dapat ditukarkan dihitung secara ketat hanya dari:
+     $$\text{Saldo Poin} = (\text{Poin Badge} + \text{Poin Daily Check-In}) - \text{Poin Klaim yang Sedang/Sudah Diproses}$$
+2. **Nilai Tukar Poin**:
+   - Secara default: **1 Poin = Rp 100** (dapat disesuaikan oleh Admin pada Master Data).
+   - Contoh: Hadiah bernilai 250 Poin setara dengan voucher Rp 25.000,-.
+3. **Mengajukan Penukaran Hadiah**:
+   - Pilih barang pada Katalog Hadiah, lalu klik tombol **Tukar Poin**.
+   - Masukkan informasi pengiriman atau nomor kontak/e-wallet Anda.
+   - Klik **Konfirmasi Penukaran**. Stok hadiah akan otomatis dipesan (*reserve*) dan saldo poin Anda akan diperbarui. Status klaim menjadi **Menunggu Review (Pending)**.
+
+### 14.5 Manajemen Master Hadiah & Persetujuan Klaim (Admin Approval)
+Khusus Administrator melalui menu **Master Data > Tab Poin & Hadiah (`/MasterData?tab=rewards`)**:
+1. **Pengaturan Sistem Gamifikasi**:
+   - Poin per Check-In (Default: 10 Poin).
+   - Kurs Rupiah per Poin (Default: Rp 100).
+   - Target Hari Streak Bulanan (Default: 30 Hari).
+   - Bonus Poin Streak Bulanan (Default: 500 Poin).
+   - Toleransi Hari Tanpa Check-in Sebelum Reset (Default: 2 Hari).
+2. **Katalog Master Hadiah (CRUD)**:
+   - Menambah, mengedit, dan menghapus item hadiah (Nama, Deskripsi, Biaya Poin, Stok, Kategori, Ikon FontAwesome, Warna, dan centang *Hadiah Khusus Streak 30 Hari*).
+3. **Proses Pengajuan Klaim Pengguna**:
+   - Meninjau daftar klaim masuk.
+   - Klik tombol **Setujui (Approve)** jika klaim valid.
+   - Klik tombol **Selesaikan (Completed)** setelah voucher/barang diserahkan ke pengguna.
+   - Klik tombol **Tolak (Reject)** jika klaim tidak memenuhi syarat. Saat ditolak, sistem otomatis mengembalikan stok barang dan mengembalikan poin ke saldo pengguna.
+
+---
+
+## 15. Tips & Pertanyaan Umum (FAQ)
 
 ### Q1: Bagaimana cara mencetak atau menyimpan panduan ini ke format PDF?
 > **Jawaban**: Klik menu **📖 Panduan Pengguna** pada bilah samping (Sidebar) navigasi aplikasi di bagian bawah (*Akun & Bantuan*). Pada jendela modal panduan yang terbuka, klik tombol **🖨️ Cetak / Simpan PDF**. Pada jendela print peramban, pilih tujuan printer sebagai **Save as PDF (Simpan sebagai PDF)** dan klik **Save**.
@@ -511,8 +595,11 @@ Sistem menyediakan sub-modul khusus untuk mengatur format dan isi pesan email un
 ### Q4: Apakah saya bisa menjalankan timer untuk lebih dari satu tugas sekaligus?
 > **Jawaban**: Ya. TrackerKerja mendukung multi-timer serentak. Anda dapat menekan tombol *Clock In* pada beberapa tugas berbeda dan seluruh sesi waktu akan dicatat secara akurat.
 
-### Q5: Bagaimana cara mencatat absensi jika saya bekerja dari rumah (WFH)?
-> **Jawaban**: Buka menu **Absensi** (`/Attendance`), pilih status **WFH (Work From Home)**, lalu klik tombol **Check In**.
+### Q5: Mengapa streak check-in harian saya kembali ke hari 1?
+> **Jawaban**: Sistem menerapkan aturan toleransi absensi 2 hari. Jika Anda tidak melakukan check-in selama 2 hari berturut-turut (misal terakhir check-in hari Senin, lalu baru check-in kembali di hari Kamis), maka streak akan di-reset otomatis ke awal (Hari 1).
+
+### Q6: Dari mana saja sumber poin yang bisa saya gunakan untuk klaim hadiah?
+> **Jawaban**: Poin penukaran hadiah dibatasi secara ketat hanya dari akumulasi **Poin Master Badge yang telah Anda raih** ditambah **Poin Daily Check-In & Bonus Streak**. Poin tidak dapat dimanipulasi atau diisi secara manual.
 
 ---
 

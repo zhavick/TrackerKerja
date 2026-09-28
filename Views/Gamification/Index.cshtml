@@ -1,0 +1,1016 @@
+@model TrackerKerja.ViewModels.GamificationPageViewModel
+@{
+    ViewData["Title"] = "Gamifikasi & Hadiah";
+    var activeTab = Model.ActiveTab;
+    var pts = Model.PointsSummary;
+    var chk = Model.CheckInStatus;
+    var gam = Model.Gamification;
+}
+
+<!-- Canvas Confetti CDN -->
+<script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+<div class="space-y-6 pb-12 animate-fade-in">
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- 1. HERO HEADER: POINTS, EXP & STREAK BANNER             -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <div class="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-2xl relative overflow-hidden border border-indigo-900/40">
+        <!-- Ambient Glowing Orbs -->
+        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-10 -top-10 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <!-- Left Info -->
+            <div class="space-y-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold backdrop-blur-md">
+                    <i class="fas fa-trophy text-amber-400"></i> Gamification Rewards &amp; Daily Check-In
+                </div>
+                <h1 class="text-2xl md:text-3xl lg:text-4xl font-black text-white tracking-tight">
+                    Pusat Hadiah &amp; Daily Check-In 🎁
+                </h1>
+                <p class="text-slate-300 text-sm max-w-2xl leading-relaxed">
+                    Kumpulkan poin dari <strong>Daily Check-In</strong> dan pencapaian <strong>Badge Prestasi</strong>.
+                    Tukarkan poin Anda dengan voucher belanja, pulsa, merchandise eksklusif, atau raih <strong>Streak 1 Bulan</strong> untuk klaim hadiah spesial!
+                </p>
+            </div>
+
+            <!-- Right: Points Balance Card -->
+            <div class="bg-white/10 backdrop-blur-xl border border-white/20 p-5 rounded-2xl shadow-xl flex flex-col sm:flex-row items-center gap-5 shrink-0">
+                <div class="text-center sm:text-left">
+                    <p class="text-[11px] font-bold uppercase tracking-wider text-amber-300 flex items-center justify-center sm:justify-start gap-1.5">
+                        <i class="fas fa-coins text-amber-400"></i> Saldo Poin Tersedia
+                    </p>
+                    <div class="flex items-baseline gap-2 mt-0.5 justify-center sm:justify-start">
+                        <span id="header-available-points" class="text-3xl md:text-4xl font-black text-amber-400">@pts.AvailablePoints.ToString("N0")</span>
+                        <span class="text-xs font-bold text-slate-300">PTS</span>
+                    </div>
+                    <p class="text-xs text-emerald-300 font-semibold mt-0.5">
+                        Setara <span id="header-rupiah-equiv" class="font-bold">Rp @pts.RupiahEquivalent.ToString("N0")</span>
+                        <span class="text-[10px] text-slate-400 block sm:inline">(1 Poin = Rp @pts.PointValueRupiah)</span>
+                    </p>
+                </div>
+
+                <div class="h-10 w-px bg-white/20 hidden sm:block"></div>
+
+                <!-- Points Breakdown -->
+                <div class="text-[11px] space-y-1 text-slate-200 border-t sm:border-t-0 pt-3 sm:pt-0 w-full sm:w-auto text-center sm:text-left">
+                    <div class="flex justify-between sm:justify-start gap-3">
+                        <span class="text-slate-400"><i class="fas fa-medal text-amber-400 w-4"></i> Badge:</span>
+                        <span class="font-bold text-white">@pts.BadgePoints pts</span>
+                    </div>
+                    <div class="flex justify-between sm:justify-start gap-3">
+                        <span class="text-slate-400"><i class="fas fa-calendar-check text-emerald-400 w-4"></i> Check-In:</span>
+                        <span class="font-bold text-white">@pts.CheckInPoints pts</span>
+                    </div>
+                    <div class="flex justify-between sm:justify-start gap-3">
+                        <span class="text-slate-400"><i class="fas fa-receipt text-rose-400 w-4"></i> Terpakai:</span>
+                        <span class="font-bold text-rose-300">@pts.SpentPoints pts</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Navigation Tabs -->
+        <div class="mt-8 pt-6 border-t border-white/10 flex items-center justify-between flex-wrap gap-3">
+            <div class="flex items-center bg-white/10 p-1.5 rounded-2xl backdrop-blur-md border border-white/10 flex-wrap gap-1 w-full md:w-auto">
+                <a href="/Gamification?tab=checkin" class="flex-1 md:flex-none justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 @(activeTab == "checkin" ? "bg-amber-500 text-white shadow-lg shadow-amber-500/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
+                    <i class="fas fa-calendar-day"></i> <span>Daily Check-In &amp; Streak</span>
+                    @if (!chk.HasCheckedInToday)
+                    {
+                        <span class="w-2 h-2 rounded-full bg-rose-400 animate-ping"></span>
+                    }
+                </a>
+                <a href="/Gamification?tab=rewards" class="flex-1 md:flex-none justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 @(activeTab == "rewards" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
+                    <i class="fas fa-gift"></i> <span>Katalog Hadiah (@Model.Rewards.Count)</span>
+                </a>
+                <a href="/Gamification?tab=claims" class="flex-1 md:flex-none justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 @(activeTab == "claims" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
+                    <i class="fas fa-history"></i> <span>Riwayat Klaim (@Model.MyClaims.Count)</span>
+                </a>
+                <a href="/Gamification?tab=badges" class="flex-1 md:flex-none justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 @(activeTab == "badges" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
+                    <i class="fas fa-medal"></i> <span>Badge &amp; EXP (@gam.UnlockedBadgesCount/@gam.TotalBadgesCount)</span>
+                </a>
+            </div>
+
+            <!-- Streak Counter Pill -->
+            <div class="flex items-center gap-2 px-4 py-2 rounded-2xl bg-amber-500/20 border border-amber-500/40 text-amber-300 text-xs font-black shadow-inner">
+                <i class="fas fa-fire text-amber-400 text-base animate-pulse"></i>
+                <span>Streak: <strong class="text-white text-sm">@chk.CurrentStreak Hari</strong></span>
+                <span class="text-slate-400">|</span>
+                <span class="text-slate-300 font-semibold">Total: @chk.TotalCheckIns Check-in</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 1: DAILY CHECK-IN & 30-DAY STREAK ROADMAP          -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    @if (activeTab == "checkin")
+    {
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+            <!-- Left 2 Cols: Main Check-in Action & Streak Roadmap -->
+            <div class="lg:col-span-2 space-y-6">
+
+                <!-- Interactive Check-In Card -->
+                <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/80 relative overflow-hidden">
+                    <div class="flex flex-col sm:flex-row items-center justify-between gap-6 pb-6 border-b border-slate-100">
+                        <div class="flex items-center gap-4 text-center sm:text-left">
+                            <div class="w-16 h-16 rounded-2xl bg-gradient-to-tr @(chk.HasCheckedInToday ? "from-emerald-500 to-teal-400 text-white" : "from-amber-500 to-orange-500 text-white shadow-lg shadow-orange-500/30") flex items-center justify-center text-2xl font-black shrink-0">
+                                @if (chk.HasCheckedInToday)
+                                {
+                                    <i class="fas fa-check-double"></i>
+                                }
+                                else
+                                {
+                                    <i class="fas fa-calendar-check animate-bounce"></i>
+                                }
+                            </div>
+                            <div>
+                                <div class="flex items-center gap-2 justify-center sm:justify-start">
+                                    <h2 class="text-xl font-extrabold text-slate-800">Daily Check-In Hari Ini</h2>
+                                    @if (chk.HasCheckedInToday)
+                                    {
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-700 border border-emerald-200">
+                                            Sudah Check-In
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 animate-pulse">
+                                            Tersedia Hari Ini!
+                                        </span>
+                                    }
+                                </div>
+                                <p class="text-xs text-slate-500 mt-1">
+                                    Tanggal: <strong>@DateTime.Today.ToString("dddd, dd MMMM yyyy")</strong>
+                                    &bull; Reward: <strong class="text-amber-600">+@chk.PointsPerCheckIn Poin</strong> (Rp @((chk.PointsPerCheckIn * chk.PointValueRupiah).ToString("N0")))
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <div class="w-full sm:w-auto">
+                            @if (chk.HasCheckedInToday)
+                            {
+                                <button type="button" disabled class="w-full sm:w-auto px-6 py-3.5 rounded-2xl bg-emerald-50 text-emerald-700 border border-emerald-200 font-bold text-sm flex items-center justify-center gap-2 cursor-not-allowed opacity-90 shadow-sm">
+                                    <i class="fas fa-circle-check text-emerald-500 text-base"></i>
+                                    <span>Sudah Check-In Hari Ini</span>
+                                </button>
+                            }
+                            else
+                            {
+                                <button type="button" id="btn-do-checkin" onclick="performDailyCheckIn()" class="w-full sm:w-auto px-8 py-3.5 rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-amber-600 hover:from-amber-600 hover:to-orange-600 text-white font-extrabold text-sm shadow-xl shadow-orange-500/30 hover:shadow-orange-500/50 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2.5 cursor-pointer">
+                                    <i class="fas fa-hand-sparkles text-amber-200 text-base"></i>
+                                    <span>Check-In Sekarang (+@chk.PointsPerCheckIn Pts)</span>
+                                </button>
+                            }
+                        </div>
+                    </div>
+
+                    <!-- Note input if not checked in -->
+                    @if (!chk.HasCheckedInToday)
+                    {
+                        <div class="mt-4 pt-4 flex flex-col sm:flex-row items-center gap-3">
+                            <input type="text" id="checkin-notes" placeholder="Tuliskan catatan kerja / semangat harian hari ini (opsional)..." class="w-full px-4 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-amber-500 focus:outline-none placeholder-slate-400 bg-slate-50/50" />
+                            <span class="text-[11px] text-slate-400 shrink-0">Bisa diisi atau langsung klik Check-In</span>
+                        </div>
+                    }
+
+                    <!-- 30-Day Monthly Milestone Progress Track -->
+                    <div class="mt-6 pt-6 border-t border-slate-100">
+                        <div class="flex items-center justify-between mb-2">
+                            <div>
+                                <h3 class="text-sm font-bold text-slate-800 flex items-center gap-2">
+                                    <i class="fas fa-route text-indigo-500"></i> Progres Menuju Hadiah 1 Bulan
+                                </h3>
+                                <p class="text-xs text-slate-500">
+                                    Capai <strong>@chk.MonthlyTargetDays Hari</strong> streak berturut-turut untuk membuka <strong>Bonus +@chk.MonthlyBonusPoints Poin</strong> dan klaim <strong>Hadiah Spesial 1 Bulan</strong>!
+                                </p>
+                            </div>
+                            <div class="text-right">
+                                <span class="text-xs font-black text-indigo-600 bg-indigo-50 px-2.5 py-1 rounded-lg border border-indigo-100">
+                                    @chk.CurrentStreak / @chk.MonthlyTargetDays Hari
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        @{
+                            var streakPercent = Math.Min(100, (int)Math.Round((double)chk.CurrentStreak / chk.MonthlyTargetDays * 100));
+                        }
+                        <div class="w-full bg-slate-100 rounded-full h-3.5 overflow-hidden p-0.5 border border-slate-200 shadow-inner">
+                            <div class="bg-gradient-to-r from-amber-500 via-orange-500 to-emerald-500 h-full rounded-full transition-all duration-700 shadow-sm" style="width: @streakPercent%"></div>
+                        </div>
+
+                        <!-- 30-Day Roadmap Grid -->
+                        <div class="mt-5">
+                            <p class="text-[11px] font-bold uppercase tracking-wider text-slate-400 mb-2.5 flex items-center justify-between">
+                                <span>Peta Streak 30 Hari:</span>
+                                @if (chk.CurrentStreak >= chk.MonthlyTargetDays)
+                                {
+                                    <span class="text-emerald-600 font-bold"><i class="fas fa-crown text-amber-500"></i> Target 1 Bulan Tercapai!</span>
+                                }
+                                else
+                                {
+                                    <span class="text-slate-500 font-medium">Tersisa @chk.DaysRemainingForMonthlyReward hari lagi</span>
+                                }
+                            </p>
+
+                            <div class="grid grid-cols-6 sm:grid-cols-10 gap-2">
+                                @for (int day = 1; day <= chk.MonthlyTargetDays; day++)
+                                {
+                                    var isCompleted = day <= chk.CurrentStreak;
+                                    var isCurrent = day == chk.CurrentStreak && chk.HasCheckedInToday;
+                                    var isNext = day == chk.CurrentStreak + 1;
+                                    var isMonthEnd = day == chk.MonthlyTargetDays;
+
+                                    <div class="flex flex-col items-center justify-center p-2 rounded-xl text-center border transition-all relative @(isMonthEnd ? "ring-2 ring-amber-400 shadow-sm" : "") @(isCompleted ? "bg-emerald-50 border-emerald-300 text-emerald-800" : isNext ? "bg-amber-50 border-amber-300 text-amber-800 animate-pulse" : "bg-slate-50 border-slate-200 text-slate-400")">
+                                        <span class="text-[10px] font-bold">H-@day</span>
+                                        <div class="my-0.5 text-xs">
+                                            @if (isMonthEnd)
+                                            {
+                                                <i class="fas fa-gift text-amber-500 font-black"></i>
+                                            }
+                                            else if (isCompleted)
+                                            {
+                                                <i class="fas fa-circle-check text-emerald-500"></i>
+                                            }
+                                            else if (isNext)
+                                            {
+                                                <i class="fas fa-arrow-down text-amber-500"></i>
+                                            }
+                                            else
+                                            {
+                                                <i class="far fa-circle text-slate-300"></i>
+                                            }
+                                        </div>
+                                        <span class="text-[9px] font-semibold @(isCompleted ? "text-emerald-600" : "text-slate-400")">
+                                            @(isMonthEnd ? "+500" : "+10")
+                                        </span>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+
+                        <!-- Rule Notice Alert -->
+                        <div class="mt-6 p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-start gap-3">
+                            <i class="fas fa-exclamation-triangle text-amber-500 text-base mt-0.5 shrink-0"></i>
+                            <div class="text-xs text-amber-900 leading-relaxed">
+                                <p class="font-bold">Ketentuan &amp; Aturan Streak Daily Check-In:</p>
+                                <ul class="list-disc list-inside mt-1 space-y-0.5 text-amber-800/90">
+                                    <li>Lakukan check-in setiap hari untuk menjaga streak aktif. Setiap check-in bernilai <strong>@chk.PointsPerCheckIn Poin</strong> (senilai <strong>Rp @((chk.PointsPerCheckIn * chk.PointValueRupiah).ToString("N0"))</strong>).</li>
+                                    <li>Jika check-in tidak dilanjutkan selama <strong>@chk.MissedDaysReset hari berturut-turut</strong>, maka streak akan <strong>kembali ke awal (Hari ke-1)</strong>.</li>
+                                    <li>Pengguna yang mencapai streak <strong>1 bulan (@chk.MonthlyTargetDays hari)</strong> akan mendapatkan <strong>Bonus @chk.MonthlyBonusPoints Poin</strong> dan membuka hak klaim <strong>Hadiah Spesial Bulanan</strong>!</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Check-In History -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80">
+                    <h3 class="text-base font-extrabold text-slate-800 mb-4 flex items-center gap-2">
+                        <i class="fas fa-history text-slate-500"></i> Riwayat Check-In Terakhir Anda
+                    </h3>
+
+                    @if (chk.RecentCheckIns.Any())
+                    {
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-xs">
+                                <thead>
+                                    <tr class="border-b border-slate-100 text-slate-400 uppercase tracking-wider text-[10px]">
+                                        <th class="pb-3 font-bold">Tanggal</th>
+                                        <th class="pb-3 font-bold">Waktu</th>
+                                        <th class="pb-3 font-bold">Hari Streak</th>
+                                        <th class="pb-3 font-bold">Poin Didapat</th>
+                                        <th class="pb-3 font-bold">Catatan</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-slate-100">
+                                    @foreach (var item in chk.RecentCheckIns)
+                                    {
+                                        <tr class="hover:bg-slate-50/50">
+                                            <td class="py-3 font-bold text-slate-800">
+                                                @item.CheckInDate.ToString("dd MMM yyyy")
+                                                @if (item.CheckInDate.Date == DateTime.Today)
+                                                {
+                                                    <span class="ml-1 text-[10px] px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 font-bold">Hari Ini</span>
+                                                }
+                                            </td>
+                                            <td class="py-3 text-slate-500">@item.CheckInTime.ToString("HH:mm:ss")</td>
+                                            <td class="py-3">
+                                                <span class="inline-flex items-center gap-1 font-bold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-lg border border-amber-200/60">
+                                                    <i class="fas fa-fire text-amber-500 text-[10px]"></i> Hari ke-@item.StreakDay
+                                                </span>
+                                            </td>
+                                            <td class="py-3 font-bold text-emerald-600">
+                                                +@item.PointsEarned Pts
+                                                @if (item.IsMonthlyMilestone)
+                                                {
+                                                    <span class="block text-[10px] text-amber-600 font-bold"><i class="fas fa-crown"></i> Milestone 1 Bulan!</span>
+                                                }
+                                            </td>
+                                            <td class="py-3 text-slate-500 max-w-xs truncate">
+                                                @(string.IsNullOrWhiteSpace(item.Notes) ? "-" : item.Notes)
+                                            </td>
+                                        </tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="text-center py-8 text-slate-400">
+                            <i class="fas fa-calendar-xmark text-3xl text-slate-300 mb-2"></i>
+                            <p class="text-xs">Belum ada riwayat daily check-in. Tekan tombol di atas untuk memulai!</p>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <!-- Right Col: Monthly Special Prize Spotlight & Point Rules -->
+            <div class="space-y-6">
+
+                <!-- Monthly Milestone Highlight Card -->
+                <div class="bg-gradient-to-br from-pink-600 via-rose-600 to-amber-600 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 w-36 h-36 bg-white/10 rounded-full blur-2xl"></div>
+
+                    <div class="relative z-10 space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="px-3 py-1 rounded-full text-[11px] font-black uppercase tracking-wider bg-white/20 backdrop-blur-md border border-white/20">
+                                🌟 Hadiah Spesial 1 Bulan
+                            </span>
+                            <i class="fas fa-gift text-2xl text-amber-200 animate-bounce"></i>
+                        </div>
+
+                        <div>
+                            <h3 class="text-xl font-black">Paket Hadiah Bulanan</h3>
+                            <p class="text-xs text-rose-100 mt-1 leading-relaxed">
+                                Khusus untuk anggota tim yang tekun dan konsisten melakukan check-in selama 30 hari penuh.
+                            </p>
+                        </div>
+
+                        <div class="bg-black/20 backdrop-blur-md rounded-2xl p-4 border border-white/10 space-y-2 text-xs">
+                            <div class="flex items-center gap-2 text-amber-200 font-bold">
+                                <i class="fas fa-check-circle"></i> Merchandise Box TrackerKerja
+                            </div>
+                            <div class="flex items-center gap-2 text-amber-200 font-bold">
+                                <i class="fas fa-check-circle"></i> Saldo E-Wallet Rp 100.000
+                            </div>
+                            <div class="flex items-center gap-2 text-amber-200 font-bold">
+                                <i class="fas fa-check-circle"></i> Badge Langka: Satu Bulan Konsistensi 🏆
+                            </div>
+                        </div>
+
+                        <div class="pt-2">
+                            @if (chk.IsEligibleForMonthlyReward)
+                            {
+                                <a href="/Gamification?tab=rewards" class="block w-full text-center py-3 rounded-xl bg-white text-rose-600 font-extrabold text-xs shadow-lg hover:bg-rose-50 transition-all">
+                                    <i class="fas fa-sparkles"></i> Klaim Hadiah Bulanan Anda Sekarang!
+                                </a>
+                            }
+                            else
+                            {
+                                <div class="text-center py-2.5 px-4 rounded-xl bg-white/10 border border-white/20 text-xs font-bold text-white">
+                                    <i class="fas fa-lock text-amber-200 mr-1.5"></i>
+                                    Streak Saat Ini: @chk.CurrentStreak/@chk.MonthlyTargetDays Hari
+                                </div>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Point Economics Card (1 Point = 100) -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 space-y-4">
+                    <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-calculator text-indigo-500"></i> Kalkulator Nilai Poin
+                    </h3>
+                    <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-2">
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-600 font-medium">Konversi Nilai:</span>
+                            <span class="font-extrabold text-indigo-700">1 Poin = Rp @pts.PointValueRupiah</span>
+                        </div>
+                        <div class="flex items-center justify-between text-xs">
+                            <span class="text-slate-600 font-medium">Saldo Poin Anda:</span>
+                            <span class="font-black text-amber-600">@pts.AvailablePoints Pts</span>
+                        </div>
+                        <div class="border-t border-indigo-200/60 pt-2 flex items-center justify-between text-xs">
+                            <span class="font-bold text-slate-800">Nilai Rupiah Anda:</span>
+                            <span class="font-black text-emerald-600 text-sm">Rp @pts.RupiahEquivalent.ToString("N0")</span>
+                        </div>
+                    </div>
+                    <p class="text-[11px] text-slate-500 leading-relaxed">
+                        Nilai konversi poin dapat disesuaikan oleh administrator melalui menu <strong>Master Data &gt; Poin &amp; Hadiah</strong>.
+                    </p>
+                </div>
+
+                <!-- Quick Tips Card -->
+                <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 space-y-3">
+                    <h3 class="text-sm font-extrabold text-slate-800 flex items-center gap-2">
+                        <i class="fas fa-lightbulb text-amber-500"></i> Cara Mendapatkan Poin
+                    </h3>
+                    <ul class="text-xs text-slate-600 space-y-2.5">
+                        <li class="flex items-start gap-2">
+                            <span class="w-5 h-5 rounded-full bg-emerald-100 text-emerald-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">1</span>
+                            <span><strong>Daily Check-In Harian:</strong> Buka aplikasi dan klik check-in tiap hari (+@chk.PointsPerCheckIn Pts/hari).</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="w-5 h-5 rounded-full bg-amber-100 text-amber-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">2</span>
+                            <span><strong>Buka Badge Prestasi:</strong> Selesaikan tugas, presensi, timesheet, dan eksplorasi fitur untuk bonus badge 50 - 1000 Pts!</span>
+                        </li>
+                        <li class="flex items-start gap-2">
+                            <span class="w-5 h-5 rounded-full bg-indigo-100 text-indigo-700 font-bold text-[10px] flex items-center justify-center shrink-0 mt-0.5">3</span>
+                            <span><strong>Tukar di Katalog:</strong> Gunakan saldo poin untuk memilih hadiah idaman Anda.</span>
+                        </li>
+                    </ul>
+                </div>
+
+            </div>
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 2: REWARDS CATALOG (TUKAR POIN DENGAN HADIAH)      -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    @if (activeTab == "rewards")
+    {
+        <div class="space-y-6">
+
+            <!-- Catalog Subheader -->
+            <div class="bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                    <h2 class="text-xl font-extrabold text-slate-800">Katalog Hadiah &amp; Merchandise</h2>
+                    <p class="text-xs text-slate-500 mt-1">
+                        Pilih hadiah yang ingin Anda tukarkan dengan saldo poin badge &amp; check-in Anda.
+                    </p>
+                </div>
+
+                <!-- Category Filters -->
+                <div class="flex items-center gap-1.5 flex-wrap">
+                    <button type="button" onclick="filterRewards('all')" class="reward-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-indigo-600 text-white shadow-sm transition-all" data-category="all">Semua</button>
+                    <button type="button" onclick="filterRewards('E-Wallet')" class="reward-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all" data-category="E-Wallet">E-Wallet &amp; Pulsa</button>
+                    <button type="button" onclick="filterRewards('Voucher')" class="reward-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all" data-category="Voucher">Voucher</button>
+                    <button type="button" onclick="filterRewards('Merchandise')" class="reward-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all" data-category="Merchandise">Merchandise</button>
+                    <button type="button" onclick="filterRewards('Hadiah Bulanan')" class="reward-filter-btn px-3.5 py-1.5 rounded-xl text-xs font-bold bg-slate-100 hover:bg-slate-200 text-slate-700 transition-all" data-category="Hadiah Bulanan">Hadiah 1 Bulan</button>
+                </div>
+            </div>
+
+            <!-- Rewards Grid -->
+            @if (Model.Rewards.Any())
+            {
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6" id="rewards-grid">
+                    @foreach (var reward in Model.Rewards)
+                    {
+                        var canAfford = pts.AvailablePoints >= reward.PointCost;
+                        var inStock = reward.Stock > 0;
+                        var rupiahCost = (reward.PointCost * pts.PointValueRupiah);
+                        var isMonthReward = reward.IsMonthlyMilestoneReward;
+                        var canClaimMonthReward = !isMonthReward || chk.IsEligibleForMonthlyReward;
+
+                        <div class="reward-card bg-white rounded-3xl p-6 shadow-sm border border-slate-200/80 hover:shadow-md transition-all flex flex-col justify-between relative overflow-hidden group" data-category="@reward.Category">
+                            @if (isMonthReward)
+                            {
+                                <div class="absolute top-0 right-0 bg-gradient-to-l from-amber-500 to-rose-500 text-white text-[10px] font-black uppercase tracking-wider px-3 py-1 rounded-bl-xl shadow-sm">
+                                    <i class="fas fa-crown"></i> Khusus 1 Bulan Streak
+                                </div>
+                            }
+
+                            <div>
+                                <!-- Top Row: Icon & Category -->
+                                <div class="flex items-center gap-3 mb-4">
+                                    <div class="w-14 h-14 rounded-2xl flex items-center justify-center text-white text-2xl shadow-md transition-transform group-hover:scale-105 shrink-0" style="background: @reward.Color;">
+                                        <i class="@reward.Icon"></i>
+                                    </div>
+                                    <div>
+                                        <span class="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-slate-100 text-slate-600">
+                                            @reward.Category
+                                        </span>
+                                        <h3 class="font-extrabold text-slate-900 text-base mt-1 line-clamp-2">@reward.Name</h3>
+                                    </div>
+                                </div>
+
+                                <p class="text-xs text-slate-500 leading-relaxed mb-4 line-clamp-3">
+                                    @(string.IsNullOrWhiteSpace(reward.Description) ? "Hadiah penukaran poin eksklusif TrackerKerja Pro." : reward.Description)
+                                </p>
+                            </div>
+
+                            <div class="pt-4 border-t border-slate-100 space-y-3">
+                                <!-- Price & Stock Info -->
+                                <div class="flex items-center justify-between">
+                                    <div>
+                                        <span class="text-xs text-slate-400 font-semibold block">Harga Poin:</span>
+                                        <div class="flex items-baseline gap-1">
+                                            <span class="text-xl font-black text-amber-600">@reward.PointCost.ToString("N0")</span>
+                                            <span class="text-xs font-bold text-slate-400">Pts</span>
+                                        </div>
+                                        <span class="text-[11px] font-semibold text-emerald-600">
+                                            (Setara Rp @rupiahCost.ToString("N0"))
+                                        </span>
+                                    </div>
+
+                                    <div class="text-right">
+                                        <span class="text-xs text-slate-400 font-semibold block">Sisa Stok:</span>
+                                        <span class="text-xs font-bold @(reward.Stock > 3 ? "text-slate-700" : reward.Stock > 0 ? "text-amber-600" : "text-rose-600")">
+                                            @(reward.Stock > 0 ? $"{reward.Stock} Unit" : "Habis")
+                                        </span>
+                                    </div>
+                                </div>
+
+                                <!-- Claim Button -->
+                                @if (!inStock)
+                                {
+                                    <button type="button" disabled class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs cursor-not-allowed">
+                                        <i class="fas fa-ban"></i> Stok Habis
+                                    </button>
+                                }
+                                else if (!canClaimMonthReward)
+                                {
+                                    <button type="button" disabled class="w-full py-2.5 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 font-bold text-xs cursor-not-allowed" title="Perlu 30 hari streak check-in">
+                                        <i class="fas fa-lock text-amber-500"></i> Perlu Streak 1 Bulan (@chk.CurrentStreak/30)
+                                    </button>
+                                }
+                                else if (!canAfford)
+                                {
+                                    <button type="button" disabled class="w-full py-2.5 rounded-xl bg-slate-100 text-slate-400 font-bold text-xs cursor-not-allowed" title="Poin Anda (@pts.AvailablePoints) tidak mencukupi (@reward.PointCost)">
+                                        <i class="fas fa-coins text-slate-400"></i> Poin Belum Cukup
+                                    </button>
+                                }
+                                else
+                                {
+                                    <button type="button" onclick="openClaimModal(@reward.Id, '@reward.Name.Replace("'", "\\'")', @reward.PointCost, @rupiahCost)" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/30 hover:shadow-indigo-600/50 hover:scale-[1.01] transition-all flex items-center justify-center gap-1.5 cursor-pointer">
+                                        <i class="fas fa-hand-holding-dollar"></i> Tukarkan Hadiah Ini
+                                    </button>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="bg-white rounded-3xl p-12 text-center shadow-sm border border-slate-200">
+                    <i class="fas fa-gift text-5xl text-slate-300 mb-3"></i>
+                    <h3 class="text-base font-bold text-slate-700">Belum Ada Hadiah di Katalog</h3>
+                    <p class="text-xs text-slate-500 mt-1">Administrator dapat menambahkan hadiah baru melalui menu Master Data.</p>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 3: USER CLAIMS HISTORY (RIWAYAT KLAIM HADIAH)       -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    @if (activeTab == "claims")
+    {
+        <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/80 space-y-6">
+            <div>
+                <h2 class="text-xl font-extrabold text-slate-800">Riwayat Penukaran Hadiah</h2>
+                <p class="text-xs text-slate-500 mt-1">
+                    Pantau status verifikasi dan pengiriman hadiah yang telah Anda ajukan.
+                </p>
+            </div>
+
+            @if (Model.MyClaims.Any())
+            {
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-xs">
+                        <thead>
+                            <tr class="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
+                                <th class="pb-3 font-bold">Waktu Klaim</th>
+                                <th class="pb-3 font-bold">Item Hadiah</th>
+                                <th class="pb-3 font-bold">Poin Didebit</th>
+                                <th class="pb-3 font-bold">Nilai Rupiah</th>
+                                <th class="pb-3 font-bold">Catatan Pengiriman</th>
+                                <th class="pb-3 font-bold">Status</th>
+                                <th class="pb-3 font-bold">Respon Admin</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-slate-100">
+                            @foreach (var claim in Model.MyClaims)
+                            {
+                                <tr class="hover:bg-slate-50/50">
+                                    <td class="py-3.5 text-slate-600 font-semibold">
+                                        @claim.ClaimedAt.ToString("dd MMM yyyy HH:mm")
+                                    </td>
+                                    <td class="py-3.5">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs shrink-0" style="background: @(claim.RewardItem?.Color ?? "#6366F1");">
+                                                <i class="@(claim.RewardItem?.Icon ?? "fa-solid fa-gift")"></i>
+                                            </div>
+                                            <div>
+                                                <span class="font-bold text-slate-900 block">@(claim.RewardItem?.Name ?? "Hadiah")</span>
+                                                <span class="text-[10px] text-slate-400">@(claim.RewardItem?.Category ?? "Katalog")</span>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3.5 font-bold text-rose-600">
+                                        -@claim.PointsSpent Pts
+                                    </td>
+                                    <td class="py-3.5 font-bold text-emerald-600">
+                                        Rp @claim.RupiahEquivalent.ToString("N0")
+                                    </td>
+                                    <td class="py-3.5 text-slate-600 max-w-xs truncate">
+                                        @(string.IsNullOrWhiteSpace(claim.UserNotes) ? "-" : claim.UserNotes)
+                                    </td>
+                                    <td class="py-3.5">
+                                        @switch (claim.Status)
+                                        {
+                                            case TrackerKerja.Models.ClaimStatus.Pending:
+                                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-amber-100 text-amber-800 border border-amber-200 inline-flex items-center gap-1">
+                                                    <i class="fas fa-clock"></i> Menunggu Verifikasi
+                                                </span>
+                                                break;
+                                            case TrackerKerja.Models.ClaimStatus.Approved:
+                                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-blue-100 text-blue-800 border border-blue-200 inline-flex items-center gap-1">
+                                                    <i class="fas fa-thumbs-up"></i> Disetujui
+                                                </span>
+                                                break;
+                                            case TrackerKerja.Models.ClaimStatus.Completed:
+                                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 inline-flex items-center gap-1">
+                                                    <i class="fas fa-check-circle"></i> Selesai / Terkirim
+                                                </span>
+                                                break;
+                                            case TrackerKerja.Models.ClaimStatus.Rejected:
+                                                <span class="px-2.5 py-1 rounded-full text-[11px] font-bold bg-rose-100 text-rose-800 border border-rose-200 inline-flex items-center gap-1">
+                                                    <i class="fas fa-times-circle"></i> Ditolak (Poin Refund)
+                                                </span>
+                                                break;
+                                        }
+                                    </td>
+                                    <td class="py-3.5 text-slate-500 max-w-xs truncate">
+                                        @(string.IsNullOrWhiteSpace(claim.AdminNotes) ? "-" : claim.AdminNotes)
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            }
+            else
+            {
+                <div class="text-center py-12 text-slate-400">
+                    <i class="fas fa-inbox text-4xl text-slate-300 mb-2"></i>
+                    <p class="text-xs">Anda belum pernah menukarkan hadiah. Jelajahi katalog dan tukarkan poin Anda!</p>
+                </div>
+            }
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 4: BADGES & EXP PROFILE                            -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    @if (activeTab == "badges")
+    {
+        <div class="space-y-6">
+            <!-- Level & EXP Summary Card -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/80 flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 rounded-2xl bg-amber-500 text-white flex items-center justify-center text-3xl shadow-lg shadow-amber-500/30">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-2">
+                            <span class="text-xs font-black uppercase tracking-wider px-2 py-0.5 rounded bg-amber-100 text-amber-800">LEVEL @gam.Level</span>
+                            <h3 class="text-xl font-extrabold text-slate-900">@gam.LevelTitle</h3>
+                        </div>
+                        <p class="text-xs text-slate-500 mt-1">
+                            Total <strong>@gam.TotalExp EXP</strong> &bull; Terbuka <strong>@gam.UnlockedBadgesCount</strong> dari @gam.TotalBadgesCount Badge Prestasi.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-72">
+                    <div class="flex justify-between text-xs font-bold text-slate-600 mb-1.5">
+                        <span>EXP ke Level @(gam.Level + 1)</span>
+                        <span>@gam.CurrentLevelExp / @gam.NextLevelExp EXP</span>
+                    </div>
+                    <div class="w-full bg-slate-100 rounded-full h-3 overflow-hidden p-0.5 border border-slate-200">
+                        <div class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: @gam.ExpProgressPercent%"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Badges Catalog -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 shadow-sm border border-slate-200/80">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+                    <div>
+                        <h3 class="text-base font-extrabold text-slate-800">Daftar Seluruh Badge &amp; Pencapaian</h3>
+                        <p class="text-xs text-slate-500 mt-0.5">Semua poin dari badge yang telah terbuka otomatis menjadi saldo poin reward Anda.</p>
+                    </div>
+
+                    <div class="flex items-center gap-1.5">
+                        <button type="button" onclick="filterBadgesGrid('all')" class="badge-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-500 text-white" data-bfilter="all">Semua (@gam.TotalBadgesCount)</button>
+                        <button type="button" onclick="filterBadgesGrid('unlocked')" class="badge-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200" data-bfilter="unlocked">Terbuka (@gam.UnlockedBadgesCount)</button>
+                        <button type="button" onclick="filterBadgesGrid('locked')" class="badge-tab-btn px-3 py-1.5 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 hover:bg-slate-200" data-bfilter="locked">Terkunci (@(gam.TotalBadgesCount - gam.UnlockedBadgesCount))</button>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4" id="badges-container">
+                    @foreach (var badge in gam.Badges)
+                    {
+                        <div class="badge-card-item rounded-2xl p-4 border transition-all flex flex-col justify-between @(badge.IsUnlocked ? "bg-amber-50/40 border-amber-200 shadow-sm" : "bg-slate-50/60 border-slate-200 opacity-60")" data-unlocked="@(badge.IsUnlocked ? "true" : "false")">
+                            <div>
+                                <div class="flex items-center justify-between mb-3">
+                                    <div class="w-12 h-12 rounded-xl flex items-center justify-center text-white text-xl shadow-md" style="background: @(badge.IsUnlocked ? badge.Color : "#94A3B8");">
+                                        <i class="@badge.Icon"></i>
+                                    </div>
+                                    <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md @(badge.IsUnlocked ? "bg-amber-100 text-amber-800" : "bg-slate-200 text-slate-600")">
+                                        +@badge.Points Pts
+                                    </span>
+                                </div>
+                                <h4 class="font-extrabold text-sm text-slate-900">@badge.Name</h4>
+                                <p class="text-xs text-slate-500 mt-1 line-clamp-2">@badge.Description</p>
+                            </div>
+
+                            <div class="mt-4 pt-3 border-t @(badge.IsUnlocked ? "border-amber-200/60" : "border-slate-200")">
+                                @if (badge.IsUnlocked)
+                                {
+                                    <div class="flex items-center justify-between text-[11px] font-bold text-emerald-600">
+                                        <span><i class="fas fa-check-circle"></i> Terbuka</span>
+                                        <span class="text-slate-400 font-normal">@(badge.UnlockedAt?.ToString("dd/MM/yy") ?? "Aktif")</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div>
+                                        <div class="flex justify-between text-[10px] text-slate-500 font-semibold mb-1">
+                                            <span>Progres</span>
+                                            <span>@badge.CurrentProgress / @badge.TriggerThreshold</span>
+                                        </div>
+                                        <div class="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                            <div class="bg-slate-400 h-full rounded-full" style="width: @badge.ProgressPercent%"></div>
+                                        </div>
+                                    </div>
+                                }
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    }
+
+</div>
+
+<!-- ═══════════════════════════════════════════════════════ -->
+<!-- MODAL: CLAIM REWARD CONFIRMATION                       -->
+<!-- ═══════════════════════════════════════════════════════ -->
+<div id="claimRewardModal" class="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl max-w-lg w-full p-6 md:p-8 shadow-2xl border border-slate-100 animate-scale-up space-y-6">
+        <div class="flex items-center justify-between pb-4 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-lg font-black">
+                    <i class="fas fa-gift"></i>
+                </div>
+                <div>
+                    <h3 class="font-extrabold text-slate-900 text-lg">Konfirmasi Penukaran Hadiah</h3>
+                    <p class="text-xs text-slate-400">Work Tracker Pro Rewards Redemption</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeClaimModal()" class="text-slate-400 hover:text-slate-600 text-lg p-1.5">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <!-- Reward Details -->
+        <div class="p-4 rounded-2xl bg-indigo-50/70 border border-indigo-100 space-y-2 text-xs">
+            <div class="flex justify-between">
+                <span class="text-slate-600">Hadiah:</span>
+                <span id="modal-reward-name" class="font-extrabold text-slate-900 text-right">Nama Hadiah</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-600">Poin Dibutuhkan:</span>
+                <span id="modal-reward-points" class="font-black text-amber-600">0 Pts</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-slate-600">Estimasi Nilai Rupiah:</span>
+                <span id="modal-reward-rupiah" class="font-extrabold text-emerald-600">Rp 0</span>
+            </div>
+            <div class="border-t border-indigo-200/60 pt-2 flex justify-between font-bold">
+                <span class="text-slate-700">Sisa Poin Anda Setelah Klaim:</span>
+                <span id="modal-remaining-points" class="text-indigo-700">0 Pts</span>
+            </div>
+        </div>
+
+        <!-- Form for Notes (No HP, E-Wallet, Alamat) -->
+        <form id="formClaimReward" onsubmit="submitRewardClaim(event)" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" id="modal-reward-id" name="rewardItemId" value="0" />
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                    Informasi Kontak &amp; Tujuan Pengiriman / No. E-Wallet <span class="text-rose-500">*</span>
+                </label>
+                <textarea id="modal-user-notes" name="userNotes" rows="3" required placeholder="Contoh: No HP / Gopay: 0812-XXXX-XXXX a.n. Budi, atau alamat pengiriman paket merchandise..." class="w-full p-3 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 focus:outline-none placeholder-slate-400"></textarea>
+                <p class="text-[11px] text-slate-400 mt-1">
+                    Pastikan nomor HP, akun e-wallet, atau alamat yang dicantumkan sudah benar untuk kemudahan proses oleh tim admin.
+                </p>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" onclick="closeClaimModal()" class="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-600 hover:bg-slate-50 transition-all">
+                    Batal
+                </button>
+                <button type="submit" id="btn-submit-claim" class="px-6 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-extrabold shadow-lg shadow-indigo-600/30 transition-all flex items-center gap-2">
+                    <i class="fas fa-check"></i> Ajukan Klaim Hadiah
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    const userAvailablePoints = @pts.AvailablePoints;
+    const pointValue = @pts.PointValueRupiah;
+
+    // Daily Check-in Action
+    async function performDailyCheckIn() {
+        const btn = document.getElementById('btn-do-checkin');
+        const notesInput = document.getElementById('checkin-notes');
+        const notes = notesInput ? notesInput.value : '';
+
+        if (btn) {
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...';
+        }
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const formData = new FormData();
+            formData.append('notes', notes);
+            formData.append('__RequestVerificationToken', token);
+
+            const res = await fetch('/Gamification/CheckIn', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                // Fire celebratory confetti!
+                confetti({
+                    particleCount: 120,
+                    spread: 80,
+                    origin: { y: 0.6 }
+                });
+
+                Swal.fire({
+                    icon: 'success',
+                    title: data.isMonthlyMilestone ? '🎉 Hadiah Bulanan Terbuka!' : '🔥 Check-In Berhasil!',
+                    text: data.message,
+                    confirmButtonColor: '#F59E0B',
+                    confirmButtonText: 'Mantap!'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Pemberitahuan',
+                    text: data.message,
+                    confirmButtonColor: '#6366F1'
+                });
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fas fa-hand-sparkles"></i> Check-In Sekarang';
+                }
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Terjadi kesalahan saat memproses check-in. Silakan coba lagi.'
+            });
+            if (btn) {
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-hand-sparkles"></i> Check-In Sekarang';
+            }
+        }
+    }
+
+    // Filter Rewards
+    function filterRewards(category) {
+        document.querySelectorAll('.reward-filter-btn').forEach(btn => {
+            if (btn.getAttribute('data-category') === category) {
+                btn.classList.add('bg-indigo-600', 'text-white');
+                btn.classList.remove('bg-slate-100', 'text-slate-700');
+            } else {
+                btn.classList.remove('bg-indigo-600', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-700');
+            }
+        });
+
+        document.querySelectorAll('.reward-card').forEach(card => {
+            if (category === 'all' || card.getAttribute('data-category') === category) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    // Filter Badges Grid
+    function filterBadgesGrid(type) {
+        document.querySelectorAll('.badge-tab-btn').forEach(btn => {
+            if (btn.getAttribute('data-bfilter') === type) {
+                btn.classList.add('bg-amber-500', 'text-white');
+                btn.classList.remove('bg-slate-100', 'text-slate-600');
+            } else {
+                btn.classList.remove('bg-amber-500', 'text-white');
+                btn.classList.add('bg-slate-100', 'text-slate-600');
+            }
+        });
+
+        document.querySelectorAll('.badge-card-item').forEach(card => {
+            const isUnlocked = card.getAttribute('data-unlocked') === 'true';
+            if (type === 'all') {
+                card.style.display = 'flex';
+            } else if (type === 'unlocked' && isUnlocked) {
+                card.style.display = 'flex';
+            } else if (type === 'locked' && !isUnlocked) {
+                card.style.display = 'flex';
+            } else {
+                card.style.display = 'none';
+            }
+        });
+    }
+
+    // Modal Claim Handlers
+    function openClaimModal(rewardId, name, cost, rupiah) {
+        document.getElementById('modal-reward-id').value = rewardId;
+        document.getElementById('modal-reward-name').innerText = name;
+        document.getElementById('modal-reward-points').innerText = cost.toLocaleString('id-ID') + ' Pts';
+        document.getElementById('modal-reward-rupiah').innerText = 'Rp ' + rupiah.toLocaleString('id-ID');
+
+        const remaining = Math.max(0, userAvailablePoints - cost);
+        document.getElementById('modal-remaining-points').innerText = remaining.toLocaleString('id-ID') + ' Pts';
+
+        document.getElementById('claimRewardModal').classList.remove('hidden');
+    }
+
+    function closeClaimModal() {
+        document.getElementById('claimRewardModal').classList.add('hidden');
+    }
+
+    async function submitRewardClaim(e) {
+        e.preventDefault();
+        const btn = document.getElementById('btn-submit-claim');
+        const rewardId = document.getElementById('modal-reward-id').value;
+        const notes = document.getElementById('modal-user-notes').value;
+        const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+
+        btn.disabled = true;
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Mengajukan...';
+
+        try {
+            const formData = new FormData();
+            formData.append('rewardItemId', rewardId);
+            formData.append('userNotes', notes);
+            formData.append('__RequestVerificationToken', token);
+
+            const res = await fetch('/Gamification/ClaimReward', {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await res.json();
+
+            if (data.success) {
+                closeClaimModal();
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Klaim Berhasil Diajukan!',
+                    text: data.message,
+                    confirmButtonColor: '#6366F1'
+                }).then(() => {
+                    window.location.href = '/Gamification?tab=claims';
+                });
+            } else {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Gagal Mengajukan Klaim',
+                    text: data.message,
+                    confirmButtonColor: '#EF4444'
+                });
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-check"></i> Ajukan Klaim Hadiah';
+            }
+        } catch (err) {
+            console.error(err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: 'Terjadi kesalahan sistem.'
+            });
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fas fa-check"></i> Ajukan Klaim Hadiah';
+        }
+    }
+</script>
+}

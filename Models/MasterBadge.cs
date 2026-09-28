@@ -17,7 +17,15 @@ namespace TrackerKerja.Models
         Auto_TotalHours = 2,    // Berdasarkan total jam kerja
         Auto_NotesCount = 3,    // Berdasarkan jumlah catatan kerja yang dibuat
         Auto_TotalTasks = 4,    // Berdasarkan total task yang pernah ditugaskan
-        Auto_ProfileComplete = 5// Berdasarkan kelengkapan profil (foto, jabatan, no hp)
+        Auto_ProfileComplete = 5,// Berdasarkan kelengkapan profil (foto, jabatan, no hp)
+        Auto_AttendanceCount = 6,// Berdasarkan jumlah presensi kerja
+        Auto_TimesheetCount = 7, // Berdasarkan jumlah sesi timesheet tugas
+        Auto_JsonCount = 8,      // Berdasarkan jumlah JSON yang disimpan
+        Auto_SqlCount = 9,       // Berdasarkan jumlah SQL beautifier yang disimpan
+        Auto_LoginCount = 10,    // Berdasarkan jumlah login
+        Auto_LogoutCount = 11,   // Berdasarkan jumlah logout
+        Auto_DailyCheckInCount = 12,  // Berdasarkan total kali daily check-in
+        Auto_DailyCheckInStreak = 13  // Berdasarkan streak harian check-in (hari berturut-turut)
     }
 
     public class MasterBadge

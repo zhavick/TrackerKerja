@@ -164,6 +164,8 @@ Pada bagian ini dijabarkan secara rinci modul per modul mengenai:
 | Tipe | Route / URL | Controller | Nama Fungsi / Prosedur | Keterangan |
 | :--- | :--- | :--- | :--- | :--- |
 | **MVC** | `GET /Task/Index` | `TaskController` | `Task<IActionResult> Index(...)` | Merender antarmuka daftar tugas dengan filter lengkap |
+| **MVC** | `GET /Task/Create` | `TaskController` | `Task<IActionResult> Create(...)` | Form buat tugas baru dengan **Select2 Autocomplete Tugas Induk** |
+| **MVC** | `GET /Task/Edit/{id}` | `TaskController` | `Task<IActionResult> Edit(...)` | Form ubah tugas dengan **Select2 Autocomplete Tugas Induk** |
 | **MVC** | `GET /Task/Details/{id}` | `TaskController` | `Task<IActionResult> Details(int id)` | Merender detail tugas, sesi, lampiran, dan sub-tugas |
 | **MVC** | `POST /Task/Edit/{id}` | `TaskController` | `Task<IActionResult> Edit(...)` | **Unified Save:** Menyimpan tugas & sesi manual sekaligus |
 | **MVC** | `GET /Task/Kanban` | `TaskController` | `Task<IActionResult> Kanban(...)` | Merender papan kanban visual dikelompokkan per status |
@@ -489,30 +491,48 @@ await _db.SaveChangesAsync();
 
 | Tipe | Route / URL | Controller | Nama Fungsi / Prosedur | Keterangan |
 | :--- | :--- | :--- | :--- | :--- |
+| **MVC** | `GET /Gamification` | `GamificationController` | `Task<IActionResult> Index()` | Halaman visual Daily Check-In, roadmap 30 hari & katalog hadiah |
+| **MVC** | `POST /Gamification/CheckIn` | `GamificationController` | `Task<IActionResult> CheckIn()` | Melakukan check-in harian, menghitung streak dan menambah poin |
+| **MVC** | `POST /Gamification/ClaimReward`| `GamificationController` | `Task<IActionResult> ClaimReward(dto)` | Mengajukan penukaran poin ke hadiah/voucher pilihan |
+| **MVC** | `GET /Gamification/GetPointsSummary`| `GamificationController` | `Task<IActionResult> GetPointsSummary()` | Mengambil rincian poin badge, check-in, dan saldo tersedia (AJAX) |
+| **MVC** | `POST /MasterData/SaveGamificationSettings`| `MasterDataController`| `Task<IActionResult> SaveGamificationSettings(...)`| Konfigurasi poin check-in, nilai rupiah 1 poin, dan streak 30 hari |
+| **MVC** | `POST /MasterData/CreateReward` | `MasterDataController` | `Task<IActionResult> CreateReward(item)` | Membuat katalog master hadiah baru |
+| **MVC** | `POST /MasterData/EditReward` | `MasterDataController` | `Task<IActionResult> EditReward(item)` | Memperbarui katalog master hadiah |
+| **MVC** | `POST /MasterData/DeleteReward/{id}` | `MasterDataController`| `Task<IActionResult> DeleteReward(id)` | Menghapus katalog hadiah dari database |
+| **MVC** | `POST /MasterData/ProcessRewardClaim`| `MasterDataController`| `Task<IActionResult> ProcessRewardClaim(...)`| Admin menyetujui, menyelesaikan, atau menolak pengajuan klaim |
 | **API** | `GET /api/gamification/badges` | `GamificationApiController` | `Task<IActionResult> GetBadges()` | Mengambil katalog seluruh master badge |
 | **API** | `GET /api/gamification/user/{userId}`| `GamificationApiController`| `Task<IActionResult> GetUserBadges(...)` | Mengambil badge yang telah dibuka pengguna |
 | **API** | `GET /api/gamification/leaderboard` | `GamificationApiController` | `Task<IActionResult> GetLeaderboard(...)`| Menghitung peringkat EXP dan produktivitas tim |
-| **API** | `POST /api/gamification/award` | `GamificationApiController` | `Task<IActionResult> AwardBadgeManual(...)`| Admin memberikan badge khusus (e.g. Rockstar Dev) |
+| **API** | `POST /api/gamification/award` | `GamificationApiController` | `Task<IActionResult> AwardBadgeManual(...)`| Admin memberikan badge khusus (e.g. MVP Idola Kantor) |
 
-#### B. Logika Evaluasi Otomatis (`GamificationService.EvaluateUserBadgesAsync`)
-Dipanggil secara otomatis di latar belakang setiap kali pengguna menyelesaikan tugas (`TaskStatus.Done`), menambah jam timesheet, atau membuat catatan:
-```csharp
-// Contoh evaluasi badge berbasis jumlah tugas selesai
-var completedTasksCount = await _db.Tasks.CountAsync(t => t.AssignedToUserId == userId && t.Status == TaskStatus.Done);
-var eligibleBadges = await _db.MasterBadges
-    .Where(b => b.IsActive && b.TriggerType == BadgeTriggerType.Auto_DoneTasks && b.TriggerThreshold <= completedTasksCount)
-    .ToListAsync();
-
-foreach (var badge in eligibleBadges)
-{
-    var alreadyHas = await _db.UserBadges.AnyAsync(ub => ub.UserId == userId && ub.BadgeId == badge.Id);
-    if (!alreadyHas)
-    {
-        _db.UserBadges.Add(new UserBadge { UserId = userId, BadgeId = badge.Id, UnlockedAt = DateTime.UtcNow });
-    }
-}
-await _db.SaveChangesAsync();
-```
+#### B. Logika Layanan Backend & Aturan Streak (`GamificationService`)
+1. **Aturan Streak & Reset 2 Hari (`GetDailyCheckInStatusAsync`)**:
+   ```csharp
+   // Hitung selisih hari dari check-in terakhir
+   var daysDiff = (today - lastCheckIn.CheckInDate).Days;
+   int currentStreak = 0;
+   if (daysDiff == 0) {
+       // Sudah check-in hari ini
+       currentStreak = lastCheckIn.StreakDay;
+   } else if (daysDiff == 1) {
+       // Kemarin check-in, streak berlanjut
+       currentStreak = lastCheckIn.StreakDay;
+   } else {
+       // Tidak check-in selama >= 2 hari: streak reset ke awal (0)
+       currentStreak = 0;
+   }
+   ```
+2. **Kalkulasi Saldo Poin Ketat (`GetUserPointsSummaryAsync`)**:
+   $$\text{PointsAvailable} = (\text{BadgePoints} + \text{DailyCheckInPoints}) - \text{PointsSpentNonRejectedClaims}$$
+   - Konversi Rupiah: $\text{RupiahEquivalent} = \text{PointsAvailable} \times \text{PointValueRupiah}$ (default: 1 Poin = Rp 100).
+3. **Klaim Hadiah & Milestone Bulanan (`ClaimRewardAsync`)**:
+   - Memverifikasi stok hadiah (`Stock > 0`).
+   - Memvalidasi saldo poin yang mencukupi.
+   - Jika `RewardItem.IsMonthlyMilestoneReward == true`, memvalidasi apakah pengguna memiliki riwayat `IsMonthlyMilestone == true` atau memiliki badge `CHECKIN_30`.
+   - Mengurangi stok barang, mencatat snapshot kurs poin, dan menyimpan klaim berstatus `Pending`.
+   - Jika Admin menolak klaim (`ClaimStatus.Rejected`), stok dikembalikan (`Stock + 1`) dan saldo poin kembali utuh ke pengguna.
+4. **Evaluasi Otomatis 40+ Master Badge Gaul (`EvaluateAndAwardBadgesAsync`)**:
+   Mengevaluasi secara otomatis seluruh pemicu (*trigger type*): `Auto_DoneTasks`, `Auto_TotalTasks`, `Auto_TotalHours`, `Auto_TimesheetCount`, `Auto_AttendanceCount`, `Auto_NotesCount`, `Auto_JsonCount`, `Auto_SqlCount`, `Auto_LoginCount`, `Auto_LogoutCount`, `Auto_DailyCheckInCount`, dan `Auto_DailyCheckInStreak`.
 
 ---
 
@@ -541,14 +561,17 @@ Mengambil template dari tabel `EmailTemplates` berdasarkan `EventCode`, lalu mel
 | Tipe | Route / URL | Controller | Nama Fungsi / Prosedur | Keterangan |
 | :--- | :--- | :--- | :--- | :--- |
 | **MVC** | `GET /AuditTrail/Index` | `AuditTrailController` | `Task<IActionResult> Index(...)` | Antarmuka audit trail dengan filter aksi & tanggal |
+| **MVC** | `GET /AuditTrail/Details/{id}` | `AuditTrailController` | `Task<IActionResult> Details(int id)` | Mengambil rincian detail aktivitas log audit untuk popup modal |
 | **API** | `GET /api/audittrail` | `AuditTrailApiController` | `Task<IActionResult> GetAll(...)` | Mengambil data log audit berpaginasi |
 | **API** | `GET /api/audittrail/summary` | `AuditTrailApiController` | `Task<IActionResult> GetSummary()` | Rekapitulasi aktivitas berdasarkan HTTP Method |
 | **API** | `DELETE /api/audittrail/cleanup`| `AuditTrailApiController` | `Task<IActionResult> Cleanup(...)` | Pembersihan log lama (> 90 hari) oleh Admin |
 
-#### B. Intersepsi Otomatis Melalui `AuditLogActionFilter`
-Setiap request HTTP yang mengubah data (`POST`, `PUT`, `DELETE`, `PATCH`) secara otomatis diintersepsi oleh filter `AuditLogActionFilter.cs`:
-- Mencatat `UserId`, `UserEmail`, `ControllerName`, `ActionName`, `HttpMethod`, `Path`, `QueryString`, `IpAddress`, `StatusCode`, `DurationMs`, dan `Timestamp`.
-- Disimpan secara asinkron ke tabel `AuditLogs`.
+#### B. Intersepsi Otomatis Melalui `AuditLogActionFilter` & Popup Modal Detail
+1. Setiap request HTTP yang mengubah data (`POST`, `PUT`, `DELETE`, `PATCH`) secara otomatis diintersepsi oleh filter `AuditLogActionFilter.cs`:
+   - Mencatat `UserId`, `UserEmail`, `ControllerName`, `ActionName`, `HttpMethod`, `Path`, `QueryString`, `IpAddress`, `StatusCode`, `DurationMs`, dan `Timestamp`.
+   - Disimpan secara asinkron ke tabel `AuditLogs`.
+2. **Modal Detail Aktivitas (`AuditTrailDetailsModal`)**:
+   - Menampilkan modal popup interaktif berisi metadata lengkap audit: ID Log, Pelaku (User & Email), Alamat IP, Endpoint Path, HTTP Status Code, Durasi Pemrosesan (ms), Tanggal & Jam, serta blok rincian perubahan data/parameter request terformat rapi.
 
 ---
 
@@ -571,11 +594,25 @@ Setiap request HTTP yang mengubah data (`POST`, `PUT`, `DELETE`, `PATCH`) secara
 
 | Tipe | Route / URL | Controller | Nama Fungsi / Prosedur | Keterangan |
 | :--- | :--- | :--- | :--- | :--- |
+| **MVC** | `POST /Configuration/RestoreDatabase`| `ConfigurationController`| `Task<IActionResult> RestoreDatabase(...)` | Pemulihan database dari berkas SQL Script atau SQLite `.db` |
+| **MVC** | `GET /Configuration/BackupDatabase` | `ConfigurationController`| `IActionResult BackupDatabase()` | Pencadangan berkas biner SQLite `.db` utuh |
+| **MVC** | `GET /Configuration/ExportSql` | `ConfigurationController`| `Task<IActionResult> ExportSql()` | Export DDL/DML skrip SQL utuh |
 | **API** | `GET /api/masterdata/priorities` | `MasterDataApiController` | `Task<IActionResult> GetPriorities()` | Mengambil data dari tabel `MasterPriorities` |
 | **API** | `GET /api/masterdata/statuses` | `MasterDataApiController` | `Task<IActionResult> GetStatuses()` | Mengambil data dari tabel `MasterStatuses` |
 | **API** | `GET /api/masterdata/milestones` | `MasterDataApiController` | `Task<IActionResult> GetMilestones()` | Mengambil data dari tabel `MasterMilestones` |
 | **API** | `GET /api/masterdata/categories` | `MasterDataApiController` | `Task<IActionResult> GetCategories()` | Mengambil data dari tabel `Categories` |
 | **API** | `GET /api/configuration/settings`| `ConfigurationApiController`| `Task<IActionResult> GetSettings()` | Mengambil konfigurasi dinamis `SystemSettings` |
+
+#### B. Logika Pemulihan Basis Data (`ConfigurationController.RestoreDatabase`)
+1. Menerima berkas upload via `IFormFile restoreFile`.
+2. Validasi ekstensi: `.sql` atau `.db` / `.sqlite`.
+3. **Pemulihan SQL (`.sql`)**:
+   - Membaca konten skrip teks.
+   - Menjalankan perintah SQL secara terisolasi menggunakan `_db.Database.ExecuteSqlRawAsync(sqlContent)` dalam transaksi terproteksi.
+4. **Pemulihan SQLite Biner (`.db`)**:
+   - Menutup koneksi database aktif untuk melepaskan *file locks*.
+   - Menyalin berkas upload menggantikan file `trackerkerja.db` target.
+   - Menginisialisasi ulang konteks dan skema.
 
 ---
 
@@ -653,6 +690,9 @@ erDiagram
 
     Notes ||--o{ NoteAttachments : "contains files"
     MasterBadges ||--o{ UserBadges : "defines"
+    AspNetUsers ||--o{ DailyCheckIns : "performs"
+    AspNetUsers ||--o{ RewardClaims : "submits"
+    RewardItems ||--o{ RewardClaims : "claimed for"
 
     Companies {
         INTEGER Id PK
@@ -886,6 +926,46 @@ erDiagram
         INTEGER TaskId FK
         TEXT CreatedAt
     }
+
+    DailyCheckIns {
+        INTEGER Id PK
+        TEXT UserId FK
+        TEXT CheckInDate
+        TEXT CheckInTime
+        INTEGER PointsEarned
+        INTEGER StreakDay
+        INTEGER IsMonthlyMilestone
+        TEXT Notes
+    }
+
+    RewardItems {
+        INTEGER Id PK
+        TEXT Name
+        TEXT Description
+        INTEGER PointCost
+        INTEGER Stock
+        TEXT Category
+        TEXT Icon
+        TEXT Color
+        INTEGER IsActive
+        INTEGER IsMonthlyMilestoneReward
+        INTEGER OrderIndex
+    }
+
+    RewardClaims {
+        INTEGER Id PK
+        TEXT UserId FK
+        INTEGER RewardItemId FK
+        INTEGER PointsSpent
+        REAL PointValueSnapshot
+        REAL RupiahEquivalent
+        INTEGER Status
+        TEXT UserNotes
+        TEXT AdminNotes
+        TEXT ClaimedAt
+        TEXT ProcessedAt
+        TEXT ProcessedByUserId FK
+    }
 ```
 
 ---
@@ -914,6 +994,10 @@ Tabel di bawah ini mendokumentasikan pemetaan kunci asing (*Foreign Keys*) beser
 | `NoteAttachments`| `UploadedByUserId`| `AspNetUsers`| `Id`| `SET NULL`| Jejak pengunggah diset null jika user dihapus |
 | `UserBadges` | `UserId` | `AspNetUsers`| `Id`| `CASCADE` | Badge pengguna otomatis dibersihkan saat user dihapus |
 | `UserBadges` | `BadgeId` | `MasterBadges`| `Id`| `CASCADE` | Relasi user badge terhapus jika master badge dihapus |
+| `DailyCheckIns` | `UserId` | `AspNetUsers`| `Id` | `CASCADE` | Catatan daily check-in terhapus bersamaan dengan user |
+| `RewardClaims` | `UserId` | `AspNetUsers`| `Id` | `CASCADE` | Pengajuan klaim hadiah terhapus saat user dihapus |
+| `RewardClaims` | `RewardItemId` | `RewardItems`| `Id` | `CASCADE` | Klaim terhapus jika item katalog dihapus |
+| `RewardClaims` | `ProcessedByUserId`| `AspNetUsers`| `Id`| `SET NULL`| Jejak admin pemroses diset null jika akun admin dihapus |
 | `AspNetUserRoles`| `UserId` | `AspNetUsers`| `Id`| `CASCADE` | Hubungan peran akun terhapus saat user dihapus |
 | `AspNetUserRoles`| `RoleId` | `AspNetRoles`| `Id`| `CASCADE` | Hubungan peran akun terhapus saat role dihapus |
 | `JsonHistories` | `TaskId` | `Tasks` | `Id` | `NO ACTION`| Riwayat JSON terkait tugas |
@@ -923,7 +1007,7 @@ Tabel di bawah ini mendokumentasikan pemetaan kunci asing (*Foreign Keys*) beser
 
 ### 3.4 Katalog Skema Tabel, Tipe Data & Atribut Kolom
 
-Berikut adalah spesifikasi teknis lengkap dari seluruh 21 tabel pada skema basis data:
+Berikut adalah spesifikasi teknis lengkap dari seluruh 24 tabel pada skema basis data:
 
 #### 1. Tabel `Companies`
 Menyimpan data tenant perusahaan atau unit kerja.
@@ -1095,6 +1179,42 @@ Menyimpan template email event dinamis berbasis HTML.
 - `JsonHistories`: `Id` (INTEGER, PK), `Name` (TEXT), `Content` (TEXT), `TaskId` (INTEGER, FK), `CreatedAt` (TEXT).
 - `SqlHistories`: `Id` (INTEGER, PK), `Name` (TEXT), `Content` (TEXT), `Dialect` (TEXT), `TaskId` (INTEGER, FK), `CreatedAt` (TEXT).
 
+#### 16. Tabel Gamifikasi Hadiah & Daily Check-In (`DailyCheckIns`, `RewardItems`, `RewardClaims`)
+- `DailyCheckIns`:
+  - `Id` (INTEGER, PK, AutoIncrement)
+  - `UserId` (TEXT, FK -> `AspNetUsers.Id`, Not Null)
+  - `CheckInDate` (TEXT / DateOnly `yyyy-MM-dd`, Not Null)
+  - `CheckInTime` (TEXT / DateTime, Not Null)
+  - `PointsEarned` (INTEGER, Not Null, Default: 10)
+  - `StreakDay` (INTEGER, Not Null, Default: 1)
+  - `IsMonthlyMilestone` (INTEGER / Boolean, Not Null, Default: 0)
+  - `Notes` (TEXT, Nullable, Max: 255)
+- `RewardItems`:
+  - `Id` (INTEGER, PK, AutoIncrement)
+  - `Name` (TEXT, Not Null, Max: 150)
+  - `Description` (TEXT, Nullable, Max: 500)
+  - `PointCost` (INTEGER, Not Null, Default: 100)
+  - `Stock` (INTEGER, Not Null, Default: 0)
+  - `Category` (TEXT, Not Null, Max: 50, Default: `Voucher`)
+  - `Icon` (TEXT, Not Null, Max: 50, Default: `fas fa-gift`)
+  - `Color` (TEXT, Not Null, Max: 30, Default: `#6366f1`)
+  - `IsActive` (INTEGER / Boolean, Not Null, Default: 1)
+  - `IsMonthlyMilestoneReward` (INTEGER / Boolean, Not Null, Default: 0)
+  - `OrderIndex` (INTEGER, Not Null, Default: 0)
+- `RewardClaims`:
+  - `Id` (INTEGER, PK, AutoIncrement)
+  - `UserId` (TEXT, FK -> `AspNetUsers.Id`, Not Null)
+  - `RewardItemId` (INTEGER, FK -> `RewardItems.Id`, Not Null)
+  - `PointsSpent` (INTEGER, Not Null)
+  - `PointValueSnapshot` (REAL / Decimal, Not Null, Snapshot kurs per poin, e.g. Rp 100)
+  - `RupiahEquivalent` (REAL / Decimal, Not Null, e.g. Rp 25.000)
+  - `Status` (INTEGER / Enum: 0=Pending, 1=Approved, 2=Rejected, 3=Delivered)
+  - `UserNotes` (TEXT, Nullable, Max: 500)
+  - `AdminNotes` (TEXT, Nullable, Max: 500)
+  - `ClaimedAt` (TEXT / DateTime, Not Null)
+  - `ProcessedAt` (TEXT / DateTime, Nullable)
+  - `ProcessedByUserId` (TEXT, FK -> `AspNetUsers.Id`, Nullable)
+
 ---
 
 ### 3.5 Contoh Data Representatif (Sample Data Nyata per Tabel)
@@ -1235,8 +1355,8 @@ Berikut disajikan baris data riil (*actual record sample*) yang bersumber langsu
   "MasterBadge": {
     "Id": 1,
     "Code": "TASK_FIRST",
-    "Name": "Langkah Pertama 🐾",
-    "Description": "Selesaikan tugas pertamamu di sistem",
+    "Name": "Awalan Nih Bos! 🐾",
+    "Description": "Pecah telur! Berhasil nyelesaiin task perdana kamu tanpa drama.",
     "Category": "Tasks",
     "Icon": "fa-solid fa-paw",
     "Color": "#10B981",
@@ -1297,6 +1417,55 @@ Berikut disajikan baris data riil (*actual record sample*) yang bersumber langsu
   "StatusCode": 200,
   "DurationMs": 76,
   "Timestamp": "2026-09-01 14:52:47.3586156"
+}
+```
+
+#### Sample 12: `DailyCheckIns`
+```json
+{
+  "Id": 1,
+  "UserId": "5e5f22d2-b7a6-4af1-b85c-564a52655b75",
+  "CheckInDate": "2026-09-28",
+  "CheckInTime": "2026-09-28 08:30:15",
+  "PointsEarned": 10,
+  "StreakDay": 5,
+  "IsMonthlyMilestone": 0,
+  "Notes": "Daily check-in via web"
+}
+```
+
+#### Sample 13: `RewardItems`
+```json
+{
+  "Id": 1,
+  "Name": "Kopi Kekinian Kenangan / Fore",
+  "Description": "Voucher kopi favorit buat naikin mood ngoding atau kerja kamu hari ini.",
+  "PointCost": 250,
+  "Stock": 50,
+  "Category": "Voucher",
+  "Icon": "fas fa-coffee",
+  "Color": "#d97706",
+  "IsActive": 1,
+  "IsMonthlyMilestoneReward": 0,
+  "OrderIndex": 1
+}
+```
+
+#### Sample 14: `RewardClaims`
+```json
+{
+  "Id": 1,
+  "UserId": "5e5f22d2-b7a6-4af1-b85c-564a52655b75",
+  "RewardItemId": 1,
+  "PointsSpent": 250,
+  "PointValueSnapshot": 100.0,
+  "RupiahEquivalent": 25000.0,
+  "Status": 0,
+  "UserNotes": "Mohon dikirim ke email kantor ya min, thanks!",
+  "AdminNotes": null,
+  "ClaimedAt": "2026-09-28 11:20:00",
+  "ProcessedAt": null,
+  "ProcessedByUserId": null
 }
 ```
 

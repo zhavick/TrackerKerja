@@ -45,6 +45,7 @@
    - [5.17 Modul RESTful API (100+ Endpoints) & Strict Swagger JWT Bearer Authorization](#517-modul-restful-api-100-endpoints--strict-swagger-jwt-bearer-authorization)
    - [5.18 Modul Integrasi Server Email (SMTP) & Sub-Modul Template Email Event](#518-modul-integrasi-server-email-smtp--sub-modul-template-email-event)
    - [5.19 Pembaruan Navigasi, Ergonomi Antarmuka, Halaman Login Lottie, Onboarding Tour & AJAX Grid Table Pagination](#519-pembaruan-navigasi-ergonomi-antarmuka-halaman-login-lottie-onboarding-tour--ajax-grid-table-pagination)
+   - [5.20 Modul Gamifikasi, Daily Check-In, Aturan Streak, Master Badge Gaul & Klaim Hadiah](#520-modul-gamifikasi-daily-check-in-aturan-streak-master-badge-gaul--klaim-hadiah)
 6. [Spesifikasi Non-Fungsional, Keamanan & Privasi Data](#6-spesifikasi-non-fungsional-keamanan--privasi-data)
 7. [Panduan Docker Containerization, Git Repository & Deployment](#7-panduan-docker-containerization-git-repository--deployment)
 
@@ -324,6 +325,61 @@ erDiagram
         int OrderIndex
         string Description
         bool IsDefault
+    }
+
+    DailyCheckIns {
+        int Id PK
+        string UserId FK
+        date CheckInDate
+        datetime CheckInTime
+        int PointsEarned
+        int StreakDay
+        bool IsMonthlyMilestone
+        string Notes
+    }
+
+    RewardItems {
+        int Id PK
+        string Name
+        string Description
+        int PointCost
+        int Stock
+        string Category
+        string Icon
+        string Color
+        bool IsActive
+        bool IsMonthlyMilestoneReward
+        int OrderIndex
+    }
+
+    RewardClaims {
+        int Id PK
+        string UserId FK
+        int RewardItemId FK
+        int PointsSpent
+        decimal PointValueSnapshot
+        decimal RupiahEquivalent
+        int Status
+        string UserNotes
+        string AdminNotes
+        datetime ClaimedAt
+        datetime ProcessedAt
+        string ProcessedByUserId FK
+    }
+
+    MasterBadges {
+        int Id PK
+        string Code UK
+        string Name
+        string Description
+        string Category
+        string Icon
+        string Color
+        int Points
+        int Rarity
+        int TriggerType
+        int TriggerThreshold
+        bool IsActive
     }
 ```
 
@@ -611,13 +667,26 @@ erDiagram
 - **Tur Interaktif Layar (*Interactive Onboarding Tour* - `onboarding-tour.js`)**:
   - 6 spotlight navigasi interaktif memandu pengguna baru memahami alur operasional: Ringkasan Metrik Dashboard, Manajemen Tugas & Multi-Timer, Kalender Kerja, Presensi Mandiri, SQL Beautifier, dan Theme & Font Switcher.
   - Dapat diakses kembali sewaktu-waktu melalui menu profil navbar atau pintasan bantuan.
-- **Paginasi Grid Tabel AJAX (*Zero Reload* - `ajax-grid-manager.js`)**:
-  - Mengimplementasikan navigasi tabel instan tanpa memuat ulang halaman (*zero reload*) untuk tabel Tugas, Anggota Tim, Presensi, Audit Trail, dan Timesheet.
-  - Terintegrasi penuh dengan browser history API (`history.pushState`) sehingga URL tetap dapat di-bookmark dan dibagikan secara akurat.
-- **Topbar Minimalis & Sentralisasi Navigasi Bantuan**:
-  - Bilah atas fokus menampilkan judul halaman aktif, badge nama perusahaan, kotak pencarian global, tombol *Import Excel*, lonceng notifikasi, pemilih 40 tema dinamis & 5 font, dan tombol profil dropdown.
-  - Tautan dokumentasi **Swagger REST API** dan **Buku Panduan Pengguna (PDF)** dipusatkan pada Bilah Samping (Sidebar) bagian bawah (*Akun & Bantuan*).
-  - Fitur **Tur Aplikasi (Interactive Onboarding Tour)** dapat diakses kapan saja melalui menu profil pengguna atau pintasan bantuan.
+### 5.20 Modul Gamifikasi, Daily Check-In, Aturan Streak, Master Badge Gaul & Klaim Hadiah
+Modul ini mengimplementasikan sistem gamifikasi komprehensif untuk meningkatkan kedisiplinan dan retensi pengguna melalui pengumpulan poin, streak check-in, lencana prestasi, dan penukaran hadiah nyata:
+- **5.20.1 Daily Check-In Harian & Aturan Streak (Reset 2 Hari)**:
+  - Setiap pengguna yang terautentikasi dapat melakukan klaim poin check-in 1 kali per hari kalender melalui endpoint `POST /Gamification/CheckIn`.
+  - Poin yang diperoleh per check-in diatur secara dinamis melalui pengaturan master data (`Gamification_DailyCheckInPoints`, default: 10 poin).
+  - **Aturan Streak**: Jika pengguna check-in setiap hari berurutan, nilai `StreakDay` bertambah `+1` per hari.
+  - **Aturan Toleransi & Reset**: Jika pengguna tidak melakukan check-in selama 2 hari berturut-turut (`gap >= 2 hari`), hitungan streak otomatis di-reset kembali ke awal (Hari 1). Jika selisihnya 1 hari (kemarin check-in, hari ini check-in), streak berlanjut.
+- **5.20.2 Monthly Streak Milestone (Streak 30 Hari)**:
+  - Pengguna yang mencapai streak berturut-turut selama **30 hari (1 bulan)** membuka status pencapaian bulanan (`IsMonthlyMilestone = true`), memperoleh bonus poin besar (`Gamification_MonthlyStreakBonusPoints`, default: 500 poin), serta berhak mengklaim reward berkategori `IsMonthlyMilestoneReward = true`.
+- **5.20.3 Koleksi 40+ Master Badge Gaul & Modern Anak Muda**:
+  - Seluruh lencana master menggunakan penamaan dan deskripsi berbahasa Indonesia gaya modern anak muda yang memotivasi (*Si Paling Eksekutor*, *Kopi & Keringat*, *Jawara Timesheet*, *Pawang JSON*, *Dewa SQL*, *Sultan Check-In*, *MVP Idola Kantor*, dll.).
+  - Evaluasi badge otomatis terjadi setiap kali ada aksi relevan (tugas selesai, jam kerja terkumpul, presensi, catatan, beautify JSON, beautify SQL, login, logout, check-in count, dan streak harian).
+- **5.20.4 Modul Klaim Hadiah & Pembatasan Saldo Poin**:
+  - Saldo poin yang dapat ditukarkan dihitung secara ketat hanya dari akumulasi:
+    $$\text{Poin Tersedia} = (\text{Poin Badge} + \text{Poin Daily Check-In}) - \text{Poin Klaim Terpakai}$$
+  - **Nilai Tukar Poin (Konversi Rupiah)**: Secara default **1 Poin = Rp 100** (`Gamification_PointValueRupiah`, dapat dikustomisasi Administrator pada Master Data).
+  - Pengguna mengajukan klaim hadiah dengan mengisi rincian kontak/alamat. Stok barang berkurang seketika dan status klaim berstatus `Pending`.
+- **5.20.5 Manajemen Master Data Hadiah & Alur Approval Admin**:
+  - Administrator mengelola katalog hadiah (Nama, Biaya Poin, Stok, Kategori, Ikon FontAwesome, Warna, dan status reward bulanan).
+  - Administrator dapat memproses persetujuan klaim: **Setujui (Approved)**, **Selesaikan (Completed)**, atau **Tolak (Rejected)**. Jika ditolak, sistem otomatis mengembalikan stok barang dan mengembalikan poin ke saldo pengguna.
 
 ---
 

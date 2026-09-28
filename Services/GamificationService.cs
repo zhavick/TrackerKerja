@@ -27,6 +27,7 @@ namespace TrackerKerja.Services
                 return new List<MasterBadge>();
 
             // Calculate current metrics for the user
+            var userEmail = user.Email;
             var doneTasksCount = await _db.Tasks.CountAsync(t => t.AssignedToUserId == userId && t.Status == Models.TaskStatus.Done);
             var totalTasksCount = await _db.Tasks.CountAsync(t => t.AssignedToUserId == userId);
             
@@ -36,6 +37,14 @@ namespace TrackerKerja.Services
             var totalHours = totalWorkSeconds / 3600.0;
 
             var totalNotesCount = await _db.Notes.CountAsync(n => n.AuthorUserId == userId);
+            var totalAttendanceCount = await _db.Attendances.CountAsync(a => a.UserId == userId);
+            var totalTimesheetCount = await _db.Sessions.CountAsync(s => s.UserId == userId);
+            var totalJsonCount = await _db.JsonHistories.CountAsync(j => j.UserId == userId);
+            var totalSqlCount = await _db.SqlHistories.CountAsync(s => s.UserId == userId);
+            var totalLoginCount = await _db.AuditLogs.CountAsync(a => (a.UserId == userId || (userEmail != null && a.UserEmail == userEmail)) && ((a.ControllerName == "Account" && a.ActionName == "Login") || (a.Path != null && a.Path.ToLower().Contains("/login"))));
+            var totalLogoutCount = await _db.AuditLogs.CountAsync(a => (a.UserId == userId || (userEmail != null && a.UserEmail == userEmail)) && ((a.ControllerName == "Account" && a.ActionName == "Logout") || (a.Path != null && a.Path.ToLower().Contains("/logout"))));
+            var totalDailyCheckInCount = await _db.DailyCheckIns.CountAsync(c => c.UserId == userId);
+            var maxDailyStreak = await _db.DailyCheckIns.Where(c => c.UserId == userId).Select(c => (int?)c.StreakDay).MaxAsync() ?? 0;
 
             var isProfileComplete = !string.IsNullOrWhiteSpace(user.FullName) &&
                                     !string.IsNullOrWhiteSpace(user.JobTitle) &&
@@ -76,6 +85,38 @@ namespace TrackerKerja.Services
                     case BadgeTriggerType.Auto_ProfileComplete:
                         shouldUnlock = isProfileComplete;
                         break;
+
+                    case BadgeTriggerType.Auto_AttendanceCount:
+                        shouldUnlock = totalAttendanceCount >= badge.TriggerThreshold;
+                        break;
+
+                    case BadgeTriggerType.Auto_TimesheetCount:
+                        shouldUnlock = totalTimesheetCount >= badge.TriggerThreshold;
+                        break;
+
+                    case BadgeTriggerType.Auto_JsonCount:
+                        shouldUnlock = totalJsonCount >= badge.TriggerThreshold;
+                        break;
+
+                    case BadgeTriggerType.Auto_SqlCount:
+                        shouldUnlock = totalSqlCount >= badge.TriggerThreshold;
+                        break;
+
+                    case BadgeTriggerType.Auto_LoginCount:
+                        shouldUnlock = totalLoginCount >= badge.TriggerThreshold;
+                        break;
+
+                    case BadgeTriggerType.Auto_LogoutCount:
+                        shouldUnlock = totalLogoutCount >= badge.TriggerThreshold;
+                        break;
+
+                    case BadgeTriggerType.Auto_DailyCheckInCount:
+                        shouldUnlock = totalDailyCheckInCount >= badge.TriggerThreshold;
+                        break;
+
+                    case BadgeTriggerType.Auto_DailyCheckInStreak:
+                        shouldUnlock = maxDailyStreak >= badge.TriggerThreshold;
+                        break;
                 }
 
                 if (shouldUnlock)
@@ -103,6 +144,9 @@ namespace TrackerKerja.Services
 
         public async Task<GamificationProfileDto> GetGamificationStatsAsync(string userId)
         {
+            var user = await _db.Users.FindAsync(userId);
+            var userEmail = user?.Email;
+
             var allBadges = await _db.MasterBadges
                 .Where(b => b.IsActive)
                 .OrderBy(b => b.OrderIndex)
@@ -124,6 +168,14 @@ namespace TrackerKerja.Services
                 .SumAsync(s => (long?)s.Duration) ?? 0;
             var totalHours = (int)Math.Floor(totalWorkSeconds / 3600.0);
             var totalNotesCount = await _db.Notes.CountAsync(n => n.AuthorUserId == userId);
+            var totalAttendanceCount = await _db.Attendances.CountAsync(a => a.UserId == userId);
+            var totalTimesheetCount = await _db.Sessions.CountAsync(s => s.UserId == userId);
+            var totalJsonCount = await _db.JsonHistories.CountAsync(j => j.UserId == userId);
+            var totalSqlCount = await _db.SqlHistories.CountAsync(s => s.UserId == userId);
+            var totalLoginCount = await _db.AuditLogs.CountAsync(a => (a.UserId == userId || (userEmail != null && a.UserEmail == userEmail)) && ((a.ControllerName == "Account" && a.ActionName == "Login") || (a.Path != null && a.Path.ToLower().Contains("/login"))));
+            var totalLogoutCount = await _db.AuditLogs.CountAsync(a => (a.UserId == userId || (userEmail != null && a.UserEmail == userEmail)) && ((a.ControllerName == "Account" && a.ActionName == "Logout") || (a.Path != null && a.Path.ToLower().Contains("/logout"))));
+            var totalDailyCheckInCount = await _db.DailyCheckIns.CountAsync(c => c.UserId == userId);
+            var maxDailyStreak = await _db.DailyCheckIns.Where(c => c.UserId == userId).Select(c => (int?)c.StreakDay).MaxAsync() ?? 0;
 
             var badgeItemDtos = new List<BadgeItemDto>();
             int totalExp = 0;
@@ -155,6 +207,30 @@ namespace TrackerKerja.Services
                             break;
                         case BadgeTriggerType.Auto_NotesCount:
                             currentProgress = totalNotesCount;
+                            break;
+                        case BadgeTriggerType.Auto_AttendanceCount:
+                            currentProgress = totalAttendanceCount;
+                            break;
+                        case BadgeTriggerType.Auto_TimesheetCount:
+                            currentProgress = totalTimesheetCount;
+                            break;
+                        case BadgeTriggerType.Auto_JsonCount:
+                            currentProgress = totalJsonCount;
+                            break;
+                        case BadgeTriggerType.Auto_SqlCount:
+                            currentProgress = totalSqlCount;
+                            break;
+                        case BadgeTriggerType.Auto_LoginCount:
+                            currentProgress = totalLoginCount;
+                            break;
+                        case BadgeTriggerType.Auto_LogoutCount:
+                            currentProgress = totalLogoutCount;
+                            break;
+                        case BadgeTriggerType.Auto_DailyCheckInCount:
+                            currentProgress = totalDailyCheckInCount;
+                            break;
+                        case BadgeTriggerType.Auto_DailyCheckInStreak:
+                            currentProgress = maxDailyStreak;
                             break;
                         default:
                             currentProgress = 0;
@@ -274,6 +350,326 @@ namespace TrackerKerja.Services
             target.IsFeatured = makeFeatured;
             await _db.SaveChangesAsync();
             return true;
+        }
+
+        public async Task<GamificationSettingsDto> GetGamificationSettingsAsync()
+        {
+            var settings = new GamificationSettingsDto();
+
+            var checkInPointsSetting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "Gamification_DailyCheckInPoints");
+            if (checkInPointsSetting != null && int.TryParse(checkInPointsSetting.Value, out var cip))
+                settings.DailyCheckInPoints = Math.Max(1, cip);
+
+            var pointValueSetting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "Gamification_PointValueRupiah");
+            if (pointValueSetting != null && int.TryParse(pointValueSetting.Value, out var pv))
+                settings.PointValueRupiah = Math.Max(1, pv);
+
+            var streakDaysSetting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "Gamification_MonthlyStreakDays");
+            if (streakDaysSetting != null && int.TryParse(streakDaysSetting.Value, out var sd))
+                settings.MonthlyStreakDays = Math.Max(5, sd);
+
+            var bonusPointsSetting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "Gamification_MonthlyStreakBonusPoints");
+            if (bonusPointsSetting != null && int.TryParse(bonusPointsSetting.Value, out var bp))
+                settings.MonthlyStreakBonusPoints = Math.Max(0, bp);
+
+            var resetDaysSetting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "Gamification_MissedDaysReset");
+            if (resetDaysSetting != null && int.TryParse(resetDaysSetting.Value, out var rd))
+                settings.MissedDaysReset = Math.Max(2, rd);
+
+            return settings;
+        }
+
+        public async Task<bool> SaveGamificationSettingsAsync(GamificationSettingsDto settings)
+        {
+            async Task UpsertSetting(string key, string value, string description)
+            {
+                var item = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == key);
+                if (item == null)
+                {
+                    _db.SystemSettings.Add(new SystemSetting
+                    {
+                        Key = key,
+                        Value = value,
+                        Description = description,
+                        UpdatedAt = DateTime.Now
+                    });
+                }
+                else
+                {
+                    item.Value = value;
+                    item.Description = description;
+                    item.UpdatedAt = DateTime.Now;
+                }
+            }
+
+            await UpsertSetting("Gamification_DailyCheckInPoints", settings.DailyCheckInPoints.ToString(), "Poin reward per daily check-in");
+            await UpsertSetting("Gamification_PointValueRupiah", settings.PointValueRupiah.ToString(), "Nilai konversi 1 poin dalam rupiah");
+            await UpsertSetting("Gamification_MonthlyStreakDays", settings.MonthlyStreakDays.ToString(), "Jumlah hari streak untuk reward klaim 1 bulan");
+            await UpsertSetting("Gamification_MonthlyStreakBonusPoints", settings.MonthlyStreakBonusPoints.ToString(), "Bonus poin streak 1 bulan penuh");
+            await UpsertSetting("Gamification_MissedDaysReset", settings.MissedDaysReset.ToString(), "Batas hari absen sebelum streak reset ke awal (default 2 hari)");
+
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<GamificationUserPointsDto> GetUserPointsSummaryAsync(string userId)
+        {
+            var settings = await GetGamificationSettingsAsync();
+
+            var badgePoints = await _db.UserBadges
+                .Where(ub => ub.UserId == userId)
+                .SumAsync(ub => (int?)ub.Badge!.Points) ?? 0;
+
+            var checkInPoints = await _db.DailyCheckIns
+                .Where(c => c.UserId == userId)
+                .SumAsync(c => (int?)c.PointsEarned) ?? 0;
+
+            var spentPoints = await _db.RewardClaims
+                .Where(r => r.UserId == userId && r.Status != ClaimStatus.Rejected)
+                .SumAsync(r => (int?)r.PointsSpent) ?? 0;
+
+            return new GamificationUserPointsDto
+            {
+                BadgePoints = badgePoints,
+                CheckInPoints = checkInPoints,
+                SpentPoints = spentPoints,
+                PointValueRupiah = settings.PointValueRupiah
+            };
+        }
+
+        public async Task<DailyCheckInStatusDto> GetDailyCheckInStatusAsync(string userId)
+        {
+            var settings = await GetGamificationSettingsAsync();
+            var today = DateTime.Today;
+
+            var todayCheckIn = await _db.DailyCheckIns
+                .FirstOrDefaultAsync(c => c.UserId == userId && c.CheckInDate.Date == today);
+
+            var recentCheckIns = await _db.DailyCheckIns
+                .Where(c => c.UserId == userId)
+                .OrderByDescending(c => c.CheckInDate)
+                .Take(30)
+                .ToListAsync();
+
+            var totalCheckIns = await _db.DailyCheckIns
+                .CountAsync(c => c.UserId == userId);
+
+            var lastCheckIn = recentCheckIns.FirstOrDefault();
+            int currentStreak = 0;
+
+            if (todayCheckIn != null)
+            {
+                currentStreak = todayCheckIn.StreakDay;
+            }
+            else if (lastCheckIn != null)
+            {
+                var daysDiff = (int)(today - lastCheckIn.CheckInDate.Date).TotalDays;
+                if (daysDiff == 1)
+                {
+                    // Yesterday was checked in, streak is waiting for today's checkin
+                    currentStreak = lastCheckIn.StreakDay;
+                }
+                else if (daysDiff >= settings.MissedDaysReset)
+                {
+                    // Missed 2 or more days, streak resets back to 0
+                    currentStreak = 0;
+                }
+                else
+                {
+                    currentStreak = lastCheckIn.StreakDay;
+                }
+            }
+
+            var hasMonthlyMilestone = await _db.DailyCheckIns
+                .AnyAsync(c => c.UserId == userId && c.IsMonthlyMilestone);
+
+            return new DailyCheckInStatusDto
+            {
+                HasCheckedInToday = todayCheckIn != null,
+                CurrentStreak = currentStreak,
+                LastCheckInDate = lastCheckIn?.CheckInDate,
+                TotalCheckIns = totalCheckIns,
+                MonthlyTargetDays = settings.MonthlyStreakDays,
+                PointsPerCheckIn = settings.DailyCheckInPoints,
+                PointValueRupiah = settings.PointValueRupiah,
+                MonthlyBonusPoints = settings.MonthlyStreakBonusPoints,
+                MissedDaysReset = settings.MissedDaysReset,
+                RecentCheckIns = recentCheckIns
+            };
+        }
+
+        public async Task<DailyCheckInResultDto> PerformDailyCheckInAsync(string userId, string? notes = null)
+        {
+            var today = DateTime.Today;
+            var alreadyCheckedIn = await _db.DailyCheckIns
+                .AnyAsync(c => c.UserId == userId && c.CheckInDate.Date == today);
+
+            if (alreadyCheckedIn)
+            {
+                var curPoints = await GetUserPointsSummaryAsync(userId);
+                return new DailyCheckInResultDto
+                {
+                    Success = false,
+                    Message = "Anda sudah melakukan daily check-in hari ini! Kembali lagi besok untuk melanjutkan streak.",
+                    AvailablePoints = curPoints.AvailablePoints
+                };
+            }
+
+            var settings = await GetGamificationSettingsAsync();
+            var lastCheckIn = await _db.DailyCheckIns
+                .Where(c => c.UserId == userId)
+                .OrderByDescending(c => c.CheckInDate)
+                .FirstOrDefaultAsync();
+
+            int newStreak = 1;
+            if (lastCheckIn != null)
+            {
+                var daysDiff = (int)(today - lastCheckIn.CheckInDate.Date).TotalDays;
+                if (daysDiff == 1)
+                {
+                    newStreak = lastCheckIn.StreakDay + 1;
+                }
+                else if (daysDiff >= settings.MissedDaysReset)
+                {
+                    // Reset to beginning if missed for 2 days or more
+                    newStreak = 1;
+                }
+                else
+                {
+                    newStreak = lastCheckIn.StreakDay + 1;
+                }
+            }
+
+            int pointsEarned = settings.DailyCheckInPoints;
+            bool isMonthlyMilestone = false;
+
+            // Check if streak reaches monthly target (e.g. 30 days)
+            if (newStreak >= settings.MonthlyStreakDays && (newStreak % settings.MonthlyStreakDays == 0))
+            {
+                pointsEarned += settings.MonthlyStreakBonusPoints;
+                isMonthlyMilestone = true;
+            }
+
+            var checkIn = new DailyCheckIn
+            {
+                UserId = userId,
+                CheckInDate = today,
+                CheckInTime = DateTime.Now,
+                PointsEarned = pointsEarned,
+                StreakDay = newStreak,
+                IsMonthlyMilestone = isMonthlyMilestone,
+                Notes = notes
+            };
+
+            _db.DailyCheckIns.Add(checkIn);
+            await _db.SaveChangesAsync();
+
+            // Evaluate badge unlocks (daily check-in count and streak badges)
+            await EvaluateAndAwardBadgesAsync(userId);
+
+            var updatedPoints = await GetUserPointsSummaryAsync(userId);
+
+            string msg = isMonthlyMilestone
+                ? $"Luar biasa! Anda berhasil check-in hari ke-{newStreak} dan mencapai target 1 BULAN penuh! Bonus {pointsEarned} poin telah ditambahkan. Hadiah bulanan kini siap diklaim!"
+                : $"Daily check-in berhasil! Hari ke-{newStreak} streak aktif. Anda mendapatkan +{pointsEarned} poin (senilai Rp {(pointsEarned * settings.PointValueRupiah):N0}).";
+
+            return new DailyCheckInResultDto
+            {
+                Success = true,
+                Message = msg,
+                PointsEarned = pointsEarned,
+                StreakDay = newStreak,
+                IsMonthlyMilestone = isMonthlyMilestone,
+                AvailablePoints = updatedPoints.AvailablePoints
+            };
+        }
+
+        public async Task<RewardClaimResultDto> ClaimRewardAsync(string userId, int rewardItemId, string? userNotes)
+        {
+            var reward = await _db.RewardItems.FindAsync(rewardItemId);
+            if (reward == null)
+            {
+                return new RewardClaimResultDto { Success = false, Message = "Hadiah yang dipilih tidak ditemukan." };
+            }
+
+            if (!reward.IsActive)
+            {
+                return new RewardClaimResultDto { Success = false, Message = "Hadiah ini sedang tidak aktif atau tidak dapat ditukarkan saat ini." };
+            }
+
+            if (reward.Stock <= 0)
+            {
+                return new RewardClaimResultDto { Success = false, Message = "Maaf, stok hadiah ini sudah habis." };
+            }
+
+            if (reward.IsMonthlyMilestoneReward)
+            {
+                var hasMilestone = await _db.DailyCheckIns.AnyAsync(c => c.UserId == userId && c.IsMonthlyMilestone);
+                if (!hasMilestone)
+                {
+                    return new RewardClaimResultDto
+                    {
+                        Success = false,
+                        Message = "Hadiah ini khusus untuk pengguna yang telah menyelesaikan daily check-in selama 1 bulan berturut-turut (30 hari)."
+                    };
+                }
+            }
+
+            var pointsSummary = await GetUserPointsSummaryAsync(userId);
+            if (pointsSummary.AvailablePoints < reward.PointCost)
+            {
+                return new RewardClaimResultDto
+                {
+                    Success = false,
+                    Message = $"Poin Anda tidak mencukupi. Anda membutuhkan {reward.PointCost} poin, saat ini Anda memiliki {pointsSummary.AvailablePoints} poin (Badge: {pointsSummary.BadgePoints} pts, Check-in: {pointsSummary.CheckInPoints} pts)."
+                };
+            }
+
+            // Deduct stock
+            reward.Stock = Math.Max(0, reward.Stock - 1);
+
+            var claim = new RewardClaim
+            {
+                UserId = userId,
+                RewardItemId = reward.Id,
+                PointsSpent = reward.PointCost,
+                PointValueSnapshot = pointsSummary.PointValueRupiah,
+                RupiahEquivalent = reward.PointCost * pointsSummary.PointValueRupiah,
+                Status = ClaimStatus.Pending,
+                UserNotes = userNotes,
+                ClaimedAt = DateTime.Now
+            };
+
+            _db.RewardClaims.Add(claim);
+            await _db.SaveChangesAsync();
+
+            var updatedPoints = await GetUserPointsSummaryAsync(userId);
+
+            return new RewardClaimResultDto
+            {
+                Success = true,
+                Message = $"Permintaan klaim hadiah '{reward.Name}' berhasil diajukan! Poin terpakai: {reward.PointCost} poin (Setara Rp {claim.RupiahEquivalent:N0}). Tim admin akan segera memproses penukaran Anda.",
+                ClaimId = claim.Id,
+                RemainingPoints = updatedPoints.AvailablePoints
+            };
+        }
+
+        public async Task<List<RewardItem>> GetActiveRewardsAsync()
+        {
+            return await _db.RewardItems
+                .Where(r => r.IsActive)
+                .OrderBy(r => r.OrderIndex)
+                .ThenBy(r => r.PointCost)
+                .ToListAsync();
+        }
+
+        public async Task<List<RewardClaim>> GetUserClaimsAsync(string userId)
+        {
+            return await _db.RewardClaims
+                .Include(c => c.RewardItem)
+                .Where(c => c.UserId == userId)
+                .OrderByDescending(c => c.ClaimedAt)
+                .ToListAsync();
         }
     }
 }

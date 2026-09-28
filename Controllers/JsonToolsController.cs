@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
+using System.Security.Claims;
 using System.Text.Json;
 
 namespace TrackerKerja.Controllers
@@ -11,7 +13,13 @@ namespace TrackerKerja.Controllers
     public class JsonToolsController : Controller
     {
         private readonly AppDbContext _db;
-        public JsonToolsController(AppDbContext db) { _db = db; }
+        private readonly IGamificationService _gamificationService;
+
+        public JsonToolsController(AppDbContext db, IGamificationService gamificationService)
+        {
+            _db = db;
+            _gamificationService = gamificationService;
+        }
 
         public async Task<IActionResult> Index()
         {
@@ -76,15 +84,23 @@ namespace TrackerKerja.Controllers
         [HttpPost]
         public async Task<IActionResult> Save([FromBody] SaveJsonRequest req)
         {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
             var history = new JsonHistory
             {
                 Name = string.IsNullOrWhiteSpace(req.Name) ? $"JSON {DateTime.Now:dd/MM HH:mm}" : req.Name,
                 Content = req.Content,
                 TaskId = req.TaskId,
+                UserId = userId,
                 CreatedAt = DateTime.Now
             };
             _db.JsonHistories.Add(history);
             await _db.SaveChangesAsync();
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                await _gamificationService.EvaluateAndAwardBadgesAsync(userId);
+            }
+
             return Json(new { success = true, id = history.Id });
         }
 

@@ -53,6 +53,14 @@
                     isSidebar: true
                 },
                 {
+                    target: '[data-tour="gamification"]',
+                    fallbackTarget: 'a[href="/Gamification"]',
+                    title: '🎁 Daily Check-In & Klaim Hadiah',
+                    content: 'Kumpulkan poin harian lewat Daily Check-In! Raih streak 30 hari tanpa putus (reset jika bolos 2 hari), raih Master Badge gaul, dan tukar poinmu ke Voucher & Hadiah nyata (1 Poin = Rp 100)!',
+                    placement: 'right',
+                    isSidebar: true
+                },
+                {
                     target: '[data-tour="search"]',
                     fallbackTarget: '#search-container',
                     title: '🔍 Pencarian Cepat Global',

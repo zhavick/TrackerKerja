@@ -110,52 +110,52 @@
                             <span class="w-2 h-2 rounded-full bg-cyan-500"></span>
                             <h5 class="text-xs font-bold text-slate-800 dark:text-white">Tampilan Tabel & Kanban</h5>
                         </div>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Pindah antar status (Todo, In Progress, Review, Done) secara visual dengan drag & drop.</p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Pindah antar status (Todo, In Progress, Review, Done) secara visual dengan drag & drop dan filter cerdas.</p>
+                    </div>
+                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Select2 Tugas Induk (Parent Task)</h5>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Cari dan hubungkan sub-tugas ke tugas induk secara instan cukup dengan mengetik kata kunci nama tugas.</p>
                     </div>
                     <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
                         <div class="flex items-center gap-2 mb-1">
                             <span class="w-2 h-2 rounded-full bg-amber-500"></span>
-                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Prioritas & Tenggat Waktu</h5>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Prioritas & Notifikasi Tenggat</h5>
                         </div>
                         <p class="text-[11px] text-slate-500 dark:text-slate-400">Tandai tugas Critical/High dan dapatkan peringatan otomatis sebelum tanggal jatuh tempo.</p>
                     </div>
                     <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
                         <div class="flex items-center gap-2 mb-1">
-                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
-                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Sub-tugas (Checklist)</h5>
-                        </div>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Bagi tugas kompleks ke item-item checklist terukur dengan kalkulasi progress otomatis.</p>
-                    </div>
-                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
-                        <div class="flex items-center gap-2 mb-1">
                             <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Lampiran & Log Komentar</h5>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Sub-tugas, Berkas & Komentar</h5>
                         </div>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Unggah berkas bukti kerja dan berkomunikasi langsung dalam utas komentar tugas.</p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Pecah tugas ke checklist terukur, unggah bukti kerja, dan diskusikan langsung dalam utas komentar tugas.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- SLIDE 2: Timesheet & Multi-Timer -->
+            <!-- SLIDE 2: Timesheet & Presensi GPS -->
             <div id="onboardingSlide_2" class="hidden flex-col gap-4 animate-fadeIn">
                 <div class="flex items-center gap-3">
                     <div class="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-lg shadow-md shadow-emerald-500/20 flex-shrink-0">
                         <i class="fas fa-clock"></i>
                     </div>
                     <div>
-                        <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Pencatatan Jam & Timesheet</h4>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Catat durasi kerja presisi dan penuhi rekapitulasi bulanan</p>
+                        <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Timesheet, Multi-Timer & Presensi GPS</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Pencatatan jam kerja presisi, cut-off bulanan, dan presensi terverifikasi</p>
                     </div>
                 </div>
 
-                <div class="space-y-2.5">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800/60 flex items-start gap-3">
                         <div class="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
                             <i class="fas fa-play"></i>
                         </div>
                         <div class="text-xs">
-                            <strong class="text-emerald-900 dark:text-emerald-200 font-bold block mb-0.5">Multi-Timer Sidebar Langsung</strong>
-                            <p class="text-emerald-700 dark:text-emerald-300 text-[11.5px]">Jalankan timer langsung dari daftar tugas atau sidebar. Durasi tersimpan otomatis tanpa perlu input manual yang rumit.</p>
+                            <strong class="text-emerald-900 dark:text-emerald-200 font-bold block mb-0.5">Multi-Timer Sidebar Otomatis</strong>
+                            <p class="text-emerald-700 dark:text-emerald-300 text-[11.5px]">Jalankan timer langsung dari daftar tugas. Durasi tersimpan akurat ke Timesheet tanpa input manual berulang.</p>
                         </div>
                     </div>
 
@@ -165,58 +165,85 @@
                         </div>
                         <div class="text-xs">
                             <strong class="text-amber-900 dark:text-amber-200 font-bold block mb-0.5">Periode Cut-Off Tanggal 25</strong>
-                            <p class="text-amber-700 dark:text-amber-300 text-[11.5px]">Sistem secara cerdas menghitung periode tanggal 26 s/d 25 bulan berjalan dan memberikan notifikasi pengingat sebelum batas cut-off.</p>
+                            <p class="text-amber-700 dark:text-amber-300 text-[11.5px]">Sistem menghitung periode tanggal 26 s/d 25 bulan berjalan otomatis lengkap dengan notifikasi pengingat.</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-2xl bg-teal-50 dark:bg-teal-950/40 border border-teal-200 dark:border-teal-800/60 flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-teal-500 text-white flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+                            <i class="fas fa-map-marker-alt"></i>
+                        </div>
+                        <div class="text-xs">
+                            <strong class="text-teal-900 dark:text-teal-200 font-bold block mb-0.5">Presensi GPS & Swafoto</strong>
+                            <p class="text-teal-700 dark:text-teal-300 text-[11.5px]">Clock-in & clock-out harian disertai verifikasi radius kantor, selfie foto, dan pengajuan izin/cuti online.</p>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded-2xl bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800/60 flex items-start gap-3">
+                        <div class="w-8 h-8 rounded-xl bg-purple-500 text-white flex items-center justify-center text-xs flex-shrink-0 mt-0.5">
+                            <i class="fas fa-calendar-week"></i>
+                        </div>
+                        <div class="text-xs">
+                            <strong class="text-purple-900 dark:text-purple-200 font-bold block mb-0.5">Kalender Kerja & Cuti Tim</strong>
+                            <p class="text-purple-700 dark:text-purple-300 text-[11.5px]">Lihat jadwal deadline tugas proyek, cuti rekan tim, dan hari libur secara visual dalam kalender interaktif.</p>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- SLIDE 3: Presensi GPS & Kalender Tim -->
+            <!-- SLIDE 3: Gamifikasi, Daily Check-In & Klaim Hadiah -->
             <div id="onboardingSlide_3" class="hidden flex-col gap-4 animate-fadeIn">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-teal-500 text-white flex items-center justify-center text-lg shadow-md shadow-teal-500/20 flex-shrink-0">
-                        <i class="fas fa-clipboard-user"></i>
+                    <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 to-rose-600 text-white flex items-center justify-center text-lg shadow-md shadow-pink-500/20 flex-shrink-0">
+                        <i class="fas fa-gift"></i>
                     </div>
                     <div>
-                        <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Presensi Online, Cuti & Kalender</h4>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Presensi kehadiran kerja, izin/cuti, dan jadwal tim</p>
+                        <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Gamifikasi, Daily Check-In &amp; Klaim Hadiah</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Check-in harian, kejar streak 30 hari, koleksi badge gaul, dan tukarkan poin ke hadiah!</p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                     <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
                         <div class="flex items-center gap-2 mb-1">
-                            <i class="fas fa-map-marker-alt text-teal-500 text-xs"></i>
-                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Presensi Lokasi GPS & Foto</h5>
+                            <span class="w-2 h-2 rounded-full bg-pink-500"></span>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Daily Check-In &amp; Aturan Streak</h5>
                         </div>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Check-in dan check-out harian disertai verifikasi radius kantor & swafoto kehadiran.</p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Klaim poin harian tiap hari! Pertahankan streak; jika tidak check-in selama 2 hari berturut-turut, streak otomatis kembali ke awal (Hari 1).</p>
                     </div>
                     <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
                         <div class="flex items-center gap-2 mb-1">
-                            <i class="fas fa-umbrella-beach text-teal-500 text-xs"></i>
-                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Pengajuan Izin & Cuti</h5>
+                            <span class="w-2 h-2 rounded-full bg-amber-500"></span>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Milestone Bulanan (Streak 30 Hari)</h5>
                         </div>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Ajukan cuti tahunan, sakit, atau izin dinas dengan alur persetujuan terstruktur.</p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Capai streak 30 hari penuh (1 bulan) untuk membuka reward eksklusif bulanan dan raih bonus poin spesial!</p>
                     </div>
-                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs sm:col-span-2">
+                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
                         <div class="flex items-center gap-2 mb-1">
-                            <i class="fas fa-calendar-week text-purple-500 text-xs"></i>
-                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Kalender Interaktif Terintegrasi</h5>
+                            <span class="w-2 h-2 rounded-full bg-indigo-500"></span>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">40+ Master Badge Gaul &amp; Kekinian</h5>
                         </div>
-                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Lihat timeline deadline tugas, jadwal libur, dan cuti rekan tim secara visual dalam kalender interaktif.</p>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Koleksi badge keren: <em>Si Paling Eksekutor</em>, <em>Kopi &amp; Keringat</em>, <em>Jawara Timesheet</em>, <em>Pawang JSON</em>, <em>Dewa SQL</em>, hingga <em>MVP Idola Kantor</em>!</p>
+                    </div>
+                    <div class="onboarding-feature-card p-3.5 rounded-2xl bg-white dark:bg-slate-800 shadow-2xs">
+                        <div class="flex items-center gap-2 mb-1">
+                            <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
+                            <h5 class="text-xs font-bold text-slate-800 dark:text-white">Tukar Poin ke Hadiah Nyata (1 Poin = Rp 100)</h5>
+                        </div>
+                        <p class="text-[11px] text-slate-500 dark:text-slate-400">Saldo poin dari Badge + Check-In dapat ditukar ke Voucher Pulsa/E-Wallet, Kopi, Merchandise, atau Hadiah Bulanan dengan approval admin.</p>
                     </div>
                 </div>
             </div>
 
-            <!-- SLIDE 4: Developer Tools & Custom Theme -->
+            <!-- SLIDE 4: Developer Tools, Audit Trail & Database Management -->
             <div id="onboardingSlide_4" class="hidden flex-col gap-4 animate-fadeIn">
                 <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-xl bg-pink-500 text-white flex items-center justify-center text-lg shadow-md shadow-pink-500/20 flex-shrink-0">
-                        <i class="fas fa-magic"></i>
+                    <div class="w-10 h-10 rounded-xl bg-violet-600 text-white flex items-center justify-center text-lg shadow-md shadow-violet-500/20 flex-shrink-0">
+                        <i class="fas fa-tools"></i>
                     </div>
                     <div>
-                        <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Fitur Pendukung & Kostumasi</h4>
-                        <p class="text-xs text-slate-500 dark:text-slate-400">Percepat pekerjaan harian dengan tool developer & UI kustom</p>
+                        <h4 class="font-extrabold text-slate-800 dark:text-white text-base">Fitur Pendukung, Keamanan &amp; Pemeliharaan</h4>
+                        <p class="text-xs text-slate-500 dark:text-slate-400">Developer tools, transparansi audit log, backup/restore, dan 16 tema kustom</p>
                     </div>
                 </div>
 
@@ -224,29 +251,29 @@
                     <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
                         <i class="fas fa-code text-pink-500 text-base mb-1"></i>
                         <h6 class="text-xs font-bold text-slate-800 dark:text-white">JSON Tools</h6>
-                        <span class="text-[10px] text-slate-400">Validator & Formatter</span>
+                        <span class="text-[10px] text-slate-400">Validator &amp; Formatter</span>
                     </div>
                     <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
                         <i class="fas fa-database text-indigo-500 text-base mb-1"></i>
-                        <h6 class="text-xs font-bold text-slate-800 dark:text-white">SQL Tools</h6>
-                        <span class="text-[10px] text-slate-400">Beautifier & History</span>
+                        <h6 class="text-xs font-bold text-slate-800 dark:text-white">SQL Beautifier</h6>
+                        <span class="text-[10px] text-slate-400">Format &amp; Riwayat</span>
                     </div>
                     <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-                        <i class="fas fa-code text-emerald-500 text-base mb-1"></i>
-                        <h6 class="text-xs font-bold text-slate-800 dark:text-white">JSON Tools</h6>
-                        <span class="text-[10px] text-slate-400">Format & Validate</span>
+                        <i class="fas fa-shield-alt text-amber-500 text-base mb-1"></i>
+                        <h6 class="text-xs font-bold text-slate-800 dark:text-white">Audit Detail Modal</h6>
+                        <span class="text-[10px] text-slate-400">Popup Aktivitas &amp; IP</span>
                     </div>
                     <div class="p-3 rounded-xl bg-white dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700 shadow-2xs">
-                        <i class="fas fa-palette text-amber-500 text-base mb-1"></i>
-                        <h6 class="text-xs font-bold text-slate-800 dark:text-white">16 Tema</h6>
-                        <span class="text-[10px] text-slate-400">Light & Dark Mode</span>
+                        <i class="fas fa-database text-emerald-500 text-base mb-1"></i>
+                        <h6 class="text-xs font-bold text-slate-800 dark:text-white">Backup &amp; Restore</h6>
+                        <span class="text-[10px] text-slate-400">File SQL &amp; SQLite .db</span>
                     </div>
                 </div>
 
                 <div class="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/40 border border-indigo-200/70 dark:border-indigo-800/60 flex items-center justify-between gap-3">
                     <div class="text-xs">
                         <strong class="text-indigo-950 dark:text-indigo-200 font-bold block">Ingin mencoba Tur Interaktif di layar?</strong>
-                        <span class="text-indigo-700 dark:text-indigo-300 text-[11px]">Kami akan memandu Anda melalui setiap menu dan tombol penting.</span>
+                        <span class="text-indigo-700 dark:text-indigo-300 text-[11px]">Kami akan memandu Anda melalui setiap menu dan tombol penting secara langsung.</span>
                     </div>
                     <button type="button" onclick="OnboardingTour.startTourFromModal()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-black shadow-md shadow-indigo-500/20 transition-all flex-shrink-0 cursor-pointer">
                         Mulai Tur 🚀

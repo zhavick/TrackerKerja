@@ -33,7 +33,10 @@
                     <i class="fas fa-layer-group"></i> <span>Milestone SDLC (@Model.Milestones.Count)</span>
                 </a>
                 <a href="/MasterData?tab=badges" class="flex-1 md:flex-none justify-center px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 sm:gap-2 @(activeTab == "badges" ? "bg-amber-500 text-white shadow-lg shadow-amber-500/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
-                    <i class="fas fa-medal"></i> <span>Badge & Achievement (@Model.Badges.Count)</span>
+                    <i class="fas fa-medal"></i> <span>Badge &amp; Achievement (@Model.Badges.Count)</span>
+                </a>
+                <a href="/MasterData?tab=rewards" class="flex-1 md:flex-none justify-center px-3.5 sm:px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 sm:gap-2 @(activeTab == "rewards" ? "bg-pink-600 text-white shadow-lg shadow-pink-600/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
+                    <i class="fas fa-gift"></i> <span>Poin &amp; Hadiah (@Model.Rewards.Count)</span>
                 </a>
             </div>
         </div>
@@ -693,9 +696,17 @@
                         <div>
                             <select name="TriggerType" class="select2 w-full" data-placeholder="Pilih Pemicu">
                                 <option value="1">Auto: Jumlah Tugas Selesai (Done Tasks)</option>
-                                <option value="2">Auto: Total Jam Kerja (Hours Logged)</option>
-                                <option value="3">Auto: Jumlah Catatan Kerja (Notes Count)</option>
                                 <option value="4">Auto: Total Tugas Pernah Ditugaskan</option>
+                                <option value="2">Auto: Total Jam Kerja (Hours Logged)</option>
+                                <option value="7">Auto: Jumlah Sesi Timesheet Tugas</option>
+                                <option value="6">Auto: Jumlah Presensi Kehadiran</option>
+                                <option value="3">Auto: Jumlah Catatan Kerja (Notes Count)</option>
+                                <option value="8">Auto: Jumlah JSON Disimpan</option>
+                                <option value="9">Auto: Jumlah SQL Beautifier Disimpan</option>
+                                <option value="10">Auto: Jumlah Login</option>
+                                <option value="11">Auto: Jumlah Logout</option>
+                                <option value="12">Auto: Total Daily Check-In (Kali)</option>
+                                <option value="13">Auto: Streak Daily Check-In (Hari Berturut-turut)</option>
                                 <option value="5">Auto: Kelengkapan Profil Pengguna</option>
                                 <option value="0">Manual: Diberikan Spesial oleh Admin</option>
                             </select>
@@ -797,16 +808,76 @@
                                                 <i class="fas fa-check-double text-emerald-500"></i> Selesai @b.TriggerThreshold Tugas
                                             </span>
                                         }
+                                        else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_TotalTasks)
+                                        {
+                                            <span class="text-sky-700 font-semibold flex items-center gap-1">
+                                                <i class="fas fa-list-check text-sky-500"></i> @b.TriggerThreshold Total Tugas
+                                            </span>
+                                        }
                                         else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_TotalHours)
                                         {
                                             <span class="text-orange-700 font-semibold flex items-center gap-1">
                                                 <i class="fas fa-stopwatch text-orange-500"></i> @b.TriggerThreshold Jam Kerja
                                             </span>
                                         }
+                                        else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_TimesheetCount)
+                                        {
+                                            <span class="text-teal-700 font-semibold flex items-center gap-1">
+                                                <i class="fas fa-clock text-teal-500"></i> @b.TriggerThreshold Sesi Timesheet
+                                            </span>
+                                        }
+                                        else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_AttendanceCount)
+                                        {
+                                            <span class="text-emerald-700 font-semibold flex items-center gap-1">
+                                                <i class="fas fa-fingerprint text-emerald-500"></i> @b.TriggerThreshold Presensi
+                                            </span>
+                                        }
                                         else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_NotesCount)
                                         {
                                             <span class="text-indigo-700 font-semibold flex items-center gap-1">
                                                 <i class="fas fa-sticky-note text-indigo-500"></i> @b.TriggerThreshold Catatan
+                                            </span>
+                                        }
+                                        else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_JsonCount)
+                                        {
+                                            <span class="text-blue-700 font-semibold flex items-center gap-1">
+                                                <i class="fas fa-code text-blue-500"></i> @b.TriggerThreshold JSON Format
+                                            </span>
+                                        }
+                                        else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_SqlCount)
+                                        {
+                                            <span class="text-emerald-700 font-semibold flex items-center gap-1">
+                                                <i class="fas fa-database text-emerald-500"></i> @b.TriggerThreshold SQL Query
+                                            </span>
+                                        }
+                                        else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_LoginCount)
+                                        {
+                                            <span class="text-blue-700 font-semibold flex items-center gap-1">
+                                                <i class="fas fa-right-to-bracket text-blue-500"></i> @b.TriggerThreshold Login
+                                            </span>
+                                        }
+                                        else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_LogoutCount)
+                                        {
+                                            <span class="text-orange-700 font-semibold flex items-center gap-1">
+                                                <i class="fas fa-right-from-bracket text-orange-500"></i> @b.TriggerThreshold Logout
+                                            </span>
+                                        }
+                                        else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_DailyCheckInCount)
+                                        {
+                                            <span class="text-teal-700 font-semibold flex items-center gap-1">
+                                                <i class="fas fa-calendar-check text-teal-500"></i> @b.TriggerThreshold Kali Check-In
+                                            </span>
+                                        }
+                                        else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_DailyCheckInStreak)
+                                        {
+                                            <span class="text-amber-700 font-semibold flex items-center gap-1">
+                                                <i class="fas fa-fire text-amber-500"></i> @b.TriggerThreshold Hari Streak
+                                            </span>
+                                        }
+                                        else if (b.TriggerType == TrackerKerja.Models.BadgeTriggerType.Auto_ProfileComplete)
+                                        {
+                                            <span class="text-violet-700 font-semibold flex items-center gap-1">
+                                                <i class="fas fa-id-card text-violet-500"></i> Profil Lengkap
                                             </span>
                                         }
                                         else
@@ -849,6 +920,353 @@
                         </tbody>
                     </table>
                 </div>
+            </div>
+        </div>
+    }
+
+    <!-- ═══════════════════════════════════════════════════════ -->
+    <!-- TAB 6: PENGATURAN POIN, DAILY CHECK-IN & MASTER HADIAH  -->
+    <!-- ═══════════════════════════════════════════════════════ -->
+    @if (activeTab == "rewards")
+    {
+        <div class="space-y-8">
+            <!-- 1. KONFIGURASI POIN & STREAK CHECK-IN -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm">
+                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6 pb-4 border-b border-slate-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-10 h-10 rounded-2xl bg-pink-50 text-pink-600 flex items-center justify-center text-lg font-black shadow-sm">
+                            <i class="fas fa-coins"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-extrabold text-slate-900 text-lg">Konfigurasi Poin &amp; Daily Check-In</h3>
+                            <p class="text-xs text-slate-500">Atur perolehan poin harian, konversi nilai rupiah, bonus streak 1 bulan, dan aturan reset</p>
+                        </div>
+                    </div>
+                </div>
+
+                <form method="post" action="/MasterData/SaveGamificationSettings" class="space-y-6">
+                    @Html.AntiForgeryToken()
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+                        <!-- Poin per Check-In -->
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Poin per Daily Check-In <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="DailyCheckInPoints" value="@Model.GamificationSettings.DailyCheckInPoints" min="1" required
+                                       class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">PTS / Hari</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500">Jumlah poin yang didapatkan pengguna setiap kali berhasil check-in.</p>
+                        </div>
+
+                        <!-- Nilai Konversi 1 Poin (Rupiah) -->
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Nilai 1 Poin (Rupiah) <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="PointValueRupiah" value="@Model.GamificationSettings.PointValueRupiah" min="1" required
+                                       class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">Rupiah</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500">Nilai konversi standar per 1 poin (default: 1 poin = Rp 100).</p>
+                        </div>
+
+                        <!-- Target Streak Bulanan -->
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Target Streak Bulanan <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="MonthlyStreakDays" value="@Model.GamificationSettings.MonthlyStreakDays" min="5" required
+                                       class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">Hari</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500">Jumlah hari streak berturut-turut untuk membuka klaim hadiah 1 bulan (default: 30 hari).</p>
+                        </div>
+
+                        <!-- Bonus Poin Streak Bulanan -->
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Bonus Poin Streak 1 Bulan
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="MonthlyStreakBonusPoints" value="@Model.GamificationSettings.MonthlyStreakBonusPoints" min="0" required
+                                       class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">Bonus PTS</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500">Poin tambahan otomatis saat streak mencapai kelipatan 1 bulan penuh.</p>
+                        </div>
+
+                        <!-- Reset Streak jika Absen -->
+                        <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/70 space-y-2">
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                Batas Hari Reset Streak <span class="text-rose-500">*</span>
+                            </label>
+                            <div class="relative">
+                                <input type="number" name="MissedDaysReset" value="@Model.GamificationSettings.MissedDaysReset" min="2" required
+                                       class="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-bold text-slate-900 focus:ring-2 focus:ring-pink-500">
+                                <span class="absolute right-3.5 top-2.5 text-xs text-slate-400 font-bold">Hari Absen</span>
+                            </div>
+                            <p class="text-[11px] text-slate-500">Jika pengguna tidak check-in selama batas hari ini (default: 2 hari), streak kembali ke awal (Hari 1).</p>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end pt-4 border-t border-slate-100">
+                        <button type="submit" class="px-6 py-2.5 rounded-xl bg-pink-600 hover:bg-pink-700 text-white font-extrabold text-xs shadow-md shadow-pink-600/30 transition-all flex items-center gap-2 cursor-pointer">
+                            <i class="fas fa-save"></i> Simpan Konfigurasi Gamifikasi
+                        </button>
+                    </div>
+                </form>
+            </div>
+
+            <!-- 2. KATALOG MASTER HADIAH (CRUD) -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Left: Form Tambah Hadiah -->
+                <div class="bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm h-fit">
+                    <div class="flex items-center gap-3 mb-5">
+                        <div class="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center font-bold">
+                            <i class="fas fa-gift"></i>
+                        </div>
+                        <div>
+                            <h3 class="font-bold text-slate-800 text-base">Tambah Hadiah Baru</h3>
+                            <p class="text-xs text-slate-400">Buat item hadiah yang dapat ditukarkan</p>
+                        </div>
+                    </div>
+
+                    <form method="post" action="/MasterData/CreateReward" class="space-y-4">
+                        @Html.AntiForgeryToken()
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Hadiah <span class="text-rose-500">*</span></label>
+                            <input type="text" name="Name" required placeholder="Voucher Kopi Rp 50.000, Kaos..."
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500 transition-all">
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kategori</label>
+                                <select name="Category" class="select2 w-full">
+                                    <option value="Voucher">Voucher</option>
+                                    <option value="E-Wallet">E-Wallet &amp; Pulsa</option>
+                                    <option value="Merchandise">Merchandise</option>
+                                    <option value="Hadiah Bulanan">Hadiah Bulanan</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Stok Unit <span class="text-rose-500">*</span></label>
+                                <input type="number" name="Stock" value="10" min="0" required
+                                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Harga Poin <span class="text-rose-500">*</span></label>
+                                <input type="number" name="PointCost" value="500" min="1" required
+                                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm font-bold text-amber-600 focus:ring-2 focus:ring-indigo-500">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Warna Aksen</label>
+                                <input type="color" name="Color" value="#EC4899"
+                                       class="w-full h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5">
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Icon FontAwesome</label>
+                                <input type="text" name="Icon" value="fa-solid fa-gift" placeholder="fa-solid fa-gift"
+                                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Urutan Tampil</label>
+                                <input type="number" name="OrderIndex" value="1" min="0"
+                                       class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs">
+                            </div>
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi Hadiah</label>
+                            <textarea name="Description" rows="2" placeholder="Ketentuan penukaran, detail produk..."
+                                      class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500 resize-none"></textarea>
+                        </div>
+
+                        <div class="p-3 bg-pink-50/70 rounded-xl border border-pink-200/80 space-y-2">
+                            <label class="flex items-center gap-2 cursor-pointer">
+                                <input type="checkbox" name="IsMonthlyMilestoneReward" value="true" class="rounded text-pink-600 focus:ring-pink-500 w-4 h-4">
+                                <span class="text-xs font-bold text-pink-900">Hadiah Khusus Streak 1 Bulan (30 Hari)</span>
+                            </label>
+                            <p class="text-[10px] text-pink-700">Jika dicentang, hanya user yang telah menyelesaikan streak 30 hari yang dapat menukarkan hadiah ini.</p>
+                        </div>
+
+                        <button type="submit" class="w-full py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold text-xs shadow-md shadow-indigo-600/30 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                            <i class="fas fa-plus"></i> Tambah Hadiah ke Katalog
+                        </button>
+                    </form>
+                </div>
+
+                <!-- Right 2 Cols: Table Master Hadiah -->
+                <div class="lg:col-span-2 bg-white rounded-3xl p-6 border border-slate-200/80 shadow-sm space-y-4">
+                    <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                        <div>
+                            <h3 class="font-extrabold text-slate-800 text-base">Katalog Master Hadiah (@Model.Rewards.Count)</h3>
+                            <p class="text-xs text-slate-400">Daftar item penukaran poin yang aktif di sistem</p>
+                        </div>
+                    </div>
+
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
+                                    <th class="pb-3 font-bold">Item Hadiah</th>
+                                    <th class="pb-3 font-bold">Kategori</th>
+                                    <th class="pb-3 font-bold">Poin</th>
+                                    <th class="pb-3 font-bold">Nilai Rp</th>
+                                    <th class="pb-3 font-bold">Stok</th>
+                                    <th class="pb-3 font-bold">Khusus 1 Bulan</th>
+                                    <th class="pb-3 font-bold">Status</th>
+                                    <th class="pb-3 font-bold text-center">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach (var r in Model.Rewards)
+                                {
+                                    var rpVal = r.PointCost * Model.GamificationSettings.PointValueRupiah;
+                                    <tr class="hover:bg-slate-50/50">
+                                        <td class="py-3">
+                                            <div class="flex items-center gap-2.5">
+                                                <div class="w-8 h-8 rounded-lg flex items-center justify-center text-white text-xs shrink-0" style="background: @r.Color;">
+                                                    <i class="@r.Icon"></i>
+                                                </div>
+                                                <div>
+                                                    <span class="font-bold text-slate-900 block">@r.Name</span>
+                                                    <span class="text-[10px] text-slate-400 line-clamp-1">@r.Description</span>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td class="py-3 font-semibold text-slate-600">@r.Category</td>
+                                        <td class="py-3 font-black text-amber-600">@r.PointCost Pts</td>
+                                        <td class="py-3 font-bold text-emerald-600">Rp @rpVal.ToString("N0")</td>
+                                        <td class="py-3 font-bold @(r.Stock > 0 ? "text-slate-800" : "text-rose-600")">@r.Stock</td>
+                                        <td class="py-3">
+                                            @if (r.IsMonthlyMilestoneReward)
+                                            {
+                                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-pink-100 text-pink-700">Ya</span>
+                                            }
+                                            else
+                                            {
+                                                <span class="text-slate-400 text-[10px]">Reguler</span>
+                                            }
+                                        </td>
+                                        <td class="py-3">
+                                            <form method="post" action="/MasterData/ToggleRewardStatus" class="inline">
+                                                @Html.AntiForgeryToken()
+                                                <input type="hidden" name="id" value="@r.Id" />
+                                                <button type="submit" class="px-2 py-0.5 rounded text-[10px] font-bold @(r.IsActive ? "bg-emerald-100 text-emerald-800 hover:bg-emerald-200" : "bg-slate-100 text-slate-600 hover:bg-slate-200")">
+                                                    @(r.IsActive ? "Aktif" : "Nonaktif")
+                                                </button>
+                                            </form>
+                                        </td>
+                                        <td class="py-3 text-center">
+                                            <div class="inline-flex items-center gap-1">
+                                                <button type="button" onclick="openEditRewardModal(@r.Id, '@r.Name.Replace("'", "\\'")', '@(r.Description?.Replace("'", "\\'") ?? "")', '@r.Category', @r.PointCost, @r.Stock, '@r.Icon', '@r.Color', @(r.IsMonthlyMilestoneReward ? "true" : "false"), @(r.IsActive ? "true" : "false"), @r.OrderIndex)" class="p-1.5 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-indigo-50">
+                                                    <i class="fas fa-edit"></i>
+                                                </button>
+                                                <form method="post" action="/MasterData/DeleteReward" onsubmit="return confirm('Hapus hadiah ini?');" class="inline">
+                                                    @Html.AntiForgeryToken()
+                                                    <input type="hidden" name="id" value="@r.Id" />
+                                                    <button type="submit" class="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50">
+                                                        <i class="fas fa-trash"></i>
+                                                    </button>
+                                                </form>
+                                            </div>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. PERSETUJUAN KLAIM HADIAH PENGGUNA (ADMIN CLAIMS APPROVAL) -->
+            <div class="bg-white rounded-3xl p-6 md:p-8 border border-slate-200/80 shadow-sm space-y-4">
+                <div class="flex items-center justify-between pb-3 border-b border-slate-100">
+                    <div>
+                        <h3 class="font-extrabold text-slate-800 text-base">Permintaan Klaim Hadiah Pengguna (@Model.Claims.Count)</h3>
+                        <p class="text-xs text-slate-400">Verifikasi, setujui, tolak, atau selesaikan penukaran hadiah yang diajukan oleh user</p>
+                    </div>
+                </div>
+
+                @if (Model.Claims.Any())
+                {
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="border-b border-slate-200 text-slate-400 uppercase tracking-wider text-[10px]">
+                                    <th class="pb-3 font-bold">Waktu</th>
+                                    <th class="pb-3 font-bold">Pengguna</th>
+                                    <th class="pb-3 font-bold">Item Hadiah</th>
+                                    <th class="pb-3 font-bold">Poin</th>
+                                    <th class="pb-3 font-bold">Nilai Rp</th>
+                                    <th class="pb-3 font-bold">Catatan User</th>
+                                    <th class="pb-3 font-bold">Status</th>
+                                    <th class="pb-3 font-bold">Catatan Admin</th>
+                                    <th class="pb-3 font-bold text-center">Aksi Proses</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-slate-100">
+                                @foreach (var c in Model.Claims)
+                                {
+                                    <tr class="hover:bg-slate-50/50">
+                                        <td class="py-3 text-slate-500 font-semibold">@c.ClaimedAt.ToString("dd/MM/yy HH:mm")</td>
+                                        <td class="py-3">
+                                            <span class="font-bold text-slate-900 block">@(c.User?.FullName ?? "Pengguna")</span>
+                                            <span class="text-[10px] text-slate-400">@(c.User?.Email ?? "-")</span>
+                                        </td>
+                                        <td class="py-3 font-bold text-slate-800">@(c.RewardItem?.Name ?? "Hadiah")</td>
+                                        <td class="py-3 font-bold text-rose-600">-@c.PointsSpent pts</td>
+                                        <td class="py-3 font-bold text-emerald-600">Rp @c.RupiahEquivalent.ToString("N0")</td>
+                                        <td class="py-3 text-slate-600 max-w-xs truncate" title="@c.UserNotes">@(string.IsNullOrWhiteSpace(c.UserNotes) ? "-" : c.UserNotes)</td>
+                                        <td class="py-3">
+                                            @switch (c.Status)
+                                            {
+                                                case TrackerKerja.Models.ClaimStatus.Pending:
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800">Pending</span>
+                                                    break;
+                                                case TrackerKerja.Models.ClaimStatus.Approved:
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-800">Disetujui</span>
+                                                    break;
+                                                case TrackerKerja.Models.ClaimStatus.Completed:
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800">Selesai</span>
+                                                    break;
+                                                case TrackerKerja.Models.ClaimStatus.Rejected:
+                                                    <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-rose-100 text-rose-800">Ditolak</span>
+                                                    break;
+                                            }
+                                        </td>
+                                        <td class="py-3 text-slate-500 max-w-xs truncate" title="@c.AdminNotes">@(string.IsNullOrWhiteSpace(c.AdminNotes) ? "-" : c.AdminNotes)</td>
+                                        <td class="py-3 text-center">
+                                            <button type="button" onclick="openProcessClaimModal(@c.Id, '@(c.User?.FullName?.Replace("'", "\\'") ?? "Pengguna")', '@(c.RewardItem?.Name?.Replace("'", "\\'") ?? "Hadiah")', @((int)c.Status), '@(c.AdminNotes?.Replace("'", "\\'") ?? "")')" class="px-2.5 py-1 rounded-lg bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-[11px] transition-all">
+                                                <i class="fas fa-cog"></i> Proses
+                                            </button>
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+                else
+                {
+                    <div class="text-center py-8 text-slate-400">
+                        <i class="fas fa-inbox text-3xl text-slate-300 mb-2"></i>
+                        <p class="text-xs">Belum ada pengajuan klaim hadiah dari pengguna.</p>
+                    </div>
+                }
             </div>
         </div>
     }
@@ -1102,9 +1520,17 @@
                 <div>
                     <select name="TriggerType" id="editBadgeTriggerType" class="select2 w-full" data-placeholder="Pilih Pemicu">
                         <option value="1">Auto: Jumlah Tugas Selesai (Done Tasks)</option>
-                        <option value="2">Auto: Total Jam Kerja (Hours Logged)</option>
-                        <option value="3">Auto: Jumlah Catatan Kerja (Notes Count)</option>
                         <option value="4">Auto: Total Tugas Pernah Ditugaskan</option>
+                        <option value="2">Auto: Total Jam Kerja (Hours Logged)</option>
+                        <option value="7">Auto: Jumlah Sesi Timesheet Tugas</option>
+                        <option value="6">Auto: Jumlah Presensi Kehadiran</option>
+                        <option value="3">Auto: Jumlah Catatan Kerja (Notes Count)</option>
+                        <option value="8">Auto: Jumlah JSON Disimpan</option>
+                        <option value="9">Auto: Jumlah SQL Beautifier Disimpan</option>
+                        <option value="10">Auto: Jumlah Login</option>
+                        <option value="11">Auto: Jumlah Logout</option>
+                        <option value="12">Auto: Total Daily Check-In (Kali)</option>
+                        <option value="13">Auto: Streak Daily Check-In (Hari Berturut-turut)</option>
                         <option value="5">Auto: Kelengkapan Profil Pengguna</option>
                         <option value="0">Manual: Diberikan Spesial oleh Admin</option>
                     </select>
@@ -1136,6 +1562,128 @@
             <div class="flex items-center justify-end gap-2 pt-2 border-t border-slate-100">
                 <button type="button" onclick="closeModal('editBadgeModal')" class="px-4 py-2 text-sm font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
                 <button type="submit" class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white text-sm font-bold rounded-xl shadow-md">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODAL: EDIT REWARD                                         -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="editRewardModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-lg w-full shadow-2xl border border-slate-100 animate-scale-in">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-800 text-lg">Edit Master Hadiah</h3>
+            <button type="button" onclick="closeModal('editRewardModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="/MasterData/EditReward" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="Id" id="editRewardId" />
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Nama Hadiah <span class="text-rose-500">*</span></label>
+                <input type="text" name="Name" id="editRewardName" required class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-sm focus:ring-2 focus:ring-indigo-500">
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Kategori</label>
+                    <select name="Category" id="editRewardCategory" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm">
+                        <option value="Voucher">Voucher</option>
+                        <option value="E-Wallet">E-Wallet &amp; Pulsa</option>
+                        <option value="Merchandise">Merchandise</option>
+                        <option value="Hadiah Bulanan">Hadiah Bulanan</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Stok Unit <span class="text-rose-500">*</span></label>
+                    <input type="number" name="Stock" id="editRewardStock" min="0" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Harga Poin <span class="text-rose-500">*</span></label>
+                    <input type="number" name="PointCost" id="editRewardPointCost" min="1" required class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-sm font-bold text-amber-600">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Warna Aksen</label>
+                    <input type="color" name="Color" id="editRewardColor" class="w-full h-10 rounded-xl border border-slate-200 cursor-pointer p-0.5">
+                </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Icon FontAwesome</label>
+                    <input type="text" name="Icon" id="editRewardIcon" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs">
+                </div>
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Urutan Tampil</label>
+                    <input type="number" name="OrderIndex" id="editRewardOrder" min="0" class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Deskripsi Hadiah</label>
+                <textarea name="Description" id="editRewardDesc" rows="2" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs resize-none"></textarea>
+            </div>
+
+            <div class="flex items-center justify-between pt-2">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="IsMonthlyMilestoneReward" value="true" id="editRewardIsMonthly" class="rounded text-pink-600 focus:ring-pink-500 w-4 h-4">
+                    <span class="text-xs font-bold text-pink-900">Khusus Streak 1 Bulan</span>
+                </label>
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="IsActive" value="true" id="editRewardIsActive" class="rounded text-indigo-600 focus:ring-indigo-500 w-4 h-4">
+                    <span class="text-xs font-semibold text-slate-700">Hadiah Aktif</span>
+                </label>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('editRewardModal')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md">Simpan Perubahan</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════════ -->
+<!-- MODAL: PROCESS USER REWARD CLAIM                           -->
+<!-- ══════════════════════════════════════════════════════════ -->
+<div id="processClaimModal" class="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm hidden items-center justify-center p-4">
+    <div class="bg-white rounded-3xl p-6 max-w-md w-full shadow-2xl border border-slate-100 animate-scale-in">
+        <div class="flex items-center justify-between mb-4 border-b border-slate-100 pb-3">
+            <h3 class="font-bold text-slate-800 text-lg">Proses Klaim Hadiah</h3>
+            <button type="button" onclick="closeModal('processClaimModal')" class="text-slate-400 hover:text-slate-600"><i class="fas fa-times"></i></button>
+        </div>
+        <form method="post" action="/MasterData/ProcessRewardClaim" class="space-y-4">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="id" id="processClaimId" />
+
+            <div class="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-1">
+                <p><strong>Pengguna:</strong> <span id="processClaimUser">-</span></p>
+                <p><strong>Item Hadiah:</strong> <span id="processClaimItem">-</span></p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Ubah Status Klaim <span class="text-rose-500">*</span></label>
+                <select name="status" id="processClaimStatus" class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold">
+                    <option value="0">Pending (Menunggu Verifikasi)</option>
+                    <option value="1">Approved (Disetujui / Sedang Diproses)</option>
+                    <option value="2">Completed (Selesai / Terkirim)</option>
+                    <option value="3">Rejected (Ditolak &amp; Poin Dikembalikan)</option>
+                </select>
+                <p class="text-[10px] text-slate-400 mt-1">Jika status ditolak (Rejected), stok hadiah dan poin pengguna akan dikembalikan secara otomatis.</p>
+            </div>
+
+            <div>
+                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">Catatan Administrator / Bukti / No. Resi</label>
+                <textarea name="adminNotes" id="processClaimAdminNotes" rows="3" placeholder="Contoh: No Resi JNE: 0123456789 atau Bukti Transfer Saldo Gopay..." class="w-full px-3.5 py-2 rounded-xl border border-slate-200 text-xs focus:ring-2 focus:ring-indigo-500"></textarea>
+            </div>
+
+            <div class="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
+                <button type="button" onclick="closeModal('processClaimModal')" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl">Batal</button>
+                <button type="submit" class="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-md">Simpan Status</button>
             </div>
         </form>
     </div>
@@ -1224,6 +1772,36 @@
         document.getElementById('editBadgeOrder').value = order;
 
         const modal = document.getElementById('editBadgeModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function openEditRewardModal(id, name, desc, category, pointCost, stock, icon, color, isMonthly, isActive, order) {
+        document.getElementById('editRewardId').value = id;
+        document.getElementById('editRewardName').value = name;
+        document.getElementById('editRewardDesc').value = desc || '';
+        document.getElementById('editRewardCategory').value = category || 'Voucher';
+        document.getElementById('editRewardPointCost').value = pointCost;
+        document.getElementById('editRewardStock').value = stock;
+        document.getElementById('editRewardIcon').value = icon || 'fa-solid fa-gift';
+        document.getElementById('editRewardColor').value = color || '#EC4899';
+        document.getElementById('editRewardIsMonthly').checked = isMonthly;
+        document.getElementById('editRewardIsActive').checked = isActive;
+        document.getElementById('editRewardOrder').value = order;
+
+        const modal = document.getElementById('editRewardModal');
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+    }
+
+    function openProcessClaimModal(id, userName, itemName, status, adminNotes) {
+        document.getElementById('processClaimId').value = id;
+        document.getElementById('processClaimUser').innerText = userName;
+        document.getElementById('processClaimItem').innerText = itemName;
+        document.getElementById('processClaimStatus').value = status;
+        document.getElementById('processClaimAdminNotes').value = adminNotes || '';
+
+        const modal = document.getElementById('processClaimModal');
         modal.classList.remove('hidden');
         modal.classList.add('flex');
     }

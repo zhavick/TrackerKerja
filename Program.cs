@@ -839,21 +839,271 @@ using (var scope = app.Services.CreateScope())
             );");
     } catch { }
 
-    if (!db.MasterBadges.Any())
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE JsonHistories ADD COLUMN UserId TEXT NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE SqlHistories ADD COLUMN UserId TEXT NULL;"); } catch { }
+
+    try
     {
-        db.MasterBadges.AddRange(
-            new MasterBadge { Code = "TASK_FIRST", Name = "Langkah Pertama 🐾", Description = "Selesaikan tugas pertamamu di sistem", Category = "Tasks", Icon = "fa-solid fa-paw", Color = "#10B981", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 1, IsActive = true, OrderIndex = 1, CreatedAt = DateTime.UtcNow },
-            new MasterBadge { Code = "TASK_10", Name = "Task Crusher ⚡", Description = "Selesaikan 10 tugas dengan sukses", Category = "Tasks", Icon = "fa-solid fa-bolt", Color = "#F59E0B", Points = 150, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 10, IsActive = true, OrderIndex = 2, CreatedAt = DateTime.UtcNow },
-            new MasterBadge { Code = "TASK_50", Name = "Master Executor ⚔️", Description = "Selesaikan 50 tugas secara produktif", Category = "Tasks", Icon = "fa-solid fa-shield-halved", Color = "#8B5CF6", Points = 400, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 50, IsActive = true, OrderIndex = 3, CreatedAt = DateTime.UtcNow },
-            new MasterBadge { Code = "TASK_100", Name = "Century Hero 🏆", Description = "Menembus pencapaian 100 tugas terselesaikan!", Category = "Tasks", Icon = "fa-solid fa-trophy", Color = "#EAB308", Points = 1000, Rarity = BadgeRarity.Legendary, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 100, IsActive = true, OrderIndex = 4, CreatedAt = DateTime.UtcNow },
-            new MasterBadge { Code = "WORK_10H", Name = "Fokus Membara 🔥", Description = "Kumpulkan total 10 jam kerja produktif", Category = "Timesheets", Icon = "fa-solid fa-fire-flame-curved", Color = "#F97316", Points = 100, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_TotalHours, TriggerThreshold = 10, IsActive = true, OrderIndex = 5, CreatedAt = DateTime.UtcNow },
-            new MasterBadge { Code = "WORK_50H", Name = "Coffee Fuelled ☕", Description = "Tembus 50 jam dedikasi kerja keras", Category = "Timesheets", Icon = "fa-solid fa-mug-hot", Color = "#EC4899", Points = 300, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_TotalHours, TriggerThreshold = 50, IsActive = true, OrderIndex = 6, CreatedAt = DateTime.UtcNow },
-            new MasterBadge { Code = "NOTE_FIRST", Name = "Juru Tulis 📜", Description = "Buat catatan kerja/dev log pertama", Category = "Notes", Icon = "fa-solid fa-scroll", Color = "#06B6D4", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_NotesCount, TriggerThreshold = 1, IsActive = true, OrderIndex = 7, CreatedAt = DateTime.UtcNow },
-            new MasterBadge { Code = "NOTE_10", Name = "Knowledge Keeper 🧠", Description = "Bagikan 10 catatan & dokumentasi kerja", Category = "Notes", Icon = "fa-solid fa-brain", Color = "#6366F1", Points = 200, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_NotesCount, TriggerThreshold = 10, IsActive = true, OrderIndex = 8, CreatedAt = DateTime.UtcNow },
-            new MasterBadge { Code = "ROCKSTAR_DEV", Name = "Rockstar of The Month 🌟", Description = "Penghargaan khusus atas kinerja luar biasa dari Admin", Category = "Special", Icon = "fa-solid fa-star", Color = "#E11D48", Points = 500, Rarity = BadgeRarity.Legendary, TriggerType = BadgeTriggerType.Manual, TriggerThreshold = 1, IsActive = true, OrderIndex = 9, CreatedAt = DateTime.UtcNow }
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS DailyCheckIns (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId TEXT NOT NULL,
+                CheckInDate TEXT NOT NULL,
+                CheckInTime TEXT NOT NULL,
+                PointsEarned INTEGER NOT NULL DEFAULT 10,
+                StreakDay INTEGER NOT NULL DEFAULT 1,
+                IsMonthlyMilestone INTEGER NOT NULL DEFAULT 0,
+                Notes TEXT NULL,
+                FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS IX_DailyCheckIns_UserId_Date ON DailyCheckIns (UserId, CheckInDate);");
+    } catch { }
+
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS RewardItems (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Name TEXT NOT NULL,
+                Description TEXT NULL,
+                PointCost INTEGER NOT NULL DEFAULT 100,
+                Stock INTEGER NOT NULL DEFAULT 10,
+                Category TEXT NULL,
+                ImageUrl TEXT NULL,
+                Icon TEXT NULL,
+                Color TEXT NULL,
+                IsActive INTEGER NOT NULL DEFAULT 1,
+                IsMonthlyMilestoneReward INTEGER NOT NULL DEFAULT 0,
+                OrderIndex INTEGER NOT NULL DEFAULT 0,
+                CreatedAt TEXT NOT NULL
+            );");
+    } catch { }
+
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS RewardClaims (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                UserId TEXT NOT NULL,
+                RewardItemId INTEGER NOT NULL,
+                PointsSpent INTEGER NOT NULL DEFAULT 0,
+                PointValueSnapshot INTEGER NOT NULL DEFAULT 100,
+                RupiahEquivalent REAL NOT NULL DEFAULT 0,
+                Status INTEGER NOT NULL DEFAULT 0,
+                UserNotes TEXT NULL,
+                AdminNotes TEXT NULL,
+                ClaimedAt TEXT NOT NULL,
+                ProcessedAt TEXT NULL,
+                ProcessedByUserId TEXT NULL,
+                FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id) ON DELETE CASCADE,
+                FOREIGN KEY (RewardItemId) REFERENCES RewardItems(Id) ON DELETE CASCADE,
+                FOREIGN KEY (ProcessedByUserId) REFERENCES AspNetUsers(Id) ON DELETE SET NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_RewardClaims_UserId ON RewardClaims (UserId);");
+    } catch { }
+
+    // Seed default Gamification Settings
+    if (!db.SystemSettings.Any(s => s.Key == "Gamification_DailyCheckInPoints"))
+    {
+        db.SystemSettings.Add(new SystemSetting { Key = "Gamification_DailyCheckInPoints", Value = "10", Description = "Poin reward per daily check-in", UpdatedAt = DateTime.Now });
+    }
+    if (!db.SystemSettings.Any(s => s.Key == "Gamification_PointValueRupiah"))
+    {
+        db.SystemSettings.Add(new SystemSetting { Key = "Gamification_PointValueRupiah", Value = "100", Description = "Nilai konversi 1 poin dalam rupiah (1 point = Rp 100)", UpdatedAt = DateTime.Now });
+    }
+    if (!db.SystemSettings.Any(s => s.Key == "Gamification_MonthlyStreakDays"))
+    {
+        db.SystemSettings.Add(new SystemSetting { Key = "Gamification_MonthlyStreakDays", Value = "30", Description = "Target hari streak check-in untuk klaim reward bulanan", UpdatedAt = DateTime.Now });
+    }
+    if (!db.SystemSettings.Any(s => s.Key == "Gamification_MonthlyStreakBonusPoints"))
+    {
+        db.SystemSettings.Add(new SystemSetting { Key = "Gamification_MonthlyStreakBonusPoints", Value = "500", Description = "Bonus poin streak 1 bulan penuh", UpdatedAt = DateTime.Now });
+    }
+    if (!db.SystemSettings.Any(s => s.Key == "Gamification_MissedDaysReset"))
+    {
+        db.SystemSettings.Add(new SystemSetting { Key = "Gamification_MissedDaysReset", Value = "2", Description = "Batas hari absen tanpa check-in sebelum streak reset ke awal (2 hari)", UpdatedAt = DateTime.Now });
+    }
+    db.SaveChanges();
+
+    // Seed Default Rewards Catalog
+    if (!db.RewardItems.Any())
+    {
+        db.RewardItems.AddRange(
+            new RewardItem
+            {
+                Name = "Voucher Pulsa / Saldo E-Wallet Rp 25.000",
+                Description = "Penukaran saldo Gopay, OVO, Dana, ShopeePay, atau pulsa seluler senilai Rp 25.000.",
+                PointCost = 250,
+                Stock = 25,
+                Category = "E-Wallet",
+                Icon = "fa-solid fa-mobile-screen-button",
+                Color = "#06B6D4",
+                IsActive = true,
+                IsMonthlyMilestoneReward = false,
+                OrderIndex = 1,
+                CreatedAt = DateTime.Now
+            },
+            new RewardItem
+            {
+                Name = "Voucher Kopi Kenangan / Fore Rp 50.000",
+                Description = "Digital voucher minuman kopi favorit untuk menambah semangat ngoding dan produktivitas.",
+                PointCost = 500,
+                Stock = 20,
+                Category = "Voucher",
+                Icon = "fa-solid fa-mug-hot",
+                Color = "#D97706",
+                IsActive = true,
+                IsMonthlyMilestoneReward = false,
+                OrderIndex = 2,
+                CreatedAt = DateTime.Now
+            },
+            new RewardItem
+            {
+                Name = "Voucher Belanja Indomaret / Alfamart Rp 100.000",
+                Description = "Voucher belanja ritel senilai Rp 100.000 yang dapat digunakan di seluruh gerai minimarket.",
+                PointCost = 1000,
+                Stock = 15,
+                Category = "Voucher",
+                Icon = "fa-solid fa-bag-shopping",
+                Color = "#2563EB",
+                IsActive = true,
+                IsMonthlyMilestoneReward = false,
+                OrderIndex = 3,
+                CreatedAt = DateTime.Now
+            },
+            new RewardItem
+            {
+                Name = "Tumbler Stainless Steel TrackerKerja 500ml",
+                Description = "Tumbler tahan panas & dingin eksklusif dengan laser grafir logo TrackerKerja Pro.",
+                PointCost = 800,
+                Stock = 10,
+                Category = "Merchandise",
+                Icon = "fa-solid fa-bottle-water",
+                Color = "#059669",
+                IsActive = true,
+                IsMonthlyMilestoneReward = false,
+                OrderIndex = 4,
+                CreatedAt = DateTime.Now
+            },
+            new RewardItem
+            {
+                Name = "Kaos Eksklusif TrackerKerja Pro Developer",
+                Description = "T-Shirt katun combed 30s premium dengan sablon typography developer Work Tracker Pro.",
+                PointCost = 1500,
+                Stock = 8,
+                Category = "Merchandise",
+                Icon = "fa-solid fa-shirt",
+                Color = "#7C3AED",
+                IsActive = true,
+                IsMonthlyMilestoneReward = false,
+                OrderIndex = 5,
+                CreatedAt = DateTime.Now
+            },
+            new RewardItem
+            {
+                Name = "Paket Hadiah Bulanan: Special Gift Box + Saldo Rp 100.000",
+                Description = "Hadiah istimewa khusus pengguna yang telah menyelesaikan Daily Check-In 1 bulan penuh (30 hari berturut-turut). Berisi Merchandise Box & Saldo E-Wallet Rp 100.000!",
+                PointCost = 1000,
+                Stock = 10,
+                Category = "Hadiah Bulanan",
+                Icon = "fa-solid fa-box-open",
+                Color = "#EC4899",
+                IsActive = true,
+                IsMonthlyMilestoneReward = true,
+                OrderIndex = 6,
+                CreatedAt = DateTime.Now
+            }
         );
         db.SaveChanges();
     }
+
+    var defaultBadges = new List<MasterBadge>
+    {
+        // ── TASK BADGES (TUGAS) ──────────────────────────────────
+        new MasterBadge { Code = "TASK_FIRST", Name = "Awalan Nih Bos! 🐾", Description = "Selesaikan task perdana lu di sistem, langsung tancap gaspol!", Category = "Tasks", Icon = "fa-solid fa-paw", Color = "#10B981", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 1, IsActive = true, OrderIndex = 1, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "TASK_10", Name = "Sat-Set 10 Task ⚡", Description = "Babat abis 10 task tanpa drama, kerjaan kelar cepet!", Category = "Tasks", Icon = "fa-solid fa-bolt", Color = "#F59E0B", Points = 150, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 10, IsActive = true, OrderIndex = 2, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "TASK_50", Name = "Si Paling Eksekutor ⚔️", Description = "50 task kelar diberesin, produktivitas gak kaleng-kaleng!", Category = "Tasks", Icon = "fa-solid fa-shield-halved", Color = "#8B5CF6", Points = 400, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 50, IsActive = true, OrderIndex = 3, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "TASK_100", Name = "Sepuh Produktif 100 🏆", Description = "Tembus 100 task kelar! Sungkem dulu sama sang sepuh!", Category = "Tasks", Icon = "fa-solid fa-trophy", Color = "#EAB308", Points = 1000, Rarity = BadgeRarity.Legendary, TriggerType = BadgeTriggerType.Auto_DoneTasks, TriggerThreshold = 100, IsActive = true, OrderIndex = 4, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "TASK_TOTAL_5", Name = "Mulai Proyekan 📋", Description = "Udah megang 5 task di sistem, siap unjuk gigi!", Category = "Tasks", Icon = "fa-solid fa-list-check", Color = "#0284C7", Points = 75, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_TotalTasks, TriggerThreshold = 5, IsActive = true, OrderIndex = 5, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "TASK_TOTAL_25", Name = "Juggling 25 Task 🗂️", Description = "Multi-tasking level dewa, 25 task sekaligus dilibas!", Category = "Tasks", Icon = "fa-solid fa-folder-tree", Color = "#6366F1", Points = 250, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_TotalTasks, TriggerThreshold = 25, IsActive = true, OrderIndex = 6, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "TASK_TOTAL_50", Name = "Suhu Penugasan 🏗️", Description = "50 alur penugasan dihandle rapi, auto panutan tim!", Category = "Tasks", Icon = "fa-solid fa-cubes", Color = "#7C3AED", Points = 500, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_TotalTasks, TriggerThreshold = 50, IsActive = true, OrderIndex = 7, CreatedAt = DateTime.UtcNow },
+
+        // ── TIMESHEET & HOURS BADGES (WAKTU & FOKUS) ─────────────
+        new MasterBadge { Code = "WORK_10H", Name = "Mode Fokus On 🔥", Description = "Ngebut 10 jam kerja produktif, no counter!", Category = "Timesheets", Icon = "fa-solid fa-fire-flame-curved", Color = "#F97316", Points = 100, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_TotalHours, TriggerThreshold = 10, IsActive = true, OrderIndex = 8, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "WORK_50H", Name = "Kopi & Keringat ☕", Description = "Tembus 50 jam kerja keras, ditemenin kopi anti ngantuk!", Category = "Timesheets", Icon = "fa-solid fa-mug-hot", Color = "#EC4899", Points = 300, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_TotalHours, TriggerThreshold = 50, IsActive = true, OrderIndex = 9, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "TIMESHEET_FIRST", Name = "Mulai Nyatet Waktu ⏱️", Description = "First time nyatet log waktu kerja tugas, cakep!", Category = "Timesheets", Icon = "fa-solid fa-stopwatch", Color = "#14B8A6", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_TimesheetCount, TriggerThreshold = 1, IsActive = true, OrderIndex = 10, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "TIMESHEET_10", Name = "Jawara Timesheet ⏳", Description = "10 kali submit timesheet kerja, tertib parah!", Category = "Timesheets", Icon = "fa-solid fa-hourglass-half", Color = "#0D9488", Points = 150, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_TimesheetCount, TriggerThreshold = 10, IsActive = true, OrderIndex = 11, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "TIMESHEET_50", Name = "Speedrun Kerja 🚀", Description = "50 sesi timesheet rapi, efisiensi maksimal tanpa jeda!", Category = "Timesheets", Icon = "fa-solid fa-gauge-high", Color = "#0891B2", Points = 350, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_TimesheetCount, TriggerThreshold = 50, IsActive = true, OrderIndex = 12, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "TIMESHEET_100", Name = "Dewa Waktu 🪐", Description = "100 sesi timesheet tembus! Master manajemen waktu sejati!", Category = "Timesheets", Icon = "fa-solid fa-clock-rotate-left", Color = "#0369A1", Points = 800, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_TimesheetCount, TriggerThreshold = 100, IsActive = true, OrderIndex = 13, CreatedAt = DateTime.UtcNow },
+
+        // ── ATTENDANCE BADGES (PRESENSI) ─────────────────────────
+        new MasterBadge { Code = "ATTEND_FIRST", Name = "Hadir Bos! ⏰", Description = "Presensi perdana tercatat, siap berkontribusi hari ini!", Category = "Attendance", Icon = "fa-solid fa-fingerprint", Color = "#10B981", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_AttendanceCount, TriggerThreshold = 1, IsActive = true, OrderIndex = 14, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "ATTEND_7", Name = "Anti Mangkir Seminggu 📅", Description = "7 hari hadir berturut-turut, konsistensi jempolan!", Category = "Attendance", Icon = "fa-solid fa-calendar-check", Color = "#059669", Points = 120, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_AttendanceCount, TriggerThreshold = 7, IsActive = true, OrderIndex = 15, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "ATTEND_30", Name = "Sebulan No Bolos 🛡️", Description = "30 hari hadir kerja tanpa cela, disiplin tingkat tinggi!", Category = "Attendance", Icon = "fa-solid fa-shield-heart", Color = "#047857", Points = 300, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_AttendanceCount, TriggerThreshold = 30, IsActive = true, OrderIndex = 16, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "ATTEND_100", Name = "Duta Presensi 100 🌟", Description = "100 kali presensi kerja, teladan absensi satu kantor!", Category = "Attendance", Icon = "fa-solid fa-medal", Color = "#D97706", Points = 800, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_AttendanceCount, TriggerThreshold = 100, IsActive = true, OrderIndex = 17, CreatedAt = DateTime.UtcNow },
+
+        // ── NOTES & DOKUMENTASI BADGES ───────────────────────────
+        new MasterBadge { Code = "NOTE_FIRST", Name = "Catet Biar Gak Lupa 📜", Description = "Bikin dev log atau catatan kerja pertama, mantap!", Category = "Notes", Icon = "fa-solid fa-scroll", Color = "#06B6D4", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_NotesCount, TriggerThreshold = 1, IsActive = true, OrderIndex = 18, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "NOTE_10", Name = "Gudang Catatan 🧠", Description = "Share 10 dokumentasi & catatan kerja daging buat tim!", Category = "Notes", Icon = "fa-solid fa-brain", Color = "#6366F1", Points = 200, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_NotesCount, TriggerThreshold = 10, IsActive = true, OrderIndex = 19, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "NOTE_25", Name = "Spill Daging 25 Info 📚", Description = "25 catatan penting tersimpan rapi, solusi selalu ready!", Category = "Notes", Icon = "fa-solid fa-book-bookmark", Color = "#4F46E5", Points = 400, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_NotesCount, TriggerThreshold = 25, IsActive = true, OrderIndex = 20, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "NOTE_50", Name = "Kolektor Solusi 🏛️", Description = "50 arsip ilmu dan catatan komprehensif, sepuh dokumentasi!", Category = "Notes", Icon = "fa-solid fa-landmark", Color = "#4338CA", Points = 900, Rarity = BadgeRarity.Legendary, TriggerType = BadgeTriggerType.Auto_NotesCount, TriggerThreshold = 50, IsActive = true, OrderIndex = 21, CreatedAt = DateTime.UtcNow },
+
+        // ── JSON FORMATTER BADGES ────────────────────────────────
+        new MasterBadge { Code = "JSON_FIRST", Name = "Format JSON Pertama 🧩", Description = "Simpen payload JSON rapi pertama ke riwayat, anti error!", Category = "Tools", Icon = "fa-solid fa-code", Color = "#3B82F6", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_JsonCount, TriggerThreshold = 1, IsActive = true, OrderIndex = 22, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "JSON_5", Name = "Pawang JSON 🔮", Description = "5 struktur data JSON berhasil dirapikan, estetik abis!", Category = "Tools", Icon = "fa-solid fa-wand-magic-sparkles", Color = "#2563EB", Points = 150, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_JsonCount, TriggerThreshold = 5, IsActive = true, OrderIndex = 23, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "JSON_20", Name = "Sultan Payload JSON 🌐", Description = "20 arsitektur JSON rapi terorganisir, mastah data format!", Category = "Tools", Icon = "fa-solid fa-diagram-project", Color = "#1D4ED8", Points = 400, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_JsonCount, TriggerThreshold = 20, IsActive = true, OrderIndex = 24, CreatedAt = DateTime.UtcNow },
+
+        // ── SQL BEAUTIFIER BADGES ────────────────────────────────
+        new MasterBadge { Code = "SQL_FIRST", Name = "Query Rapi Pertama 💾", Description = "Beautify query SQL pertama, kueri database gak berantakan lagi!", Category = "Tools", Icon = "fa-solid fa-database", Color = "#10B981", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_SqlCount, TriggerThreshold = 1, IsActive = true, OrderIndex = 25, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "SQL_5", Name = "Penyihir SQL 🧙‍♂️", Description = "5 query database terformat aesthetic, enak dibaca!", Category = "Tools", Icon = "fa-solid fa-hat-wizard", Color = "#059669", Points = 150, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_SqlCount, TriggerThreshold = 5, IsActive = true, OrderIndex = 26, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "SQL_20", Name = "Dewa Query SQL ⚡", Description = "20 kueri SQL bersih dan teroptimasi, kueri ngebut kayak roket!", Category = "Tools", Icon = "fa-solid fa-bolt-lightning", Color = "#047857", Points = 400, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_SqlCount, TriggerThreshold = 20, IsActive = true, OrderIndex = 27, CreatedAt = DateTime.UtcNow },
+
+        // ── LOGIN BADGES (AKTIVITAS) ─────────────────────────────
+        new MasterBadge { Code = "LOGIN_FIRST", Name = "Login Perdana 👋", Description = "Masuk ke TrackerKerja, selamat datang di markas produktif!", Category = "Activity", Icon = "fa-solid fa-right-to-bracket", Color = "#3B82F6", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_LoginCount, TriggerThreshold = 1, IsActive = true, OrderIndex = 28, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "LOGIN_10", Name = "Langganan Masuk 🔑", Description = "10 kali login ke aplikasi, aktif terus gak ada obat!", Category = "Activity", Icon = "fa-solid fa-key", Color = "#2563EB", Points = 120, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_LoginCount, TriggerThreshold = 10, IsActive = true, OrderIndex = 29, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "LOGIN_50", Name = "Member Garis Keras 🚪", Description = "50 sesi login produktif, setia banget sama sistem!", Category = "Activity", Icon = "fa-solid fa-door-open", Color = "#1D4ED8", Points = 300, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_LoginCount, TriggerThreshold = 50, IsActive = true, OrderIndex = 30, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "LOGIN_100", Name = "Sultan Login 100 💎", Description = "Tembus 100 kali login! Jiwa raga siap tempur kerja!", Category = "Activity", Icon = "fa-solid fa-gem", Color = "#4338CA", Points = 750, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_LoginCount, TriggerThreshold = 100, IsActive = true, OrderIndex = 31, CreatedAt = DateTime.UtcNow },
+
+        // ── LOGOUT BADGES (WORK-LIFE BALANCE) ────────────────────
+        new MasterBadge { Code = "LOGOUT_FIRST", Name = "Pamit Dulu Guys 🌇", Description = "Tutup hari kerja dengan logout rapi & aman, rehat dulu!", Category = "Activity", Icon = "fa-solid fa-right-from-bracket", Color = "#F97316", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_LogoutCount, TriggerThreshold = 1, IsActive = true, OrderIndex = 32, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "LOGOUT_10", Name = "Anti Lembur Club 🧘", Description = "10 kali logout tertib, work-life balance tetap terjaga!", Category = "Activity", Icon = "fa-solid fa-spa", Color = "#EA580C", Points = 120, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_LogoutCount, TriggerThreshold = 10, IsActive = true, OrderIndex = 33, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "LOGOUT_50", Name = "Master Tenggo 50 🌅", Description = "50 kali kelar kerja dan logout aman, teladan disiplin waktu!", Category = "Activity", Icon = "fa-solid fa-sun", Color = "#C2410C", Points = 350, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_LogoutCount, TriggerThreshold = 50, IsActive = true, OrderIndex = 34, CreatedAt = DateTime.UtcNow },
+
+        // ── DAILY CHECK-IN & STREAK BADGES ───────────────────────
+        new MasterBadge { Code = "CHECKIN_FIRST", Name = "Absen Poin Perdana 📅", Description = "Check-in harian pertama, langsung bungkus poin gratisan!", Category = "Activity", Icon = "fa-solid fa-calendar-check", Color = "#10B981", Points = 50, Rarity = BadgeRarity.Common, TriggerType = BadgeTriggerType.Auto_DailyCheckInCount, TriggerThreshold = 1, IsActive = true, OrderIndex = 35, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "CHECKIN_7", Name = "On Fire 7 Hari 🔥", Description = "Streak 7 hari daily check-in tanpa putus, menyala abangkuh!", Category = "Activity", Icon = "fa-solid fa-fire", Color = "#F97316", Points = 150, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_DailyCheckInStreak, TriggerThreshold = 7, IsActive = true, OrderIndex = 36, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "CHECKIN_14", Name = "No Skip 14 Hari ⚡", Description = "Dua minggu berturut-turut rajin check-in, makin gacor!", Category = "Activity", Icon = "fa-solid fa-bolt", Color = "#EAB308", Points = 300, Rarity = BadgeRarity.Rare, TriggerType = BadgeTriggerType.Auto_DailyCheckInStreak, TriggerThreshold = 14, IsActive = true, OrderIndex = 37, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "CHECKIN_30", Name = "Khatam Sebulan Penuh 🏆", Description = "Gokil! Streak 30 hari kelar, bonus melimpah & hadiah spesial siap diklaim!", Category = "Activity", Icon = "fa-solid fa-trophy", Color = "#EC4899", Points = 750, Rarity = BadgeRarity.Legendary, TriggerType = BadgeTriggerType.Auto_DailyCheckInStreak, TriggerThreshold = 30, IsActive = true, OrderIndex = 38, CreatedAt = DateTime.UtcNow },
+        new MasterBadge { Code = "CHECKIN_TOTAL_50", Name = "Sultan Check-In 50 🎖️", Description = "Tembus 50 kali daily check-in, koleksi poin bejibun!", Category = "Activity", Icon = "fa-solid fa-award", Color = "#8B5CF6", Points = 500, Rarity = BadgeRarity.Epic, TriggerType = BadgeTriggerType.Auto_DailyCheckInCount, TriggerThreshold = 50, IsActive = true, OrderIndex = 39, CreatedAt = DateTime.UtcNow },
+
+        // ── SPECIAL BADGES ───────────────────────────────────────
+        new MasterBadge { Code = "ROCKSTAR_DEV", Name = "MVP Idola Kantor 🌟", Description = "Gelar MVP kerja paling gacor & berdedikasi pilihan Admin!", Category = "Special", Icon = "fa-solid fa-star", Color = "#E11D48", Points = 500, Rarity = BadgeRarity.Legendary, TriggerType = BadgeTriggerType.Manual, TriggerThreshold = 1, IsActive = true, OrderIndex = 40, CreatedAt = DateTime.UtcNow }
+    };
+
+    var existingBadges = db.MasterBadges.ToList();
+    var existingMap = existingBadges.ToDictionary(b => b.Code);
+
+    foreach (var badge in defaultBadges)
+    {
+        if (existingMap.TryGetValue(badge.Code, out var existing))
+        {
+            // Sync/update modern Indonesian gaul names & descriptions
+            existing.Name = badge.Name;
+            existing.Description = badge.Description;
+            existing.Category = badge.Category;
+            existing.Icon = badge.Icon;
+            existing.Color = badge.Color;
+            existing.Points = badge.Points;
+            existing.Rarity = badge.Rarity;
+            existing.TriggerType = badge.TriggerType;
+            existing.TriggerThreshold = badge.TriggerThreshold;
+        }
+        else
+        {
+            db.MasterBadges.Add(badge);
+        }
+    }
+    db.SaveChanges();
 
     var userManager = scope.ServiceProvider.GetRequiredService<UserManager<AppUser>>();
     var roleManager = scope.ServiceProvider.GetRequiredService<RoleManager<IdentityRole>>();
@@ -864,9 +1114,10 @@ using (var scope = app.Services.CreateScope())
         await roleManager.CreateAsync(new IdentityRole("User"));
 
     // 1. Seed default admin user
-    if (await userManager.FindByEmailAsync("admin@trackerkerja.com") == null)
+    var adminUser = await userManager.FindByEmailAsync("admin@trackerkerja.com");
+    if (adminUser == null)
     {
-        var adminUser = new AppUser
+        adminUser = new AppUser
         {
             UserName = "admin@trackerkerja.com",
             Email = "admin@trackerkerja.com",
@@ -878,9 +1129,18 @@ using (var scope = app.Services.CreateScope())
             IsApproved = true,
             ApprovedAt = DateTime.Now
         };
-        var result = await userManager.CreateAsync(adminUser, "Admin123!");
+        var result = await userManager.CreateAsync(adminUser, "Password123!");
         if (result.Succeeded)
             await userManager.AddToRoleAsync(adminUser, "Admin");
+    }
+    else
+    {
+        adminUser.LockoutEnd = null;
+        adminUser.AccessFailedCount = 0;
+        adminUser.IsApproved = true;
+        await userManager.UpdateAsync(adminUser);
+        var token = await userManager.GeneratePasswordResetTokenAsync(adminUser);
+        await userManager.ResetPasswordAsync(adminUser, token, "Password123!");
     }
 
     // 2. Seed requested elistec.com team members
@@ -976,7 +1236,7 @@ using (var scope = app.Services.CreateScope())
     if (!await db.Attendances.AnyAsync())
     {
         var glennUser = await userManager.FindByEmailAsync("glenn.hakim@elistec.com");
-        var adminUser = await userManager.FindByEmailAsync("admin@trackerkerja.com");
+        adminUser = await userManager.FindByEmailAsync("admin@trackerkerja.com");
         var targetUser = glennUser ?? adminUser;
 
         if (targetUser != null)

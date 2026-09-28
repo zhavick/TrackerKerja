@@ -19,7 +19,9 @@
 - **Dual Authentication Pipeline**: Integrasi Cookie Session terenkripsi untuk peramban web dan **JWT Bearer Token** untuk RESTful API dan integrasi eksternal.
 - **Strict Swagger JWT Authorization**: Dokumentasi OpenAPI/Swagger UI di `/swagger` dilengkapi tombol modal **Authorize** untuk menguji endpoint berotentikasi Bearer JWT.
 - **Keamanan Sesi & Auto-Logout Inaktivitas 1 Jam (`session-manager.js`)**: Pemantauan idle real-time, dialog peringatan interaktif 5 menit dengan hitung mundur detik, dan proteksi redirect otomatis ke `/Account/Login?reason=timeout`.
-- **Halaman Login Lottie Modern**: Redesain visual modern dengan animasi Lottie, toggle mode gelap/terang instan tanpa reload, dan dropdown perusahaan Select2.
+- **Halaman Login Lottie Modern & Self-Service Reset Password**: Redesain visual modern dengan animasi Lottie, toggle mode gelap/terang instan tanpa reload, dropdown perusahaan Select2, dan tautan *"Lupa Kata Sandi?"*.
+- **Self-Service Password Reset & Fallback User Claim Link**: Form pemulihan mandiri (`/Account/ForgotPassword`). Apabila layanan SMTP belum dikonfigurasi, sistem secara otomatis menyediakan **Link User Claim** instan (`/Account/PasswordResetClaim`) dengan token 15 menit.
+- **Strict Lockout Guard (Proteksi Akun Terkunci)**: Proteksi otomatis mengunci akun pengguna selama **30 menit** jika token kedaluwarsa atau terjadi salah re-entry / konfirmasi password sebanyak 3 kali berturut-turut. Administrator dapat membuka kunci sewaktu-waktu via direktori Anggota Tim.
 
 ### 🎨 2. 40 Tema Eye-Friendly & 5 Google Fonts Switcher
 - **40 Tema Tampilan Dinamis**: 22 Tema Terang + 18 Tema Gelap ramah mata (*eye-friendly* dengan kontras seimbang) bertenaga CSS custom tokens (`themes.css`).
@@ -39,6 +41,7 @@
 - **Laporan Excel Timesheet Resmi (ClosedXML)**: Ekspor multi-sheet dengan rincian harian, rekapitulasi per proyek, konversi Man-Days, dan formula otomatis.
 
 ### 🎮 5. Gamifikasi, Daily Check-In & Modul Klaim Hadiah
+- **Integrasi Card & Spanduk Dashboard**: Tampilan kartu metrik ke-5 *Daily Check-In & Streak* di Dashboard personal dengan tombol aksi cepat *1-click check-in* (+10 Poin) dan spanduk pengingat interaktif beranimasi.
 - **Daily Check-In Harian & Aturan Streak**: Klaim poin harian rutin. Streak terjaga setiap hari; jika tidak check-in selama 2 hari berturut-turut (`gap >= 2 hari`), streak kembali ke awal (Hari 1).
 - **Hadiah Bulanan (Streak 30 Hari)**: Menyelesaikan streak 30 hari penuh (1 bulan) membuka status pencapaian bulanan, bonus 500 poin, dan hak klaim hadiah eksklusif.
 - **Koleksi 40+ Master Badge Gaul & Modern**: Lencana pencapaian dengan nama & deskripsi berbahasa Indonesia gaya modern anak muda (*Si Paling Eksekutor*, *Kopi & Keringat*, *Jawara Timesheet*, *Pawang JSON*, *Dewa SQL*, *Sultan Check-In*, dsb.).
@@ -151,6 +154,18 @@ Untuk mengunggah kode terbaru ke GitHub menggunakan Personal Access Token (PAT):
 - **Web Dashboard**: [http://localhost:5000](http://localhost:5000)
 - **Swagger REST API Documentation**: [http://localhost:5000/swagger](http://localhost:5000/swagger)
 - **OpenAPI JSON Spec**: [http://localhost:5000/swagger/v1/swagger.json](http://localhost:5000/swagger/v1/swagger.json)
+
+---
+
+## 🔑 Akun Default Administrator & Login Sistem
+
+| Keterangan | Nilai Kredensial |
+| :--- | :--- |
+| **Email / Username** | `admin@trackerkerja.com` |
+| **Kata Sandi Default** | `Password123!` |
+| **Peran (Role)** | `Admin` (Hak Akses Penuh / Superuser) |
+| **URL Login** | [http://localhost:5000/Account/Login](http://localhost:5000/Account/Login) |
+| **URL Reset Password** | [http://localhost:5000/Account/ForgotPassword](http://localhost:5000/Account/ForgotPassword) |
 
 ---
 

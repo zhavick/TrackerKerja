@@ -14,6 +14,7 @@
    - 1.2 [Tata Letak Antarmuka, Topbar Minimalis, Tur Layar & Paginasi Grid AJAX](#12-tata-letak-antarmuka-topbar-minimalis-tur-layar--paginasi-grid-ajax)
    - 1.3 [Kustomisasi 40 Tema Tampilan & 5 Google Fonts Switcher](#13-kustomisasi-40-tema-tampilan--5-google-fonts-switcher)
    - 1.4 [Keamanan Sesi, Peringatan 5 Menit & Auto-Logout Inaktivitas 1 Jam](#14-keamanan-sesi-peringatan-5-menit--auto-logout-inaktivitas-1-jam)
+   - 1.5 [Prosedur Pengaturan Ulang Kata Sandi (Reset Password & User Claim Link)](#15-prosedur-pengaturan-ulang-kata-sandi-reset-password--user-claim-link)
 2. [Dashboard & Ringkasan Kinerja](#2-dashboard--ringkasan-kinerja)
    - 2.1 [Kartu Metrik & Statistik Pribadi](#21-kartu-metrik--statistik-pribadi)
    - 2.2 [Pemberitahuan & Notifikasi Lonceng](#22-pemberitahuan--notifikasi-lonceng)
@@ -142,6 +143,26 @@ Untuk melindungi kerahasiaan data proyek dan jam kerja dari akses tanpa izin pad
 - **Perpanjangan Sesi**: Cukup gerakkan kursor atau klik tombol "Lanjutkan Sesi", timer inaktivitas akan di-reset kembali ke awal (60 menit).
 - **Auto-Logout Otomatis**: Jika pengguna tetap tidak merespons hingga menit ke-60, sesi kerja akan dikunci secara otomatis demi keamanan dan diarahkan ke halaman login dengan informasi sesi berakhir.
 
+### 1.5 Prosedur Pengaturan Ulang Kata Sandi (Reset Password & User Claim Link)
+Jika Anda lupa kata sandi akun TrackerKerja, sistem menyediakan mekanisme pemulihan mandiri yang aman:
+1. **Mengakses Formulir Lupa Kata Sandi**:
+   - Pada halaman login (`/Account/Login`), klik tautan **"Lupa Kata Sandi?"** di sebelah kanan label Kata Sandi.
+   - Masukkan alamat email akun Anda yang terdaftar, lalu klik tombol **"Lanjutkan Reset Kata Sandi"**.
+2. **Kondisi 1: Server Email (SMTP) Sudah Dikonfigurasi**:
+   - Sistem akan secara otomatis mengirimkan pesan email resmi berisi tautan aman untuk menyetel kata sandi baru.
+   - Buka pesan email Anda dan klik tombol **"Reset Kata Sandi Sekarang"**.
+3. **Kondisi 2: Server Email (SMTP) Belum Disetting (User Claim Link)**:
+   - Jika pengaturan SMTP email belum aktif atau belum diisi oleh Administrator, sistem secara cerdas mengalihkan ke mode **Tautan Klaim Pengguna (User Claim Link)**.
+   - Layar akan menampilkan kotak **Secure Claim URL** lengkap dengan tombol **"Salin Tautan"** dan tombol langsung **"Buka Formulir Reset Kata Sandi Sekarang"**.
+4. **Formulir Kata Sandi Baru & Aturan Re-Entry**:
+   - Masukkan kata sandi baru (minimal 6 karakter) dan ulangi kata sandi pada kolom konfirmasi (*re-entry*).
+   - Klik **Simpan Kata Sandi Baru**. Setelah berhasil, Anda dapat langsung masuk menggunakan kata sandi baru tersebut.
+5. **Kebijakan Keamanan & Proteksi Penguncian Akun (Lockout Policy)**:
+   - **Batas Kedaluwarsa 15 Menit**: Tautan reset kata sandi hanya berlaku selama **15 menit** demi mencegah penyalahgunaan token lama.
+   - **Proteksi Salah Re-Entry (3 Kali Gagal)**: Jika konfirmasi kata sandi salah dimasukkan sebanyak **3 kali berturut-turut** atau jika tautan yang digunakan telah **kedaluwarsa**, akun pengguna akan secara otomatis **DIKUNCI selama 30 menit**.
+   - Selama masa penguncian, akun tidak dapat digunakan untuk login maupun meminta reset ulang.
+   - **Pembukaan Kunci oleh Administrator**: Jika akun terkunci, Administrator dapat membuka kunci akun secara instan melalui menu **Anggota Tim (`/Member`)** dengan tombol **Reset Password / Buka Kunci**.
+
 ---
 
 ## 2. Dashboard & Ringkasan Kinerja
@@ -152,8 +173,14 @@ Halaman Dashboard merupakan pusat informasi terpadu yang menyajikan ikhtisar akt
 - **Total Tugas**: Menampilkan jumlah seluruh tugas yang ditugaskan kepada Anda.
 - **Tugas Sedang Dikerjakan (In Progress)**: Jumlah tugas yang saat ini aktif dalam proses pengerjaan.
 - **Tugas Selesai (Done)**: Jumlah tugas yang telah tuntas dikerjakan.
-- **Tenggat Terlewat (Overdue)**: Peringatan visual untuk tugas yang melewati batas tanggal selesai namun belum berstatus *Done*.
 - **Jam Kerja Hari Ini**: Akumulasi durasi waktu kerja yang telah Anda catat pada hari ini.
+- **Kartu Daily Check-In & Streak**:
+  - Menampilkan hitungan hari beruntun (*streak flame* 🔥) serta status apakah Anda telah melakukan check-in hari ini.
+  - **Jika Belum Check-In**: Kartu menyorot status *Belum Check-In Hari Ini* dengan tombol aksi langsung **Check-In Sekarang (+10 Poin)** tanpa perlu berpindah halaman (*1-click AJAX check-in*).
+  - **Jika Sudah Check-In**: Kartu menampilkan status *Sudah Check-In Hari Ini* beserta ringkasan progres target 30 hari menuju milestone hadiah bulanan.
+- **Widget Spanduk Pengingat Check-In (Check-In Requirement Banner)**:
+  - Spanduk cerdas beranimasi di bawah salam sambutan yang mengingatkan Anda bahwa check-in harian wajib dilakukan agar streak tidak terputus (peringatan toleransi 2 hari sebelum reset).
+  - Dilengkapi ringkasan saldo poin tersedia dan tombol instan klaim poin.
 
 ### 2.2 Pemberitahuan & Notifikasi Lonceng
 Klik ikon **Lonceng Notifikasi** pada bilah atas untuk melihat panel pemberitahuan cerdas:

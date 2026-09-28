@@ -460,6 +460,18 @@ erDiagram
 - Pada saat pendaftaran, pengguna dapat memilih untuk bergabung dengan perusahaan yang sudah ada (`CompanyOption = existing`) atau mendaftarkan nama/kode perusahaan baru (`CompanyOption = new`).
 - **Isolasi Data**: Pengguna reguler hanya dapat melihat dan mengakses proyek, tugas, dan catatan yang berada dalam lingkup perusahaan yang sama. Administrator memiliki visibilitas penuh terhadap seluruh entitas untuk keperluan audit dan pengawasan lintas tim.
 
+#### 5.1.5 Alur Reset Kata Sandi Mandiri, User Claim Link & Kebijakan Lockout Akun
+- **Formulir Permintaan Reset (`/Account/ForgotPassword`)**:
+  - Pengguna memasukkan alamat email terdaftar untuk meminta pengaturan ulang kata sandi akun.
+- **Kondisi Pengiriman Tautan Reset**:
+  - **Skenario 1 (Email SMTP Aktif & Terkonfigurasi)**: Sistem mengirimkan tautan reset aman via email (`/Account/ResetPassword?email={email}&token={token}`) dengan masa berlaku 15 menit.
+  - **Skenario 2 (Email SMTP Belum Disetting / Nonaktif)**: Sistem otomatis beralih ke mode **Tautan Klaim Pengguna (User Claim Link)** pada antarmuka web (`/Account/PasswordResetClaim`). Layar menyajikan tautan klaim langsung terenkripsi yang dapat disalin atau dibuka langsung oleh pengguna dalam satu klik.
+- **Kebijakan Proteksi Lockout (Strict Security Policy)**:
+  - **Masa Berlaku Token**: Token reset berlaku ketat selama **15 menit** (`DataProtectionTokenProviderOptions.TokenLifespan`).
+  - **Penguncian Otomatis (Lockout 30 Menit)**: Jika token yang dimasukkan telah kedaluwarsa atau pengguna melakukan kesalahan konfirmasi re-entry kata sandi sebanyak **3 kali**, akun bersangkutan langsung **DIKUNCI selama 30 menit** (`LockoutEnabled = true`, `LockoutEnd = UtcNow + 30 min`).
+  - Selama masa lockout, seluruh percobaan login dan permintaan reset ditolak demi pencegahan serangan *brute force*.
+  - **Pembukaan Kunci Akun**: Administrator dapat membuka kunci akun secara instan melalui direktori anggota (`/Member`) dengan fitur *Unlock User* atau *Reset Password Admin*.
+
 ### 5.2 Modul Sistem Desain Responsif & Mobile Navigation
 - **Off-Canvas Drawer Navigation**: Menggantikan sidebar pada layar `< 1024px` dengan transisi halus dan latar belakang *backdrop blur*.
 - **Glassmorphic Bottom Navigation**: Navigasi bawah melayang khusus smartphone dengan 5 tombol utama (*Home*, *Tugas*, *Elevated +*, *Proyek*, *Menu*).
@@ -687,6 +699,9 @@ Modul ini mengimplementasikan sistem gamifikasi komprehensif untuk meningkatkan 
 - **5.20.5 Manajemen Master Data Hadiah & Alur Approval Admin**:
   - Administrator mengelola katalog hadiah (Nama, Biaya Poin, Stok, Kategori, Ikon FontAwesome, Warna, dan status reward bulanan).
   - Administrator dapat memproses persetujuan klaim: **Setujui (Approved)**, **Selesaikan (Completed)**, atau **Tolak (Rejected)**. Jika ditolak, sistem otomatis mengembalikan stok barang dan mengembalikan poin ke saldo pengguna.
+- **5.20.6 Integrasi Card & Widget Pengingat Check-In pada Dashboard Utama**:
+  - **Kartu Metrik ke-5 (Personal Metrics)**: Dashboard menampilkan kartu *Daily Check-In & Streak* di samping 4 kartu metrik utama. Jika pengguna belum check-in, kartu menampilkan tombol *Check-In Sekarang (+10 Poin)* dengan indikator api menyala.
+  - **Spanduk Pengingat Wajib Hari Ini**: Spanduk cerdas beranimasi di bawah salam personal yang memberitahukan sisa streak, peringatan reset 2 hari, dan tombol aksi langsung tanpa reload peramban.
 
 ---
 

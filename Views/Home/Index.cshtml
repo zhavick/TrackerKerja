@@ -6,6 +6,7 @@
 }
 
 <div class="space-y-6 max-w-7xl mx-auto">
+    @Html.AntiForgeryToken()
 
     <!-- 1. PERSONAL MEMBER WELCOME BANNER -->
     <div class="bg-gradient-to-r from-violet-600 via-indigo-600 to-purple-700 rounded-3xl p-6 text-white shadow-xl relative overflow-hidden">
@@ -48,6 +49,86 @@
         </div>
     </div>
 
+    <!-- 1.2. DAILY CHECK-IN REQUIREMENT & STREAK STATUS CARD -->
+    @if (!Model.CheckInStatus.HasCheckedInToday)
+    {
+        <div class="bg-gradient-to-r from-amber-500/15 via-orange-500/10 to-amber-500/5 rounded-2xl p-4 sm:p-5 border-2 border-amber-400 shadow-md relative overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
+            <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-500 to-orange-600 text-white flex items-center justify-center text-2xl shadow-md shadow-orange-500/30 flex-shrink-0 animate-bounce">
+                    🔥
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-full bg-rose-500 text-white animate-pulse">
+                            Wajib Hari Ini
+                        </span>
+                        <span class="text-xs font-black text-amber-950">
+                            Kamu Belum Melakukan Daily Check-In!
+                        </span>
+                    </div>
+                    <p class="text-xs text-amber-900 mt-1 font-medium leading-relaxed">
+                        Klaim bonus <strong>+@Model.CheckInStatus.PointsPerCheckIn Poin</strong> sekarang & pertahankan streak <strong>@Model.CheckInStatus.CurrentStreak Hari</strong> kamu.
+                        <span class="text-[11px] text-amber-800 block sm:inline mt-0.5 sm:mt-0 font-semibold">⚠️ Awas: Streak akan otomatis reset ke Hari 1 jika tidak check-in selama @Model.CheckInStatus.MissedDaysReset hari berturut-turut!</span>
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 w-full md:w-auto justify-between md:justify-end flex-shrink-0">
+                <div class="text-right hidden sm:block">
+                    <span class="text-[11px] text-slate-500 block font-semibold">Saldo Poin</span>
+                    <span class="text-xs font-black text-slate-800">💎 @Model.PointsSummary.AvailablePoints Poin</span>
+                </div>
+                <button type="button" onclick="performDashboardCheckIn()" id="btnBannerCheckIn"
+                        class="w-full sm:w-auto px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white text-xs font-black shadow-lg shadow-orange-500/25 transition-all flex items-center justify-center gap-2 cursor-pointer hover:scale-[1.02] active:scale-[0.98]">
+                    <i class="fas fa-hand-sparkles text-amber-200"></i>
+                    <span>Check-In Sekarang (+@Model.CheckInStatus.PointsPerCheckIn P)</span>
+                </button>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="bg-white rounded-2xl p-3.5 px-5 border border-emerald-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-emerald-100 text-emerald-600 flex items-center justify-center text-base font-black flex-shrink-0">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+                <div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span class="text-[10px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md bg-emerald-100 text-emerald-800">
+                            Check-In Hari Ini Selesai
+                        </span>
+                        <span class="text-xs font-bold text-slate-800">
+                            Tercatat Pukul @(Model.CheckInStatus.LastCheckInDate?.ToString("HH:mm") ?? "Hari ini")
+                        </span>
+                        <span class="text-xs font-black text-orange-600">
+                            🔥 Streak @Model.CheckInStatus.CurrentStreak Hari
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-slate-500 mt-0.5">
+                        @if (Model.CheckInStatus.IsEligibleForMonthlyReward)
+                        {
+                            <span class="text-amber-600 font-bold">🏆 Milestone 30 Hari tercapai! Anda berhak mengklaim reward eksklusif bulanan.</span>
+                        }
+                        else
+                        {
+                            <span>Sisa <strong>@Model.CheckInStatus.DaysRemainingForMonthlyReward hari</strong> lagi menuju Hadiah Bulanan (+@Model.CheckInStatus.MonthlyBonusPoints Poin). Saldo Anda: <strong>💎 @Model.PointsSummary.AvailablePoints Poin</strong> (Rp @Model.PointsSummary.RupiahEquivalent.ToString("N0")).</span>
+                        }
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 w-full sm:w-auto justify-between sm:justify-end flex-shrink-0">
+                <a href="/Gamification?tab=rewards" class="px-3 py-1.5 rounded-xl bg-purple-50 hover:bg-purple-100 text-purple-700 text-xs font-bold transition-all flex items-center gap-1.5 shadow-2xs">
+                    <i class="fas fa-gift text-purple-600"></i>
+                    <span>Tukar Hadiah</span>
+                </a>
+                <a href="/Gamification" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold transition-all flex items-center gap-1.5">
+                    <i class="fas fa-trophy text-amber-500"></i>
+                    <span>Gamifikasi</span>
+                </a>
+            </div>
+        </div>
+    }
+
     <!-- 1.5. BACKGROUND SYNC WORKER STATUS WIDGET -->
     <div class="bg-white rounded-2xl p-3.5 px-5 border border-slate-200 shadow-2xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
         <div class="flex items-center gap-3">
@@ -85,7 +166,7 @@
             <span class="text-[11px] text-indigo-600 font-semibold">Tugas ditugaskan kepada Anda</span>
         </div>
 
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
             <!-- My Total Tasks -->
             <div class="card-hover bg-white rounded-2xl p-4 shadow-sm border border-indigo-100 relative overflow-hidden">
                 <div class="flex items-center justify-between mb-2">
@@ -132,6 +213,43 @@
                 </div>
                 <p class="text-2xl font-black text-purple-600 font-mono">@Model.MyTodayWorkFormatted</p>
                 <p class="text-[11px] text-purple-600 font-semibold mt-0.5">Log Personal Anda</p>
+            </div>
+
+            <!-- Daily Check-In & Streak Card -->
+            <div class="card-hover bg-white rounded-2xl p-4 shadow-sm border @(Model.CheckInStatus.HasCheckedInToday ? "border-emerald-200 bg-gradient-to-b from-white to-emerald-50/20" : "border-amber-300 ring-2 ring-amber-400/20 bg-gradient-to-b from-white to-amber-50/30") relative overflow-hidden flex flex-col justify-between">
+                <div>
+                    <div class="flex items-center justify-between mb-2">
+                        <span class="text-xs font-bold text-slate-500">Daily Check-In</span>
+                        <div class="w-8 h-8 rounded-xl @(Model.CheckInStatus.HasCheckedInToday ? "bg-emerald-50 text-emerald-600" : "bg-amber-100 text-amber-600 animate-pulse") flex items-center justify-center text-xs">
+                            <i class="fas @(Model.CheckInStatus.HasCheckedInToday ? "fa-calendar-check" : "fa-fire")"></i>
+                        </div>
+                    </div>
+                    <div class="flex items-baseline gap-1.5">
+                        <p class="text-2xl font-black @(Model.CheckInStatus.HasCheckedInToday ? "text-slate-800" : "text-amber-600")">
+                            🔥 @Model.CheckInStatus.CurrentStreak
+                        </p>
+                        <span class="text-[11px] font-bold text-slate-500">Hari</span>
+                    </div>
+                    <p class="text-[11px] font-semibold mt-0.5 @(Model.CheckInStatus.HasCheckedInToday ? "text-emerald-600" : "text-rose-600 font-extrabold")">
+                        @(Model.CheckInStatus.HasCheckedInToday ? "Sudah Check-In Hari Ini" : "Belum Check-In Hari Ini!")
+                    </p>
+                </div>
+
+                @if (!Model.CheckInStatus.HasCheckedInToday)
+                {
+                    <button type="button" onclick="performDashboardCheckIn()" id="btnCardCheckIn"
+                            class="mt-2.5 w-full py-1.5 px-2 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 hover:from-amber-600 hover:to-orange-700 text-white font-black text-[11px] shadow-sm transition-all flex items-center justify-center gap-1.5 cursor-pointer hover:scale-[1.02] active:scale-[0.98]">
+                        <i class="fas fa-hand-sparkles text-[10px]"></i>
+                        <span>Check-In (+@Model.CheckInStatus.PointsPerCheckIn P)</span>
+                    </button>
+                }
+                else
+                {
+                    <div class="mt-2.5 pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
+                        <span>Target: @Model.CheckInStatus.CurrentStreak/30H</span>
+                        <a href="/Gamification" class="text-indigo-600 font-bold hover:underline">Detail &rarr;</a>
+                    </div>
+                }
             </div>
         </div>
     </div>
@@ -733,5 +851,67 @@
 
     // Auto-run background sync every 30 seconds
     setInterval(runBackgroundProcess, 30000);
+
+    // ── DASHBOARD DAILY CHECK-IN HANDLER ──────────────────────
+    async function performDashboardCheckIn() {
+        const btnCard = document.getElementById('btnCardCheckIn');
+        const btnBanner = document.getElementById('btnBannerCheckIn');
+        if (btnCard) { btnCard.disabled = true; btnCard.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...'; }
+        if (btnBanner) { btnBanner.disabled = true; btnBanner.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Memproses...'; }
+
+        try {
+            const token = document.querySelector('input[name="__RequestVerificationToken"]')?.value || '';
+            const formData = new FormData();
+            formData.append('notes', 'Check-in via Dashboard Card');
+            if (token) formData.append('__RequestVerificationToken', token);
+
+            const res = await fetch('/Gamification/CheckIn', {
+                method: 'POST',
+                headers: {
+                    'RequestVerificationToken': token
+                },
+                body: formData
+            });
+
+            const data = await res.json();
+            if (data.success) {
+                if (typeof confetti === 'function') {
+                    confetti({
+                        particleCount: 110,
+                        spread: 75,
+                        origin: { y: 0.6 }
+                    });
+                }
+                Swal.fire({
+                    icon: 'success',
+                    title: data.isMonthlyMilestone ? '🎉 Hadiah Bulanan Terbuka!' : '🔥 Check-In Berhasil!',
+                    text: data.message,
+                    confirmButtonColor: '#F59E0B',
+                    confirmButtonText: 'Keren!'
+                }).then(() => {
+                    window.location.reload();
+                });
+            } else {
+                Swal.fire({
+                    icon: 'info',
+                    title: 'Pemberitahuan',
+                    text: data.message,
+                    confirmButtonColor: '#6366F1'
+                });
+                if (btnCard) { btnCard.disabled = false; btnCard.innerHTML = '<i class="fas fa-hand-sparkles"></i> Check-In (+@(Model.CheckInStatus.PointsPerCheckIn) P)'; }
+                if (btnBanner) { btnBanner.disabled = false; btnBanner.innerHTML = '<i class="fas fa-hand-sparkles"></i> Check-In Sekarang (+@(Model.CheckInStatus.PointsPerCheckIn) P)'; }
+            }
+        } catch (err) {
+            console.error('Check-in error:', err);
+            Swal.fire({
+                icon: 'error',
+                title: 'Gagal',
+                text: 'Terjadi kesalahan jaringan saat melakukan check-in.',
+                confirmButtonColor: '#EF4444'
+            });
+            if (btnCard) { btnCard.disabled = false; btnCard.innerHTML = '<i class="fas fa-hand-sparkles"></i> Check-In (+@(Model.CheckInStatus.PointsPerCheckIn) P)'; }
+            if (btnBanner) { btnBanner.disabled = false; btnBanner.innerHTML = '<i class="fas fa-hand-sparkles"></i> Check-In Sekarang (+@(Model.CheckInStatus.PointsPerCheckIn) P)'; }
+        }
+    }
 </script>
 }

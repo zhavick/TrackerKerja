@@ -533,6 +533,10 @@ await _db.SaveChangesAsync();
    - Jika Admin menolak klaim (`ClaimStatus.Rejected`), stok dikembalikan (`Stock + 1`) dan saldo poin kembali utuh ke pengguna.
 4. **Evaluasi Otomatis 40+ Master Badge Gaul (`EvaluateAndAwardBadgesAsync`)**:
    Mengevaluasi secara otomatis seluruh pemicu (*trigger type*): `Auto_DoneTasks`, `Auto_TotalTasks`, `Auto_TotalHours`, `Auto_TimesheetCount`, `Auto_AttendanceCount`, `Auto_NotesCount`, `Auto_JsonCount`, `Auto_SqlCount`, `Auto_LoginCount`, `Auto_LogoutCount`, `Auto_DailyCheckInCount`, dan `Auto_DailyCheckInStreak`.
+5. **Integrasi Widget & Kartu Metrik Dashboard Personal (`HomeController.Index`)**:
+   - `HomeController` menyuntikkan `IGamificationService` untuk memuat `DailyCheckInStatusDto` dan `GamificationUserPointsDto`.
+   - Grid metrik personal dashboard ditingkatkan menjadi 5 kartu (`Total Tasks`, `In Progress`, `Done`, `Today Work Hours`, dan `Daily Check-In & Streak`).
+   - Kartu metrik ke-5 dan spanduk pengingat di atas metrik memicu `performDashboardCheckIn()` via AJAX `POST /Gamification/CheckIn` dengan proteksi token antiforgery dan efek visual confetti tanpa memuat ulang halaman.
 
 ---
 

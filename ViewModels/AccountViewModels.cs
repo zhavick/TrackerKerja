@@ -102,6 +102,45 @@ namespace TrackerKerja.ViewModels
         public string ConfirmPassword { get; set; } = string.Empty;
     }
 
+    public class ForgotPasswordViewModel
+    {
+        [Required(ErrorMessage = "Alamat email wajib diisi")]
+        [EmailAddress(ErrorMessage = "Format email tidak valid")]
+        public string Email { get; set; } = string.Empty;
+    }
+
+    public class PasswordResetClaimViewModel
+    {
+        public string Email { get; set; } = string.Empty;
+        public string FullName { get; set; } = string.Empty;
+        public string Token { get; set; } = string.Empty;
+        public string ClaimUrl { get; set; } = string.Empty;
+        public DateTime GeneratedAt { get; set; } = DateTime.Now;
+        public DateTime ExpiresAt { get; set; } = DateTime.Now.AddMinutes(15);
+        public bool IsEmailConfigured { get; set; }
+        public string? Message { get; set; }
+    }
+
+    public class ResetPasswordViewModel
+    {
+        [Required(ErrorMessage = "Email wajib diisi")]
+        [EmailAddress(ErrorMessage = "Format email tidak valid")]
+        public string Email { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Token reset wajib disertakan")]
+        public string Token { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Kata sandi baru wajib diisi")]
+        [MinLength(6, ErrorMessage = "Kata sandi minimal 6 karakter")]
+        [DataType(DataType.Password)]
+        public string Password { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Konfirmasi kata sandi wajib diisi")]
+        [DataType(DataType.Password)]
+        [Compare("Password", ErrorMessage = "Konfirmasi kata sandi tidak cocok")]
+        public string ConfirmPassword { get; set; } = string.Empty;
+    }
+
     // ── Import & Sync ViewModels ─────────────────────────────
     public class ImportPreviewRow
     {

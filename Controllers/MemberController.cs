@@ -417,6 +417,10 @@ namespace TrackerKerja.Controllers
             }
             else
             {
+                // Clear any lockout upon admin password reset
+                await _userManager.ResetAccessFailedCountAsync(user);
+                await _userManager.SetLockoutEndDateAsync(user, null);
+
                 // Send Password Reset Notification Email (Background Safe)
                 if (!string.IsNullOrWhiteSpace(user.Email))
                 {
@@ -431,9 +435,31 @@ namespace TrackerKerja.Controllers
                     _ = Task.Run(async () => await _emailService.SendEventEmailAsync("PASSWORD_RESET_NOTIFICATION", user.Email, resetVars));
                 }
 
-                TempData["Success"] = $"Password untuk anggota '{user.FullName}' berhasil diubah secara langsung!";
+                TempData["Success"] = $"Password untuk anggota '{user.FullName}' berhasil diubah secara langsung dan status kunci akun telah dibuka!";
             }
 
+            if (!string.IsNullOrEmpty(returnUrl)) return Redirect(returnUrl);
+            return RedirectToAction(nameof(Index));
+        }
+
+        // ── 7. ADMIN UNLOCK USER ACCOUNT ─────────────────────────
+        [Authorize(Roles = "Admin")]
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> UnlockUser(string id, string? returnUrl)
+        {
+            var user = await _userManager.FindByIdAsync(id);
+            if (user == null)
+            {
+                TempData["Error"] = "Anggota tidak ditemukan.";
+                if (!string.IsNullOrEmpty(returnUrl)) return Redirect(returnUrl);
+                return RedirectToAction(nameof(Index));
+            }
+
+            await _userManager.ResetAccessFailedCountAsync(user);
+            await _userManager.SetLockoutEndDateAsync(user, null);
+
+            TempData["Success"] = $"Akun anggota '{user.FullName}' ({user.Email}) berhasil dibuka kuncinya.";
             if (!string.IsNullOrEmpty(returnUrl)) return Redirect(returnUrl);
             return RedirectToAction(nameof(Index));
         }

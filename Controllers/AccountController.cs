@@ -54,6 +54,14 @@ namespace TrackerKerja.Controllers
             var existingUser = await _userManager.FindByEmailAsync(model.Email.Trim());
             if (existingUser != null)
             {
+                if (await _userManager.IsLockedOutAsync(existingUser))
+                {
+                    var lockoutEnd = await _userManager.GetLockoutEndDateAsync(existingUser);
+                    var remaining = lockoutEnd.HasValue ? Math.Max(1, (int)Math.Ceiling((lockoutEnd.Value - DateTimeOffset.UtcNow).TotalMinutes)) : 30;
+                    ModelState.AddModelError("", $"Akun Anda sedang DIKUNCI demi alasan keamanan (sisa waktu: {remaining} menit) karena token reset kedaluwarsa atau kesalahan re-entry. Silakan hubungi Administrator.");
+                    return View(model);
+                }
+
                 var isPasswordCorrect = await _userManager.CheckPasswordAsync(existingUser, model.Password);
                 if (isPasswordCorrect && !existingUser.IsApproved)
                 {
@@ -64,7 +72,7 @@ namespace TrackerKerja.Controllers
 
             var userName = existingUser?.UserName ?? model.Email;
             var result = await _signInManager.PasswordSignInAsync(
-                userName, model.Password, model.RememberMe, lockoutOnFailure: false);
+                userName, model.Password, model.RememberMe, lockoutOnFailure: true);
 
             if (result.Succeeded)
             {
@@ -530,6 +538,262 @@ namespace TrackerKerja.Controllers
         public IActionResult AccessDenied()
         {
             return View();
+        }
+
+        // ── FORGOT PASSWORD ───────────────────────────────────────────
+        [HttpGet]
+        public IActionResult ForgotPassword()
+        {
+            if (User.Identity?.IsAuthenticated == true) return RedirectToAction("Index", "Home");
+            return View(new ForgotPasswordViewModel());
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ForgotPassword(ForgotPasswordViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var user = await _userManager.FindByEmailAsync(model.Email.Trim());
+            if (user == null)
+            {
+                ModelState.AddModelError("Email", "Alamat email tidak terdaftar dalam sistem TrackerKerja.");
+                return View(model);
+            }
+
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
+                var remaining = lockoutEnd.HasValue ? Math.Max(1, (int)Math.Ceiling((lockoutEnd.Value - DateTimeOffset.UtcNow).TotalMinutes)) : 30;
+                ModelState.AddModelError("", $"Akun ini sedang DIKUNCI demi alasan keamanan ({remaining} menit tersisa) karena token kedaluwarsa atau salah re-entry berulang. Silakan hubungi Administrator.");
+                return View(model);
+            }
+
+            var token = await _userManager.GeneratePasswordResetTokenAsync(user);
+            var resetUrl = Url.Action("ResetPassword", "Account", new { email = user.Email, token = token }, Request.Scheme) 
+                           ?? $"{Request.Scheme}://{Request.Host}/Account/ResetPassword?email={Uri.EscapeDataString(user.Email!)}&token={Uri.EscapeDataString(token)}";
+
+            var emailConfig = await _emailService.GetEmailConfigAsync();
+            bool isEmailConfigured = emailConfig.IsEnabled && 
+                                     !string.IsNullOrWhiteSpace(emailConfig.SenderPassword) && 
+                                     !string.IsNullOrWhiteSpace(emailConfig.SmtpHost);
+
+            if (isEmailConfigured)
+            {
+                try
+                {
+                    await _emailService.SendRawEmailAsync(
+                        user.Email!, 
+                        user.FullName, 
+                        "[Work Tracker Pro] Permintaan Reset Kata Sandi Akun",
+                        $@"<div style=""font-family:'Inter',sans-serif;max-width:600px;margin:0 auto;padding:24px;border:1px solid #e2e8f0;border-radius:16px;background:#ffffff;"">
+                            <h2 style=""color:#4f46e5;margin-top:0;"">Reset Kata Sandi Akun</h2>
+                            <p>Halo <strong>{user.FullName}</strong>,</p>
+                            <p>Kami menerima permintaan untuk mengatur ulang kata sandi akun TrackerKerja Anda.</p>
+                            <p>Silakan klik tombol di bawah ini untuk mengatur kata sandi baru Anda (berlaku selama 15 menit):</p>
+                            <div style=""margin:24px 0;"">
+                                <a href=""{resetUrl}"" style=""background:#4f46e5;color:#ffffff;padding:12px 24px;border-radius:10px;text-decoration:none;font-weight:bold;display:inline-block;"">Reset Kata Sandi Sekarang &rarr;</a>
+                            </div>
+                            <p style=""font-size:12px;color:#64748b;"">Peringatan Keamanan: Jika tautan kedaluwarsa (15 menit) atau terjadi salah re-entry berulang, akun Anda akan otomatis dikunci selama 30 menit.</p>
+                            <p style=""font-size:12px;color:#94a3b8;border-top:1px solid #f1f5f9;padding-top:12px;"">Jika Anda tidak meminta pengaturan ulang kata sandi, abaikan email ini.</p>
+                        </div>");
+                }
+                catch
+                {
+                    // Fallback to claim link if email fails
+                    isEmailConfigured = false;
+                }
+            }
+
+            // Log Audit Trail
+            _db.AuditLogs.Add(new AuditLog
+            {
+                UserId = user.Id,
+                UserEmail = user.Email,
+                UserName = user.UserName ?? user.FullName,
+                ControllerName = "Account",
+                ActionName = "ForgotPasswordRequest",
+                HttpMethod = "POST",
+                Path = "/Account/ForgotPassword",
+                StatusCode = 200,
+                Details = isEmailConfigured 
+                    ? $"Permintaan reset kata sandi terkirim ke email {user.Email}" 
+                    : $"Permintaan reset kata sandi menggunakan Tautan Klaim Pengguna (User Claim Link) untuk {user.Email} karena email SMTP belum dikonfigurasi.",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                Timestamp = DateTime.Now
+            });
+            await _db.SaveChangesAsync();
+
+            var claimVm = new PasswordResetClaimViewModel
+            {
+                Email = user.Email!,
+                FullName = user.FullName,
+                Token = token,
+                ClaimUrl = resetUrl,
+                GeneratedAt = DateTime.Now,
+                ExpiresAt = DateTime.Now.AddMinutes(15),
+                IsEmailConfigured = isEmailConfigured,
+                Message = isEmailConfigured 
+                    ? $"Instruksi dan tautan reset kata sandi telah dikirimkan ke email {user.Email}. Sebagai alternatif keamanan, Anda juga dapat mengakses tautan klaim langsung di bawah ini." 
+                    : "Server email (SMTP) saat ini belum dikonfigurasi. Anda dapat melanjutkan proses pengaturan ulang kata sandi secara langsung menggunakan Tautan Klaim Pengguna (User Claim Link) yang dibuat secara aman di bawah ini."
+            };
+
+            return View("PasswordResetClaim", claimVm);
+        }
+
+        // ── RESET PASSWORD FORM ────────────────────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> ResetPassword(string? email, string? token)
+        {
+            if (User.Identity?.IsAuthenticated == true) return RedirectToAction("Index", "Home");
+
+            if (string.IsNullOrWhiteSpace(email) || string.IsNullOrWhiteSpace(token))
+            {
+                TempData["Error"] = "Tautan reset kata sandi tidak valid atau parameter tidak lengkap.";
+                return RedirectToAction("Login");
+            }
+
+            var user = await _userManager.FindByEmailAsync(email.Trim());
+            if (user == null)
+            {
+                TempData["Error"] = "Pengguna tidak ditemukan dalam sistem.";
+                return RedirectToAction("Login");
+            }
+
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
+                var remaining = lockoutEnd.HasValue ? Math.Max(1, (int)Math.Ceiling((lockoutEnd.Value - DateTimeOffset.UtcNow).TotalMinutes)) : 30;
+                TempData["Error"] = $"Akun ini sedang DIKUNCI demi alasan keamanan ({remaining} menit tersisa) karena token kedaluwarsa atau salah re-entry berulang. Silakan hubungi Administrator.";
+                return RedirectToAction("Login");
+            }
+
+            var model = new ResetPasswordViewModel
+            {
+                Email = email.Trim(),
+                Token = token
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> ResetPassword(ResetPasswordViewModel model)
+        {
+            if (!ModelState.IsValid) return View(model);
+
+            var user = await _userManager.FindByEmailAsync(model.Email.Trim());
+            if (user == null)
+            {
+                ModelState.AddModelError("", "Pengguna tidak ditemukan.");
+                return View(model);
+            }
+
+            if (await _userManager.IsLockedOutAsync(user))
+            {
+                var lockoutEnd = await _userManager.GetLockoutEndDateAsync(user);
+                var remaining = lockoutEnd.HasValue ? Math.Max(1, (int)Math.Ceiling((lockoutEnd.Value - DateTimeOffset.UtcNow).TotalMinutes)) : 30;
+                ModelState.AddModelError("", $"Akun Anda sedang DIKUNCI demi keamanan ({remaining} menit tersisa). Silakan hubungi Administrator.");
+                return View(model);
+            }
+
+            // Check password confirmation re-entry
+            if (model.Password != model.ConfirmPassword)
+            {
+                await _userManager.AccessFailedAsync(user);
+                var failedAttempts = await _userManager.GetAccessFailedCountAsync(user);
+                if (failedAttempts >= 3)
+                {
+                    await _userManager.SetLockoutEnabledAsync(user, true);
+                    await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddMinutes(30));
+                    _db.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = user.Id,
+                        UserEmail = user.Email,
+                        UserName = user.UserName ?? user.FullName,
+                        ControllerName = "Account",
+                        ActionName = "PasswordResetLockout",
+                        HttpMethod = "POST",
+                        Path = "/Account/ResetPassword",
+                        StatusCode = 403,
+                        Details = $"Akun {user.Email} DIKUNCI otomatis 30 menit karena kesalahan konfirmasi password berulang.",
+                        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                        Timestamp = DateTime.Now
+                    });
+                    await _db.SaveChangesAsync();
+
+                    ModelState.AddModelError("", "Akun Anda telah DIKUNCI otomatis selama 30 menit demi keamanan karena salah re-entry password melebihi batas percobaan. Silakan hubungi Administrator.");
+                    return View(model);
+                }
+
+                ModelState.AddModelError("ConfirmPassword", $"Konfirmasi kata sandi tidak cocok. Percobaan gagal: {failedAttempts}/3.");
+                return View(model);
+            }
+
+            // Reset password using token
+            var result = await _userManager.ResetPasswordAsync(user, model.Token, model.Password);
+            if (!result.Succeeded)
+            {
+                await _userManager.AccessFailedAsync(user);
+                var failedAttempts = await _userManager.GetAccessFailedCountAsync(user);
+                var isTokenError = result.Errors.Any(e => e.Code.Contains("Token", StringComparison.OrdinalIgnoreCase) || 
+                                                          e.Description.Contains("token", StringComparison.OrdinalIgnoreCase) ||
+                                                          e.Description.Contains("expired", StringComparison.OrdinalIgnoreCase));
+
+                if (isTokenError || failedAttempts >= 3)
+                {
+                    await _userManager.SetLockoutEnabledAsync(user, true);
+                    await _userManager.SetLockoutEndDateAsync(user, DateTimeOffset.UtcNow.AddMinutes(30));
+                    _db.AuditLogs.Add(new AuditLog
+                    {
+                        UserId = user.Id,
+                        UserEmail = user.Email,
+                        UserName = user.UserName ?? user.FullName,
+                        ControllerName = "Account",
+                        ActionName = "PasswordResetLockout",
+                        HttpMethod = "POST",
+                        Path = "/Account/ResetPassword",
+                        StatusCode = 403,
+                        Details = $"Akun {user.Email} DIKUNCI otomatis 30 menit karena token kedaluwarsa atau salah re-entry.",
+                        IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                        Timestamp = DateTime.Now
+                    });
+                    await _db.SaveChangesAsync();
+
+                    ModelState.AddModelError("", "Tautan atau token reset kata sandi telah KEDALUWARSA atau tidak valid. Sesuai kebijakan keamanan, akun Anda telah DIKUNCI selama 30 menit. Silakan hubungi Administrator untuk membuka kunci akun.");
+                    return View(model);
+                }
+
+                foreach (var err in result.Errors)
+                {
+                    ModelState.AddModelError("", $"{err.Description} (Percobaan gagal: {failedAttempts}/3)");
+                }
+                return View(model);
+            }
+
+            // Success: clear lockout & failed count
+            await _userManager.ResetAccessFailedCountAsync(user);
+            await _userManager.SetLockoutEndDateAsync(user, null);
+
+            _db.AuditLogs.Add(new AuditLog
+            {
+                UserId = user.Id,
+                UserEmail = user.Email,
+                UserName = user.UserName ?? user.FullName,
+                ControllerName = "Account",
+                ActionName = "PasswordResetSuccess",
+                HttpMethod = "POST",
+                Path = "/Account/ResetPassword",
+                StatusCode = 200,
+                Details = $"Kata sandi akun {user.Email} berhasil diatur ulang via Form Reset Password.",
+                IpAddress = HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+                Timestamp = DateTime.Now
+            });
+            await _db.SaveChangesAsync();
+
+            TempData["Success"] = "Kata sandi Anda berhasil diperbarui! Silakan masuk dengan kata sandi baru Anda.";
+            return RedirectToAction("Login");
         }
     }
 }

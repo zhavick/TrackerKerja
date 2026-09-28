@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using TrackerKerja.Data;
 using TrackerKerja.Models;
+using TrackerKerja.Services;
 using TrackerKerja.ViewModels;
 
 namespace TrackerKerja.Controllers
@@ -13,11 +14,13 @@ namespace TrackerKerja.Controllers
     {
         private readonly AppDbContext _db;
         private readonly UserManager<AppUser> _userManager;
+        private readonly IGamificationService _gamificationService;
 
-        public HomeController(AppDbContext db, UserManager<AppUser> userManager)
+        public HomeController(AppDbContext db, UserManager<AppUser> userManager, IGamificationService gamificationService)
         {
             _db = db;
             _userManager = userManager;
+            _gamificationService = gamificationService;
         }
 
         public async Task<IActionResult> Index()
@@ -184,12 +187,22 @@ namespace TrackerKerja.Controllers
                 }
             }
 
+            DailyCheckInStatusDto checkInStatus = new();
+            GamificationUserPointsDto pointsSummary = new();
+            if (!string.IsNullOrEmpty(currentUserId))
+            {
+                checkInStatus = await _gamificationService.GetDailyCheckInStatusAsync(currentUserId);
+                pointsSummary = await _gamificationService.GetUserPointsSummaryAsync(currentUserId);
+            }
+
             var vm = new DashboardViewModel
             {
                 IsAdmin = isAdmin,
                 CurrentUserId = currentUserId,
                 CurrentUserName = currentUser?.FullName ?? currentUser?.Email ?? "Pengguna",
                 CurrentUserEmail = currentUser?.Email ?? "",
+                CheckInStatus = checkInStatus,
+                PointsSummary = pointsSummary,
                 MyTotalTasks = myTasks.Count,
                 MyDoneTasks = myTasks.Count(t => t.Status == Models.TaskStatus.Done),
                 MyInProgressTasks = myTasks.Count(t => t.Status == Models.TaskStatus.InProgress),

@@ -50,6 +50,10 @@ namespace TrackerKerja.ViewModels
         public List<WorkTask> MyTasks { get; set; } = new();
         public List<WorkNote> MyRecentNotes { get; set; } = new();
 
+        // Daily Check-In & Gamification Info for Dashboard Card
+        public DailyCheckInStatusDto CheckInStatus { get; set; } = new();
+        public GamificationUserPointsDto PointsSummary { get; set; } = new();
+
         // Chart data
         public List<string> WeekLabels { get; set; } = new();
         public List<long> WeekHours { get; set; } = new();

@@ -356,8 +356,16 @@
                     <h2 class="text-slate-800 font-bold text-base sm:text-lg truncate max-w-[120px] sm:max-w-xs md:max-w-none">@ViewData["Title"]</h2>
                     @if (isSignedIn)
                     {
-                        <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold shadow-2xs" title="Perusahaan / Tim Aktif">
+                        <span class="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-700 text-xs font-bold shadow-2xs" title="Workspace Perusahaan: @companyName">
                             <i class="fas fa-building text-[11px] text-indigo-500"></i>
+                            @if (!string.IsNullOrEmpty(company?.Code))
+                            {
+                                <span class="px-1.5 py-0.5 rounded bg-indigo-200/70 text-indigo-800 text-[10px] font-mono font-black">@company.Code</span>
+                            }
+                            else if (User.IsInRole("Admin"))
+                            {
+                                <span class="px-1.5 py-0.5 rounded bg-indigo-200/70 text-indigo-800 text-[10px] font-mono font-black">ADMIN</span>
+                            }
                             <span class="truncate max-w-[160px]">@companyName</span>
                         </span>
                     }

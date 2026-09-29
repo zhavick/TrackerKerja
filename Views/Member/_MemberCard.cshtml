@@ -1,0 +1,212 @@
+@model TrackerKerja.ViewModels.MemberListItemViewModel
+@{
+    var m = Model;
+    var isLocked = m.User.LockoutEnd.HasValue && m.User.LockoutEnd.Value > DateTimeOffset.Now;
+    var isAdmin = m.Role == "Admin";
+    var isPending = !m.User.IsApproved;
+}
+
+<div class="bg-white rounded-3xl p-5 border border-slate-200/80 hover:border-indigo-200 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col justify-between group relative overflow-hidden @(isPending ? "ring-2 ring-amber-400/60 bg-amber-50/20" : (isLocked ? "opacity-65 bg-slate-50/80" : ""))">
+    
+    <!-- Top Accent Role Bar -->
+    <div class="h-1.5 w-full absolute top-0 left-0 @(isPending ? "bg-gradient-to-r from-amber-400 to-orange-500" : (isAdmin ? "bg-gradient-to-r from-purple-500 to-indigo-600" : "bg-gradient-to-r from-indigo-500 to-teal-500"))"></div>
+
+    <div class="min-w-0">
+        <!-- Header: Avatar, Name & Role Badges -->
+        <div class="flex items-start gap-3 mb-3.5 pt-1">
+            <!-- Avatar with Status Dot -->
+            <div class="relative flex-shrink-0">
+                @if (!string.IsNullOrEmpty(m.User.ProfilePictureUrl))
+                {
+                    <img src="@m.User.ProfilePictureUrl" alt="@m.User.FullName"
+                         class="w-12 h-12 rounded-2xl object-cover shadow-sm border-2 border-white ring-2 ring-indigo-100" />
+                }
+                else
+                {
+                    <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-sm font-black shadow-sm ring-2 ring-indigo-50 select-none"
+                         style="background:@(string.IsNullOrEmpty(m.User.AvatarColor) ? "#6366F1" : m.User.AvatarColor)">
+                        @m.User.Initials
+                    </div>
+                }
+                <span class="w-3.5 h-3.5 rounded-full absolute -bottom-1 -right-1 border-2 border-white @(isPending ? "bg-amber-500 animate-pulse" : (isLocked ? "bg-red-500" : "bg-emerald-500"))"
+                      title="@(isPending ? "Menunggu Persetujuan Admin" : (isLocked ? "Akun Dinonaktifkan" : "Akun Aktif"))"></span>
+            </div>
+
+            <!-- User Name & Job Title (Anti-Overflow with Ellipsis) -->
+            <div class="min-w-0 flex-1">
+                <a href="/Member/Details/@m.User.Id" 
+                   class="font-extrabold text-slate-800 text-sm hover:text-indigo-600 block truncate transition-colors leading-snug" 
+                   title="@m.User.FullName">
+                    @m.User.FullName
+                </a>
+                <p class="text-[11px] font-semibold text-slate-400 truncate mt-0.5" title="@(m.User.JobTitle ?? "Team Member")">
+                    @(m.User.JobTitle ?? "Team Member")
+                </p>
+            </div>
+        </div>
+
+        <!-- Badges Row (Role, Level, Featured Badge, Status) -->
+        <div class="flex items-center gap-1.5 flex-wrap mb-3">
+            @if (isPending)
+            {
+                <span class="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-100 text-amber-800 border border-amber-300">
+                    <i class="fas fa-clock text-[9px] text-amber-600"></i>
+                    <span>Menunggu Approval</span>
+                </span>
+            }
+
+            <span class="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg @(isAdmin ? "bg-purple-100 text-purple-700 border border-purple-200" : "bg-slate-100 text-slate-700 border border-slate-200")">
+                <i class="fas @(isAdmin ? "fa-shield-halved text-purple-600" : "fa-user text-slate-500") text-[9px]"></i>
+                <span>@(isAdmin ? "Admin" : "Member")</span>
+            </span>
+
+            <span class="inline-flex items-center gap-1 text-[10px] font-black px-2 py-0.5 rounded-lg bg-amber-50 text-amber-800 border border-amber-200 shadow-2xs">
+                <i class="fas fa-crown text-[9px] text-amber-500"></i>
+                <span>LVL @m.UserLevel</span>
+            </span>
+
+            @if (!string.IsNullOrEmpty(m.FeaturedBadgeIcon))
+            {
+                <span class="w-5 h-5 rounded-md flex items-center justify-center text-white text-[9px] shadow-2xs flex-shrink-0" 
+                      style="background: @(m.FeaturedBadgeColor ?? "#F59E0B")" 
+                      title="Badge: @m.FeaturedBadgeName">
+                    <i class="@m.FeaturedBadgeIcon"></i>
+                </span>
+            }
+
+            @if (m.User.Company != null)
+            {
+                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200" title="Afiliasi: @m.User.Company.Name">
+                    <i class="fas fa-building text-[8px] text-emerald-500"></i>
+                    <span class="truncate max-w-[120px]">@m.User.Company.Name</span>
+                </span>
+            }
+
+            @if (isLocked)
+            {
+                <span class="inline-flex items-center gap-1 text-[10px] font-bold px-2 py-0.5 rounded-lg bg-red-100 text-red-700 border border-red-200">
+                    <i class="fas fa-lock text-[8px]"></i> Kunci
+                </span>
+            }
+        </div>
+
+        <!-- Contact Info Section (Clean & Truncated) -->
+        <div class="space-y-1 bg-slate-50/60 p-2.5 rounded-2xl border border-slate-100/90 mb-3.5 text-xs text-slate-500">
+            <p class="flex items-center gap-2 min-w-0 text-[11px]" title="@m.User.Email">
+                <i class="far fa-envelope text-indigo-400 text-xs w-3.5 flex-shrink-0"></i>
+                <span class="truncate font-mono">@m.User.Email</span>
+            </p>
+            @if (!string.IsNullOrEmpty(m.User.PhoneNumber))
+            {
+                <p class="flex items-center gap-2 min-w-0 text-[11px]" title="@m.User.PhoneNumber">
+                    <i class="fas fa-phone text-emerald-500 text-xs w-3.5 flex-shrink-0"></i>
+                    <span class="truncate">@m.User.PhoneNumber</span>
+                </p>
+            }
+        </div>
+
+        <!-- Work & Contribution Metrics 3-Col Matrix -->
+        <div class="grid grid-cols-3 gap-1.5 bg-slate-50/90 p-2.5 rounded-2xl border border-slate-100 mb-3.5 text-center">
+            <div class="px-1 min-w-0">
+                <p class="text-xs font-black text-slate-800 truncate">@m.TotalTasks</p>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">Tugas</p>
+            </div>
+            <div class="px-1 min-w-0 border-x border-slate-200/70">
+                <p class="text-xs font-black text-indigo-600 truncate">@m.TotalHours.ToString("F1")j</p>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">Waktu</p>
+            </div>
+            <div class="px-1 min-w-0">
+                <p class="text-xs font-black text-purple-600 truncate">@m.NotesContributedCount</p>
+                <p class="text-[9px] font-bold text-slate-400 uppercase tracking-wider truncate">Catatan</p>
+            </div>
+        </div>
+
+        <!-- Progress Completion -->
+        <div class="space-y-1 mb-4">
+            <div class="flex items-center justify-between text-[11px]">
+                <span class="text-slate-400 font-semibold truncate">Tugas Selesai</span>
+                <span class="font-bold text-slate-700 flex-shrink-0">@m.DoneTasks / @m.TotalTasks (@m.CompletionRate%)</span>
+            </div>
+            <div class="w-full h-1.5 bg-slate-100 rounded-full overflow-hidden">
+                <div class="h-full bg-gradient-to-r from-indigo-500 to-emerald-500 rounded-full transition-all duration-500"
+                     style="width: @(m.CompletionRate)%"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Card Action Footer -->
+    @if (isPending && User.IsInRole("Admin"))
+    {
+        <div class="pt-3 border-t border-amber-200/80 flex items-center justify-between gap-2">
+            <!-- Approve Button -->
+            <form method="post" action="/Member/Approve/@m.User.Id" class="flex-1"
+                  data-confirm="Apakah Anda yakin ingin menyetujui pendaftaran akun '@m.User.FullName' (@m.User.Email)?"
+                  data-confirm-title="Setujui Pendaftaran Member"
+                  data-confirm-btn="<i class='fas fa-check mr-1.5'></i>Setujui Akun">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="w-full py-2 px-3 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black transition-all shadow-sm hover:shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+                    <i class="fas fa-check"></i><span>Setujui</span>
+                </button>
+            </form>
+
+            <!-- Reject Button -->
+            <form method="post" action="/Member/Reject/@m.User.Id" class="inline"
+                  data-confirm="Apakah Anda yakin ingin menolak dan membatalkan pendaftaran akun '@m.User.FullName' (@m.User.Email)?"
+                  data-confirm-title="Tolak Pendaftaran Member"
+                  data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Tolak Pendaftaran">
+                @Html.AntiForgeryToken()
+                <button type="submit" class="py-2 px-3 rounded-xl bg-rose-50 hover:bg-rose-600 text-rose-600 hover:text-white text-xs font-bold transition-all shadow-xs flex items-center justify-center gap-1.5 cursor-pointer" title="Tolak Pendaftaran">
+                    <i class="fas fa-times"></i><span>Tolak</span>
+                </button>
+            </form>
+        </div>
+    }
+    else
+    {
+        <div class="pt-3 border-t border-slate-100 flex items-center justify-between gap-1.5">
+            <!-- Primary Detail Link -->
+            <a href="/Member/Details/@m.User.Id"
+               class="flex-1 text-center py-2 px-2.5 rounded-xl bg-indigo-50 hover:bg-indigo-600 text-indigo-700 hover:text-white text-xs font-bold transition-all shadow-xs truncate">
+                <i class="far fa-id-card mr-1"></i><span>Kontribusi</span>
+            </a>
+
+            @if (User.IsInRole("Admin"))
+            {
+                <!-- Reset Password Button -->
+                <button type="button" onclick="openAdminResetPasswordModal('@m.User.Id', '@m.User.FullName.Replace("'", "\\'")')"
+                        class="w-8 h-8 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-600 hover:text-amber-700 flex items-center justify-center text-xs transition-colors cursor-pointer flex-shrink-0" 
+                        title="Ubah Password Member (Khusus Admin)">
+                    <i class="fas fa-key"></i>
+                </button>
+
+                <!-- Edit Member Button -->
+                <a href="/Member/Edit/@m.User.Id"
+                   class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-indigo-100 text-slate-600 hover:text-indigo-700 flex items-center justify-center text-xs transition-colors flex-shrink-0" 
+                   title="Edit Data Profil Member">
+                    <i class="fas fa-edit"></i>
+                </a>
+
+                <!-- Lock / Unlock Button -->
+                <form method="post" action="/Member/ToggleStatus/@m.User.Id" class="inline"
+                      data-confirm="@(isLocked ? $"Apakah Anda yakin ingin mengaktifkan kembali akses akun '{m.User.FullName}'?" : $"Apakah Anda yakin ingin menonaktifkan / mengunci akses akun '{m.User.FullName}'?")"
+                      data-confirm-title="@(isLocked ? "Aktifkan Akun Member" : "Nonaktifkan Akun Member")"
+                      data-confirm-btn="@(isLocked ? "<i class='fas fa-unlock mr-1.5'></i>Aktifkan" : "<i class='fas fa-user-lock mr-1.5'></i>Kunci Akun")">
+                    @Html.AntiForgeryToken()
+                    <button type="submit"
+                            class="w-8 h-8 rounded-xl @(isLocked ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-600 hover:text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-600 hover:text-white") flex items-center justify-center text-xs transition-colors cursor-pointer flex-shrink-0"
+                            title="@(isLocked ? "Aktifkan Akun" : "Kunci Akun")">
+                        <i class="fas @(isLocked ? "fa-unlock" : "fa-user-lock")"></i>
+                    </button>
+                </form>
+
+                <!-- Delete Member & Login Account Button (Permanent) -->
+                <button type="button" 
+                        onclick="openDeleteMemberModal('@m.User.Id', '@m.User.FullName.Replace("'", "\\'") ', '@(m.User.Email?.Replace("'", "\\'") ?? "")', '@m.Role')"
+                        class="w-8 h-8 rounded-xl bg-red-50 hover:bg-red-600 text-red-500 hover:text-white flex items-center justify-center text-xs transition-colors cursor-pointer flex-shrink-0 shadow-xs"
+                        title="Hapus Akun & Data Member Permanen">
+                    <i class="fas fa-trash-alt"></i>
+                </button>
+            }
+        </div>
+    }
+</div>

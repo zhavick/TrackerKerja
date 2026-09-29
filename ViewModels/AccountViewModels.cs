@@ -32,7 +32,11 @@ namespace TrackerKerja.ViewModels
         public string JobTitle { get; set; } = string.Empty;
 
         // Multi-Tenancy Registration
-        public string CompanyOption { get; set; } = "new"; // "new" atau "existing"
+        public string CompanyOption { get; set; } = "existing"; // "existing" atau "new"
+
+        [MaxLength(50)]
+        public string? ExistingCompanyCode { get; set; }
+
         public int? CompanyId { get; set; }
 
         [MaxLength(150)]

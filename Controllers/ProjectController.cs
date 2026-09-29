@@ -20,7 +20,7 @@ namespace TrackerKerja.Controllers
             _userManager = userManager;
         }
 
-        public async Task<IActionResult> Index(ProjectStatus? status = null, string? search = null)
+        public async Task<IActionResult> Index(ProjectStatus? status = null, string? search = null, int? companyId = null)
         {
             var currentUser = await _userManager.GetUserAsync(User);
             var isAdmin = User.IsInRole("Admin");
@@ -36,6 +36,16 @@ namespace TrackerKerja.Controllers
             if (!isAdmin)
             {
                 query = query.Where(p => p.CompanyId == userCompanyId);
+            }
+            else if (companyId.HasValue)
+            {
+                query = query.Where(p => p.CompanyId == companyId.Value);
+            }
+
+            if (isAdmin)
+            {
+                ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
+                ViewBag.SelectedCompanyId = companyId;
             }
 
             if (status.HasValue)
@@ -105,14 +115,25 @@ namespace TrackerKerja.Controllers
         public async Task<IActionResult> Create()
         {
             var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
             var companyId = currentUser?.CompanyId ?? 1;
 
-            ViewBag.Managers = await _db.Users
-                .Where(u => u.CompanyId == companyId)
+            var managersQuery = _db.Users.AsQueryable();
+            if (!isAdmin)
+            {
+                managersQuery = managersQuery.Where(u => u.CompanyId == companyId);
+            }
+
+            ViewBag.Managers = await managersQuery
                 .OrderBy(u => u.FullName)
                 .ToListAsync();
 
-            return View(new Project());
+            if (isAdmin)
+            {
+                ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
+            }
+
+            return View(new Project { CompanyId = companyId });
         }
 
         [HttpPost]
@@ -120,18 +141,33 @@ namespace TrackerKerja.Controllers
         public async Task<IActionResult> Create(Project model)
         {
             var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
             var companyId = currentUser?.CompanyId ?? 1;
 
             if (!ModelState.IsValid)
             {
-                ViewBag.Managers = await _db.Users
-                    .Where(u => u.CompanyId == companyId)
+                var managersQuery = _db.Users.AsQueryable();
+                if (!isAdmin)
+                {
+                    managersQuery = managersQuery.Where(u => u.CompanyId == companyId);
+                }
+
+                ViewBag.Managers = await managersQuery
                     .OrderBy(u => u.FullName)
                     .ToListAsync();
+
+                if (isAdmin)
+                {
+                    ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
+                }
+
                 return View(model);
             }
 
-            model.CompanyId = companyId;
+            if (!isAdmin || !model.CompanyId.HasValue)
+            {
+                model.CompanyId = companyId;
+            }
             model.CreatedAt = DateTime.Now;
 
             _db.Projects.Add(model);
@@ -155,10 +191,20 @@ namespace TrackerKerja.Controllers
             }
 
             var companyId = project.CompanyId ?? currentUser?.CompanyId ?? 1;
-            ViewBag.Managers = await _db.Users
-                .Where(u => u.CompanyId == companyId)
+            var managersQuery = _db.Users.AsQueryable();
+            if (!isAdmin)
+            {
+                managersQuery = managersQuery.Where(u => u.CompanyId == companyId);
+            }
+
+            ViewBag.Managers = await managersQuery
                 .OrderBy(u => u.FullName)
                 .ToListAsync();
+
+            if (isAdmin)
+            {
+                ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
+            }
 
             return View(project);
         }
@@ -184,10 +230,21 @@ namespace TrackerKerja.Controllers
             if (!ModelState.IsValid)
             {
                 var companyId = existing.CompanyId ?? currentUser?.CompanyId ?? 1;
-                ViewBag.Managers = await _db.Users
-                    .Where(u => u.CompanyId == companyId)
+                var managersQuery = _db.Users.AsQueryable();
+                if (!isAdmin)
+                {
+                    managersQuery = managersQuery.Where(u => u.CompanyId == companyId);
+                }
+
+                ViewBag.Managers = await managersQuery
                     .OrderBy(u => u.FullName)
                     .ToListAsync();
+
+                if (isAdmin)
+                {
+                    ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
+                }
+
                 return View(model);
             }
 
@@ -201,6 +258,10 @@ namespace TrackerKerja.Controllers
             existing.ActualCost = model.ActualCost;
             existing.ProjectManagerId = model.ProjectManagerId;
             existing.Tags = model.Tags;
+            if (isAdmin && model.CompanyId.HasValue)
+            {
+                existing.CompanyId = model.CompanyId;
+            }
 
             _db.Projects.Update(existing);
             await _db.SaveChangesAsync();

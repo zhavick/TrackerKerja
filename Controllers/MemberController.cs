@@ -76,10 +76,22 @@ namespace TrackerKerja.Controllers
                 );
             }
 
-            var users = await usersQuery.OrderBy(u => u.FullName).ToListAsync();
-            var allTasks = await _db.Tasks.Include(t => t.Sessions).ToListAsync();
-            var allNotes = await _db.Notes.ToListAsync();
+            var tasksQuery = _db.Tasks.Include(t => t.Sessions).AsQueryable();
+            var notesQuery = _db.Notes.AsQueryable();
+            if (!isAdmin)
+            {
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == userCompanyId);
+                notesQuery = notesQuery.Where(n => n.CompanyId == userCompanyId);
+            }
+            else if (companyId.HasValue)
+            {
+                tasksQuery = tasksQuery.Where(t => t.CompanyId == companyId.Value);
+                notesQuery = notesQuery.Where(n => n.CompanyId == companyId.Value);
+            }
+            var allTasks = await tasksQuery.ToListAsync();
+            var allNotes = await notesQuery.ToListAsync();
             var allUserBadges = await _db.UserBadges.Include(ub => ub.Badge).ToListAsync();
+            var users = await usersQuery.OrderBy(u => u.FullName).ToListAsync();
 
             var memberList = new List<MemberListItemViewModel>();
 

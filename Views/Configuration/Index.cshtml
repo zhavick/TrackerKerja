@@ -86,25 +86,20 @@
         <i class="fas fa-sync-alt"></i>
         <span>1. Sinkronisasi Host &amp; Cabang</span>
     </button>
-    <button type="button" onclick="switchConfigTab('tab-cfg-theme-font')" id="btn-tab-cfg-theme-font"
-            class="config-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer">
-        <i class="fas fa-palette text-purple-500"></i>
-        <span>2. Personalisasi Tema &amp; Font</span>
-    </button>
     <button type="button" onclick="switchConfigTab('tab-cfg-database')" id="btn-tab-cfg-database"
             class="config-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer">
         <i class="fas fa-database text-emerald-500"></i>
-        <span>3. Database &amp; Pemeliharaan</span>
+        <span>2. Database &amp; Pemeliharaan</span>
     </button>
     <button type="button" onclick="switchConfigTab('tab-cfg-email')" id="btn-tab-cfg-email"
             class="config-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer">
         <i class="fas fa-envelope text-blue-500"></i>
-        <span>4. Server Email &amp; Notifikasi</span>
+        <span>3. Server Email &amp; Notifikasi</span>
     </button>
     <button type="button" onclick="switchConfigTab('tab-cfg-general')" id="btn-tab-cfg-general"
             class="config-tab-btn flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap text-slate-600 hover:bg-slate-100 cursor-pointer">
         <i class="fas fa-globe text-amber-500"></i>
-        <span>5. Umum &amp; Swagger API</span>
+        <span>4. Umum &amp; Swagger API</span>
     </button>
 </div>
 
@@ -304,219 +299,7 @@
 
 
 
-<!-- TAB 2: PERSONALISASI TEMA & FONT -->
-<div id="tab-cfg-theme-font" class="config-tab-pane hidden space-y-6">
-    <!-- 0. FONT & TYPOGRAPHY CONFIGURATION (5 GOOGLE FONTS) -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
-            <div class="flex items-center justify-between pb-4 mb-4 border-b border-slate-100">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-base font-bold">
-                        <i class="fas fa-font"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-sm text-slate-800">Pengaturan Tipografi &amp; Font Global</h3>
-                        <p class="text-xs text-slate-400">Pilih jenis huruf antarmuka aplikasi Work Tracker Pro (5 Pilihan Font Gratis Google Fonts)</p>
-                    </div>
-                </div>
-                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold bg-indigo-50 text-indigo-700 border border-indigo-200">
-                    <i class="fas fa-sparkles text-[10px]"></i> 5 Font Gratis
-                </span>
-            </div>
-
-            <!-- Font Preview Cards Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-4" id="fontPreviewGrid">
-                
-                <!-- 1. Outfit (Default UI) -->
-                <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
-                     data-font-id="outfit" onclick="selectAndApplyFont('outfit')"
-                     style="font-family: 'Outfit', sans-serif;">
-                    <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="font-black text-sm text-slate-800">Outfit</span>
-                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700 border border-indigo-200">Default UI</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Sans-serif kontemporer dengan lekukan halus dan berkelas.</p>
-                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
-                            Work Tracker Pro 2026<br>
-                            <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                        <span class="font-active-indicator hidden text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
-                            <i class="fas fa-check-circle"></i> Aktif
-                        </span>
-                        <button type="button" class="ml-auto text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
-                            Pilih Font &rarr;
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 2. Plus Jakarta Sans -->
-                <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
-                     data-font-id="jakarta" onclick="selectAndApplyFont('jakarta')"
-                     style="font-family: 'Plus Jakarta Sans', sans-serif;">
-                    <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="font-black text-sm text-slate-800">Plus Jakarta Sans</span>
-                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">Modern SaaS</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Geometris kontemporer, ramah &amp; elegan khas enterprise.</p>
-                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
-                            Work Tracker Pro 2026<br>
-                            <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                        <span class="font-active-indicator hidden text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
-                            <i class="fas fa-check-circle"></i> Aktif
-                        </span>
-                        <button type="button" class="ml-auto text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
-                            Pilih Font &rarr;
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 2. Inter -->
-                <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
-                     data-font-id="inter" onclick="selectAndApplyFont('inter')"
-                     style="font-family: 'Inter', sans-serif;">
-                    <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="font-black text-sm text-slate-800">Inter</span>
-                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700">Classic UI</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Standar UI modern, sangat seimbang, tajam &amp; nyaman dibaca.</p>
-                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
-                            Work Tracker Pro 2026<br>
-                            <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                        <span class="font-active-indicator hidden text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
-                            <i class="fas fa-check-circle"></i> Aktif
-                        </span>
-                        <button type="button" class="ml-auto text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
-                            Pilih Font &rarr;
-                        </button>
-                    </div>
-                </div>
-                <!-- 4. Poppins -->
-                <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
-                     data-font-id="poppins" onclick="selectAndApplyFont('poppins')"
-                     style="font-family: 'Poppins', sans-serif;">
-                    <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="font-black text-sm text-slate-800">Poppins</span>
-                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-pink-100 text-pink-700">Rounded Geometrik</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Bentuk bulat geometris yang bersahabat &amp; berkarakter.</p>
-                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
-                            Work Tracker Pro 2026<br>
-                            <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                        <span class="font-active-indicator hidden text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
-                            <i class="fas fa-check-circle"></i> Aktif
-                        </span>
-                        <button type="button" class="ml-auto text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
-                            Pilih Font &rarr;
-                        </button>
-                    </div>
-                </div>
-
-                <!-- 5. Roboto -->
-                <div class="font-preview-card p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md"
-                     data-font-id="roboto" onclick="selectAndApplyFont('roboto')"
-                     style="font-family: 'Roboto', sans-serif;">
-                    <div>
-                        <div class="flex items-center justify-between mb-1.5">
-                            <span class="font-black text-sm text-slate-800">Roboto</span>
-                            <span class="text-[9px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">High Density</span>
-                        </div>
-                        <p class="text-[11px] text-slate-500 mb-3 leading-relaxed">Klasik Google, presisi, densitas data tinggi &amp; mudah dibaca.</p>
-                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100 text-xs text-slate-700 leading-snug mb-2 font-medium">
-                            Work Tracker Pro 2026<br>
-                            <span class="text-[10px] text-slate-400">Aa Bb Gg 12345 &bull; Efisiensi Tim</span>
-                        </div>
-                    </div>
-                    <div class="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
-                        <span class="font-active-indicator hidden text-emerald-600 font-bold flex items-center gap-1 text-[11px]">
-                            <i class="fas fa-check-circle"></i> Aktif
-                        </span>
-                        <button type="button" class="ml-auto text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
-                            Pilih Font &rarr;
-                        </button>
-                    </div>
-                </div>
-
-            </div>
-
-            <!-- Live Info Note -->
-            <div class="p-3 bg-indigo-50/70 rounded-2xl border border-indigo-100 text-xs text-slate-600 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-info-circle text-indigo-600"></i>
-                    <span>Font yang Anda pilih langsung diterapkan seketika pada seluruh halaman dan tersimpan otomatis.</span>
-                </div>
-            </div>
-        </div>
-    
-        <!-- THEME SELECTION & COLOR PALETTE SHOWCASE (40 THEMES) -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-indigo-100">
-            <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between pb-4 mb-4 border-b border-slate-100 gap-3">
-                <div class="flex items-center gap-3">
-                    <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-purple-500 to-indigo-600 text-white flex items-center justify-center text-base font-bold shadow-md shadow-purple-200">
-                        <i class="fas fa-palette"></i>
-                    </div>
-                    <div>
-                        <h3 class="font-bold text-sm text-slate-800 flex items-center gap-2">
-                            <span>Koleksi Tema Dinamis (40 Pilihan Eye-Friendly)</span>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-700">
-                                18 Gelap + 22 Terang
-                            </span>
-                        </h3>
-                        <p class="text-xs text-slate-400">Pilih tema antarmuka visual aplikasi yang nyaman di mata dengan palet warna seimbang</p>
-                    </div>
-                </div>
-
-                <!-- Theme Filter Buttons -->
-                <div class="flex items-center gap-1.5 p-1 bg-slate-100 rounded-xl border border-slate-200/60 self-stretch sm:self-auto">
-                    <button type="button" onclick="renderConfigThemeGallery('all')" id="filter-btn-all"
-                            class="theme-filter-btn flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-800 shadow-2xs cursor-pointer">
-                        <span>Semua (40)</span>
-                    </button>
-                    <button type="button" onclick="renderConfigThemeGallery('dark')" id="filter-btn-dark"
-                            class="theme-filter-btn flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">
-                        <i class="fas fa-moon text-indigo-400 mr-1"></i>
-                        <span>Gelap (18)</span>
-                    </button>
-                    <button type="button" onclick="renderConfigThemeGallery('light')" id="filter-btn-light"
-                            class="theme-filter-btn flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer">
-                        <i class="fas fa-sun text-amber-400 mr-1"></i>
-                        <span>Terang (22)</span>
-                    </button>
-                </div>
-            </div>
-
-            <!-- Dynamic Theme Grid -->
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 mb-4" id="configThemeGallery">
-                <!-- Dynamically populated by renderConfigThemeGallery() -->
-            </div>
-
-            <!-- Info Note -->
-            <div class="p-3 bg-purple-50/70 rounded-2xl border border-purple-100 text-xs text-slate-600 flex items-center justify-between gap-3">
-                <div class="flex items-center gap-2">
-                    <i class="fas fa-magic text-purple-600"></i>
-                    <span>Tema yang dipilih tersimpan di profil peramban (Anti-FOUC) dan dapat diganti sewaktu-waktu dari tombol <strong>"Tema &amp; Font"</strong> di bilah atas.</span>
-                </div>
-            </div>
-        </div>
-
-</div>
-
-
-
-<!-- TAB 3: DATABASE & PEMELIHARAAN -->
+<!-- TAB 2: DATABASE & PEMELIHARAAN -->
 <div id="tab-cfg-database" class="config-tab-pane hidden space-y-6">
     
     <!-- ROW 1: CAPACITY, BACKUP & RESTORE -->
@@ -763,7 +546,7 @@
 
 
 
-<!-- TAB 4: SERVER EMAIL & NOTIFIKASI -->
+<!-- TAB 3: SERVER EMAIL & NOTIFIKASI -->
 <div id="tab-cfg-email" class="config-tab-pane hidden space-y-6">
     <!-- ========================================================================= -->
         <!-- 3. EMAIL SMTP SERVER INTEGRATION & TEST CONNECTION -->
@@ -1082,7 +865,7 @@
 
 
 
-<!-- TAB 5: UMUM & SWAGGER API -->
+<!-- TAB 4: UMUM & SWAGGER API -->
 <div id="tab-cfg-general" class="config-tab-pane hidden space-y-6">
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div>
@@ -2368,92 +2151,7 @@ function switchConfigTab(tabKey) {
     if (history.replaceState) {
         history.replaceState(null, null, '#' + tabKey);
     }
-
-    if (tabKey === 'tab-cfg-theme-font') {
-        renderConfigThemeGallery();
-    }
 }
-
-function renderConfigThemeGallery(filterCategory = 'all') {
-    const container = document.getElementById('configThemeGallery');
-    if (!container || typeof THEMES_CONFIG === 'undefined') return;
-    container.innerHTML = '';
-
-    // Update filter button styling
-    ['all', 'dark', 'light'].forEach(cat => {
-        const btn = document.getElementById('filter-btn-' + cat);
-        if (btn) {
-            if (cat === filterCategory) {
-                btn.className = 'theme-filter-btn flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all bg-white text-slate-800 shadow-2xs cursor-pointer';
-            } else {
-                btn.className = 'theme-filter-btn flex-1 sm:flex-none px-3 py-1.5 text-xs font-bold rounded-lg transition-all text-slate-500 hover:text-slate-800 cursor-pointer';
-            }
-        }
-    });
-
-    const filtered = filterCategory === 'all' 
-        ? THEMES_CONFIG 
-        : THEMES_CONFIG.filter(t => t.category === filterCategory);
-
-    filtered.forEach(theme => {
-        const isCurrent = (typeof ThemeManager !== 'undefined') && (theme.id === ThemeManager.currentTheme);
-        const card = document.createElement('div');
-        card.className = `p-4 rounded-2xl border transition-all cursor-pointer relative flex flex-col justify-between hover:shadow-md ${
-            isCurrent 
-                ? 'bg-indigo-50/80 border-2 border-indigo-500 shadow-sm' 
-                : 'bg-white hover:bg-slate-50 border-slate-200'
-        }`;
-        card.onclick = () => {
-            if (typeof ThemeManager !== 'undefined') {
-                ThemeManager.applyTheme(theme.id);
-                renderConfigThemeGallery(filterCategory);
-                if (typeof Swal !== 'undefined') {
-                    Swal.fire({
-                        icon: 'success',
-                        title: 'Tema Diterapkan!',
-                        text: `Tema ${theme.name} sekarang aktif.`,
-                        confirmButtonColor: '#6366F1',
-                        timer: 1500,
-                        timerProgressBar: true
-                    });
-                }
-            }
-        };
-
-        const swatches = theme.colors.map(c => 
-            `<span class="w-4 h-4 rounded-full shadow-2xs border border-white/40" style="background-color: ${c}"></span>`
-        ).join('');
-
-        card.innerHTML = `
-            <div>
-                <div class="flex items-center justify-between mb-2">
-                    <div class="flex items-center gap-2.5">
-                        <div class="w-8 h-8 rounded-xl flex items-center justify-center text-xs text-white shadow-xs" 
-                             style="background: linear-gradient(135deg, ${theme.colors[0]}, ${theme.colors[1]});">
-                            <i class="fas ${theme.icon}"></i>
-                        </div>
-                        <div>
-                            <span class="font-black text-sm text-slate-800 block">${theme.name}</span>
-                            <span class="text-[9px] font-bold px-2 py-0.5 rounded-full ${theme.category === 'dark' ? 'bg-slate-800 text-slate-200' : 'bg-slate-100 text-slate-700'}">${theme.tag}</span>
-                        </div>
-                    </div>
-                    ${isCurrent ? '<span class="text-xs text-indigo-600 font-bold flex items-center gap-1"><i class="fas fa-check-circle"></i> Aktif</span>' : ''}
-                </div>
-                <p class="text-[11px] text-slate-500 mb-3 line-clamp-2">${theme.desc}</p>
-            </div>
-            <div class="flex items-center justify-between pt-2.5 border-t border-slate-100">
-                <div class="flex items-center gap-1">
-                    ${swatches}
-                </div>
-                <button type="button" class="text-[11px] font-bold text-indigo-600 hover:underline">
-                    ${isCurrent ? 'Tema Aktif' : 'Terapkan →'}
-                </button>
-            </div>
-        `;
-        container.appendChild(card);
-    });
-}
-
 
 document.addEventListener('DOMContentLoaded', function () {
     const savedFont = localStorage.getItem('app_font') || '@currentAppFont' || 'outfit';
@@ -2461,9 +2159,12 @@ document.addEventListener('DOMContentLoaded', function () {
         ThemeManager.applyFont(savedFont);
     }
 
-    // Initialize active tab from hash or localStorage
+    // Initialize active tab from hash or localStorage, fallback if previously saved tab was the removed tab
     const hash = window.location.hash ? window.location.hash.substring(1) : null;
-    const savedTab = hash || localStorage.getItem('active_config_tab') || 'tab-cfg-sync';
+    let savedTab = (hash && hash !== 'tab-cfg-theme-font' ? hash : null) || 
+                   (localStorage.getItem('active_config_tab') !== 'tab-cfg-theme-font' ? localStorage.getItem('active_config_tab') : null) || 
+                   'tab-cfg-sync';
+    if (savedTab === 'tab-cfg-theme-font') savedTab = 'tab-cfg-sync';
     switchConfigTab(savedTab);
 });
 

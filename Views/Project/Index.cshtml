@@ -145,6 +145,21 @@
                    class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all @(selectedStatus == TrackerKerja.Models.ProjectStatus.Archived ? "bg-purple-600 text-white shadow-xs" : "bg-slate-100 text-slate-600 hover:bg-slate-200")">
                     Arsip
                 </a>
+
+                @if (User.IsInRole("Admin") && ViewBag.Companies != null)
+                {
+                    var companies = ViewBag.Companies as List<TrackerKerja.Models.Company> ?? new();
+                    <select name="companyId" onchange="this.form.submit()" class="px-3 py-1.5 rounded-xl border border-indigo-200 bg-indigo-50/50 text-indigo-900 text-xs font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">🏢 Semua Perusahaan (@companies.Count)</option>
+                        @foreach (var c in companies)
+                        {
+                            <option value="@c.Id" selected="@(ViewBag.SelectedCompanyId == c.Id)">
+                                @c.Name @(!string.IsNullOrEmpty(c.Code) ? $"[{c.Code}]" : "")
+                            </option>
+                        }
+                    </select>
+                }
+
                 <button type="submit" class="px-4 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 font-bold text-xs hover:bg-indigo-100 transition-all cursor-pointer">
                     <i class="fas fa-filter mr-1"></i>Filter
                 </button>

@@ -381,7 +381,15 @@ namespace TrackerKerja.Controllers
             }
 
             // Set Company Multi-Tenancy
-            model.CompanyId = userCompanyId ?? 1;
+            if (model.ProjectId.HasValue)
+            {
+                var proj = await _db.Projects.FindAsync(model.ProjectId.Value);
+                model.CompanyId = proj?.CompanyId ?? userCompanyId ?? 1;
+            }
+            else
+            {
+                model.CompanyId = userCompanyId ?? 1;
+            }
 
             // Smart Progress & Status synchronization
             if (model.Progress >= 100)

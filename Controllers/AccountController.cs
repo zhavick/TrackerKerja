@@ -130,11 +130,10 @@ namespace TrackerKerja.Controllers
 
         // ── REGISTER ────────────────────────────────────────────
         [HttpGet]
-        public async Task<IActionResult> Register()
+        public IActionResult Register()
         {
             if (User.Identity?.IsAuthenticated == true) return RedirectToAction("Index", "Home");
-            ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
-            return View(new RegisterViewModel());
+            return View(new RegisterViewModel { CompanyOption = "existing" });
         }
 
         [HttpPost]
@@ -143,20 +142,25 @@ namespace TrackerKerja.Controllers
         {
             if (!ModelState.IsValid)
             {
-                ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
                 return View(model);
             }
 
             int? assignedCompanyId = null;
             string companyNameForEmail = "Pribadi / Belum Ditentukan";
 
-            if (model.CompanyOption == "existing" && model.CompanyId.HasValue)
+            if (string.Equals(model.CompanyOption, "existing", StringComparison.OrdinalIgnoreCase))
             {
-                var comp = await _db.Companies.FindAsync(model.CompanyId.Value);
+                if (string.IsNullOrWhiteSpace(model.ExistingCompanyCode))
+                {
+                    ModelState.AddModelError("ExistingCompanyCode", "Kode perusahaan wajib dimasukkan untuk bergabung.");
+                    return View(model);
+                }
+
+                var cleanCode = model.ExistingCompanyCode.Trim().ToUpper();
+                var comp = await _db.Companies.FirstOrDefaultAsync(c => c.Code != null && c.Code.ToUpper() == cleanCode);
                 if (comp == null)
                 {
-                    ModelState.AddModelError("CompanyId", "Perusahaan / Tim yang dipilih tidak ditemukan.");
-                    ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
+                    ModelState.AddModelError("ExistingCompanyCode", $"Kode perusahaan '{cleanCode}' tidak ditemukan. Pastikan kode yang Anda masukkan sudah benar atau gunakan tab 'Buat Tim / Baru'.");
                     return View(model);
                 }
                 assignedCompanyId = comp.Id;
@@ -165,14 +169,30 @@ namespace TrackerKerja.Controllers
             else
             {
                 // New Company Registration
-                var compName = !string.IsNullOrWhiteSpace(model.NewCompanyName)
-                    ? model.NewCompanyName.Trim()
-                    : "Tim " + model.FullName.Trim();
+                if (string.IsNullOrWhiteSpace(model.NewCompanyName))
+                {
+                    ModelState.AddModelError("NewCompanyName", "Nama perusahaan baru wajib diisi.");
+                    return View(model);
+                }
+
+                if (string.IsNullOrWhiteSpace(model.NewCompanyCode))
+                {
+                    ModelState.AddModelError("NewCompanyCode", "Kode perusahaan baru wajib dibuat (singkatan/kode unik, misal: WAHANA).");
+                    return View(model);
+                }
+
+                var newCleanCode = model.NewCompanyCode.Trim().ToUpper();
+                var isCodeTaken = await _db.Companies.AnyAsync(c => c.Code != null && c.Code.ToUpper() == newCleanCode);
+                if (isCodeTaken)
+                {
+                    ModelState.AddModelError("NewCompanyCode", $"Kode perusahaan '{newCleanCode}' sudah terdaftar dalam sistem. Silakan pilih kode lain atau gunakan opsi 'Gabung Tim Terdaftar' jika Anda adalah anggota perusahaan ini.");
+                    return View(model);
+                }
 
                 var newComp = new Company
                 {
-                    Name = compName,
-                    Code = !string.IsNullOrWhiteSpace(model.NewCompanyCode) ? model.NewCompanyCode.Trim().ToUpper() : null,
+                    Name = model.NewCompanyName.Trim(),
+                    Code = newCleanCode,
                     CreatedAt = DateTime.Now
                 };
                 _db.Companies.Add(newComp);
@@ -245,7 +265,6 @@ namespace TrackerKerja.Controllers
             foreach (var error in result.Errors)
                 ModelState.AddModelError("", error.Description);
 
-            ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
             return View(model);
         }
 

@@ -12,7 +12,7 @@ namespace TrackerKerja.Services
         {
             if (isAdmin) return true;
             if (user == null || !user.CompanyId.HasValue) return false;
-            if (!targetCompanyId.HasValue) return true;
+            if (!targetCompanyId.HasValue) return false;
             return user.CompanyId.Value == targetCompanyId.Value;
         }
 
@@ -37,7 +37,7 @@ namespace TrackerKerja.Services
             if (task.AssignedToUser != null && task.AssignedToUser.CompanyId.HasValue)
                 return task.AssignedToUser.CompanyId.Value == user.CompanyId.Value;
 
-            return true;
+            return false;
         }
 
         /// <summary>
@@ -48,7 +48,7 @@ namespace TrackerKerja.Services
             if (isAdmin) return true;
             if (project == null) return false;
             if (user == null || !user.CompanyId.HasValue) return false;
-            if (!project.CompanyId.HasValue) return true;
+            if (!project.CompanyId.HasValue) return false;
             return project.CompanyId.Value == user.CompanyId.Value;
         }
 
@@ -136,7 +136,7 @@ namespace TrackerKerja.Services
             if (note.Task != null && note.Task.CompanyId.HasValue)
                 return note.Task.CompanyId.Value == user.CompanyId.Value;
 
-            return true;
+            return false;
         }
 
         /// <summary>

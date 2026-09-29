@@ -1,6 +1,6 @@
 # 🚀 Work Tracker Pro (TrackerKerja)
 
-> **Enterprise Work Task Management, Multi-Timer Timesheet Tracking, Attendance Management, Technical Documentation, & Team Performance Analytics Platform (v3.6 Enterprise Security Edition)**
+> **Enterprise Work Task Management, Multi-Timer Timesheet Tracking, Attendance Management, Technical Documentation, & Team Performance Analytics Platform (v3.7 Multi-Company Isolation & Project Finance Edition)**
 
 [![ASP.NET Core 8.0](https://img.shields.io/badge/ASP.NET%20Core-8.0%20MVC-512BD4?logo=dotnet&logoColor=white)](https://dotnet.microsoft.com/)
 [![Entity Framework Core](https://img.shields.io/badge/EF%20Core-SQLite-blue?logo=sqlite&logoColor=white)](https://learn.microsoft.com/ef/core/)
@@ -13,53 +13,65 @@
 
 ---
 
-## 🌟 Fitur Unggulan Sistem (v3.6)
+## 🌟 Fitur Unggulan Sistem (v3.7)
 
-### 🔐 1. Keamanan Enterprise & Autentikasi Ganda (Dual Auth)
+### 🏢 1. Multi-Company Isolation & Registrasi Berbasis Kode Perusahaan
+- **Zero-Knowledge Privacy Registration (`/Account/Register`)**: Formulir registrasi tidak menampilkan daftar publik nama perusahaan untuk mencegah kebocoran informasi dan enumerasi klien. Pengguna memilih:
+  - *Masukkan Kode Perusahaan*: Memasukkan kode perusahaan yang valid (`ExistingCompanyCode`, otomatis diformat uppercase) untuk bergabung dengan tim yang sudah ada.
+  - *Daftarkan Perusahaan Baru*: Mendaftarkan unit kerja baru dengan `NewCompanyName` dan `NewCompanyCode` unik (minimal 3 karakter alfanumerik uppercase).
+- **Isolasi Data Ketat Multi-Tenant**: Seluruh kueri data (Proyek, Tugas, Timesheet, Presensi, Catatan, Anggota) secara ketat dibatasi berdasarkan `CompanyId` pengguna yang sedang login. Pengguna biasa sama sekali tidak dapat melihat data perusahaan lain.
+- **Otorisasi Penuh Administrator Sistem**: Administrator memiliki hak akses global lintas perusahaan dengan dropdown filter `companyId` pada modul Proyek, Tugas, dan Anggota Tim.
+- **Badge Perusahaan Topbar Navbar**: Bilah navigasi atas menampilkan identitas tenant aktif pengguna (`[KODE] Nama Perusahaan` untuk member, atau `[ADMIN] Semua Tim / Perusahaan` untuk Administrator).
+
+### 🔐 2. Keamanan Enterprise & Autentikasi Ganda (Dual Auth)
 - **Dual Authentication Pipeline**: Integrasi Cookie Session terenkripsi untuk peramban web dan **JWT Bearer Token** untuk RESTful API dan integrasi eksternal.
 - **Strict Swagger JWT Authorization**: Dokumentasi OpenAPI/Swagger UI di `/swagger` dilengkapi tombol modal **Authorize** untuk menguji endpoint berotentikasi Bearer JWT.
 - **Keamanan Sesi & Auto-Logout Inaktivitas 1 Jam (`session-manager.js`)**: Pemantauan idle real-time, dialog peringatan interaktif 5 menit dengan hitung mundur detik, dan proteksi redirect otomatis ke `/Account/Login?reason=timeout`.
-- **Halaman Login Lottie Modern & Self-Service Reset Password**: Redesain visual modern dengan animasi Lottie, toggle mode gelap/terang instan tanpa reload, dropdown perusahaan Select2, dan tautan *"Lupa Kata Sandi?"*.
+- **Halaman Login Lottie Modern & Self-Service Reset Password**: Redesain visual modern dengan animasi Lottie, toggle mode gelap/terang instan tanpa reload, dan tautan *"Lupa Kata Sandi?"*.
 - **Self-Service Password Reset & Fallback User Claim Link**: Form pemulihan mandiri (`/Account/ForgotPassword`). Apabila layanan SMTP belum dikonfigurasi, sistem secara otomatis menyediakan **Link User Claim** instan (`/Account/PasswordResetClaim`) dengan token 15 menit.
-- **Strict Lockout Guard (Proteksi Akun Terkunci)**: Proteksi otomatis mengunci akun pengguna selama **30 menit** jika token kedaluwarsa atau terjadi salah re-entry / konfirmasi password sebanyak 3 kali berturut-turut. Administrator dapat membuka kunci sewaktu-waktu via direktori Anggota Tim.
+- **Strict Lockout Guard (Proteksi Akun Terkunci)**: Proteksi otomatis mengunci akun pengguna selama **30 menit** jika token kedaluwarsa atau terjadi salah re-entry / konfirmasi password sebanyak 3 kali berturut-turut.
 
-### 🎨 2. 40 Tema Eye-Friendly & 5 Google Fonts Switcher
-- **40 Tema Tampilan Dinamis**: 22 Tema Terang + 18 Tema Gelap ramah mata (*eye-friendly* dengan kontras seimbang) bertenaga CSS custom tokens (`themes.css`).
-- **Global Font Switcher**: 5 opsi Google Fonts pilihan (*Inter, Plus Jakarta Sans, Outfit, Poppins, Roboto*) yang dapat diganti secara instan tanpa reload halaman dan tersimpan di `localStorage` (*Anti-FOUC*).
-- **Tur Interaktif Layar (*Interactive Onboarding Tour*)**: 6 spotlight interaktif yang memandu pengguna baru memahami alur operasional aplikasi (`onboarding-tour.js`).
-- **Paginasi Grid Tabel AJAX (*Zero Reload*)**: Navigasi tabel Tugas, Anggota Tim, Presensi, Audit Trail, dan Timesheet instan tanpa reload halaman (`ajax-grid-manager.js`).
+### 👥 3. Direktori Anggota Tim, Grouping Perusahaan Admin & Modular Card
+- **Grouping Anggota per Perusahaan (Khusus Login Administrator)**: Administrator disajikan tampilan direktori tim yang secara otomatis terkelompok (*grouped*) per perusahaan dengan header khusus (ikon, nama, badge kode perusahaan, counter personel, dan mini KPIs: rasio tugas selesai dan akumulasi jam kerja tim).
+- **Arsitektur Modular Kartu Anggota (`_MemberCard.cshtml`)**: Komponen profil kartu anggota tim dienkapsulasi ke dalam partial view terpisah untuk performa render optimal dan konsistensi visual.
+- **Direktori Pure Grid Card Layout**: Kartu anggota tim berstruktur grid responsif dengan proteksi anti-overflow (*text-ellipsis* dan tooltip hover).
+- **Kustomisasi Banner Sampul Profil (`CoverPictureUrl`)**: Unggah cover banner profil atau gunakan template vektor SVG default (`default-profile-cover.svg`).
+- **Fitur Hapus Permanen Akun (*Permanent User Deletion*)**: Khusus peran Administrator dengan proteksi verifikasi nama target dan kata sandi admin.
 
-### 👥 3. Direktori Anggota Tim, Banner Cover Profil & Hapus Akun Permanen
-- **Pure Grid Card Layout**: Kartu anggota tim berstruktur grid responsif dengan proteksi anti-overflow (*text-ellipsis* dan tooltip hover).
-- **Kustomisasi Banner Sampul Profil (`CoverPictureUrl`)**: Unggah gambar cover banner profil atau gunakan template vektor SVG default (`default-profile-cover.svg`).
-- **Fitur Hapus Permanen Akun (*Permanent User Deletion*)**: Khusus peran Administrator dengan proteksi konfirmasi ganda verifikasi nama target dan kata sandi admin.
-- **Admin Password Reset**: Fasilitas reset kata sandi langsung dari kartu anggota disertai notifikasi email otomatis.
+### 💼 4. Manajemen Proyek, Analitik Finansial & Alokasi Massal Tugas
+- **Pelacakan Keuangan Proyek (Project Financials)**: Pencatatan Pagu Anggaran (*Budget*) dan Biaya Aktual (*Actual Cost*) per proyek.
+- **Indikator Visual Financial Burn Rate (%)**: Menampilkan serapan biaya secara real-time dengan kode warna dinamis: Hijau (<80%), Kuning/Amber (80-100%), dan Merah/Rose (>100% Peringatan Overbudget).
+- **Identitas Klien & Project Manager (PM)**: Kolom Nama Klien (*ClientName*) dan penugasan Project Manager (*ProjectManagerId*) dari tim.
+- **Alokasi Massal Tugas ke Proyek (Bulk Task Assignment)**: Modal checklist pada detail proyek (`/Project/Details/{id}`) untuk menugaskan sekumpulan tugas lepas ke dalam proyek dalam satu klik (`POST /Project/AssignTasks`).
+- **Standarisasi Tata Letak Lebar (Wide Layout)**: Antarmuka Proyek diselaraskan dengan tata letak layar penuh responsif serasi dengan modul Kalender dan Presensi.
 
-### ⏱️ 4. Timesheet, Multi-Timer & Penyatuan Form Edit Tugas
-- **Penyatuan Formulir Edit Tugas & Timesheet Manual (`SaveTaskAndSession`)**: Satu tombol simpan terpadu untuk memperbarui detail tugas dan mencatat sesi jam kerja manual baru sekaligus.
+### ⏱️ 5. Timesheet, Multi-Timer & Penyatuan Form Edit Tugas
+- **Penyatuan Formulir Edit Tugas & Timesheet Manual (`SaveTaskAndSession`)**: Satu tombol simpan terpadu untuk memperbarui detail tugas dan mencatat sesi jam kerja manual baru sekaligus secara atomik.
 - **Multi-Timer Serentak**: Menjalankan beberapa timer tugas bersamaan tanpa saling mengganggu antar pengguna.
 - **Laporan Excel Timesheet Resmi (ClosedXML)**: Ekspor multi-sheet dengan rincian harian, rekapitulasi per proyek, konversi Man-Days, dan formula otomatis.
 
-### 🎮 5. Gamifikasi, Daily Check-In & Modul Klaim Hadiah
-- **Integrasi Card & Spanduk Dashboard**: Tampilan kartu metrik ke-5 *Daily Check-In & Streak* di Dashboard personal dengan tombol aksi cepat *1-click check-in* (+10 Poin) dan spanduk pengingat interaktif beranimasi.
-- **Daily Check-In Harian & Aturan Streak**: Klaim poin harian rutin. Streak terjaga setiap hari; jika tidak check-in selama 2 hari berturut-turut (`gap >= 2 hari`), streak kembali ke awal (Hari 1).
-- **Hadiah Bulanan (Streak 30 Hari)**: Menyelesaikan streak 30 hari penuh (1 bulan) membuka status pencapaian bulanan, bonus 500 poin, dan hak klaim hadiah eksklusif.
-- **Koleksi 40+ Master Badge Gaul & Modern**: Lencana pencapaian dengan nama & deskripsi berbahasa Indonesia gaya modern anak muda (*Si Paling Eksekutor*, *Kopi & Keringat*, *Jawara Timesheet*, *Pawang JSON*, *Dewa SQL*, *Sultan Check-In*, dsb.).
-- **Modul Klaim Hadiah (Reward Claim)**: Saldo poin dapat ditukar ke Voucher Pulsa/E-Wallet, Kopi, Merchandise, atau Hadiah Bulanan dengan kalkulasi saldo ketat khusus dari **Poin Badge + Poin Check-In** (1 Poin = Rp 100, nilai dapat dikustomisasi di Master Data) dengan approval Administrator.
+### 🎮 6. Gamifikasi, Aturan Poin 15 & 30 Hari & Reset Saldo Bulanan
+- **Saldo Bulanan Dimulai dari 0**: Akumulasi saldo poin check-in seluruh pengguna dimulai kembali dari `0` pada awal bulan kalender untuk menjaga konsistensi absensi yang aktif.
+- **Aturan Akumulasi Poin Check-In 15 & 30 Hari**:
+  - *15 Hari Check-In*: Memperoleh **1/2 (50%)** dari total akumulasi target poin check-in bulanan.
+  - *30 Hari Check-In (Penuh)*: Memperoleh **1x (100%)** total akumulasi poin bulanan secara utuh.
+- **Akumulasi Poin Badge Aditif**: Poin dari 40+ lencana prestasi (*Master Badges*) bersifat permanen dan **ditambahkan langsung di atas** saldo akumulasi poin check-in bulanan.
+- **Daily Check-In Harian & Aturan Streak (Reset 2 Hari)**: Tombol *1-click check-in* (+10 Poin) dan streak counter api. Toleransi absen 2 hari berturut-turut sebelum streak di-reset ke Hari 1.
+- **Modul Klaim Hadiah (Reward Claim)**: Saldo poin dapat ditukar ke Voucher Pulsa/E-Wallet, Kopi, Merchandise, atau Hadiah Bulanan dengan kalkulasi saldo ketat (1 Poin = Rp 100) dan approval Administrator.
 
-### 📋 6. Manajemen Tugas, Proyek, Presensi & Developer Tools
-- **Pencarian Tugas Induk Select2 (Parent Task)**: Memilih dan menghubungkan sub-tugas ke tugas induk kini dilengkapi autocomplete pencarian ketik cepat dengan Select2.
-- **Hierarki Parent-Child Tasks & Kanban Board SortableJS**.
-- **Pencatatan Kendala (Obstacle) & Solusi (Solution)** untuk evaluasi sprint.
-- **Presensi Terintegrasi (Check In/Out, WFH, Sakit, Izin, Cuti)** & Rekonsiliasi Tim.
-- **Developer Tools Terpadu**: SQL Beautifier/Formatter mendukung 15+ dialek database dan JSON Payload Tools dengan sistem riwayat terformat.
-- **Ekspor/Impor Excel Ganda**: Format Standar 9-kolom dan Format ARMS 21-kolom.
+### 🎨 7. 40 Tema Eye-Friendly & 5 Google Fonts Switcher
+- **40 Tema Tampilan Dinamis**: 22 Tema Terang + 18 Tema Gelap ramah mata bertenaga CSS custom tokens (`themes.css`).
+- **Global Font Switcher**: 5 opsi Google Fonts pilihan (*Inter, Plus Jakarta Sans, Outfit, Poppins, Roboto*) instan tanpa reload halaman (*Anti-FOUC*).
+- **Tur Interaktif Layar (*Interactive Onboarding Tour*)**: 6 spotlight interaktif memandu pengguna baru (`onboarding-tour.js`).
+- **Paginasi Grid Tabel AJAX (*Zero Reload*)**: Navigasi tabel Tugas, Anggota Tim, Presensi, Audit Trail, dan Timesheet instan (`ajax-grid-manager.js`).
 
-### 🛡️ 7. Pemeliharaan Sistem, Audit Trail Detail Modal & Restore Database
+### 🛡️ 8. Konfigurasi Sistem 4-Tab Modular, Audit Trail & Backup
+- **Arsitektur Konfigurasi 4-Tab Modular (`/Configuration`)**:
+  1. *Sinkronisasi Host Induk & Cabang*: Parameter host, uji ping, push/pull sync.
+  2. *Database & Pemeliharaan*: Monitoring SQLite, VACUUM compaction, backup/restore `.db` & `.sql`.
+  3. *Server Email & Notifikasi*: Pengaturan SMTP, live latency diagnostics, dan 7 template email event WYSIWYG.
+  4. *Umum & Swagger API*: Global base URL, runtime environment, dan link Swagger docs.
 - **Popup Modal Detail Audit Trail**: Inspeksi detail aktivitas audit, parameter HTTP, IP address, waktu eksekusi, dan detail perubahan data secara instan dalam modal responsif.
-- **Backup & Restore Database Fleksibel**: Kemudahan pencadangan dan pemulihan database secara instan menggunakan berkas SQL Script (`.sql`) maupun biner SQLite Database (`.db`).
-- **Sinkronisasi Multi-Instance Host Induk**: Push & pull sinkronisasi transaksi database dan file lampiran online via REST API Base64 streaming atau offline via paket ZIP mandiri.
-- **Integrasi Server Email (SMTP)**: Diagnostik koneksi langsung dan 7 template email event dengan visual preview real-time.
 
 ---
 

@@ -5,14 +5,14 @@
 
 ### INFORMASI DOKUMEN
 - **Nama Aplikasi**: Work Tracker Pro (TrackerKerja)
-- **Versi Dokumen**: 3.6 (Enterprise Security, Dual Auth, Multi-Instance & UI Ergonomics Edition)
+- **Versi Dokumen**: 3.7 (Multi-Company Corporate Code Isolation, Project Finance, Admin Company Grouping & Gamification Edition)
 - **Status**: Disetujui & Terimplementasi Penuh (Production-Ready)
 - **Target Platform**: Web Application (ASP.NET Core 8.0 MVC / REST API / Docker Linux Container)
 - **Basis Data**: Entity Framework Core 8.0 dengan SQLite Database Engine (`/app/data/trackerkerja.db` via `./db_data` volume)
 - **Engine Spreadsheet**: ClosedXML 0.104.2 (Format ARMS 21-kolom, Template Standar 9-kolom, & Timesheet Personal)
 - **Dokumentasi REST API**: OpenAPI 3.0 via Swashbuckle Swagger UI (`/swagger`) dengan Strict JWT Bearer Authorization & Postman Collection
 - **Repositori Source Code**: [https://github.com/zhavick/TrackerKerja.git](https://github.com/zhavick/TrackerKerja.git)
-- **Tanggal Rilis & Pembaruan**: 24 September 2026
+- **Tanggal Rilis & Pembaruan**: 29 September 2026
 
 ---
 
@@ -209,6 +209,11 @@ erDiagram
         string Color
         int Status
         int CompanyId FK
+        string ClientName
+        string ProjectManagerId FK
+        decimal Budget
+        decimal ActualCost
+        string Tags
         datetime Deadline
         datetime CreatedAt
     }
@@ -455,10 +460,20 @@ erDiagram
   - **Persetujuan (Approve)**: Admin menekan tombol *Setujui Akun* atau memanggil API `POST /api/members/{id}/approve`. Field `IsApproved` diubah menjadi `true`, `ApprovedAt` mencatat waktu persetujuan, dan `ApprovedByUserId` mencatat admin penanggung jawab. Sistem secara otomatis mengirimkan email konfirmasi `USER_APPROVED` kepada pengguna bersangkutan.
   - **Penolakan (Reject)**: Admin dapat menolak pendaftaran disertai catatan alasan penolakan (`RejectionReason`) melalui Web UI atau API `POST /api/members/{id}/reject`. Sistem mengirimkan email pemberitahuan penolakan `USER_REJECTED` dan menghapus rekaman registrasi akun.
 
-#### 5.1.4 Modul Multi-Tenancy Organisasi & Perusahaan (Company Isolation)
-- Setiap pengguna, proyek, tugas, dan catatan kerja terhubung ke entitas Perusahaan/Organisasi (`CompanyId`).
-- Pada saat pendaftaran, pengguna dapat memilih untuk bergabung dengan perusahaan yang sudah ada (`CompanyOption = existing`) atau mendaftarkan nama/kode perusahaan baru (`CompanyOption = new`).
-- **Isolasi Data**: Pengguna reguler hanya dapat melihat dan mengakses proyek, tugas, dan catatan yang berada dalam lingkup perusahaan yang sama. Administrator memiliki visibilitas penuh terhadap seluruh entitas untuk keperluan audit dan pengawasan lintas tim.
+#### 5.1.4 Modul Multi-Tenancy Organisasi & Perusahaan (Company Isolation & Corporate Code Registration)
+- **Registrasi Berbasis Kode Perusahaan (Zero-Knowledge Privacy Protection)**:
+  - Antarmuka registrasi publik (`/Account/Register`) **tidak menampilkan daftar nama perusahaan yang sudah terdaftar** untuk mencegah kebocoran informasi dan enumerasi entitas klien oleh pihak luar.
+  - Alur pendaftaran menyediakan 2 tab terpisah:
+    1. **Masukkan Kode Perusahaan (`CompanyOption = existing`)**: Calon pengguna wajib menginput kode perusahaan yang sah (`ExistingCompanyCode`, otomatis diformat uppercase). Sistem memverifikasi kecocokan kode di database; jika tidak ditemukan, registrasi ditolak dengan pesan peringatan.
+    2. **Daftarkan Perusahaan Baru (`CompanyOption = new`)**: Calon pengguna mendaftarkan entitas perusahaan baru dengan melengkapi Nama Perusahaan (`NewCompanyName`) dan Kode Perusahaan Unik (`NewCompanyCode`, minimal 3 karakter alfanumerik uppercase). Sistem memvalidasi keunikan kode agar tidak terjadi duplikasi.
+- **Isolasi Data Penuh (Strict Multi-Tenant Scoping)**:
+  - Seluruh query data (Proyek, Tugas, Catatan Kerja, Presensi, Sesi Timesheet, Kalender, dan Laporan) secara ketat dibatasi berdasarkan `CompanyId` milik pengguna yang sedang login melalui `TaskPermissionHelper` dan filter LINQ EF Core.
+  - Pengguna non-admin sama sekali tidak dapat melihat, mencari, maupun mengelola entitas milik perusahaan lain.
+- **Otorisasi Penuh Administrator Sistem**:
+  - Administrator sistem (Global Admin) memiliki hak akses penuh lintas perusahaan.
+  - Pada halaman Proyek (`/Project`), Tugas (`/Task`), dan Anggota Tim (`/Member`), Administrator disediakan dropdown pemilih filter perusahaan (`companyId`) untuk melihat data per entitas spesifik maupun seluruh perusahaan sekaligus.
+- **Indikator Identitas Perusahaan di Navbar Topbar**:
+  - Bilah atas (topbar layout) secara dinamis menampilkan badge perusahaan aktif pengguna: `[KODE] Nama Perusahaan` untuk member reguler, atau `[ADMIN] Semua Tim / Perusahaan` untuk Administrator.
 
 #### 5.1.5 Alur Reset Kata Sandi Mandiri, User Claim Link & Kebijakan Lockout Akun
 - **Formulir Permintaan Reset (`/Account/ForgotPassword`)**:
@@ -491,9 +506,17 @@ erDiagram
     5. **Roboto** (`roboto`): Klasik Google yang presisi, efisien dengan densitas informasi tinggi.
   - Menggunakan script Anti-FOUC di tag `<head>` agar tema dan font langsung teraplikasi sebelum perenderan DOM, mencegah kedipan visual saat halaman dimuat.
 
-### 5.4 Modul Manajemen Proyek & Kategori
-- Pengelompokan tugas berdasarkan proyek multi-bulan dan kategori pekerjaan teknis.
-- Perhitungan agregasi progress penyelesaian proyek secara dinamis.
+### 5.4 Modul Manajemen Proyek, Analitik Finansial & Alokasi Massal Tugas
+- **Pengelompokan & Hierarki Kerja**: Pengelompokan tugas berdasarkan proyek multi-bulan dan kategori pekerjaan teknis dengan agregasi progress penyelesaian otomatis.
+- **Manajemen Keuangan Proyek (Project Financials & Burn Rate)**:
+  - Pencatatan Anggaran (*Budget*) dan Biaya Aktual (*Actual Cost*) per proyek.
+  - Indikator Visual *Financial Burn Rate* (Persentase Serapan Biaya): Formula $\frac{\text{ActualCost}}{\text{Budget}} \times 100\%$ dengan kode warna adaptif (Emerald untuk $<80\%$, Amber untuk $80-100\%$, dan Rose untuk serapan *Overbudget* $>100\%$).
+- **Identitas Klien & Project Manager (PM)**:
+  - Kolom Nama Klien (*ClientName*) dan pemilihan Project Manager (*ProjectManagerId*) dari daftar anggota tim.
+- **Alokasi Massal Tugas ke Proyek (Bulk Task Assignment)**:
+  - Pada detail proyek (`/Project/Detail/{id}`), manajer dapat menambahkan tugas-tugas yang belum terikat ke proyek secara massal menggunakan checklist multi-seleksi modal.
+- **Standarisasi Tata Letak Lebar (Wide Screen Layout)**:
+  - Antarmuka Proyek diselaraskan dengan tata letak lebar penuh (*wide layout*) serasi dengan modul Kalender dan Presensi.
 
 ### 5.5 Modul Manajemen Tugas, Struktur Parenting & Penyatuan Timesheet Manual
 - **Parent-Child Hierarchy**: Kemampuan menghubungkan sub-tugas ke tugas induk.
@@ -534,7 +557,17 @@ erDiagram
 - **Format Standar (9 Kolom)**: Fitur wizard preview interaktif dan penugasan PIC massal (*Bulk Assign*).
 - **Format ARMS Enterprise (21 Kolom)**: Ekspor dan impor tugas berstandar enterprise dengan pemetaan SDLC Waterfall Milestone.
 
-### 5.11 Modul Anggota Tim (Member), Direktori Pure Grid Card, Banner Profil & Hapus Permanen Akun
+### 5.11 Modul Anggota Tim (Member), Grouping Perusahaan Admin, Pure Grid Card & Hapus Permanen Akun
+- **Grouping Anggota Berdasarkan Perusahaan (Khusus Login Administrator)**:
+  - Pada antarmuka Direktori Anggota Tim (`/Member`), Administrator disajikan tampilan yang secara otomatis terkelompok (*grouped*) berdasarkan nama perusahaan masing-masing anggota.
+  - Setiap grup entitas perusahaan memiliki header tersendiri dengan:
+    1. Ikon entitas perusahaan.
+    2. Nama Perusahaan dan badge Kode Perusahaan unik (misal: `[ELISTEC]`).
+    3. Jumlah total personel yang bernaung di perusahaan tersebut.
+    4. Indikator mini KPI teragregasi (rasio tugas terselesaikan vs total tugas, dan akumulasi jam kerja tim).
+  - Pengguna reguler (non-admin) tetap melihat tampilan flat grid anggota khusus di perusahaannya sendiri sesuai prinsip isolasi data multi-tenant.
+- **Arsitektur Kartu Anggota Modular (`_MemberCard.cshtml`)**:
+  - Komponen profil kartu anggota tim dienkapsulasi ke dalam partial view terpisah guna memastikan konsistensi visual dan performa render yang optimal.
 - **Direktori Pure Grid Card Layout**:
   - Tampilan direktori tim berbasis *Pure Grid Card* responsif (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`) dengan visual kartu tim modern, avatar inisial berwarna, badge jabatan, dan ringkasan metrik jam kerja.
   - Proteksi *Anti-Overflow & Truncation* pada kartu anggota untuk menjamin estetika tata letak tetap rapi pada teks nama, email, dan jabatan yang panjang tanpa merusak layout.
@@ -606,6 +639,13 @@ erDiagram
   - `POST /api/sync/receive` — Menerima dan memproses payload sinkronisasi (database & berkas) di server host induk.
   - `GET /api/sync/export-package` — Mengunduh arsip paket sinkronisasi `.zip` (SQL + Berkas Lampiran).
   - `POST /api/sync/import-package` — Mengunggah dan mengeksekusi paket arsip `.zip` atau skrip `.sql`.
+
+#### 5.16.1 Arsitektur Antarmuka Konfigurasi Sistem 4-Tab Modular
+- Antarmuka halaman Konfigurasi Sistem (`/Configuration`) ditata secara ergonomis menjadi **4 Tab Utama Terpadu**:
+  1. **Tab 1: Sinkronisasi Host Induk & Cabang** (`tab-cfg-sync`): Pengaturan sinkronisasi multi-instance, pengujian koneksi host induk, dan riwayat sinkronisasi.
+  2. **Tab 2: Database & Pemeliharaan** (`tab-cfg-database`): Monitoring kapasitas database SQLite (ukuran berkas, page count, journal mode), fitur Shrink/Vacuum, pencadangan snapshot berkas `.db`, dan ekspor/impor skrip SQL.
+  3. **Tab 3: Server Email & Notifikasi** (`tab-cfg-email`): Pengaturan koneksi server SMTP (host, port, SSL/TLS, otentikasi), uji koneksi diagnostik realtime (latency ms), dan manajemen template email event berbasis WYSIWYG.
+  4. **Tab 4: Umum & Swagger API** (`tab-cfg-general`): Pengaturan Global Base URL, informasi runtime aplikasi, dan tautan langsung ke Swagger REST API Documentation.
 
 ### 5.17 Modul RESTful API (100+ Endpoints) & Strict Swagger JWT Bearer Authorization
 - 100+ endpoint RESTful dengan respons terstandarisasi JSON:
@@ -681,25 +721,31 @@ erDiagram
   - Dapat diakses kembali sewaktu-waktu melalui menu profil navbar atau pintasan bantuan.
 ### 5.20 Modul Gamifikasi, Daily Check-In, Aturan Streak, Master Badge Gaul & Klaim Hadiah
 Modul ini mengimplementasikan sistem gamifikasi komprehensif untuk meningkatkan kedisiplinan dan retensi pengguna melalui pengumpulan poin, streak check-in, lencana prestasi, dan penukaran hadiah nyata:
-- **5.20.1 Daily Check-In Harian & Aturan Streak (Reset 2 Hari)**:
+- **5.20.1 Saldo Awal & Aturan Akumulasi Poin Bulanan (Aturan 15 & 30 Hari)**:
+  - Saldo poin gamifikasi untuk setiap pengguna selalu **dimulai dari 0** pada awal periode bulanan.
+  - Akumulasi poin check-in dihitung berdasarkan pencapaian disiplin check-in pengguna:
+    1. **Pencapaian 15 Hari**: Pengguna yang konsisten menjalankan daily check-in selama 15 hari memperoleh **1/2 (50%)** dari total akumulasi poin target check-in bulanan.
+    2. **Pencapaian 30 Hari (Penuh)**: Pengguna yang menyelesaikan daily check-in hingga 30 hari penuh memperoleh **1x (100%)** total akumulasi saldo poin secara utuh.
+  - **Akumulasi Poin Badge**: Perolehan poin dari lencana (*Badge*) bersifat aditif langsung dan ditambahkan ke dalam total saldo akumulasi check-in bulanan pengguna.
+- **5.20.2 Daily Check-In Harian & Aturan Streak (Reset 2 Hari)**:
   - Setiap pengguna yang terautentikasi dapat melakukan klaim poin check-in 1 kali per hari kalender melalui endpoint `POST /Gamification/CheckIn`.
   - Poin yang diperoleh per check-in diatur secara dinamis melalui pengaturan master data (`Gamification_DailyCheckInPoints`, default: 10 poin).
   - **Aturan Streak**: Jika pengguna check-in setiap hari berurutan, nilai `StreakDay` bertambah `+1` per hari.
   - **Aturan Toleransi & Reset**: Jika pengguna tidak melakukan check-in selama 2 hari berturut-turut (`gap >= 2 hari`), hitungan streak otomatis di-reset kembali ke awal (Hari 1). Jika selisihnya 1 hari (kemarin check-in, hari ini check-in), streak berlanjut.
-- **5.20.2 Monthly Streak Milestone (Streak 30 Hari)**:
+- **5.20.3 Monthly Streak Milestone (Streak 30 Hari)**:
   - Pengguna yang mencapai streak berturut-turut selama **30 hari (1 bulan)** membuka status pencapaian bulanan (`IsMonthlyMilestone = true`), memperoleh bonus poin besar (`Gamification_MonthlyStreakBonusPoints`, default: 500 poin), serta berhak mengklaim reward berkategori `IsMonthlyMilestoneReward = true`.
-- **5.20.3 Koleksi 40+ Master Badge Gaul & Modern Anak Muda**:
+- **5.20.4 Koleksi 40+ Master Badge Gaul & Modern Anak Muda**:
   - Seluruh lencana master menggunakan penamaan dan deskripsi berbahasa Indonesia gaya modern anak muda yang memotivasi (*Si Paling Eksekutor*, *Kopi & Keringat*, *Jawara Timesheet*, *Pawang JSON*, *Dewa SQL*, *Sultan Check-In*, *MVP Idola Kantor*, dll.).
   - Evaluasi badge otomatis terjadi setiap kali ada aksi relevan (tugas selesai, jam kerja terkumpul, presensi, catatan, beautify JSON, beautify SQL, login, logout, check-in count, dan streak harian).
-- **5.20.4 Modul Klaim Hadiah & Pembatasan Saldo Poin**:
+- **5.20.5 Modul Klaim Hadiah & Pembatasan Saldo Poin**:
   - Saldo poin yang dapat ditukarkan dihitung secara ketat hanya dari akumulasi:
-    $$\text{Poin Tersedia} = (\text{Poin Badge} + \text{Poin Daily Check-In}) - \text{Poin Klaim Terpakai}$$
+    $$\text{Poin Tersedia} = (\text{Poin Badge} + \text{Poin Akumulasi Check-In}) - \text{Poin Klaim Terpakai}$$
   - **Nilai Tukar Poin (Konversi Rupiah)**: Secara default **1 Poin = Rp 100** (`Gamification_PointValueRupiah`, dapat dikustomisasi Administrator pada Master Data).
   - Pengguna mengajukan klaim hadiah dengan mengisi rincian kontak/alamat. Stok barang berkurang seketika dan status klaim berstatus `Pending`.
-- **5.20.5 Manajemen Master Data Hadiah & Alur Approval Admin**:
+- **5.20.6 Manajemen Master Data Hadiah & Alur Approval Admin**:
   - Administrator mengelola katalog hadiah (Nama, Biaya Poin, Stok, Kategori, Ikon FontAwesome, Warna, dan status reward bulanan).
   - Administrator dapat memproses persetujuan klaim: **Setujui (Approved)**, **Selesaikan (Completed)**, atau **Tolak (Rejected)**. Jika ditolak, sistem otomatis mengembalikan stok barang dan mengembalikan poin ke saldo pengguna.
-- **5.20.6 Integrasi Card & Widget Pengingat Check-In pada Dashboard Utama**:
+- **5.20.7 Integrasi Card & Widget Pengingat Check-In pada Dashboard Utama**:
   - **Kartu Metrik ke-5 (Personal Metrics)**: Dashboard menampilkan kartu *Daily Check-In & Streak* di samping 4 kartu metrik utama. Jika pengguna belum check-in, kartu menampilkan tombol *Check-In Sekarang (+10 Poin)* dengan indikator api menyala.
   - **Spanduk Pengingat Wajib Hari Ini**: Spanduk cerdas beranimasi di bawah salam personal yang memberitahukan sisa streak, peringatan reset 2 hari, dan tombol aksi langsung tanpa reload peramban.
 

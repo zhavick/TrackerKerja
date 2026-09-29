@@ -2,11 +2,11 @@
 # WORK TRACKER PRO (TRACKERKERJA)
 
 > **Dokumen Spesifikasi Teknis: Arsitektur Pengambilan Data, Controller, API Endpoint, Layanan Backend, dan Desain Basis Data Relasional**  
-> **Versi Sistem:** v3.6 Enterprise Security & Multi-Instance Edition  
+> **Versi Sistem:** v3.7 Multi-Company Isolation, Project Finance, Admin Company Grouping & Gamification Edition  
 > **Target Framework:** .NET 8.0 (C# 12), ASP.NET Core MVC & RESTful Web API, Entity Framework Core 8  
 > **Mesin Basis Data:** SQLite 3 (Write-Ahead Logging / WAL Mode)  
 > **Status Dokumen:** Approved & Published  
-> **Tanggal Rilis:** 24 September 2026  
+> **Tanggal Rilis:** 29 September 2026  
 
 ---
 
@@ -19,7 +19,7 @@
    - 1.4 Pipeline Autentikasi Ganda (Dual Authentication Pipeline)
 2. [SPESIFIKASI TEKNIS PENGAMBILAN DATA BERDASARKAN MODUL](#2-spesifikasi-teknis-pengambilan-data-berdasarkan-modul)
    - 2.1 Modul Manajemen Tugas & Sub-Tugas (Tasks, Subtasks, Kanban & Obstacles)
-   - 2.2 Modul Proyek & Milestone Fase SDLC (Projects & Milestones)
+   - 2.2 Modul Proyek, Analitik Finansial & Alokasi Massal Tugas (Projects & Milestones)
    - 2.3 Modul Timesheet & Multi-Timer Sesi Kerja (Timesheets & WorkSessions)
    - 2.4 Modul Presensi Terpadu & Rekonsiliasi Kehadiran (Attendance Records)
    - 2.5 Modul Direktori Anggota Tim, Profil & Manajemen Akun (Members & Identity)
@@ -42,7 +42,7 @@
 4. [STANDAR KEAMANAN AKSES DATA & TRANSAKSI](#4-standar-keamanan-akses-data--transaksi)
    - 4.1 Transaksi Atomik Multi-Tabel (`IDbContextTransaction`)
    - 4.2 Proteksi SQL Injection & Parameterized LINQ
-   - 4.3 Isolasi Multi-Tenancy Berbasis `CompanyId`
+   - 4.3 Isolasi Multi-Tenancy Berbasis `CompanyId` & Registrasi Kode Perusahaan
    - 4.4 Keamanan File Upload & MIME Whitelisting
 
 ---
@@ -54,11 +54,11 @@
 | Properti Dokumen | Rincian Teknis |
 | :--- | :--- |
 | **Nama Dokumen** | Technical Specification Document (TSD) Work Tracker Pro |
-| **Kode Dokumen** | TSD-WTP-3.6-202609 |
-| **Versi Aplikasi** | v3.6 Enterprise Security & Multi-Instance Edition |
+| **Kode Dokumen** | TSD-WTP-3.7-202609 |
+| **Versi Aplikasi** | v3.7 Multi-Company Isolation, Project Finance, Admin Company Grouping & Gamification Edition |
 | **Arsitek Sistem** | Senior Systems & Software Engineering Team |
 | **Klasifikasi Akses** | Internal Development Team, Technical Leads, DevOps, & DB Administrator |
-| **Tanggal Pembaruan** | 24 September 2026 |
+| **Tanggal Pembaruan** | 29 September 2026 |
 
 ---
 
@@ -290,28 +290,36 @@ public async Task<IActionResult> Edit(
 
 ---
 
-### 2.2 Modul Proyek & Milestone Fase SDLC (Projects & Milestones)
+### 2.2 Modul Proyek, Analitik Finansial & Alokasi Massal Tugas (Projects & Milestones)
 
 #### A. Ringkasan Endpoint & Fungsi
 
 | Tipe | Route / URL | Controller | Nama Fungsi / Prosedur | Keterangan |
 | :--- | :--- | :--- | :--- | :--- |
-| **MVC** | `GET /Project/Index` | `ProjectController` | `Task<IActionResult> Index(...)` | Menampilkan kartu proyek dengan persentase progres |
-| **MVC** | `GET /Project/Details/{id}` | `ProjectController` | `Task<IActionResult> Details(int id)` | Menampilkan tugas-tugas di dalam proyek dan rekap jam |
+| **MVC** | `GET /Project/Index` | `ProjectController` | `Task<IActionResult> Index(...)` | Menampilkan kartu proyek dengan persentase progres, Serapan Budget, Client, dan PM |
+| **MVC** | `GET /Project/Details/{id}` | `ProjectController` | `Task<IActionResult> Details(int id)` | Menampilkan tugas-tugas proyek, rekap jam, burn rate finansial, dan modal bulk assign |
+| **MVC** | `POST /Project/AssignTasks` | `ProjectController` | `Task<IActionResult> AssignTasks(int projectId, int[] taskIds)` | Menugaskan sekumpulan tugas sekaligus ke dalam proyek (*Bulk Task Assignment*) |
 | **API** | `GET /api/projects` | `ProjectsApiController` | `Task<IActionResult> GetAll(...)` | Mengambil daftar proyek terfilter status dan perusahaan |
 | **API** | `GET /api/projects/{id}` | `ProjectsApiController` | `Task<IActionResult> GetById(int id)` | Mengambil detail proyek beserta ringkasan progres tugas |
 | **API** | `GET /api/projects/{id}/tasks`| `ProjectsApiController` | `Task<IActionResult> GetProjectTasks(...)`| Mengambil daftar seluruh tugas milik proyek tertentu |
-| **API** | `GET /api/projects/{id}/analytics`| `ProjectsApiController` | `Task<IActionResult> GetProjectAnalytics(...)`| Menghitung rekapitulasi waktu kerja dan status tugas |
+| **API** | `GET /api/projects/{id}/analytics`| `ProjectsApiController` | `Task<IActionResult> GetProjectAnalytics(...)`| Menghitung rekapitulasi waktu kerja, biaya, dan status tugas |
 
-#### B. Logika Pengambilan Data Proyek & Perhitungan Progres
-Pada `ProjectsApiController.GetAll(...)`:
+#### B. Logika Pengambilan Data Proyek & Kalkulasi Finansial
+1. **Pengambilan Proyek & Metrik Finansial (`ProjectController.Index` & `ProjectsApiController.GetAll`)**:
 ```csharp
 var query = _db.Projects
     .Include(p => p.Company)
+    .Include(p => p.ProjectManager)
     .Include(p => p.Tasks)
         .ThenInclude(t => t.Sessions)
     .AsNoTracking()
     .AsQueryable();
+
+// Multi-tenancy filter
+if (!isAdmin && currentUser != null)
+    query = query.Where(p => p.CompanyId == userCompanyId);
+else if (companyId.HasValue)
+    query = query.Where(p => p.CompanyId == companyId.Value);
 
 // Proyeksi ke DTO dan kalkulasi agregasi
 var result = await query.Select(p => new ProjectResponseDto
@@ -319,6 +327,12 @@ var result = await query.Select(p => new ProjectResponseDto
     Id = p.Id,
     Name = p.Name,
     Description = p.Description,
+    ClientName = p.ClientName,
+    ProjectManagerId = p.ProjectManagerId,
+    ProjectManagerName = p.ProjectManager != null ? p.ProjectManager.FullName : "-",
+    Budget = p.Budget,
+    ActualCost = p.ActualCost,
+    BurnRatePercent = p.Budget > 0 ? (int)Math.Round((double)(p.ActualCost / p.Budget * 100)) : 0,
     Color = p.Color,
     Deadline = p.Deadline,
     Status = p.Status.ToString(),
@@ -329,6 +343,31 @@ var result = await query.Select(p => new ProjectResponseDto
     ProgressPercent = p.Tasks.Any() ? (int)Math.Round(p.Tasks.Average(t => (double)t.Progress)) : 0,
     TotalDurationSeconds = p.Tasks.SelectMany(t => t.Sessions).Sum(s => s.Duration)
 }).ToListAsync();
+```
+
+2. **Alokasi Massal Tugas ke Proyek (`ProjectController.AssignTasks`)**:
+```csharp
+[HttpPost]
+[ValidateAntiForgeryToken]
+public async Task<IActionResult> AssignTasks(int projectId, int[] taskIds)
+{
+    if (taskIds == null || taskIds.Length == 0)
+        return RedirectToAction(nameof(Details), new { id = projectId });
+
+    var tasks = await _db.Tasks
+        .Where(t => taskIds.Contains(t.Id))
+        .ToListAsync();
+
+    foreach (var task in tasks)
+    {
+        task.ProjectId = projectId;
+        task.UpdatedAt = DateTimeHelper.Now;
+    }
+
+    await _db.SaveChangesAsync();
+    TempData["SuccessMessage"] = $"{tasks.Count} tugas berhasil dialokasikan ke proyek.";
+    return RedirectToAction(nameof(Details), new { id = projectId });
+}
 ```
 
 ---
@@ -407,7 +446,7 @@ await _db.SaveChangesAsync();
 
 | Tipe | Route / URL | Controller | Nama Fungsi / Prosedur | Keterangan |
 | :--- | :--- | :--- | :--- | :--- |
-| **MVC** | `GET /Member/Index` | `MemberController` | `Task<IActionResult> Index(...)` | Merender Pure Grid Card Layout anggota tim |
+| **MVC** | `GET /Member/Index` | `MemberController` | `Task<IActionResult> Index(...)` | Merender Pure Grid Card Layout anggota tim (Admin: terkelompok per perusahaan dengan header & mini KPI; Non-Admin: terisolasi) |
 | **MVC** | `GET /Member/Details/{id}` | `MemberController` | `Task<IActionResult> Details(string id)` | Menampilkan statistik tugas, badge, dan log kerja pengguna |
 | **MVC** | `POST /Member/DeletePermanent`| `MemberController` | `Task<IActionResult> DeletePermanent(...)`| **Admin Hard Delete:** Menghapus akun dan seluruh dependensi |
 | **MVC** | `GET /Account/Profile` | `AccountController` | `Task<IActionResult> Profile()` | Merender form profil, avatar, dan kustomisasi banner cover |
@@ -424,6 +463,23 @@ Fungsi ini dieksekusi dalam transaksi basis data untuk menjaga integritas relasi
 5. Menghapus berkas fisik avatar dan cover banner dari direktori `/wwwroot/uploads/avatars` dan `/wwwroot/uploads/covers`.
 6. Melakukan *cascade cleanup* pada seluruh entitas terkait (`Sessions`, `Attendances`, `UserBadges`, `NoteAttachments`, `Notes`) dan menetapkan `AssignedToUserId = null` pada tugas-tugas yang sebelumnya ditugaskan kepada pengguna tersebut.
 7. Memanggil `_userManager.DeleteAsync(targetUser)`.
+
+#### C. Pengelompokan Anggota per Perusahaan untuk Administrator (`MemberController.Index` & `_MemberCard.cshtml`)
+Pada tampilan Direktori Anggota Tim:
+1. **Logika Pengelompokan (Admin Grouping)**:
+   ```csharp
+   // Di View Views/Member/Index.cshtml saat User.IsInRole("Admin")
+   var companyGroups = Model.GroupBy(m => m.Company?.Name ?? "Tanpa Perusahaan")
+                            .OrderBy(g => g.Key);
+   ```
+2. **Komponen Header Kelompok Perusahaan**:
+   - Ikon entitas perusahaan (`fas fa-building`).
+   - Nama Perusahaan beserta badge unik Kode Perusahaan (misal: `[ELISTEC]`).
+   - Counter total personil yang terdaftar dalam perusahaan tersebut.
+   - Indikator Mini KPI Agregasi: Rasio tugas selesai vs total tugas anggota tim, serta akumulasi jam kerja (*work hours*) tim pada perusahaan tersebut.
+3. **Arsitektur Modular Kartu Anggota (`_MemberCard.cshtml`)**:
+   - Kartu anggota tim diekstraksi ke dalam partial view `_MemberCard.cshtml` untuk rendering seragam baik pada tampilan berkelompok (Admin) maupun tampilan flat grid reguler (Non-admin).
+   - Menampilkan avatar dengan inisial berwarna, badge nama & email terproteksi anti-overflow, role badge, total jam kerja, rasio tugas selesai, dan tombol aksi detail/reset password.
 
 ---
 
@@ -505,8 +561,15 @@ await _db.SaveChangesAsync();
 | **API** | `GET /api/gamification/leaderboard` | `GamificationApiController` | `Task<IActionResult> GetLeaderboard(...)`| Menghitung peringkat EXP dan produktivitas tim |
 | **API** | `POST /api/gamification/award` | `GamificationApiController` | `Task<IActionResult> AwardBadgeManual(...)`| Admin memberikan badge khusus (e.g. MVP Idola Kantor) |
 
-#### B. Logika Layanan Backend & Aturan Streak (`GamificationService`)
-1. **Aturan Streak & Reset 2 Hari (`GetDailyCheckInStatusAsync`)**:
+#### B. Logika Layanan Backend, Aturan Akumulasi Poin & Streak (`GamificationService`)
+1. **Aturan Akumulasi Poin Bulanan & Reset Saldo (Aturan 15 & 30 Hari)**:
+   - **Saldo Bulanan Dimulai dari 0**: Pada awal setiap bulan kalender, akumulasi saldo poin check-in pengguna dimulai dari `0` untuk mendorong konsistensi harian yang aktif.
+   - **Ketentuan Akumulasi Poin Check-In**:
+     - **Pencapaian 15 Hari**: Anggota yang konsisten melakukan daily check-in selama 15 hari berhak atas **1/2 (50%)** dari total akumulasi target poin check-in bulanan.
+     - **Pencapaian 30 Hari (Penuh)**: Anggota yang menyelesaikan check-in hingga 30 hari penuh berhak atas **1x (100%)** total akumulasi poin bulanan secara penuh.
+   - **Akumulasi Poin Badge (Aditif)**: Seluruh poin yang diperoleh dari pembukaan lencana prestasi (*Master Badges*) bersifat permanen dan **ditambahkan langsung di atas** saldo akumulasi poin check-in bulanan pengguna.
+
+2. **Aturan Streak & Reset 2 Hari (`GetDailyCheckInStatusAsync`)**:
    ```csharp
    // Hitung selisih hari dari check-in terakhir
    var daysDiff = (today - lastCheckIn.CheckInDate).Days;
@@ -522,18 +585,18 @@ await _db.SaveChangesAsync();
        currentStreak = 0;
    }
    ```
-2. **Kalkulasi Saldo Poin Ketat (`GetUserPointsSummaryAsync`)**:
-   $$\text{PointsAvailable} = (\text{BadgePoints} + \text{DailyCheckInPoints}) - \text{PointsSpentNonRejectedClaims}$$
+3. **Kalkulasi Saldo Poin Ketat (`GetUserPointsSummaryAsync`)**:
+   $$\text{PointsAvailable} = (\text{BadgePoints} + \text{MonthlyAccumulatedCheckInPoints}) - \text{PointsSpentNonRejectedClaims}$$
    - Konversi Rupiah: $\text{RupiahEquivalent} = \text{PointsAvailable} \times \text{PointValueRupiah}$ (default: 1 Poin = Rp 100).
-3. **Klaim Hadiah & Milestone Bulanan (`ClaimRewardAsync`)**:
+4. **Klaim Hadiah & Milestone Bulanan (`ClaimRewardAsync`)**:
    - Memverifikasi stok hadiah (`Stock > 0`).
    - Memvalidasi saldo poin yang mencukupi.
    - Jika `RewardItem.IsMonthlyMilestoneReward == true`, memvalidasi apakah pengguna memiliki riwayat `IsMonthlyMilestone == true` atau memiliki badge `CHECKIN_30`.
    - Mengurangi stok barang, mencatat snapshot kurs poin, dan menyimpan klaim berstatus `Pending`.
    - Jika Admin menolak klaim (`ClaimStatus.Rejected`), stok dikembalikan (`Stock + 1`) dan saldo poin kembali utuh ke pengguna.
-4. **Evaluasi Otomatis 40+ Master Badge Gaul (`EvaluateAndAwardBadgesAsync`)**:
+5. **Evaluasi Otomatis 40+ Master Badge Gaul (`EvaluateAndAwardBadgesAsync`)**:
    Mengevaluasi secara otomatis seluruh pemicu (*trigger type*): `Auto_DoneTasks`, `Auto_TotalTasks`, `Auto_TotalHours`, `Auto_TimesheetCount`, `Auto_AttendanceCount`, `Auto_NotesCount`, `Auto_JsonCount`, `Auto_SqlCount`, `Auto_LoginCount`, `Auto_LogoutCount`, `Auto_DailyCheckInCount`, dan `Auto_DailyCheckInStreak`.
-5. **Integrasi Widget & Kartu Metrik Dashboard Personal (`HomeController.Index`)**:
+6. **Integrasi Widget & Kartu Metrik Dashboard Personal (`HomeController.Index`)**:
    - `HomeController` menyuntikkan `IGamificationService` untuk memuat `DailyCheckInStatusDto` dan `GamificationUserPointsDto`.
    - Grid metrik personal dashboard ditingkatkan menjadi 5 kartu (`Total Tasks`, `In Progress`, `Done`, `Today Work Hours`, dan `Daily Check-In & Streak`).
    - Kartu metrik ke-5 dan spanduk pengingat di atas metrik memicu `performDashboardCheckIn()` via AJAX `POST /Gamification/CheckIn` dengan proteksi token antiforgery dan efek visual confetti tanpa memuat ulang halaman.
@@ -618,6 +681,22 @@ Mengambil template dari tabel `EmailTemplates` berdasarkan `EventCode`, lalu mel
    - Menyalin berkas upload menggantikan file `trackerkerja.db` target.
    - Menginisialisasi ulang konteks dan skema.
 
+#### C. Arsitektur Antarmuka Konfigurasi Sistem 4-Tab Modular (`/Configuration`)
+Antarmuka Konfigurasi Sistem (`Views/Configuration/Index.cshtml`) dirancang ergonomis dalam **4 Tab Navigasi Terpadu**:
+1. **Tab 1: Sinkronisasi Host Induk & Cabang (`tab-cfg-sync`)**:
+   - Mengatur parameter koneksi Host Induk (Host URL, API Secret Key, SSL verification bypass).
+   - Tombol pengujian koneksi (*Test Connection / Ping*), aksi *Push Sync*, *Pull Sync*, serta riwayat log sinkronisasi.
+2. **Tab 2: Database & Pemeliharaan (`tab-cfg-database`)**:
+   - Monitoring kapasitas basis data SQLite (ukuran file fisik, total halaman, mode WAL).
+   - Aksi pemeliharaan: *Shrink Database (VACUUM)*, pencadangan berkas biner `.db`, dan ekspor/impor skrip SQL transaksional.
+3. **Tab 3: Server Email & Notifikasi (`tab-cfg-email`)**:
+   - Pengaturan koneksi SMTP (Host, Port, User, Password, SSL/TLS, toggle aktif).
+   - Diagnostik koneksi mandiri dengan pengukuran latensi milidetik (*latency ms*).
+   - Manajemen 7 template email event berbasis WYSIWYG dengan *Live Preview Modal*.
+4. **Tab 4: Umum & Swagger API (`tab-cfg-general`)**:
+   - Pengaturan konfigurasi `GlobalBaseUrl`, status runtime environment, serta tautan langsung ke dokumentasi REST API Swagger.
+   - *Catatan Desain*: Tab "Personalisasi Tema & Font" ditiadakan dari halaman ini karena fitur penyesuaian 40 tema dan 5 Google Fonts telah dapat diakses secara instan dari seluruh halaman melalui modal pemilih tema pada bilah navigasi atas (Navbar Topbar).
+
 ---
 
 ### 2.13 Modul Dashboard Eksekutif & Visualisasi Metrik (Dashboard Analytics)
@@ -685,6 +764,7 @@ erDiagram
     AspNetUsers ||--o{ UserBadges : "earns"
 
     Projects ||--o{ Tasks : "contains"
+    AspNetUsers ||--o{ Projects : "manages as PM"
     Categories ||--o{ Tasks : "categorizes"
     Tasks ||--o{ Tasks : "parent of child tasks"
     Tasks ||--o{ Sessions : "tracks work sessions"
@@ -740,6 +820,11 @@ erDiagram
         TEXT Deadline
         INTEGER Status
         INTEGER CompanyId FK
+        TEXT ClientName
+        TEXT ProjectManagerId FK
+        REAL Budget
+        REAL ActualCost
+        TEXT Tags
         TEXT CreatedAt
     }
 
@@ -982,6 +1067,7 @@ Tabel di bawah ini mendokumentasikan pemetaan kunci asing (*Foreign Keys*) beser
 | :--- | :--- | :--- | :--- | :--- | :--- |
 | `AspNetUsers` | `CompanyId` | `Companies` | `Id` | `SET NULL` | Pengguna menjadi mandiri jika perusahaan dihapus |
 | `Projects` | `CompanyId` | `Companies` | `Id` | `SET NULL` | Proyek dilepas dari afiliasi perusahaan |
+| `Projects` | `ProjectManagerId` | `AspNetUsers` | `Id` | `SET NULL` | Penanggung jawab PM dilepas jika akun dihapus |
 | `Tasks` | `CompanyId` | `Companies` | `Id` | `SET NULL` | Tugas dilepas dari afiliasi perusahaan |
 | `Tasks` | `ProjectId` | `Projects` | `Id` | `NO ACTION` | Proyek tidak dapat dihapus jika masih ada tugas aktif |
 | `Tasks` | `CategoryId`| `Categories`| `Id` | `NO ACTION` | Kategori dipertahankan jika terkait dengan tugas |
@@ -1063,6 +1149,11 @@ Menyimpan entitas proyek tempat pengelompokan tugas.
 - `Deadline` (TEXT / DateTime, Nullable)
 - `Status` (INTEGER, Not Null, Enum: 0=Active, 1=Completed, 2=Archived)
 - `CompanyId` (INTEGER, FK -> `Companies.Id`, Nullable)
+- `ClientName` (TEXT, Nullable, Max: 200)
+- `ProjectManagerId` (TEXT, FK -> `AspNetUsers.Id`, Nullable)
+- `Budget` (REAL / Decimal, Not Null, Default: 0)
+- `ActualCost` (REAL / Decimal, Not Null, Default: 0)
+- `Tags` (TEXT, Nullable, Max: 500)
 - `CreatedAt` (TEXT, Not Null)
 
 #### 5. Tabel `Categories`
@@ -1524,15 +1615,58 @@ catch (Exception)
 1. Seluruh kueri dinamis yang dibentuk melalui Entity Framework Core secara otomatis dikonversi menjadi *parameterized query* di level mesin SQLite (`@p0`, `@p1`).
 2. Pada fitur eksekusi skrip sinkronisasi atau pemulihan database, parser melakukan sanitasi perintah berbahaya dan memvalidasi tipe sintaks sebelum diteruskan ke `ExecuteSqlRawAsync`.
 
-### 4.3 Isolasi Multi-Tenancy Berbasis `CompanyId`
-Setiap request yang dieksekusi oleh pengguna non-Admin secara ketat dibatasi oleh filter klausa LINQ:
-```csharp
-if (!User.IsInRole("Admin"))
-{
-    query = query.Where(x => x.CompanyId == currentUser.CompanyId);
-}
-```
-Hal ini mencegah celah kebocoran data antar perusahaan (*cross-tenant data leakage*) baik pada antarmuka web maupun endpoint RESTful API.
+### 4.3 Isolasi Multi-Tenancy Berbasis `CompanyId` & Registrasi Kode Perusahaan
+
+Sistem menerapkan arsitektur isolasi multi-tenant yang ketat dengan privasi *Zero-Knowledge* pada registrasi:
+
+1. **Registrasi Akun Berbasis Kode Perusahaan (Zero-Knowledge Corporate Registration)**:
+   - Pada halaman publik `/Account/Register`, sistem **tidak menyediakan dropdown atau daftar nama perusahaan yang sudah terdaftar** untuk mencegah kebocoran informasi nama klien/organisasi ke pihak eksternal (*tenant enumeration prevention*).
+   - Pengguna memilih salah satu dari dua opsi registrasi:
+     - **Masukkan Kode Perusahaan (`CompanyOption = "existing"`)**:
+       Pengguna wajib menginput kode perusahaan yang sah (`ExistingCompanyCode`, otomatis dikonversi ke uppercase). Sistem memverifikasi keberadaan kode:
+       ```csharp
+       var codeClean = model.ExistingCompanyCode.Trim().ToUpper();
+       var existingCompany = await _db.Companies.FirstOrDefaultAsync(c => c.Code != null && c.Code.ToUpper() == codeClean);
+       if (existingCompany == null)
+       {
+           ModelState.AddModelError("ExistingCompanyCode", "Kode perusahaan tidak ditemukan.");
+           return View(model);
+       }
+       targetCompanyId = existingCompany.Id;
+       ```
+     - **Daftarkan Perusahaan Baru (`CompanyOption = "new"`)**:
+       Pengguna mendaftarkan unit/perusahaan baru dengan menginput Nama Perusahaan (`NewCompanyName`) dan Kode Perusahaan Unik (`NewCompanyCode`, minimal 3 karakter alfanumerik uppercase). Sistem memvalidasi keunikan kode agar tidak terjadi tumpang tindih tenant:
+       ```csharp
+       var codeClean = model.NewCompanyCode.Trim().ToUpper();
+       var duplicate = await _db.Companies.AnyAsync(c => c.Code != null && c.Code.ToUpper() == codeClean);
+       if (duplicate)
+       {
+           ModelState.AddModelError("NewCompanyCode", "Kode perusahaan ini sudah terdaftar.");
+           return View(model);
+       }
+       var newCompany = new Company { Name = model.NewCompanyName.Trim(), Code = codeClean, CreatedAt = DateTimeHelper.Now };
+       _db.Companies.Add(newCompany);
+       await _db.SaveChangesAsync();
+       targetCompanyId = newCompany.Id;
+       ```
+
+2. **Isolasi Query Data (Strict Data Scoping)**:
+   Setiap request yang dieksekusi oleh pengguna non-Admin secara ketat dibatasi oleh filter klausa LINQ:
+   ```csharp
+   if (!User.IsInRole("Admin"))
+   {
+       query = query.Where(x => x.CompanyId == currentUser.CompanyId);
+   }
+   else if (companyId.HasValue)
+   {
+       query = query.Where(x => x.CompanyId == companyId.Value);
+   }
+   ```
+   Hal ini mencegah celah kebocoran data antar perusahaan (*cross-tenant data leakage*) baik pada antarmuka web Razor maupun endpoint RESTful API.
+
+3. **Otorisasi Penuh Administrator & Indikator Topbar**:
+   - Administrator sistem memiliki hak akses global lintas tenant, dengan pemilih filter `companyId` pada modul Proyek, Tugas, dan Anggota Tim.
+   - Bilah navigasi atas (Navbar Topbar) menampilkan badge identitas perusahaan aktif: `[KODE] Nama Perusahaan` untuk member reguler, atau `[ADMIN] Semua Tim / Perusahaan` untuk Administrator.
 
 ### 4.4 Keamanan File Upload & MIME Whitelisting
 Pada modul `NoteController` dan `NotesApiController`:
@@ -1544,4 +1678,4 @@ Pada modul `NoteController` dan `NotesApiController`:
 
 ## 5. KESIMPULAN
 
-Dokumen TSD ini menjadi acuan teknis definitif bagi arsitektur sistem, pengembangan antarmuka, pembuatan integrasi API eksternal, serta pemeliharaan skema basis data **Work Tracker Pro (TrackerKerja) v3.6**. Seluruh tim teknis wajib mematuhi standar penamaan prosedur, struktur relasional tabel, dan konvensi otorisasi yang telah dijabarkan di atas.
+Dokumen TSD ini menjadi acuan teknis definitif bagi arsitektur sistem, pengembangan antarmuka, pembuatan integrasi API eksternal, serta pemeliharaan skema basis data **Work Tracker Pro (TrackerKerja) v3.7**. Seluruh tim teknis wajib mematuhi standar penamaan prosedur, struktur relasional tabel, dan konvensi otorisasi yang telah dijabarkan di atas.

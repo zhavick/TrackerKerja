@@ -1,16 +1,16 @@
 # Buku Panduan Pengguna (User Guide)
 # Work Tracker Pro (TrackerKerja)
 
-> **Versi Aplikasi**: 3.6 (Enterprise Security, Dual Auth & Multi-Instance Edition)  
+> **Versi Aplikasi**: 3.7 (Multi-Company Corporate Code Isolation, Project Finance, Admin Company Grouping & Gamification Edition)  
 > **Target Pengguna**: Seluruh Karyawan, System Analyst, Developer, QA, Technical Writer, Project Lead, dan Administrator  
-> **Terakhir Diperbarui**: 24 September 2026  
+> **Terakhir Diperbarui**: 29 September 2026  
 
 ---
 
 ## Daftar Isi Panduan
 
 1. [Pengenalan & Memulai Aplikasi](#1-pengenalan--memulai-aplikasi)
-   - 1.1 [Halaman Masuk (Login Modern Lottie & Admin Approval)](#11-halaman-masuk-login-modern-lottie--admin-approval)
+   - 1.1 [Halaman Masuk (Login Modern Lottie, Registrasi Kode Perusahaan & Admin Approval)](#11-halaman-masuk-login-modern-lottie-registrasi-kode-perusahaan--admin-approval)
    - 1.2 [Tata Letak Antarmuka, Topbar Minimalis, Tur Layar & Paginasi Grid AJAX](#12-tata-letak-antarmuka-topbar-minimalis-tur-layar--paginasi-grid-ajax)
    - 1.3 [Kustomisasi 40 Tema Tampilan & 5 Google Fonts Switcher](#13-kustomisasi-40-tema-tampilan--5-google-fonts-switcher)
    - 1.4 [Keamanan Sesi, Peringatan 5 Menit & Auto-Logout Inaktivitas 1 Jam](#14-keamanan-sesi-peringatan-5-menit--auto-logout-inaktivitas-1-jam)
@@ -28,9 +28,10 @@
    - 3.6 [Papan Kanban Interaktif (Geser & Letakkan)](#36-papan-kanban-interaktif-geser--letakkan)
    - 3.7 [Import Data Tugas dari Excel (Format Standar & Format ARMS)](#37-import-data-tugas-dari-excel-format-standar--format-arms)
    - 3.8 [Penyatuan Formulir Edit Tugas & Pengisian Jam Kerja Manual (Satu Tombol Simpan)](#38-penyatuan-formulir-edit-tugas--pengisian-jam-kerja-manual-satu-tombol-simpan)
-4. [Modul Project (Manajemen Proyek)](#4-modul-project-manajemen-proyek)
-   - 4.1 [Membuat & Mengelola Proyek](#41-membuat--mengelola-proyek)
-   - 4.2 [Memantau Linimasa, Tenggat Waktu & Progres Proyek](#42-memantau-linimasa-tenggat-waktu--progres-proyek)
+4. [Modul Project (Manajemen Proyek, Finansial & Alokasi Massal Tugas)](#4-modul-project-manajemen-proyek-finansial--alokasi-massal-tugas)
+   - 4.1 [Membuat & Mengelola Proyek (Client, PM, Budget & Actual Cost)](#41-membuat--mengelola-proyek-client-pm-budget--actual-cost)
+   - 4.2 [Analitik Finansial, Indikator Burn Rate & Linimasa Proyek](#42-analitik-finansial-indikator-burn-rate--linimasa-proyek)
+   - 4.3 [Alokasi Massal Tugas ke Proyek (Bulk Task Assignment)](#43-alokasi-massal-tugas-ke-proyek-bulk-task-assignment)
 5. [Modul Timesheet & Pelacakan Jam Kerja](#5-modul-timesheet--pelacakan-jam-kerja)
    - 5.1 [Pencatatan Jam Otomatis (Live Timer / Clock In & Clock Out)](#51-pencatatan-jam-otomatis-live-timer--clock-in--clock-out)
    - 5.2 [Penggunaan Multi-Timer Bersamaan](#52-penggunaan-multi-timer-bersamaan)
@@ -59,18 +60,18 @@
     - 10.2 [Validasi Sintaks & Minifikasi Kueri](#102-validasi-sintaks--minifikasi-kueri)
     - 10.3 [Penyimpanan Snippet Kueri SQL Terkait Tugas](#103-penyimpanan-snippet-kueri-sql-terkait-tugas)
 11. [Modul Laporan & Analitik Kinerja](#11-modul-laporan--analitik-kinerja)
-12. [Modul Anggota Tim (Member), Pure Grid Card, Banner Cover & Hapus Permanen Akun](#12-modul-anggota-tim-member-pure-grid-card-banner-cover--hapus-permanen-akun)
-13. [Modul Master Data, Sinkronisasi Multi-Instance, Email & Backup](#13-modul-master-data-sinkronisasi-multi-instance-email--backup)
-    - 13.1 [Master Kategori, Prioritas, dan Status](#131-master-kategori-prioritas-dan-status)
-    - 13.2 [Master Milestone SDLC Waterfall](#132-master-milestone-sdlc-waterfall)
-    - 13.3 [Master Hari Libur Nasional](#133-master-hari-libur-nasional)
-    - 13.4 [Sinkronisasi Multi-Instance ke Host Induk (Online Streaming Base64 & Paket ZIP)](#134-sinkronisasi-multi-instance-ke-host-induk-online-streaming-base64--paket-zip)
-    - 13.5 [Backup & Restore Database (.db & .sql)](#135-backup--restore-database-db--sql)
-    - 13.6 [Integrasi Server Email (SMTP), Diagnostik Koneksi & 7 Template Event](#136-integrasi-server-email-smtp-diagnostik-koneksi--7-template-event)
-    - 13.7 [Manajemen Template Email Event & Live Preview](#137-manajemen-template-email-event--live-preview)
+12. [Modul Anggota Tim (Member), Grouping Perusahaan Admin, Pure Grid Card & Banner Cover](#12-modul-anggota-tim-member-grouping-perusahaan-admin-pure-grid-card--banner-cover)
+13. [Modul Master Data, Konfigurasi 4-Tab, Sinkronisasi Multi-Instance & Backup](#13-modul-master-data-konfigurasi-4-tab-sinkronisasi-multi-instance--backup)
+    - 13.1 [Arsitektur Konfigurasi Sistem 4-Tab Modular](#131-arsitektur-konfigurasi-sistem-4-tab-modular)
+    - 13.2 [Master Kategori, Prioritas, dan Status](#132-master-kategori-prioritas-dan-status)
+    - 13.3 [Master Milestone SDLC Waterfall](#133-master-milestone-sdlc-waterfall)
+    - 13.4 [Master Hari Libur Nasional](#134-master-hari-libur-nasional)
+    - 13.5 [Sinkronisasi Multi-Instance ke Host Induk (Online Streaming Base64 & Paket ZIP)](#135-sinkronisasi-multi-instance-ke-host-induk-online-streaming-base64--paket-zip)
+    - 13.6 [Backup & Restore Database (.db & .sql)](#136-backup--restore-database-db--sql)
+    - 13.7 [Integrasi Server Email (SMTP), Diagnostik Koneksi & 7 Template Event](#137-integrasi-server-email-smtp-diagnostik-koneksi--7-template-event)
     - 13.8 [Audit Trail & Modal Detail Aktivitas](#138-audit-trail--modal-detail-aktivitas)
-14. [Modul Gamifikasi, Daily Check-In & Klaim Hadiah](#14-modul-gamifikasi-daily-check-in--klaim-hadiah)
-    - 14.1 [Daily Check-In Harian & Aturan Streak (Reset 2 Hari)](#141-daily-check-in-harian--aturan-streak-reset-2-hari)
+14. [Modul Gamifikasi, Aturan Poin 15 & 30 Hari, Daily Check-In & Hadiah](#14-modul-gamifikasi-aturan-poin-15--30-hari-daily-check-in--hadiah)
+    - 14.1 [Saldo Awal Bulanan (0), Aturan Poin 15/30 Hari & Aturan Streak (Reset 2 Hari)](#141-saldo-awal-bulanan-0-aturan-poin-1530-hari--aturan-streak-reset-2-hari)
     - 14.2 [Milestone Bulanan (Streak 30 Hari) & Hadiah Spesial](#142-milestone-bulanan-streak-30-hari--hadiah-spesial)
     - 14.3 [Koleksi 40+ Master Badge Gaul & Modern Anak Muda](#143-koleksi-40-master-badge-gaul--modern-anak-muda)
     - 14.4 [Katalog Hadiah & Penukaran Poin (1 Poin = Rp 100)](#144-katalog-hadiah--penukaran-poin-1-poin--rp-100)
@@ -83,7 +84,7 @@
 
 **Work Tracker Pro (TrackerKerja)** adalah aplikasi manajemen pekerjaan terpadu yang dirancang untuk mempermudah tim dalam merencanakan tugas, mencatat waktu kerja secara akurat (*timesheet*), mengelola absensi kehadiran, mendokumentasikan kendala dan solusi teknis, mengolah payload data/SQL, serta menghasilkan laporan kerja siap pakai.
 
-### 1.1 Halaman Masuk (Login Modern Lottie & Admin Approval)
+### 1.1 Halaman Masuk (Login Modern Lottie, Registrasi Kode Perusahaan & Admin Approval)
 1. **Masuk ke Aplikasi (Login)**:
    - Buka peramban web dan akses alamat aplikasi TrackerKerja.
    - Halaman login dilengkapi animasi visual **Lottie modern**, tombol sakelar instan **Mode Gelap / Terang** di pojok kanan atas tanpa reload, dan dropdown perusahaan bertenaga **Select2**.
@@ -92,15 +93,19 @@
    - Klik tombol **Masuk (Login)** untuk masuk ke Dashboard utama.
    - *Catatan Keamanan*: Jika sesi Anda kedaluwarsa karena tidak ada aktivitas selama 1 jam, sistem otomatis mengalihkan Anda kembali ke halaman ini dengan notifikasi kuning: *"Sesi Anda telah berakhir karena tidak ada aktivitas selama 1 jam. Silakan masuk kembali."*
 
-2. **Pendaftaran Pengguna Baru (Registrasi Akun Mandiri)**:
+2. **Pendaftaran Pengguna Baru Berbasis Kode Perusahaan (Zero-Knowledge Privacy)**:
    - Pada halaman login, klik tombol **Daftar Akun Baru**.
+   - Demi melindungi kerahasiaan bisnis dan mencegah kebocoran daftar klien perusahaan ke publik, formulir registrasi **tidak menampilkan daftar publik nama-nama perusahaan**.
    - Isi formulir pendaftaran:
      - **Nama Lengkap**: Nama lengkap Anda.
      - **Alamat Email**: Email aktif kantor atau pribadi.
      - **Jabatan / Posisi**: Peran kerja Anda (misal: *Lead Developer*, *Quality Assurance*, *System Analyst*).
-     - **Organisasi / Perusahaan**: Pilih nama perusahaan yang sudah terdaftar atau pilih *Buat Perusahaan Baru* untuk mendaftarkan nama/kode perusahaan tim Anda.
+     - **Pilihan Afiliasi Perusahaan**:
+       1. **Masukkan Kode Perusahaan**: Pilih opsi ini jika kantor/tim Anda telah terdaftar. Masukkan **Kode Perusahaan** (contoh: `ELISTEC`, `ACME`). Sistem akan mencocokkan kode secara otomatis dengan huruf kapital (*case-insensitive*).
+       2. **Daftarkan Perusahaan Baru**: Pilih opsi ini jika Anda adalah personel pertama yang mendaftarkan kantor/unit kerja baru. Masukkan **Nama Perusahaan** dan tentukan **Kode Perusahaan Baru** yang unik (minimal 3 karakter alfanumerik huruf kapital, misal: `CORP`). Kode ini nantinya dapat Anda bagikan kepada rekan tim agar mereka dapat bergabung ke tenant perusahaan Anda.
      - **Kata Sandi & Konfirmasi Kata Sandi**: Minimal 6 karakter dengan kombinasi huruf dan angka.
    - Klik **Daftar Sekarang**.
+   - *Prinsip Isolasi Data*: Setelah akun aktif, Anda hanya dapat melihat dan mengelola tugas, proyek, presensi, timesheet, catatan, dan anggota tim milik perusahaan Anda sendiri.
 
 3. **Alur Persetujuan Administrator (Admin Approval)**:
    - Setelah formulir registrasi dikirimkan, akun baru Anda akan berstatus **Menunggu Persetujuan (Pending Approval)**.
@@ -272,17 +277,42 @@ Untuk mempercepat alur kerja harian pengembang dan analis sistem:
 
 ---
 
-## 4. Modul Project (Manajemen Proyek)
+## 4. Modul Project (Manajemen Proyek, Finansial & Alokasi Massal Tugas)
 
-### 4.1 Membuat & Mengelola Proyek
+### 4.1 Membuat & Mengelola Proyek (Client, PM, Budget & Actual Cost)
 1. Buka menu **Proyek** (`/Project`).
 2. Klik tombol **+ Proyek Baru**.
-3. Masukkan **Nama Proyek**, **Deskripsi**, **Warna Identitas Proyek** (digunakan sebagai label pada kartu tugas), dan **Batas Akhir Proyek (Deadline)**.
+3. Isi formulir manajemen proyek lengkap:
+   - **Nama Proyek**: Nama inisiatif atau deliverable sistem (contoh: *Integrasi TCES - TCIS Enterprise*).
+   - **Nama Klien / Stakeholder**: Identitas klien pemilik proyek (contoh: *PT Telekomunikasi Indonesia*).
+   - **Project Manager (PM)**: Pilih penanggung jawab utama proyek dari daftar anggota tim.
+   - **Pagu Anggaran (Budget)**: Nilai total dana anggaran yang dialokasikan (dalam Rupiah).
+   - **Biaya Aktual (Actual Cost)**: Nilai realisasi pengeluaran berjalan untuk proyek tersebut.
+   - **Warna Identitas Proyek**: Palet warna unik yang digunakan sebagai penanda badge pada kartu tugas dan kalender.
+   - **Batas Akhir Proyek (Deadline)**: Tanggal target penyelesaian deliverable.
+   - **Deskripsi Proyek**: Ruang lingkup, arsitektur garis besar, atau catatan kerja sama.
 4. Klik **Simpan Proyek**.
 
-### 4.2 Memantau Linimasa, Tenggat Waktu & Progres Proyek
-- Setiap kartu proyek menampilkan persentase penyelesaian keseluruhan tugas, rasio tugas selesai vs total tugas, dan status ketercapaian target waktu (*On Track* atau *At Risk*).
-- Mengklik salah satu proyek akan membuka halaman khusus proyek yang menyajikan seluruh tugas, timesheet, catatan, dan linimasa yang berkaitan langsung dengan proyek tersebut.
+### 4.2 Analitik Finansial, Indikator Burn Rate & Linimasa Proyek
+- **Visualisasi Financial Burn Rate (Serapan Biaya)**:
+  - Setiap kartu proyek menampilkan persentase serapan biaya terhadap pagu anggaran:
+    $$\text{Burn Rate} = \frac{\text{Actual Cost}}{\text{Budget}} \times 100\%$$
+  - Dilengkapi indikator badge warna cerdas:
+    - **Hijau (< 80%)**: Pengeluaran aman dan terkendali.
+    - **Kuning / Amber (80% – 100%)**: Serapan biaya mendekati pagu anggaran maksimum.
+    - **Merah / Rose (> 100%)**: Peringatan keras *Overbudget* (pengeluaran melebihi anggaran yang disepakati).
+- **Standarisasi Tata Letak Lebar (Wide Layout)**:
+  - Tampilan direktori proyek dan detail proyek dirancang mengikuti standar tata letak layar lebar (*full-width responsive layout*) serasi dengan modul Kalender dan Presensi.
+- **Linimasa & Progres Tugas**:
+  - Kartu proyek menampilkan rasio tugas selesai vs total tugas, rata-rata progres persentase, total durasi jam kerja tim, serta nama Project Manager yang memimpin.
+
+### 4.3 Alokasi Massal Tugas ke Proyek (Bulk Task Assignment)
+Untuk menghemat waktu saat merapikan tugas-tugas lepas ke dalam sebuah proyek:
+1. Buka halaman detail proyek yang bersangkutan (`/Project/Details/{id}`).
+2. Pada panel daftar tugas proyek, klik tombol **+ Alokasikan Tugas Massal**.
+3. Jendela modal interaktif akan menampilkan daftar seluruh tugas aktif di perusahaan Anda yang **belum terikat pada proyek manapun**.
+4. Beri tanda centang pada tugas-tugas yang ingin dimasukkan ke proyek ini (tersedia fitur pencarian cepat di dalam modal).
+5. Klik tombol **Tugaskan ke Proyek**. Seluruh tugas terpilih akan otomatis terasosiasi dengan proyek tersebut dalam satu kali klik.
 
 ---
 
@@ -431,13 +461,19 @@ Buka menu **Laporan** (`/Report`) untuk evaluasi produktivitas:
 
 ---
 
-## 12. Modul Anggota Tim (Member), Pure Grid Card, Banner Cover & Hapus Permanen Akun
+## 12. Modul Anggota Tim (Member), Grouping Perusahaan Admin, Pure Grid Card & Banner Cover
 
 Buka menu **Anggota Tim** (`/Member`):
-- **Direktori Pure Grid Card Layout**:
-  - Seluruh anggota tim disajikan dalam format kartu grid modern dan rapi (`grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4`).
-  - Dilengkapi sistem *Anti-Overflow*: Teks nama panjang, email, dan jabatan otomatis dipotong secara estetis (*ellipsis*) dan dapat dilihat lengkap melalui tooltip saat kursor diarahkan (*hover*).
-  - Menampilkan ringkasan metrik beban kerja, tugas selesai, dan total jam kerja yang terekam.
+- **Pengelompokan Berdasarkan Nama Perusahaan (Khusus Login Administrator)**:
+  - Saat Anda masuk sebagai **Administrator Sistem**, direktori anggota secara cerdas dikelompokkan (*grouped*) berdasarkan nama perusahaan masing-masing anggota.
+  - Setiap grup entitas perusahaan memiliki kartu header tersendiri dengan:
+    1. Ikon perusahaan.
+    2. Nama Perusahaan dan badge Kode Perusahaan unik (misal: `[ELISTEC]`, `[ACME]`).
+    3. Counter total personel yang tergabung dalam perusahaan tersebut.
+    4. Indikator mini KPI teragregasi (rasio tugas terselesaikan vs total tugas, serta akumulasi total jam kerja tim).
+  - *Untuk Member Biasa*: Tampilan tetap rapi dalam format grid terisolasi khusus untuk rekan tim di perusahaan Anda sendiri.
+- **Komponen Kartu Anggota Modular (`_MemberCard.cshtml`)**:
+  - Profil setiap anggota disajikan melalui kartu modular modern dengan avatar inisial berwarna, badge nama & email terproteksi anti-overflow (teks panjang dipotong rapi dengan tooltip *hover*), role badge, ringkasan jam kerja, rasio tugas selesai, dan tombol aksi detail.
 - **Kustomisasi Banner Cover Profil Karyawan**:
   - Setiap pengguna dapat mempercantik tampilan profilnya melalui menu **Profil Akun** (`/Account/Profile`).
   - Unggah berkas gambar foto sampul (*Cover Banner*) dengan format JPG/PNG/WebP.
@@ -456,20 +492,33 @@ Buka menu **Anggota Tim** (`/Member`):
 
 ---
 
-## 13. Modul Master Data, Sinkronisasi Multi-Instance, Email & Backup
+## 13. Modul Master Data, Konfigurasi 4-Tab, Sinkronisasi Multi-Instance & Backup
 
 Khusus untuk peran **Administrator**, menu **Master Data** (`/MasterData`) dan **Konfigurasi** (`/Configuration`):
 
-### 13.1 Master Kategori, Prioritas, dan Status
+### 13.1 Arsitektur Konfigurasi Sistem 4-Tab Modular
+Halaman **Konfigurasi Sistem (`/Configuration`)** dirancang dengan tata kelola 4 Tab navigasi terpadu yang memisahkan ranah konfigurasi dan pemeliharaan teknis secara teratur:
+1. **Tab 1: Sinkronisasi Host Induk & Cabang (`tab-cfg-sync`)**:
+   - Pengaturan alamat host induk (`HostIndukUrl`), validasi API Key / Bearer Token, sakelar bypass SSL (*Allow Untrusted SSL*), dan tombol aksi *Push Sync*, *Pull Sync* beserta riwayat transaksi sinkronisasi.
+2. **Tab 2: Database & Pemeliharaan (`tab-cfg-database`)**:
+   - Metrik kapasitas basis data SQLite (ukuran file fisik, total halaman, mode WAL).
+   - Tindakan pemeliharaan: Kompresi VACUUM (*Shrink Database*), pencadangan biner `.db`, serta ekspor dan impor skrip transaksi `.sql`.
+3. **Tab 3: Server Email & Notifikasi (`tab-cfg-email`)**:
+   - Konfigurasi server SMTP (Host, Port, SSL/TLS, Kredensial Pengirim), alat uji coba koneksi mandiri dengan pengukuran latensi milidetik (*latency ms*), dan editor template email event berbasis WYSIWYG lengkap dengan live preview.
+4. **Tab 4: Umum & Swagger API (`tab-cfg-general`)**:
+   - Konfigurasi alamat `GlobalBaseUrl`, ringkasan spesifikasi runtime sistem, serta tombol pintasan ke dokumentasi Swagger RESTful API interaktif.
+- *Catatan Desain*: Tab personalisasi tema ditiadakan dari halaman ini karena fitur penyesuaian 40 tema warna dan 5 jenis Google Fonts kini telah dapat diakses langsung dari bilah atas (Topbar) di seluruh halaman aplikasi.
+
+### 13.2 Master Kategori, Prioritas, dan Status
 - Mengelola kategori tugas, prioritas (*Critical, High, Medium, Low*), dan status alur kerja.
 
-### 13.2 Master Milestone SDLC Waterfall
+### 13.3 Master Milestone SDLC Waterfall
 - Mengatur tahapan siklus pengembangan perangkat lunak (Requirement, Design, Development, Testing, Deployment).
 
-### 13.3 Master Hari Libur Nasional
+### 13.4 Master Hari Libur Nasional
 - Mengelola daftar hari libur resmi yang terintegrasi otomatis dengan laporan Timesheet Excel.
 
-### 13.4 Sinkronisasi Multi-Instance ke Host Induk (Online Streaming Base64 & Paket ZIP)
+### 13.5 Sinkronisasi Multi-Instance ke Host Induk (Online Streaming Base64 & Paket ZIP)
 Fitur ini memungkinkan instance lokal atau laptop cabang melakukan sinkronisasi data pekerjaan dan seluruh berkas lampiran ke atau dari Server Host Induk terpusat:
 - **1. Online Push Sync (Kirim ke Host)**:
   - Masukkan URL Host Induk (contoh: `https://host-tracker.perusahaan.com`) dan **API Secret Key** (`X-Sync-Key`) atau token JWT Bearer.
@@ -486,7 +535,7 @@ Fitur ini memungkinkan instance lokal atau laptop cabang melakukan sinkronisasi 
   - Buka tab *Impor Data / Paket*, lalu unggah file `.zip` (Full Package) atau `.sql` (Dump SQL).
   - Sistem akan mengekstrak berkas lampiran ke folder target secara aman serta mengeksekusi script transaksi database secara otomatis.
 
-### 13.5 Backup & Restore Database (.db & .sql)
+### 13.6 Backup & Restore Database (.db & .sql)
 Fasilitas pencadangan dan pemulihan data instan untuk Administrator di menu **Konfigurasi Sistem (`/Configuration`)**:
 1. **Pencadangan Data (Export / Backup)**:
    - **Export File Database (.db)**: Mengunduh berkas biner SQLite `.db` utuh untuk pencadangan offline (*full binary backup*).
@@ -498,11 +547,11 @@ Fasilitas pencadangan dan pemulihan data instan untuk Administrator di menu **Ko
    - Mendukung berkas **SQLite Database (`.db`)** untuk pemulihan langsung database biner.
    - Terdapat konfirmasi pengamanan sebelum proses restore dieksekusi demi menjaga integritas data operasional.
 
-### 13.6 Integrasi Server Email (SMTP) & Uji Koneksi
+### 13.7 Integrasi Server Email (SMTP), Diagnostik Koneksi & 7 Template Event
 Modul ini memungkinkan sistem TrackerKerja mengirimkan email notifikasi otomatis kepada pengguna dan administrator untuk event-event krusial:
 1. **Mengonfigurasi Server SMTP**:
    - Buka menu **Konfigurasi Sistem (`/Configuration`)**.
-   - Pada kartu **Server Mail (SMTP) & Pengiriman Email**, masukkan parameter koneksi server email:
+   - Pada tab **Server Email & Notifikasi**, masukkan parameter koneksi server email:
      - **Host SMTP / Mail Server**: Alamat host mail provider Anda (contoh: `smtp.gmail.com`, `smtp.office365.com`, atau `smtp.mailtrap.io`).
      - **Port SMTP**: Port koneksi (contoh: `587` untuk STARTTLS, `465` untuk SSL/TLS murni, atau `2525`).
      - **Email Pengirim**: Alamat email yang digunakan untuk mengirim pesan (contoh: `notifications@perusahaan.com`).
@@ -513,33 +562,19 @@ Modul ini memungkinkan sistem TrackerKerja mengirimkan email notifikasi otomatis
    - Klik **Simpan Pengaturan SMTP**.
 
 2. **Melakukan Uji Koneksi Email (Test Connection & Diagnostics)**:
-   - Pada kartu sebelah kanan **Uji Koneksi & Diagnostik SMTP**:
+   - Pada kartu **Uji Koneksi & Diagnostik SMTP**:
      - Masukkan alamat email tujuan pengujian pada kolom **Email Penerima Uji Coba**.
      - Klik tombol **Kirim Email Percobaan**.
      - Sistem akan melakukan *handshake* langsung ke server mail dan mengukur latensi pengiriman dalam milidetik (*latency ms*).
      - Hasil uji koneksi dan log diagnostik teknis (*Diagnostics Box*) akan ditampilkan langsung di layar (misal respon `250 OK` dan status enkripsi TLS).
 
-### 13.7 Manajemen Template Email Event & Live Preview
-Sistem menyediakan sub-modul khusus untuk mengatur format dan isi pesan email untuk setiap peristiwa (*event*) yang terjadi:
-1. **Memilih & Memfilter Template**:
-   - Pada kartu **Template Email Notifikasi & Pengingat Event**, pilih kategori template:
-     - **Semua Event**: Menampilkan seluruh template.
-     - **Autentikasi**: Template pendaftaran akun, approval, penolakan, dan reset password.
-     - **Admin Alert**: Template pemberitahuan pendaftaran baru khusus untuk Administrator.
-     - **Manajemen Tugas**: Template penugasan PIC tugas baru dan pembaruan status tugas.
-2. **Menyesuaikan Template (Subjek & Isi Pesan)**:
-   - Klik tombol **Edit Template** pada kartu event yang ingin diubah.
-   - Pada modal editor:
-     - Ubah **Subjek Email** sesuai kebutuhan format tim Anda.
-     - Ubah **Isi Pesan (Format HTML)**. Anda dapat mengatur tata letak, warna tombol, dan susunan paragraf.
-   - **Menggunakan Variabel Placeholder**:
-     - Klik pada chip variabel yang tersedia (misal `{FullName}`, `{TaskTitle}`, `{ProjectName}`, `{ActionUrl}`, `{DueDate}`) untuk menyalinnya secara instan, lalu tempelkan ke dalam subjek atau isi pesan. Saat email dikirim, sistem akan otomatis mengganti tag ini dengan data yang sebenarnya.
-   - Klik tombol **Simpan Template**.
-3. **Pratinjau Langsung (Live Preview Modal)**:
-   - Klik tombol **Pratinjau (Preview)** pada kartu template.
-   - Sistem akan me-render template lengkap dengan data contoh secara real-time sehingga Anda dapat memastikan tampilan email tampak rapi, profesional, dan responsif.
-4. **Memulihkan Template Bawaan (Reset ke Default)**:
-   - Jika Anda ingin mengembalikan format template ke rancangan default pabrik, klik tombol **Reset ke Default** di pojok kanan atas sub-modul template.
+3. **Manajemen Template Email Event & Live Preview**:
+   - Sistem menyediakan sub-modul untuk mengatur format dan isi pesan email untuk 7 event bawaan:
+     - *Autentikasi*: Registrasi akun, approval akun, penolakan registrasi, notifikasi reset password.
+     - *Admin Alert*: Notifikasi instan pendaftaran pengguna baru kepada Administrator.
+     - *Manajemen Tugas*: Penugasan PIC tugas baru dan perubahan status tugas.
+   - Klik **Edit Template** untuk mengubah subjek, isi pesan HTML, atau menyisipkan chip placeholder variabel dinamis (`{FullName}`, `{TaskTitle}`, `{ProjectName}`, `{ActionUrl}`, dll.).
+   - Klik **Pratinjau (Preview)** untuk melihat hasil render visual email secara real-time.
 
 ### 13.8 Audit Trail & Modal Detail Aktivitas
 Setiap aksi penting (pembuatan, perubahan, penghapusan, login, logout, dsb.) tercatat secara otomatis di menu **Audit Trail (`/AuditTrail`)**:
@@ -549,16 +584,24 @@ Setiap aksi penting (pembuatan, perubahan, penghapusan, login, logout, dsb.) ter
 
 ---
 
-## 14. Modul Gamifikasi, Daily Check-In & Klaim Hadiah
+## 14. Modul Gamifikasi, Aturan Poin 15 & 30 Hari, Daily Check-In & Hadiah
 
 Modul **Gamifikasi** (`/Gamification`) hadir untuk mendorong kedisiplinan dan produktivitas tim melalui pendekatan berbasis penghargaan (*gamified reward system*).
 
-### 14.1 Daily Check-In Harian & Aturan Streak (Reset 2 Hari)
-1. **Melakukan Check-In Harian**:
-   - Buka menu **Daily Check-In & Hadiah** pada sidebar navigasi.
+### 14.1 Saldo Awal Bulanan (0), Aturan Poin 15/30 Hari & Aturan Streak (Reset 2 Hari)
+1. **Ketentuan Saldo Bulanan & Akumulasi Poin (Aturan 15 & 30 Hari)**:
+   - **Saldo Poin Dimulai dari 0**: Pada awal setiap bulan kalender baru, saldo poin akumulasi check-in seluruh pengguna **dimulai kembali dari 0** guna menciptakan kompetisi yang segar dan menjaga komitmen disiplin kerja yang konsisten.
+   - **Aturan Perolehan Poin Check-In**:
+     - **Pencapaian 15 Hari**: Pengguna yang konsisten melakukan daily check-in selama 15 hari berhak memperoleh **1/2 (50%)** dari total akumulasi target poin check-in bulanan.
+     - **Pencapaian 30 Hari (Penuh)**: Pengguna yang menyelesaikan daily check-in hingga 30 hari penuh berhak memperoleh **1x (100%)** total akumulasi poin bulanan secara utuh.
+   - **Akumulasi Poin Lencana (Badge Points Aditif)**: Perolehan poin dari pencapaian lencana prestasi (*Master Badges*) bersifat aditif langsung dan **ditambahkan di atas** akumulasi saldo poin check-in bulanan Anda.
+
+2. **Melakukan Check-In Harian**:
+   - Buka menu **Daily Check-In & Hadiah** pada sidebar navigasi atau klik kartu metrik ke-5 di Dashboard utama.
    - Klik tombol **"Check-In Sekarang"** untuk mengklaim poin harian Anda (default: 10 Poin).
    - Pengguna hanya dapat melakukan check-in 1 kali per hari kalender.
-2. **Aturan Streak Konsistensi**:
+
+3. **Aturan Streak Konsistensi & Reset 2 Hari**:
    - Jika Anda check-in setiap hari berturut-turut, hitungan **Streak** akan terus bertambah `+1` setiap hari.
    - **Aturan Reset 2 Hari**: Jika Anda tidak melakukan check-in selama **2 hari berturut-turut** (`gap >= 2 hari`), hitungan streak akan otomatis **kembali ke awal (Hari 1)**.
    - Indikator kobaran api (*streak flame counter*) dan roadmap visual hari 1–30 akan memperlihatkan status konsistensi Anda.

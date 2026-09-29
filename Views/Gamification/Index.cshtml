@@ -54,16 +54,19 @@
                 <div class="h-10 w-px bg-white/20 hidden sm:block"></div>
 
                 <!-- Points Breakdown -->
-                <div class="text-[11px] space-y-1 text-slate-200 border-t sm:border-t-0 pt-3 sm:pt-0 w-full sm:w-auto text-center sm:text-left">
-                    <div class="flex justify-between sm:justify-start gap-3">
+                <div class="text-[11px] space-y-1.5 text-slate-200 border-t sm:border-t-0 pt-3 sm:pt-0 w-full sm:w-auto text-center sm:text-left">
+                    <div class="flex justify-between sm:justify-start items-center gap-3">
                         <span class="text-slate-400"><i class="fas fa-medal text-amber-400 w-4"></i> Badge:</span>
-                        <span class="font-bold text-white">@pts.BadgePoints pts</span>
+                        <span class="font-bold text-white">@pts.BadgePoints pts <span class="text-[10px] text-emerald-400 font-normal">(Instan)</span></span>
                     </div>
-                    <div class="flex justify-between sm:justify-start gap-3">
+                    <div class="flex justify-between sm:justify-start items-center gap-3">
                         <span class="text-slate-400"><i class="fas fa-calendar-check text-emerald-400 w-4"></i> Check-In:</span>
-                        <span class="font-bold text-white">@pts.CheckInPoints pts</span>
+                        <div>
+                            <span class="font-bold text-white">@pts.CheckInPoints pts</span>
+                            <span class="text-[10px] text-amber-300 block font-medium">@pts.CheckInTierStatus</span>
+                        </div>
                     </div>
-                    <div class="flex justify-between sm:justify-start gap-3">
+                    <div class="flex justify-between sm:justify-start items-center gap-3">
                         <span class="text-slate-400"><i class="fas fa-receipt text-rose-400 w-4"></i> Terpakai:</span>
                         <span class="font-bold text-rose-300">@pts.SpentPoints pts</span>
                     </div>
@@ -223,14 +226,19 @@
                                     var isCompleted = day <= chk.CurrentStreak;
                                     var isCurrent = day == chk.CurrentStreak && chk.HasCheckedInToday;
                                     var isNext = day == chk.CurrentStreak + 1;
+                                    var isMidMonth = day == 15;
                                     var isMonthEnd = day == chk.MonthlyTargetDays;
 
-                                    <div class="flex flex-col items-center justify-center p-2 rounded-xl text-center border transition-all relative @(isMonthEnd ? "ring-2 ring-amber-400 shadow-sm" : "") @(isCompleted ? "bg-emerald-50 border-emerald-300 text-emerald-800" : isNext ? "bg-amber-50 border-amber-300 text-amber-800 animate-pulse" : "bg-slate-50 border-slate-200 text-slate-400")">
+                                    <div class="flex flex-col items-center justify-center p-2 rounded-xl text-center border transition-all relative @(isMonthEnd ? "ring-2 ring-amber-400 shadow-sm" : isMidMonth ? "ring-2 ring-indigo-400 shadow-sm" : "") @(isCompleted ? "bg-emerald-50 border-emerald-300 text-emerald-800" : isNext ? "bg-amber-50 border-amber-300 text-amber-800 animate-pulse" : "bg-slate-50 border-slate-200 text-slate-400")">
                                         <span class="text-[10px] font-bold">H-@day</span>
                                         <div class="my-0.5 text-xs">
                                             @if (isMonthEnd)
                                             {
                                                 <i class="fas fa-gift text-amber-500 font-black"></i>
+                                            }
+                                            else if (isMidMonth)
+                                            {
+                                                <i class="fas fa-flag-checkered text-indigo-600 font-bold"></i>
                                             }
                                             else if (isCompleted)
                                             {
@@ -245,8 +253,8 @@
                                                 <i class="far fa-circle text-slate-300"></i>
                                             }
                                         </div>
-                                        <span class="text-[9px] font-semibold @(isCompleted ? "text-emerald-600" : "text-slate-400")">
-                                            @(isMonthEnd ? "+500" : "+10")
+                                        <span class="text-[9px] font-semibold @(isMonthEnd ? "text-amber-700 font-bold" : isMidMonth ? "text-indigo-700 font-bold" : isCompleted ? "text-emerald-600" : "text-slate-400")">
+                                            @(isMonthEnd ? "1x Total" : isMidMonth ? "1/2 Poin" : "+10")
                                         </span>
                                     </div>
                                 }
@@ -255,13 +263,15 @@
 
                         <!-- Rule Notice Alert -->
                         <div class="mt-6 p-4 rounded-2xl bg-amber-50/70 border border-amber-200/80 flex items-start gap-3">
-                            <i class="fas fa-exclamation-triangle text-amber-500 text-base mt-0.5 shrink-0"></i>
+                            <i class="fas fa-info-circle text-amber-500 text-base mt-0.5 shrink-0"></i>
                             <div class="text-xs text-amber-900 leading-relaxed">
-                                <p class="font-bold">Ketentuan &amp; Aturan Streak Daily Check-In:</p>
-                                <ul class="list-disc list-inside mt-1 space-y-0.5 text-amber-800/90">
-                                    <li>Lakukan check-in setiap hari untuk menjaga streak aktif. Setiap check-in bernilai <strong>@chk.PointsPerCheckIn Poin</strong> (senilai <strong>Rp @((chk.PointsPerCheckIn * chk.PointValueRupiah).ToString("N0"))</strong>).</li>
-                                    <li>Jika check-in tidak dilanjutkan selama <strong>@chk.MissedDaysReset hari berturut-turut</strong>, maka streak akan <strong>kembali ke awal (Hari ke-1)</strong>.</li>
-                                    <li>Pengguna yang mencapai streak <strong>1 bulan (@chk.MonthlyTargetDays hari)</strong> akan mendapatkan <strong>Bonus @chk.MonthlyBonusPoints Poin</strong> dan membuka hak klaim <strong>Hadiah Spesial Bulanan</strong>!</li>
+                                <p class="font-bold">Ketentuan &amp; Aturan Saldo Hadiah Daily Check-In:</p>
+                                <ul class="list-disc list-inside mt-1.5 space-y-1 text-amber-800/90">
+                                    <li><strong>Saldo Dimulai dari 0:</strong> Saldo hadiah daily check-in selalu dimulai dari <strong>0 Poin</strong> untuk setiap user / siklus aktif.</li>
+                                    <li><strong>Tahap 1 (Check-In 15 Hari):</strong> Menempuh check-in selama 15 hari akan mencairkan <strong>1/2 (50%) dari total poin bulanan</strong> (@chk.HalfMonthlyCheckInPoints Poin, senilai Rp @((chk.HalfMonthlyCheckInPoints * chk.PointValueRupiah).ToString("N0"))).</li>
+                                    <li><strong>Tahap 2 (Check-In 30 Hari Penuh):</strong> Menempuh check-in selama 30 hari penuh akan mengakumulasikan <strong>1x (100%) total poin bulanan</strong> (@chk.TotalMonthlyCheckInPoints Poin, senilai Rp @((chk.TotalMonthlyCheckInPoints * chk.PointValueRupiah).ToString("N0"))) dan membuka hak klaim <strong>Hadiah Spesial Bulanan</strong>!</li>
+                                    <li><strong>Poin dari Badge:</strong> Setiap perolehan badge prestasi memberikan poin instan yang langsung ditambahkan dengan saldo poin check-in Anda.</li>
+                                    <li>Jika tidak check-in selama <strong>@chk.MissedDaysReset hari berturut-turut</strong>, streak akan kembali ke Hari ke-1.</li>
                                 </ul>
                             </div>
                         </div>

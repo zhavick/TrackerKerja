@@ -122,6 +122,14 @@
             from { opacity: 0; transform: translateY(-10px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        @@keyframes bellShake {
+            0%, 100% { transform: rotate(0); }
+            20% { transform: rotate(-15deg); }
+            40% { transform: rotate(15deg); }
+            60% { transform: rotate(-10deg); }
+            80% { transform: rotate(10deg); }
+        }
+        .bell-shake { animation: bellShake 0.6s ease-in-out infinite; }
         .toast-notification {
             position: fixed; top: 20px; right: 20px; z-index: 99999;
             min-width: 280px; max-width: calc(100vw - 40px); animation: slideIn 0.3s ease;
@@ -371,17 +379,26 @@
                     <span>Import Excel</span>
                 </a>
 
+                <!-- Quick Task Create Button -->
+                <button type="button" onclick="openQuickTaskModal()"
+                        class="flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 sm:py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold shadow-xs hover:shadow-md hover:shadow-indigo-200 transition-all cursor-pointer"
+                        title="Buat Tugas Kilat (Shortcut: Ctrl+Alt+N)">
+                    <i class="fas fa-plus text-xs"></i>
+                    <span class="hidden sm:inline">Tugas Kilat</span>
+                    <span class="hidden xl:inline text-[9.5px] px-1 py-0.2 bg-white/20 rounded font-mono">^⌥N</span>
+                </button>
+
                 <!-- Notification Bell Dropdown -->
                 <div class="relative z-50">
                     <button type="button" id="notifDropdownBtn" onclick="toggleNotificationDropdown()" data-tour="notif"
                             class="relative p-2 px-2.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-sm shadow-xs hover:border-indigo-300 transition-all cursor-pointer"
                             title="Pemberitahuan Tugas">
-                        <i class="fas fa-bell text-slate-600"></i>
+                        <i id="notif-bell-icon" class="fas fa-bell text-slate-600 transition-colors"></i>
                         <span id="notif-badge" class="hidden absolute -top-1 -right-1 bg-red-500 text-white font-black text-[10px] min-w-4 h-4 px-1 rounded-full flex items-center justify-center shadow-xs animate-pulse">0</span>
                     </button>
 
                     <!-- Notification Panel Modal -->
-                    <div id="notifDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-96 max-w-[390px] bg-white rounded-3xl shadow-2xl border border-slate-200/90 p-4 z-[9999] animate-fadeIn" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                    <div id="notifDropdownMenu" class="hidden absolute right-0 top-full mt-2 w-[calc(100vw-1.5rem)] sm:w-[410px] max-w-[420px] bg-white rounded-3xl shadow-2xl border border-slate-200/90 p-4 z-[9999] animate-fadeIn" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
                         <div class="flex items-center justify-between pb-3 mb-3 border-b border-slate-100">
                             <div class="flex items-center gap-2">
                                 <div class="w-7 h-7 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-xs font-bold">
@@ -389,27 +406,35 @@
                                 </div>
                                 <div>
                                     <h4 class="text-xs font-black text-slate-800">Pemberitahuan Tugas</h4>
-                                    <p class="text-[10px] text-slate-400">Jatuh tempo, timesheet & antrian</p>
+                                    <p class="text-[10px] text-slate-400">Jatuh tempo, timesheet &amp; aktivitas tim</p>
                                 </div>
                             </div>
-                            <button type="button" onclick="toggleNotificationDropdown()" class="text-slate-400 hover:text-slate-600 text-xs p-1 cursor-pointer">
-                                <i class="fas fa-times"></i>
-                            </button>
+                            <div class="flex items-center gap-1.5">
+                                <button type="button" onclick="markAllNotifsRead()" class="text-[10.5px] font-bold text-slate-500 hover:text-indigo-600 px-2 py-0.5 rounded-lg hover:bg-indigo-50 border border-slate-200 hover:border-indigo-200 transition-all cursor-pointer" title="Tandai semua telah dibaca">
+                                    <i class="fas fa-check-double mr-1 text-[9px]"></i>Baca Semua
+                                </button>
+                                <button type="button" onclick="toggleNotificationDropdown()" class="text-slate-400 hover:text-slate-600 text-xs p-1 cursor-pointer">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Notification Tabs -->
                         <div class="flex items-center gap-1 bg-slate-100 p-1 rounded-xl mb-3 text-xs font-bold overflow-x-auto">
-                            <button type="button" onclick="switchNotifTab('due')" id="notif-tab-due" class="flex-1 py-1 px-1.5 rounded-lg bg-white text-indigo-700 shadow-2xs transition-all text-center text-[10.5px] sm:text-[11px] whitespace-nowrap">
+                            <button type="button" onclick="switchNotifTab('due')" id="notif-tab-due" class="flex-1 py-1 px-1.5 rounded-lg bg-white text-indigo-700 shadow-2xs transition-all text-center text-[10px] sm:text-[11px] whitespace-nowrap">
                                 Due (<span id="notif-count-due">0</span>)
                             </button>
-                            <button type="button" onclick="switchNotifTab('progress')" id="notif-tab-progress" class="flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all text-center text-[10.5px] sm:text-[11px] whitespace-nowrap">
+                            <button type="button" onclick="switchNotifTab('progress')" id="notif-tab-progress" class="flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all text-center text-[10px] sm:text-[11px] whitespace-nowrap">
                                 Progress (<span id="notif-count-progress">0</span>)
                             </button>
-                            <button type="button" onclick="switchNotifTab('todo')" id="notif-tab-todo" class="flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all text-center text-[10.5px] sm:text-[11px] whitespace-nowrap">
+                            <button type="button" onclick="switchNotifTab('todo')" id="notif-tab-todo" class="flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all text-center text-[10px] sm:text-[11px] whitespace-nowrap">
                                 Todo (<span id="notif-count-todo">0</span>)
                             </button>
-                            <button type="button" onclick="switchNotifTab('timesheet')" id="notif-tab-timesheet" class="flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all text-center text-[10.5px] sm:text-[11px] whitespace-nowrap" title="Pengingat pengisian jam kerja cut-off tgl 25">
+                            <button type="button" onclick="switchNotifTab('timesheet')" id="notif-tab-timesheet" class="flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all text-center text-[10px] sm:text-[11px] whitespace-nowrap" title="Pengingat pengisian jam kerja cut-off tgl 25">
                                 Timesheet (<span id="notif-count-timesheet">0</span>)
+                            </button>
+                            <button type="button" onclick="switchNotifTab('activity')" id="notif-tab-activity" class="flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 transition-all text-center text-[10px] sm:text-[11px] whitespace-nowrap" title="Aktivitas Tim 48 Jam Terakhir">
+                                Tim (<span id="notif-count-activity">0</span>)
                             </button>
                         </div>
 
@@ -418,6 +443,7 @@
                         <div id="notif-content-progress" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
                         <div id="notif-content-todo" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
                         <div id="notif-content-timesheet" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
+                        <div id="notif-content-activity" class="hidden space-y-2 max-h-64 overflow-y-auto pr-1"></div>
 
                         <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between">
                             <a href="/Task" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800">
@@ -650,6 +676,129 @@
             }
         </div>
 
+        <!-- GLOBAL QUICK TASK CREATE MODAL -->
+        <div id="quickTaskModal" class="hidden fixed inset-0 bg-slate-900/60 backdrop-blur-xs z-[99999] flex items-center justify-center p-4 overflow-y-auto">
+            <div class="relative bg-white rounded-3xl shadow-2xl border border-slate-200/90 max-w-lg w-full p-5 sm:p-6 my-8 animate-fadeIn" style="box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);">
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between pb-3.5 mb-4 border-b border-slate-100">
+                    <div class="flex items-center gap-2.5">
+                        <div class="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-sm font-bold shadow-md shadow-indigo-200">
+                            <i class="fas fa-bolt"></i>
+                        </div>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h3 class="text-sm sm:text-base font-black text-slate-800">Buat Tugas Kilat</h3>
+                                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-100 text-slate-500 font-semibold border border-slate-200">Ctrl+Alt+N</span>
+                            </div>
+                            <p class="text-[11px] text-slate-400">Tambahkan tugas baru tanpa meninggalkan halaman</p>
+                        </div>
+                    </div>
+                    <button type="button" onclick="closeQuickTaskModal()" class="w-7 h-7 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-all cursor-pointer">
+                        <i class="fas fa-times text-sm"></i>
+                    </button>
+                </div>
+
+                <!-- Modal Form -->
+                <form id="quickTaskForm" onsubmit="submitQuickTask(event)">
+                    <div class="space-y-3.5">
+                        <!-- Title -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                Judul Tugas <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" id="qt-title" required autocomplete="off"
+                                   placeholder="Contoh: Menyusun laporan keuangan Q3 atau Refactor login..."
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-xs sm:text-sm text-slate-800 transition-all">
+                        </div>
+
+                        <!-- Project & Assignee Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Project -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                    <i class="fas fa-folder text-indigo-500 mr-1"></i>Proyek
+                                </label>
+                                <select id="qt-project" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                                    <option value="">— Tanpa Proyek —</option>
+                                </select>
+                            </div>
+
+                            <!-- Assignee -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                    <i class="fas fa-user text-indigo-500 mr-1"></i>Ditugaskan Kepada
+                                </label>
+                                <select id="qt-assignee" class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                                    <!-- Populated dynamically with users -->
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Priority & Due Date Grid -->
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                            <!-- Priority Selector (Pills) -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                    Prioritas
+                                </label>
+                                <div class="grid grid-cols-4 gap-1 p-1 bg-slate-100 rounded-xl">
+                                    <button type="button" onclick="setQtPriority('Low')" id="qt-prio-Low"
+                                            class="py-1 rounded-lg text-[10.5px] font-bold text-slate-600 transition-all text-center">Low</button>
+                                    <button type="button" onclick="setQtPriority('Medium')" id="qt-prio-Medium"
+                                            class="py-1 rounded-lg text-[10.5px] font-bold bg-white text-indigo-700 shadow-2xs transition-all text-center">Med</button>
+                                    <button type="button" onclick="setQtPriority('High')" id="qt-prio-High"
+                                            class="py-1 rounded-lg text-[10.5px] font-bold text-slate-600 transition-all text-center">High</button>
+                                    <button type="button" onclick="setQtPriority('Critical')" id="qt-prio-Critical"
+                                            class="py-1 rounded-lg text-[10.5px] font-bold text-slate-600 transition-all text-center">Crit</button>
+                                </div>
+                                <input type="hidden" id="qt-priority" value="Medium">
+                            </div>
+
+                            <!-- Due Date -->
+                            <div>
+                                <label class="block text-xs font-bold text-slate-700 mb-1.5">
+                                    <i class="fas fa-calendar-alt text-indigo-500 mr-1"></i>Tenggat Waktu
+                                </label>
+                                <input type="date" id="qt-duedate"
+                                       class="w-full px-3 py-2 rounded-xl border border-slate-200 bg-white text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
+                            </div>
+                        </div>
+
+                        <!-- Collapsible Description (optional) -->
+                        <div>
+                            <button type="button" onclick="toggleQtDescription()" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                                <i id="qt-desc-icon" class="fas fa-chevron-right text-[9px] transition-transform"></i>
+                                <span>+ Tambah Deskripsi / Catatan (Opsional)</span>
+                            </button>
+                            <div id="qt-desc-container" class="hidden mt-2">
+                                <textarea id="qt-description" rows="2" placeholder="Catatan atau rincian tugas..."
+                                          class="w-full px-3 py-2 rounded-xl border border-slate-200 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all resize-none"></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer Buttons -->
+                    <div class="flex items-center justify-between gap-2.5 pt-4 mt-4 border-t border-slate-100">
+                        <button type="button" onclick="closeQuickTaskModal()"
+                                class="px-3.5 py-2 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 text-xs font-bold transition-all cursor-pointer">
+                            Batal
+                        </button>
+                        <div class="flex items-center gap-2">
+                            <button type="button" onclick="submitQuickTask(event, true)" id="qt-btn-edit"
+                                    class="px-3 py-2 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all cursor-pointer">
+                                <i class="fas fa-external-link-alt mr-1 text-[10px]"></i>Simpan &amp; Rincian
+                            </button>
+                            <button type="submit" id="qt-btn-save"
+                                    class="px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white text-xs font-bold shadow-md shadow-indigo-200 transition-all cursor-pointer flex items-center gap-1.5">
+                                <i class="fas fa-check text-xs"></i>
+                                <span>Simpan Tugas</span>
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
         <!-- PAGE CONTENT -->
         <main class="flex-1 overflow-y-auto p-3.5 sm:p-5 md:p-6 pb-24 lg:pb-6">
             @RenderBody()
@@ -708,18 +857,29 @@
         if (!container) return;
         const div = document.createElement('div');
         div.className = 'toast-notification';
-        const isSuccess = type === 'success';
-        div.innerHTML = `<div class="bg-white border border-${isSuccess ? 'emerald' : 'red'}-200 rounded-xl shadow-xl p-4 flex items-center gap-3">
-            <div class="w-8 h-8 rounded-full bg-${isSuccess ? 'emerald' : 'red'}-100 flex items-center justify-center flex-shrink-0">
-                <i class="fas fa-${isSuccess ? 'check text-emerald-600' : 'times text-red-600'} text-sm"></i>
+        let color = 'emerald';
+        let icon = 'check';
+        if (type === 'error' || type === 'danger') {
+            color = 'red';
+            icon = 'times';
+        } else if (type === 'warning') {
+            color = 'amber';
+            icon = 'exclamation-triangle';
+        } else if (type === 'info') {
+            color = 'indigo';
+            icon = 'info-circle';
+        }
+        div.innerHTML = `<div class="bg-white border border-${color}-200 rounded-2xl shadow-xl p-3.5 flex items-center gap-3">
+            <div class="w-8 h-8 rounded-xl bg-${color}-100 flex items-center justify-center flex-shrink-0">
+                <i class="fas fa-${icon} text-${color}-600 text-sm"></i>
             </div>
-            <p class="text-slate-700 text-sm font-medium">${msg}</p>
-            <button onclick="this.closest('.toast-notification').remove()" class="ml-auto text-slate-400 hover:text-slate-600">
+            <p class="text-slate-700 text-xs sm:text-sm font-medium leading-snug">${escapeHtml(msg)}</p>
+            <button onclick="this.closest('.toast-notification').remove()" class="ml-auto text-slate-400 hover:text-slate-600 cursor-pointer">
                 <i class="fas fa-times text-xs"></i>
             </button>
         </div>`;
         container.appendChild(div);
-        setTimeout(() => div.remove(), 4000);
+        setTimeout(() => div.remove(), 4500);
     }
 
     function escapeHtml(str) {
@@ -901,8 +1061,230 @@
         }
     });
 
+    // ── QUICK TASK CREATE SYSTEM (SHORTCUT: CTRL+ALT+N) ────
+    let quickTaskMetadata = null;
+    let isFetchingQtMetadata = false;
+
+    async function loadQuickTaskMetadata() {
+        if (quickTaskMetadata || isFetchingQtMetadata) return;
+        isFetchingQtMetadata = true;
+        try {
+            const resp = await fetch('/Task/GetQuickCreateData');
+            const data = await resp.json();
+            if (data.success) {
+                quickTaskMetadata = data;
+                populateQuickTaskDropdowns();
+            }
+        } catch (e) {
+            console.error('Failed loading quick task metadata', e);
+        } finally {
+            isFetchingQtMetadata = false;
+        }
+    }
+
+    function populateQuickTaskDropdowns() {
+        if (!quickTaskMetadata) return;
+
+        // Populate Projects
+        const projectSel = document.getElementById('qt-project');
+        if (projectSel && projectSel.options.length <= 1) {
+            quickTaskMetadata.projects.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.textContent = p.name;
+                projectSel.appendChild(opt);
+            });
+        }
+
+        // Populate Assignees
+        const userSel = document.getElementById('qt-assignee');
+        if (userSel && userSel.options.length === 0) {
+            quickTaskMetadata.users.forEach(u => {
+                const opt = document.createElement('option');
+                opt.value = u.id;
+                const isMe = u.id === quickTaskMetadata.currentUserId;
+                opt.textContent = isMe ? `${u.fullName} (Saya)` : `${u.fullName} [${u.jobTitle}]`;
+                if (isMe) opt.selected = true;
+                userSel.appendChild(opt);
+            });
+        }
+    }
+
+    function openQuickTaskModal() {
+        const modal = document.getElementById('quickTaskModal');
+        if (!modal) return;
+
+        // Close other dropdowns if open
+        const notifMenu = document.getElementById('notifDropdownMenu');
+        if (notifMenu) notifMenu.classList.add('hidden');
+        closeUserProfileDropdown();
+        if (typeof ThemeManager !== 'undefined' && ThemeManager.closeDropdown) ThemeManager.closeDropdown();
+
+        modal.classList.remove('hidden');
+        document.body.classList.add('overflow-hidden');
+
+        // Set default due date to tomorrow if empty
+        const dueDateInput = document.getElementById('qt-duedate');
+        if (dueDateInput && !dueDateInput.value) {
+            const tomorrow = new Date();
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            dueDateInput.value = tomorrow.toISOString().split('T')[0];
+        }
+
+        // Load metadata
+        loadQuickTaskMetadata();
+
+        // Focus title input
+        setTimeout(() => {
+            const titleInput = document.getElementById('qt-title');
+            if (titleInput) titleInput.focus();
+        }, 100);
+    }
+
+    function closeQuickTaskModal() {
+        const modal = document.getElementById('quickTaskModal');
+        if (!modal) return;
+        modal.classList.add('hidden');
+        document.body.classList.remove('overflow-hidden');
+    }
+
+    function setQtPriority(prio) {
+        const prioInput = document.getElementById('qt-priority');
+        if (prioInput) prioInput.value = prio;
+        ['Low', 'Medium', 'High', 'Critical'].forEach(p => {
+            const btn = document.getElementById('qt-prio-' + p);
+            if (btn) {
+                if (p === prio) {
+                    let activeColor = 'text-indigo-700';
+                    if (p === 'Low') activeColor = 'text-emerald-700';
+                    else if (p === 'High') activeColor = 'text-amber-700';
+                    else if (p === 'Critical') activeColor = 'text-red-700';
+                    btn.className = `py-1 rounded-lg text-[10.5px] font-bold bg-white ${activeColor} shadow-2xs transition-all text-center`;
+                } else {
+                    btn.className = 'py-1 rounded-lg text-[10.5px] font-bold text-slate-500 hover:text-slate-800 transition-all text-center';
+                }
+            }
+        });
+    }
+
+    function toggleQtDescription() {
+        const container = document.getElementById('qt-desc-container');
+        const icon = document.getElementById('qt-desc-icon');
+        if (!container) return;
+        const isHidden = container.classList.contains('hidden');
+        if (isHidden) {
+            container.classList.remove('hidden');
+            if (icon) icon.style.transform = 'rotate(90deg)';
+            const descArea = document.getElementById('qt-description');
+            if (descArea) descArea.focus();
+        } else {
+            container.classList.add('hidden');
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    async function submitQuickTask(event, openDetails = false) {
+        if (event) event.preventDefault();
+
+        const titleInput = document.getElementById('qt-title');
+        const title = titleInput ? titleInput.value.trim() : '';
+        if (!title) {
+            showToast('Judul tugas tidak boleh kosong', 'warning');
+            if (titleInput) titleInput.focus();
+            return;
+        }
+
+        const projectVal = document.getElementById('qt-project')?.value;
+        const assigneeVal = document.getElementById('qt-assignee')?.value;
+        const priorityVal = document.getElementById('qt-priority')?.value || 'Medium';
+        const dueDateVal = document.getElementById('qt-duedate')?.value;
+        const descVal = document.getElementById('qt-description')?.value;
+
+        const saveBtn = document.getElementById('qt-btn-save');
+        const editBtn = document.getElementById('qt-btn-edit');
+        const origSaveHtml = saveBtn ? saveBtn.innerHTML : '';
+        if (saveBtn) {
+            saveBtn.disabled = true;
+            saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin text-xs"></i> Menyimpan...';
+        }
+        if (editBtn) editBtn.disabled = true;
+
+        try {
+            const resp = await fetch('/Task/QuickCreateTask', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    title: title,
+                    projectId: projectVal ? parseInt(projectVal) : null,
+                    assignedToUserId: assigneeVal || null,
+                    priority: priorityVal,
+                    dueDate: dueDateVal || null,
+                    description: descVal || null
+                })
+            });
+
+            const data = await resp.json();
+            if (data.success) {
+                showToast(data.message || 'Tugas berhasil dibuat!', 'success');
+                closeQuickTaskModal();
+
+                // Reset form
+                if (titleInput) titleInput.value = '';
+                const descArea = document.getElementById('qt-description');
+                if (descArea) descArea.value = '';
+                setQtPriority('Medium');
+
+                // Trigger refresh on notification counts & badges
+                if (typeof fetchNotifications === 'function') fetchNotifications();
+                if (typeof pollUnreadCount === 'function') pollUnreadCount();
+
+                // Dispatch global event for pages (Kanban, Task index, Calendar) to listen to
+                window.dispatchEvent(new CustomEvent('quickTaskCreated', { detail: data }));
+
+                if (openDetails && data.taskId) {
+                    window.location.href = `/Task/Edit/${data.taskId}`;
+                }
+            } else {
+                showToast(data.message || 'Gagal membuat tugas', 'error');
+            }
+        } catch (err) {
+            console.error('Quick task error', err);
+            showToast('Terjadi kesalahan saat membuat tugas', 'error');
+        } finally {
+            if (saveBtn) {
+                saveBtn.disabled = false;
+                saveBtn.innerHTML = origSaveHtml;
+            }
+            if (editBtn) editBtn.disabled = false;
+        }
+    }
+
+    // Global Keyboard Shortcut: Ctrl + Alt + N (or Cmd + Option + N)
+    document.addEventListener('keydown', function(e) {
+        if ((e.ctrlKey || e.metaKey) && e.altKey && (e.key === 'n' || e.key === 'N')) {
+            e.preventDefault();
+            openQuickTaskModal();
+        } else if (e.key === 'Escape') {
+            const modal = document.getElementById('quickTaskModal');
+            if (modal && !modal.classList.contains('hidden')) {
+                closeQuickTaskModal();
+            }
+        }
+    });
+
+    // Close quick task modal when clicking backdrop
+    document.getElementById('quickTaskModal')?.addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeQuickTaskModal();
+        }
+    });
+
     // ── NOTIFICATION MODULE SYSTEM ─────────────────────────
     let currentNotifTab = 'due';
+    let lastOverdueCount = -1;
+    let notifMarkedRead = false;
 
     function toggleNotificationDropdown() {
         const menu = document.getElementById('notifDropdownMenu');
@@ -914,6 +1296,9 @@
             closeUserProfileDropdown();
             menu.classList.remove('hidden');
             fetchNotifications();
+            if (currentNotifTab === 'activity') {
+                fetchTeamActivity();
+            }
         } else {
             menu.classList.add('hidden');
         }
@@ -958,19 +1343,135 @@
 
     function switchNotifTab(tab) {
         currentNotifTab = tab;
-        ['due', 'progress', 'todo', 'timesheet'].forEach(t => {
+        ['due', 'progress', 'todo', 'timesheet', 'activity'].forEach(t => {
             const tabBtn = document.getElementById('notif-tab-' + t);
             const content = document.getElementById('notif-content-' + t);
             if (tabBtn && content) {
                 if (t === tab) {
-                    tabBtn.className = 'flex-1 py-1 px-1.5 rounded-lg bg-white text-indigo-700 shadow-2xs font-bold text-[10.5px] sm:text-[11px] text-center transition-all whitespace-nowrap';
+                    tabBtn.className = 'flex-1 py-1 px-1.5 rounded-lg bg-white text-indigo-700 shadow-2xs font-bold text-[10px] sm:text-[11px] text-center transition-all whitespace-nowrap';
                     content.classList.remove('hidden');
                 } else {
-                    tabBtn.className = 'flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 font-bold text-[10.5px] sm:text-[11px] text-center transition-all whitespace-nowrap';
+                    tabBtn.className = 'flex-1 py-1 px-1.5 rounded-lg text-slate-500 hover:text-slate-800 font-bold text-[10px] sm:text-[11px] text-center transition-all whitespace-nowrap';
                     content.classList.add('hidden');
                 }
             }
         });
+        if (tab === 'activity') {
+            fetchTeamActivity();
+        }
+    }
+
+    function markAllNotifsRead() {
+        notifMarkedRead = true;
+        const badge = document.getElementById('notif-badge');
+        if (badge) badge.classList.add('hidden');
+        const bellIcon = document.getElementById('notif-bell-icon');
+        if (bellIcon) {
+            bellIcon.classList.remove('bell-shake', 'text-rose-500');
+            bellIcon.classList.add('text-slate-600');
+        }
+        showToast('Semua notifikasi ditandai telah dibaca.', 'info');
+    }
+
+    async function pollUnreadCount() {
+        try {
+            const resp = await fetch('/Notification/GetUnreadCount');
+            const data = await resp.json();
+            if (!data.success) return;
+
+            const badge = document.getElementById('notif-badge');
+            const bellIcon = document.getElementById('notif-bell-icon');
+
+            if (lastOverdueCount !== -1 && data.overdueCount > lastOverdueCount) {
+                const diff = data.overdueCount - lastOverdueCount;
+                notifMarkedRead = false;
+                showToast(`Perhatian: Ada ${diff} tugas baru yang jatuh tempo/overdue!`, 'warning');
+                if (bellIcon) {
+                    bellIcon.classList.add('bell-shake', 'text-rose-500');
+                    bellIcon.classList.remove('text-slate-600');
+                }
+            }
+            lastOverdueCount = data.overdueCount;
+
+            if (data.hasUrgent && !notifMarkedRead) {
+                if (bellIcon) {
+                    bellIcon.classList.add('bell-shake', 'text-rose-500');
+                    bellIcon.classList.remove('text-slate-600');
+                }
+            } else if (!data.hasUrgent || notifMarkedRead) {
+                if (bellIcon && !bellIcon.classList.contains('text-rose-500')) {
+                    bellIcon.classList.remove('bell-shake');
+                }
+            }
+
+            if (badge) {
+                if (!notifMarkedRead && data.total > 0) {
+                    badge.innerText = data.total > 99 ? '99+' : data.total;
+                    badge.classList.remove('hidden');
+                } else if (notifMarkedRead) {
+                    badge.classList.add('hidden');
+                }
+            }
+        } catch (e) {
+            console.error('Failed polling unread count', e);
+        }
+    }
+
+    async function fetchTeamActivity() {
+        try {
+            const resp = await fetch('/Notification/GetTeamActivity');
+            const data = await resp.json();
+            if (!data.success) return;
+
+            const cAct = document.getElementById('notif-count-activity');
+            if (cAct) cAct.innerText = data.total || 0;
+
+            const contentActivity = document.getElementById('notif-content-activity');
+            if (!contentActivity) return;
+
+            if (!data.activities || data.activities.length === 0) {
+                contentActivity.innerHTML = '<div class="p-6 text-center text-slate-400 text-xs"><i class="fas fa-users-slash text-2xl text-slate-300 mb-1 block"></i>Belum ada aktivitas tim dalam 48 jam terakhir.</div>';
+                return;
+            }
+
+            contentActivity.innerHTML = data.activities.map(a => {
+                let badgeClass = 'bg-slate-100 text-slate-700';
+                if (a.colorClass === 'emerald') badgeClass = 'bg-emerald-100 text-emerald-700 font-bold';
+                else if (a.colorClass === 'indigo') badgeClass = 'bg-indigo-100 text-indigo-700 font-bold';
+                else if (a.colorClass === 'rose') badgeClass = 'bg-rose-100 text-rose-700 font-bold';
+
+                return `
+                    <a href="/Task/Edit/${a.id}" class="block p-2.5 rounded-xl border border-slate-100 bg-slate-50/50 hover:bg-indigo-50/40 hover:border-indigo-200 transition-all group">
+                        <div class="flex items-center gap-2 mb-1.5">
+                            <div class="w-6 h-6 rounded-lg text-white font-bold text-[10px] flex items-center justify-center flex-shrink-0 shadow-2xs" style="background-color: ${a.avatarColor || '#6366F1'};">
+                                ${escapeHtml(a.initials)}
+                            </div>
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center justify-between">
+                                    <span class="text-[11px] font-bold text-slate-800 truncate">${escapeHtml(a.assigneeName)}</span>
+                                    <span class="text-[10px] font-semibold text-slate-400">${escapeHtml(a.timeAgo)}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="flex items-center gap-1.5 mb-1 flex-wrap">
+                            <span class="text-[9px] px-1.5 py-0.5 rounded ${badgeClass} flex items-center gap-1">
+                                <i class="fas ${a.icon} text-[8.5px]"></i> ${escapeHtml(a.action)}
+                            </span>
+                            ${a.hasActiveSession ? '<span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-700 animate-pulse flex items-center gap-1"><span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Timer Aktif</span>' : ''}
+                        </div>
+                        <h5 class="text-xs font-semibold text-slate-800 group-hover:text-indigo-600 line-clamp-1">
+                            ${a.taskCode ? `<span class="text-slate-400 font-mono text-[10px]">[${escapeHtml(a.taskCode)}]</span> ` : ''}${escapeHtml(a.title)}
+                        </h5>
+                        <div class="flex items-center justify-between mt-1 text-[10px] text-slate-400">
+                            <span class="truncate max-w-[200px]"><i class="fas fa-folder text-[9px] mr-1"></i>${escapeHtml(a.projectName)}</span>
+                            <span class="font-mono text-[9px] text-slate-400">${escapeHtml(a.updatedAt)}</span>
+                        </div>
+                    </a>
+                `;
+            }).join('');
+        } catch (e) {
+            console.error('Failed fetching team activity', e);
+        }
     }
 
     async function fetchNotifications() {
@@ -981,11 +1482,23 @@
 
             // Badge
             const badge = document.getElementById('notif-badge');
+            const bellIcon = document.getElementById('notif-bell-icon');
+
+            if (data.overdueCount > 0 && !notifMarkedRead) {
+                if (bellIcon) {
+                    bellIcon.classList.add('bell-shake', 'text-rose-500');
+                    bellIcon.classList.remove('text-slate-600');
+                }
+            } else if (bellIcon && !notifMarkedRead) {
+                bellIcon.classList.remove('bell-shake', 'text-rose-500');
+                bellIcon.classList.add('text-slate-600');
+            }
+
             if (badge) {
-                if (data.totalAlerts > 0) {
+                if (!notifMarkedRead && data.totalAlerts > 0) {
                     badge.innerText = data.totalAlerts > 99 ? '99+' : data.totalAlerts;
                     badge.classList.remove('hidden');
-                } else {
+                } else if (notifMarkedRead) {
                     badge.classList.add('hidden');
                 }
             }
@@ -999,6 +1512,9 @@
             if (cProg) cProg.innerText = data.inProgressCount;
             if (cTodo) cTodo.innerText = data.todoCount;
             if (cTime) cTime.innerText = data.timesheetCount || 0;
+
+            // Also load activity count in the background
+            fetchTeamActivity();
 
             // Render Due Date Content
             const contentDue = document.getElementById('notif-content-due');
@@ -1118,9 +1634,10 @@
         }
     }
 
-    // Initial fetch & interval
+    // Initial fetch & polling intervals
     fetchNotifications();
-    setInterval(fetchNotifications, 30000);
+    setInterval(pollUnreadCount, 30000); // Lightweight badge & overdue monitor every 30s
+    setInterval(fetchNotifications, 180000); // Full refresh every 3 minutes
 
     // ── MOBILE SIDEBAR DRAWER CONTROLLER ────────────────
     function toggleMobileSidebar() {

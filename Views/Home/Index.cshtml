@@ -5,7 +5,7 @@
     var greeting = hour < 11 ? "Selamat Pagi" : hour < 15 ? "Selamat Siang" : hour < 18 ? "Selamat Sore" : "Selamat Malam";
 }
 
-<div class="space-y-6 max-w-7xl mx-auto">
+<div class="space-y-6 w-full">
     @Html.AntiForgeryToken()
 
     <!-- 1. PERSONAL MEMBER WELCOME BANNER -->
@@ -67,8 +67,8 @@
                         </span>
                     </div>
                     <p class="text-xs text-amber-900 mt-1 font-medium leading-relaxed">
-                        Klaim bonus <strong>+@Model.CheckInStatus.PointsPerCheckIn Poin</strong> sekarang & pertahankan streak <strong>@Model.CheckInStatus.CurrentStreak Hari</strong> kamu.
-                        <span class="text-[11px] text-amber-800 block sm:inline mt-0.5 sm:mt-0 font-semibold">⚠️ Awas: Streak akan otomatis reset ke Hari 1 jika tidak check-in selama @Model.CheckInStatus.MissedDaysReset hari berturut-turut!</span>
+                        Pertahankan streak <strong>@Model.CheckInStatus.CurrentStreak Hari</strong> kamu. Capai 15 hari untuk mencairkan <strong>1/2 poin</strong> dan 30 hari untuk <strong>1x total akumulasi poin penuh</strong>!
+                        <span class="text-[11px] text-amber-800 block sm:inline mt-0.5 sm:mt-0 font-semibold">⚠️ Saldo hadiah mulai dari 0. Streak reset jika absen @Model.CheckInStatus.MissedDaysReset hari berturut-turut.</span>
                     </p>
                 </div>
             </div>
@@ -107,11 +107,15 @@
                     <p class="text-[11px] text-slate-500 mt-0.5">
                         @if (Model.CheckInStatus.IsEligibleForMonthlyReward)
                         {
-                            <span class="text-amber-600 font-bold">🏆 Milestone 30 Hari tercapai! Anda berhak mengklaim reward eksklusif bulanan.</span>
+                            <span class="text-amber-600 font-bold">🏆 Target 30 Hari tercapai! 1x Total poin cair penuh dan hadiah eksklusif siap diklaim. Saldo Anda: <strong>💎 @Model.PointsSummary.AvailablePoints Poin</strong>.</span>
+                        }
+                        else if (Model.CheckInStatus.IsEligibleForHalfReward)
+                        {
+                            <span class="text-indigo-600 font-bold">🎯 Milestone 15 Hari tercapai (1/2 Poin cair)! Sisa <strong>@Model.CheckInStatus.DaysRemainingForMonthlyReward hari</strong> lagi menuju 1x total poin 30 hari. Saldo: <strong>💎 @Model.PointsSummary.AvailablePoints Poin</strong>.</span>
                         }
                         else
                         {
-                            <span>Sisa <strong>@Model.CheckInStatus.DaysRemainingForMonthlyReward hari</strong> lagi menuju Hadiah Bulanan (+@Model.CheckInStatus.MonthlyBonusPoints Poin). Saldo Anda: <strong>💎 @Model.PointsSummary.AvailablePoints Poin</strong> (Rp @Model.PointsSummary.RupiahEquivalent.ToString("N0")).</span>
+                            <span>Sisa <strong>@Model.CheckInStatus.DaysRemainingForHalfReward hari</strong> menuju pencairan 1/2 Poin (15 Hari). Saldo Poin: <strong>💎 @Model.PointsSummary.AvailablePoints Poin</strong> (Rp @Model.PointsSummary.RupiahEquivalent.ToString("N0")).</span>
                         }
                     </p>
                 </div>
@@ -153,6 +157,70 @@
                 <i class="fas fa-sync-alt" id="syncIcon"></i>
                 <span>Sync Sekarang</span>
             </button>
+        </div>
+    </div>
+
+    <!-- 1.6. ANALYTICS PERIOD FILTER TOOLBAR -->
+    <div class="bg-white rounded-2xl border border-indigo-100 shadow-sm">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-4 px-5">
+            <!-- Left: Title + Period info -->
+            <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-indigo-600 text-white flex items-center justify-center text-sm flex-shrink-0">
+                    <i class="fas fa-chart-area"></i>
+                </div>
+                <div>
+                    <h3 class="text-sm font-black text-slate-800 flex items-center gap-2">
+                        Analitik Dashboard
+                        <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700" id="analyticsperiodLabel">7 Hari Terakhir</span>
+                    </h3>
+                    <p class="text-[11px] text-slate-400" id="analyticsdateRange">Memuat data...</p>
+                </div>
+            </div>
+            <!-- Right: Filter Controls -->
+            <div class="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+                <!-- Period Segmented Buttons -->
+                <div class="flex items-center bg-slate-100 rounded-xl p-1 gap-1">
+                    <button onclick="loadAnalytics('today')" data-period="today"
+                        class="period-btn px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white hover:text-indigo-700 transition-all">
+                        Hari Ini
+                    </button>
+                    <button onclick="loadAnalytics('week')" data-period="week"
+                        class="period-btn active-period px-3 py-1.5 rounded-lg text-[11px] font-bold bg-white text-indigo-700 shadow-sm transition-all">
+                        7 Hari
+                    </button>
+                    <button onclick="loadAnalytics('month')" data-period="month"
+                        class="period-btn px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white hover:text-indigo-700 transition-all">
+                        30 Hari
+                    </button>
+                    <button onclick="loadAnalytics('quarter')" data-period="quarter"
+                        class="period-btn px-3 py-1.5 rounded-lg text-[11px] font-bold text-slate-600 hover:bg-white hover:text-indigo-700 transition-all">
+                        90 Hari
+                    </button>
+                </div>
+                <!-- Project Filter -->
+                <select id="analyticsProjectFilter" onchange="loadAnalytics(currentAnalyticsPeriod)"
+                    class="text-[11px] font-bold text-slate-700 bg-white border border-slate-200 rounded-xl px-3 py-1.5 pr-7 hover:border-indigo-300 focus:border-indigo-500 focus:outline-none transition-all">
+                    <option value="0">📁 Semua Proyek</option>
+                    @foreach (var proj in Model.AllProjects)
+                    {
+                        <option value="@proj.Id">@proj.Name</option>
+                    }
+                </select>
+                <!-- Refresh Button -->
+                <button onclick="loadAnalytics(currentAnalyticsPeriod)"
+                    class="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-[11px] font-bold transition-all" title="Muat Ulang">
+                    <i class="fas fa-redo" id="analyticsRefreshIcon"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Analytics KPI Cards Row (Dynamic) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-0 border-t border-slate-100" id="analyticsKpiRow">
+            <!-- KPI cards rendered by JS -->
+            <div class="p-4 text-center border-r border-slate-100 last:border-r-0 col-span-2 sm:col-span-3 lg:col-span-6">
+                <i class="fas fa-spinner fa-spin text-indigo-400"></i>
+                <span class="text-xs text-slate-400 ml-2">Memuat analitik...</span>
+            </div>
         </div>
     </div>
 
@@ -307,14 +375,21 @@
                 </div>
             </div>
 
-            <!-- Weekly Work Hours Line/Bar Chart -->
+            <!-- Dynamic Trend Chart (period-filtered) -->
             <div class="bg-white rounded-3xl p-5 shadow-sm border border-indigo-100">
                 <div class="flex items-center justify-between mb-2">
                     <h3 class="font-bold text-slate-800 flex items-center gap-2 text-xs uppercase tracking-wider">
                         <i class="fas fa-chart-line text-indigo-500"></i>
-                        Jam Kerja 7 Hari
+                        <span id="trendChartTitle">Tren Jam Kerja</span>
                     </h3>
-                    <a href="/Report" class="text-xs text-indigo-500 hover:text-indigo-700 font-bold">Laporan →</a>
+                    <div class="flex items-center gap-2">
+                        <button onclick="toggleTrendMode()" id="trendModeBtn"
+                            class="text-[10px] font-bold px-2 py-0.5 rounded-lg bg-indigo-50 text-indigo-600 hover:bg-indigo-100 transition-all"
+                            title="Toggle antara Jam Kerja dan Tugas Selesai">
+                            <i class="fas fa-exchange-alt"></i> Jam / Selesai
+                        </button>
+                        <a href="/Report" class="text-xs text-indigo-500 hover:text-indigo-700 font-bold">Laporan →</a>
+                    </div>
                 </div>
                 <div class="h-48 flex items-center justify-center">
                     <canvas id="weekChart"></canvas>
@@ -390,6 +465,23 @@
             <!-- Dynamic Interactive Project-Member Chart -->
             <div class="h-64 mb-3">
                 <canvas id="projectMemberChart"></canvas>
+            </div>
+        </div>
+
+        <!-- ROW 4: MEMBER PRODUCTIVITY TABLE (Period-Filtered) -->
+        <div class="bg-white rounded-3xl p-5 shadow-sm border border-indigo-100">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="font-bold text-slate-800 flex items-center gap-2 text-sm">
+                        <i class="fas fa-medal text-amber-500"></i>
+                        Produktivitas Anggota Tim
+                    </h3>
+                    <p class="text-xs text-slate-400 mt-0.5">Tugas selesai &amp; jam kerja per anggota sesuai periode filter</p>
+                </div>
+                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-100 text-amber-700" id="productivityPeriodBadge">7 Hari Terakhir</span>
+            </div>
+            <div id="memberProductivityTable">
+                <div class="text-center p-6 text-slate-400"><i class="fas fa-spinner fa-spin"></i> Memuat...</div>
             </div>
         </div>
     </div>
@@ -551,41 +643,109 @@
     </div>
 </div>
 
+<!-- KPI DRILL-DOWN MODAL -->
+<div id="kpiDrillDownModal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4" role="dialog">
+    <div class="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onclick="closeDrillDown()"></div>
+    <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden">
+        <!-- Header -->
+        <div class="flex items-center justify-between p-5 border-b border-slate-100">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm" id="drillDownIconBox">
+                    <i class="fas fa-list"></i>
+                </div>
+                <div>
+                    <h3 class="font-black text-slate-800 text-sm" id="drillDownTitle">Daftar Tugas</h3>
+                    <p class="text-[11px] text-slate-400" id="drillDownSubtitle">Memuat...</p>
+                </div>
+            </div>
+            <button onclick="closeDrillDown()" class="w-8 h-8 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-all">
+                <i class="fas fa-times text-xs"></i>
+            </button>
+        </div>
+        <!-- Task List -->
+        <div class="flex-1 overflow-y-auto p-5" id="drillDownContent">
+            <div class="text-center py-8 text-slate-400"><i class="fas fa-spinner fa-spin"></i></div>
+        </div>
+        <!-- Footer -->
+        <div class="p-4 border-t border-slate-100 bg-slate-50 flex items-center justify-between">
+            <span class="text-xs text-slate-500" id="drillDownFooter">-</span>
+            <a href="/Task" class="text-xs font-bold text-indigo-600 hover:text-indigo-800">Lihat Semua Tugas →</a>
+        </div>
+    </div>
+</div>
+
 @section Scripts {
 <script>
-    // 1. Weekly Work Hours Chart
+    // ── ANALYTICS STATE ──────────────────────────────────────────────
+    let currentAnalyticsPeriod = 'week';
+    let trendChartInstance = null;
+    let trendShowHours = true; // toggle mode: hours vs done tasks
+
+    // 1. Trend Chart (replaces static weekChart, now dynamic)
     const ctxWeek = document.getElementById('weekChart').getContext('2d');
-    new Chart(ctxWeek, {
-        type: 'bar',
-        data: {
-            labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeekLabels)),
-            datasets: [{
-                label: 'Jam',
-                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeekHours)),
-                backgroundColor: 'rgba(99,102,241,0.2)',
-                borderColor: '#6366F1',
-                borderWidth: 2,
-                borderRadius: 6,
-                borderSkipped: false,
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    grid: { color: 'rgba(99,102,241,0.06)' },
-                    ticks: { font: { size: 10 }, color: '#94A3B8' }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { font: { size: 10, weight: '600' }, color: '#6366F1' }
+
+    function buildTrendChart(labels, hoursData, doneData, mode) {
+        if (trendChartInstance) trendChartInstance.destroy();
+        const isHours = mode === 'hours';
+        trendChartInstance = new Chart(ctxWeek, {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: isHours ? 'Jam Kerja' : 'Tugas Selesai',
+                    data: isHours ? hoursData : doneData,
+                    backgroundColor: isHours ? 'rgba(99,102,241,0.18)' : 'rgba(16,185,129,0.18)',
+                    borderColor: isHours ? '#6366F1' : '#10B981',
+                    borderWidth: 2,
+                    borderRadius: 6,
+                    borderSkipped: false,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(99,102,241,0.06)' },
+                        ticks: { font: { size: 10 }, color: '#94A3B8' }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: {
+                            font: { size: labels.length > 20 ? 8 : 10, weight: '600' },
+                            color: isHours ? '#6366F1' : '#10B981',
+                            maxRotation: labels.length > 14 ? 45 : 0
+                        }
+                    }
                 }
             }
+        });
+    }
+
+    function toggleTrendMode() {
+        trendShowHours = !trendShowHours;
+        const mode = trendShowHours ? 'hours' : 'done';
+        document.getElementById('trendChartTitle').textContent = trendShowHours ? 'Tren Jam Kerja' : 'Tren Tugas Selesai';
+        if (window._lastAnalyticsData) {
+            buildTrendChart(
+                window._lastAnalyticsData.trendLabels,
+                window._lastAnalyticsData.trendHours,
+                window._lastAnalyticsData.trendDoneTasks,
+                mode
+            );
         }
-    });
+    }
+
+    // Initial fallback render using Razor data (Week 7 hari)
+    buildTrendChart(
+        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeekLabels)),
+        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.WeekHours)),
+        [],
+        'hours'
+    );
+
 
     // 2. Status Doughnut Chart
     const ctxStatus = document.getElementById('statusDoughnutChart').getContext('2d');
@@ -813,6 +973,218 @@
 
     // Initial load for project member chart
     filterProjectMemberChart(0);
+
+    // ── ANALYTICS PERIOD FILTER SYSTEM ─────────────────────────────
+    async function loadAnalytics(period) {
+        currentAnalyticsPeriod = period;
+
+        // Update active button style
+        document.querySelectorAll('.period-btn').forEach(btn => {
+            const isActive = btn.dataset.period === period;
+            btn.classList.toggle('active-period', isActive);
+            btn.classList.toggle('bg-white', isActive);
+            btn.classList.toggle('shadow-sm', isActive);
+            btn.classList.toggle('text-indigo-700', isActive);
+            btn.classList.toggle('text-slate-600', !isActive);
+        });
+
+        const refreshIcon = document.getElementById('analyticsRefreshIcon');
+        if (refreshIcon) refreshIcon.classList.add('fa-spin');
+
+        const projectId = document.getElementById('analyticsProjectFilter')?.value || 0;
+        try {
+            const res = await fetch(`/Home/GetDashboardAnalytics?period=${period}&projectId=${projectId}`);
+            const data = await res.json();
+            window._lastAnalyticsData = data;
+
+            // Update period label
+            const labelEl = document.getElementById('analyticsperiodLabel');
+            const rangeEl = document.getElementById('analyticsdateRange');
+            if (labelEl) labelEl.textContent = data.periodLabel;
+            if (rangeEl) rangeEl.textContent = `${data.dateFrom} – ${data.dateTo}`;
+
+            // Update productivity badge
+            const prodBadge = document.getElementById('productivityPeriodBadge');
+            if (prodBadge) prodBadge.textContent = data.periodLabel;
+
+            // Render KPI cards
+            renderAnalyticsKpiCards(data, period);
+
+            // Update trend chart
+            buildTrendChart(data.trendLabels, data.trendHours, data.trendDoneTasks, trendShowHours ? 'hours' : 'done');
+
+            // Update productivity table
+            renderProductivityTable(data.memberProductivity);
+
+        } catch(e) {
+            console.error('Analytics load failed', e);
+        } finally {
+            if (refreshIcon) refreshIcon.classList.remove('fa-spin');
+        }
+    }
+
+    function renderAnalyticsKpiCards(data, period) {
+        const row = document.getElementById('analyticsKpiRow');
+        if (!row) return;
+
+        const pct = data.completionRatePercent;
+        const pctColor = pct >= 75 ? 'text-emerald-600' : pct >= 40 ? 'text-amber-600' : 'text-rose-600';
+        const pctBg = pct >= 75 ? 'bg-emerald-50' : pct >= 40 ? 'bg-amber-50' : 'bg-rose-50';
+
+        row.innerHTML = `
+            <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors group" onclick="openDrillDown('done','${period}')">
+                <p class="text-2xl font-black text-emerald-600">${data.doneTasks}</p>
+                <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-emerald-700">✅ Selesai</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
+            </div>
+            <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors group" onclick="openDrillDown('inprogress','${period}')">
+                <p class="text-2xl font-black text-cyan-600">${data.inProgressTasks}</p>
+                <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-cyan-700">🔄 In Progress</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
+            </div>
+            <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors group" onclick="openDrillDown('todo','${period}')">
+                <p class="text-2xl font-black text-amber-600">${data.todoTasks}</p>
+                <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-amber-700">📋 Todo</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
+            </div>
+            <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-rose-50/40 transition-colors group" onclick="openDrillDown('overdue','${period}')">
+                <p class="text-2xl font-black text-rose-600">${data.overdueTasks}</p>
+                <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-rose-700">⚠️ Overdue</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
+            </div>
+            <div class="p-4 text-center border-r border-slate-100">
+                <p class="text-2xl font-black text-indigo-600">${data.totalWorkHours}j</p>
+                <p class="text-[11px] font-bold text-slate-500 mt-0.5">⏱️ Jam Kerja</p>
+                <p class="text-[10px] text-slate-400 mt-0.5">~${data.avgDailyWorkHours}j/hari</p>
+            </div>
+            <div class="p-4 text-center">
+                <p class="text-2xl font-black ${pctColor}">${pct}%</p>
+                <p class="text-[11px] font-bold text-slate-500 mt-0.5">🎯 Completion</p>
+                <div class="mt-1.5 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                    <div class="h-full rounded-full transition-all duration-500 ${pct >= 75 ? 'bg-emerald-500' : pct >= 40 ? 'bg-amber-500' : 'bg-rose-500'}" style="width:${pct}%"></div>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderProductivityTable(members) {
+        const container = document.getElementById('memberProductivityTable');
+        if (!container) return;
+
+        if (!members || members.length === 0) {
+            container.innerHTML = '<div class="text-center py-6 text-slate-400 text-xs">Tidak ada data anggota untuk periode ini.</div>';
+            return;
+        }
+
+        // Sort by done tasks desc
+        const sorted = [...members].sort((a, b) => b.doneTasks - a.doneTasks);
+        const maxDone = sorted[0]?.doneTasks || 1;
+
+        container.innerHTML = `
+            <div class="space-y-2">
+                ${sorted.map((m, i) => {
+                    const barPct = maxDone > 0 ? Math.round((m.doneTasks / maxDone) * 100) : 0;
+                    const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : `${i+1}.`;
+                    return `
+                    <div class="flex items-center gap-3 p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/40 transition-all group">
+                        <span class="text-sm w-6 text-center flex-shrink-0 font-black text-slate-500">${medal}</span>
+                        <div class="w-8 h-8 rounded-xl flex items-center justify-center text-white text-xs font-black flex-shrink-0" style="background:${m.memberColor}">${m.initials}</div>
+                        <div class="flex-1 min-w-0">
+                            <div class="flex items-center justify-between mb-1">
+                                <span class="text-xs font-bold text-slate-800 truncate">${m.memberName}</span>
+                                <div class="flex items-center gap-3 text-[11px] font-bold flex-shrink-0 ml-2">
+                                    <span class="text-emerald-600">✅ ${m.doneTasks}</span>
+                                    <span class="text-indigo-600">⏱ ${m.workHours}j</span>
+                                    <span class="text-slate-500">${m.completionRatePercent}%</span>
+                                </div>
+                            </div>
+                            <div class="bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                                <div class="h-full rounded-full bg-gradient-to-r from-indigo-500 to-emerald-500 transition-all duration-700" style="width:${barPct}%"></div>
+                            </div>
+                        </div>
+                    </div>`;
+                }).join('')}
+            </div>
+        `;
+    }
+
+    // ── KPI DRILL-DOWN MODAL ────────────────────────────────────────
+    const kpiConfig = {
+        done:      { title: 'Tugas Selesai', color: '#10B981', icon: 'fa-check-circle', bg: 'bg-emerald-500' },
+        inprogress:{ title: 'Tugas In Progress', color: '#06B6D4', icon: 'fa-spinner', bg: 'bg-cyan-500' },
+        todo:      { title: 'Tugas Todo', color: '#F59E0B', icon: 'fa-clipboard-list', bg: 'bg-amber-500' },
+        overdue:   { title: 'Tugas Overdue', color: '#EF4444', icon: 'fa-exclamation-triangle', bg: 'bg-rose-500' },
+    };
+
+    async function openDrillDown(kpi, period) {
+        const modal = document.getElementById('kpiDrillDownModal');
+        const cfg = kpiConfig[kpi] || kpiConfig.done;
+        modal.classList.remove('hidden');
+        document.body.style.overflow = 'hidden';
+
+        // Update header
+        document.getElementById('drillDownTitle').textContent = cfg.title;
+        document.getElementById('drillDownSubtitle').textContent = 'Memuat daftar tugas...';
+        document.getElementById('drillDownIconBox').className = `w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm ${cfg.bg}`;
+        document.getElementById('drillDownIconBox').innerHTML = `<i class="fas ${cfg.icon}"></i>`;
+        document.getElementById('drillDownContent').innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-spinner fa-spin"></i></div>';
+
+        try {
+            const projectId = document.getElementById('analyticsProjectFilter')?.value || 0;
+            const res = await fetch(`/Home/GetKpiDrillDown?kpi=${kpi}&period=${period}&projectId=${projectId}`);
+            const data = await res.json();
+
+            document.getElementById('drillDownSubtitle').textContent = `${data.total} tugas ditemukan`;
+            document.getElementById('drillDownFooter').textContent = `Menampilkan ${Math.min(data.total, 50)} dari ${data.total} tugas`;
+
+            if (!data.tasks || data.tasks.length === 0) {
+                document.getElementById('drillDownContent').innerHTML =
+                    '<div class="text-center py-10 text-slate-400"><i class="fas fa-inbox text-2xl mb-2 block"></i>Tidak ada tugas dalam kategori ini.</div>';
+                return;
+            }
+
+            const priorityColors = { Critical: 'bg-red-100 text-red-700', High: 'bg-amber-100 text-amber-700', Medium: 'bg-blue-100 text-blue-700', Low: 'bg-emerald-100 text-emerald-700' };
+            const statusColors  = { Done: 'bg-emerald-100 text-emerald-700', InProgress: 'bg-cyan-100 text-cyan-700', Todo: 'bg-slate-100 text-slate-600', Overdue: 'bg-rose-100 text-rose-700' };
+
+            document.getElementById('drillDownContent').innerHTML = `
+                <div class="space-y-2">
+                    ${data.tasks.map(t => `
+                        <a href="${t.editUrl}" class="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50 transition-all group border border-transparent hover:border-indigo-200">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5 flex-wrap mb-1">
+                                    <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-700 truncate max-w-xs">${t.title}</span>
+                                    ${t.isOverdue ? '<span class="text-[9px] bg-rose-100 text-rose-600 font-extrabold px-1.5 py-0.5 rounded">Telat</span>' : ''}
+                                </div>
+                                <div class="flex items-center gap-2 flex-wrap text-[10px] text-slate-400">
+                                    ${t.projectName ? `<span class="font-semibold text-slate-600">📁 ${t.projectName}</span>` : ''}
+                                    ${t.assigneeName ? `<span>👤 ${t.assigneeName}</span>` : '<span class="text-slate-400">Belum Ditugaskan</span>'}
+                                    ${t.dueDate ? `<span>📅 ${t.dueDate}</span>` : ''}
+                                    <span class="font-mono text-indigo-600 font-bold">⏱ ${t.workHours}j</span>
+                                </div>
+                            </div>
+                            <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+                                <span class="text-[9px] font-bold px-2 py-0.5 rounded-lg ${priorityColors[t.priority] || 'bg-slate-100 text-slate-600'}">${t.priority}</span>
+                                <span class="text-[9px] font-bold px-2 py-0.5 rounded-lg ${statusColors[t.status] || 'bg-slate-100 text-slate-600'}">${t.status}</span>
+                            </div>
+                        </a>
+                    `).join('')}
+                </div>
+            `;
+        } catch(e) {
+            document.getElementById('drillDownContent').innerHTML =
+                '<div class="text-center py-8 text-rose-400"><i class="fas fa-exclamation-triangle"></i> Gagal memuat data.</div>';
+        }
+    }
+
+    function closeDrillDown() {
+        document.getElementById('kpiDrillDownModal').classList.add('hidden');
+        document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrillDown(); });
+
+    // Auto-load analytics on page load (default: week)
+    loadAnalytics('week');
 
     // Timer functions
     function startTimer(taskId, taskTitle) {

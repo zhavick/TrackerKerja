@@ -106,5 +106,98 @@ namespace TrackerKerja.Controllers
             }
             return Json(new { success = false, message = "Format tanggal tidak valid." });
         }
+
+        // ── AJAX / DOWNLOAD: EXPORT JADWAL TUGAS KE ICAL (.ICS) ─────
+        [HttpGet]
+        public async Task<IActionResult> ExportIcs(string? filter = null)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var currentUserId = currentUser?.Id ?? "";
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var query = _db.Tasks
+                .Include(t => t.Project)
+                .Include(t => t.AssignedToUser)
+                .Where(t => t.DueDate != null);
+
+            if (!isAdmin)
+            {
+                query = query.Where(t => (t.CompanyId == userCompanyId || (t.Project != null && t.Project.CompanyId == userCompanyId)) && t.AssignedToUserId == currentUserId);
+            }
+            else if (string.Equals(filter, "mine", StringComparison.OrdinalIgnoreCase) ||
+                     string.Equals(filter, "my", StringComparison.OrdinalIgnoreCase))
+            {
+                query = query.Where(t => t.AssignedToUserId == currentUserId);
+            }
+
+            var tasks = await query.OrderBy(t => t.DueDate).ToListAsync();
+
+            var sb = new System.Text.StringBuilder();
+            sb.AppendLine("BEGIN:VCALENDAR");
+            sb.AppendLine("VERSION:2.0");
+            sb.AppendLine("PRODID:-//TrackerKerja//Work Tracker Pro//ID");
+            sb.AppendLine("CALSCALE:GREGORIAN");
+            sb.AppendLine("METHOD:PUBLISH");
+            sb.AppendLine("X-WR-CALNAME:Jadwal Tugas - TrackerKerja");
+            sb.AppendLine("X-WR-TIMEZONE:Asia/Jakarta");
+
+            var baseUrl = $"{Request.Scheme}://{Request.Host}";
+
+            foreach (var t in tasks)
+            {
+                var due = t.DueDate!.Value;
+                var start = t.StartDate ?? due.Date;
+                var dtStamp = DateTime.UtcNow.ToString("yyyyMMddTHHmmssZ");
+                var dtStart = start.ToString("yyyyMMdd");
+                var dtEnd = due.AddDays(1).ToString("yyyyMMdd"); // All-day event end is exclusive in iCal
+
+                var summary = t.Project != null ? $"[{t.Project.Name}] {t.Title}" : t.Title;
+                if (!string.IsNullOrEmpty(t.TaskCode)) summary = $"[{t.TaskCode}] " + summary;
+
+                var desc = $"Prioritas: {t.Priority}\\nStatus: {t.Status}\\nPIC: {t.AssignedToUser?.FullName ?? "Belum Ditugaskan"}\\nProgres: {t.Progress}%";
+                if (!string.IsNullOrWhiteSpace(t.Description))
+                {
+                    var cleanDesc = t.Description.Replace("\r", "").Replace("\n", "\\n").Replace(",", "\\,");
+                    desc += "\\n\\nDeskripsi: " + cleanDesc;
+                }
+
+                int priorityVal = t.Priority switch
+                {
+                    TaskPriority.Critical => 1,
+                    TaskPriority.High => 3,
+                    TaskPriority.Medium => 5,
+                    _ => 9
+                };
+
+                sb.AppendLine("BEGIN:VEVENT");
+                sb.AppendLine($"UID:task-{t.Id}@trackerkerja");
+                sb.AppendLine($"DTSTAMP:{dtStamp}");
+                sb.AppendLine($"DTSTART;VALUE=DATE:{dtStart}");
+                sb.AppendLine($"DTEND;VALUE=DATE:{dtEnd}");
+                sb.AppendLine($"SUMMARY:{EscapeIcs(summary)}");
+                sb.AppendLine($"DESCRIPTION:{desc}");
+                sb.AppendLine($"PRIORITY:{priorityVal}");
+                sb.AppendLine($"STATUS:{(t.Status == Models.TaskStatus.Done ? "COMPLETED" : "CONFIRMED")}");
+                sb.AppendLine($"URL:{baseUrl}/Task/Edit/{t.Id}");
+                sb.AppendLine("END:VEVENT");
+            }
+
+            sb.AppendLine("END:VCALENDAR");
+
+            var bytes = System.Text.Encoding.UTF8.GetBytes(sb.ToString());
+            var filename = $"jadwal-tugas-{DateTime.Now:yyyyMMdd-HHmm}.ics";
+            return File(bytes, "text/calendar", filename);
+        }
+
+        private static string EscapeIcs(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return "";
+            return text.Replace("\\", "\\\\")
+                       .Replace(";", "\\;")
+                       .Replace(",", "\\,")
+                       .Replace("\r\n", "\\n")
+                       .Replace("\n", "\\n");
+        }
     }
 }

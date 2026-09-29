@@ -80,6 +80,71 @@ namespace TrackerKerja.ViewModels
         public List<ProjectMemberDistributionDto> ProjectMemberDistributions { get; set; } = new();
     }
 
+    // ── Dashboard Period-Filtered Analytics DTO ───────────────────
+    public class DashboardAnalyticsDto
+    {
+        // KPI Counts
+        public int TotalTasks { get; set; }
+        public int DoneTasks { get; set; }
+        public int InProgressTasks { get; set; }
+        public int TodoTasks { get; set; }
+        public int OverdueTasks { get; set; }
+        public int CompletionRatePercent => TotalTasks > 0 ? (int)Math.Round((double)DoneTasks / TotalTasks * 100) : 0;
+
+        // Work hours
+        public double TotalWorkHours { get; set; }
+        public double AvgDailyWorkHours { get; set; }
+
+        // Trend Chart: labels + hours per day
+        public List<string> TrendLabels { get; set; } = new();
+        public List<double> TrendHours { get; set; } = new();
+
+        // Trend Chart: tasks done per day
+        public List<int> TrendDoneTasks { get; set; } = new();
+
+        // Status chart
+        public List<string> StatusLabels { get; set; } = new();
+        public List<int> StatusCounts { get; set; } = new();
+
+        // Productivity by Member (name, done, hours)
+        public List<MemberProductivityItemDto> MemberProductivity { get; set; } = new();
+
+        // Drill-down: task list (for KPI click modal)
+        public List<DrillDownTaskDto> DrillDownTasks { get; set; } = new();
+
+        // Period info
+        public string Period { get; set; } = "week";
+        public string PeriodLabel { get; set; } = "7 Hari Terakhir";
+        public string DateFrom { get; set; } = string.Empty;
+        public string DateTo { get; set; } = string.Empty;
+    }
+
+    public class MemberProductivityItemDto
+    {
+        public string MemberId { get; set; } = string.Empty;
+        public string MemberName { get; set; } = string.Empty;
+        public string MemberColor { get; set; } = "#6366F1";
+        public string Initials { get; set; } = string.Empty;
+        public int DoneTasks { get; set; }
+        public int TotalTasks { get; set; }
+        public double WorkHours { get; set; }
+        public int CompletionRatePercent => TotalTasks > 0 ? (int)Math.Round((double)DoneTasks / TotalTasks * 100) : 0;
+    }
+
+    public class DrillDownTaskDto
+    {
+        public int Id { get; set; }
+        public string Title { get; set; } = string.Empty;
+        public string Status { get; set; } = string.Empty;
+        public string Priority { get; set; } = string.Empty;
+        public string? ProjectName { get; set; }
+        public string? AssigneeName { get; set; }
+        public string? DueDate { get; set; }
+        public bool IsOverdue { get; set; }
+        public double WorkHours { get; set; }
+        public string EditUrl => $"/Task/Edit/{Id}";
+    }
+
     public class ProjectMemberDistributionDto
     {
         public int ProjectId { get; set; }
@@ -216,6 +281,9 @@ namespace TrackerKerja.ViewModels
     {
         public int BadgePoints { get; set; }
         public int CheckInPoints { get; set; }
+        public int PotentialMonthlyCheckInPoints { get; set; }
+        public int EffectiveCheckInDays { get; set; }
+        public string CheckInTierStatus { get; set; } = string.Empty;
         public int TotalEarnedPoints => BadgePoints + CheckInPoints;
         public int SpentPoints { get; set; }
         public int AvailablePoints => Math.Max(0, TotalEarnedPoints - SpentPoints);
@@ -231,10 +299,14 @@ namespace TrackerKerja.ViewModels
         public int TotalCheckIns { get; set; }
         public int MonthlyTargetDays { get; set; } = 30;
         public int DaysRemainingForMonthlyReward => Math.Max(0, MonthlyTargetDays - CurrentStreak);
+        public int DaysRemainingForHalfReward => Math.Max(0, 15 - CurrentStreak);
+        public bool IsEligibleForHalfReward => CurrentStreak >= 15;
         public bool IsEligibleForMonthlyReward => CurrentStreak >= MonthlyTargetDays;
         public int PointsPerCheckIn { get; set; } = 10;
         public int PointValueRupiah { get; set; } = 100;
         public int MonthlyBonusPoints { get; set; } = 500;
+        public int TotalMonthlyCheckInPoints => (MonthlyTargetDays * PointsPerCheckIn) + MonthlyBonusPoints;
+        public int HalfMonthlyCheckInPoints => TotalMonthlyCheckInPoints / 2;
         public int MissedDaysReset { get; set; } = 2;
         public List<DailyCheckIn> RecentCheckIns { get; set; } = new();
     }
@@ -311,5 +383,15 @@ namespace TrackerKerja.ViewModels
         public string UserId { get; set; } = string.Empty;
         public int BadgeId { get; set; }
         public string? Note { get; set; }
+    }
+
+    public class QuickCreateTaskDto
+    {
+        public string Title { get; set; } = string.Empty;
+        public int? ProjectId { get; set; }
+        public string? AssignedToUserId { get; set; }
+        public string? Priority { get; set; } = "Medium";
+        public string? DueDate { get; set; }
+        public string? Description { get; set; }
     }
 }

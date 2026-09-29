@@ -1498,5 +1498,147 @@ namespace TrackerKerja.Controllers
             return query;
         }
         #endregion
+
+        // ── AJAX: GET QUICK CREATE METADATA (PROJECTS & USERS) ───────
+        [HttpGet]
+        public async Task<IActionResult> GetQuickCreateData()
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+
+            var projectsQuery = _db.Projects.Where(p => p.Status == ProjectStatus.Active).AsQueryable();
+            var usersQuery = _db.Users.AsQueryable();
+
+            if (!isAdmin)
+            {
+                projectsQuery = projectsQuery.Where(p => p.CompanyId == userCompanyId);
+                usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+            }
+
+            var projects = await projectsQuery
+                .OrderBy(p => p.Name)
+                .Select(p => new { id = p.Id, name = p.Name, color = p.Color ?? "#6366F1" })
+                .ToListAsync();
+
+            var users = await usersQuery
+                .OrderBy(u => u.FullName)
+                .Select(u => new
+                {
+                    id = u.Id,
+                    fullName = u.FullName,
+                    initials = u.Initials,
+                    avatarColor = u.AvatarColor ?? "#6366F1",
+                    jobTitle = u.JobTitle ?? "Anggota"
+                })
+                .ToListAsync();
+
+            return Json(new
+            {
+                success = true,
+                currentUserId = currentUser?.Id ?? "",
+                currentUserName = currentUser?.FullName ?? "Pengguna",
+                projects,
+                users
+            });
+        }
+
+        // ── AJAX: QUICK CREATE TASK (MODAL SHORTCUT) ─────────────────
+        [HttpPost]
+        [IgnoreAntiforgeryToken]
+        public async Task<IActionResult> QuickCreateTask([FromBody] QuickCreateTaskDto dto)
+        {
+            if (dto == null || string.IsNullOrWhiteSpace(dto.Title))
+            {
+                return Json(new { success = false, message = "Judul tugas wajib diisi." });
+            }
+
+            var currentUser = await _userManager.GetUserAsync(User);
+            var currentUserId = currentUser?.Id ?? "";
+            var userCompanyId = currentUser?.CompanyId ?? 1;
+
+            var priority = TaskPriority.Medium;
+            if (!string.IsNullOrWhiteSpace(dto.Priority))
+            {
+                Enum.TryParse<TaskPriority>(dto.Priority, true, out priority);
+            }
+
+            DateTime? dueDate = null;
+            if (!string.IsNullOrWhiteSpace(dto.DueDate) && DateTime.TryParse(dto.DueDate, out var parsedDate))
+            {
+                dueDate = parsedDate;
+            }
+
+            var task = new WorkTask
+            {
+                Title = dto.Title.Trim(),
+                Description = dto.Description?.Trim(),
+                ProjectId = dto.ProjectId > 0 ? dto.ProjectId : null,
+                AssignedToUserId = string.IsNullOrWhiteSpace(dto.AssignedToUserId) ? currentUserId : dto.AssignedToUserId,
+                Priority = priority,
+                Status = ModelTaskStatus.Todo,
+                Progress = 0,
+                CompanyId = userCompanyId,
+                Milestone = "Implementation",
+                DueDate = dueDate,
+                StartDate = DateTime.Today,
+                CreatedAt = DateTime.Now,
+                UpdatedAt = DateTime.Now
+            };
+
+            _db.Tasks.Add(task);
+            await _db.SaveChangesAsync();
+
+            // Evaluate gamification badges for assignee
+            if (!string.IsNullOrEmpty(task.AssignedToUserId))
+            {
+                await _gamificationService.EvaluateAndAwardBadgesAsync(task.AssignedToUserId);
+            }
+
+            // Dispatch TASK_ASSIGNED email in background if assigned to another user
+            if (!string.IsNullOrWhiteSpace(task.AssignedToUserId) && task.AssignedToUserId != currentUserId)
+            {
+                var assignedUserId = task.AssignedToUserId;
+                var createdTaskId = task.Id;
+                _ = Task.Run(async () =>
+                {
+                    try
+                    {
+                        using var scope = HttpContext.RequestServices.CreateScope();
+                        var dbScoped = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                        var emailSvc = scope.ServiceProvider.GetRequiredService<IEmailService>();
+                        var assignee = await dbScoped.Users.FindAsync(assignedUserId);
+                        var savedTask = await dbScoped.Tasks.Include(t => t.Project).FirstOrDefaultAsync(t => t.Id == createdTaskId);
+
+                        if (assignee != null && !string.IsNullOrWhiteSpace(assignee.Email) && savedTask != null)
+                        {
+                            var taskVars = new Dictionary<string, string>
+                            {
+                                { "FullName", assignee.FullName },
+                                { "TaskTitle", savedTask.Title },
+                                { "TaskDescription", string.IsNullOrWhiteSpace(savedTask.Description) ? "Tidak ada deskripsi rinci." : savedTask.Description },
+                                { "ProjectName", savedTask.Project?.Name ?? "Tanpa Proyek" },
+                                { "Priority", savedTask.Priority.ToString() },
+                                { "DueDate", savedTask.DueDate.HasValue ? savedTask.DueDate.Value.ToString("dd MMM yyyy") : "-" },
+                                { "TaskUrl", $"/Task/Edit/{savedTask.Id}" }
+                            };
+                            await emailSvc.SendEventEmailAsync("TASK_ASSIGNED", assignee.Email, taskVars);
+                        }
+                    }
+                    catch { }
+                });
+            }
+
+            return Json(new
+            {
+                success = true,
+                taskId = task.Id,
+                taskCode = task.TaskCode,
+                title = task.Title,
+                priority = task.Priority.ToString(),
+                dueDateFormatted = task.DueDate?.ToString("dd MMM yyyy") ?? "—",
+                message = $"Tugas [{task.TaskCode}] berhasil dibuat!"
+            });
+        }
     }
 }

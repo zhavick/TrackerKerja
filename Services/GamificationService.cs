@@ -416,14 +416,77 @@ namespace TrackerKerja.Services
         {
             var settings = await GetGamificationSettingsAsync();
 
+            // 1. Poin dari Badge: Setiap perolehan badge memberikan poin instan
             var badgePoints = await _db.UserBadges
                 .Where(ub => ub.UserId == userId)
                 .SumAsync(ub => (int?)ub.Badge!.Points) ?? 0;
 
-            var checkInPoints = await _db.DailyCheckIns
-                .Where(c => c.UserId == userId)
-                .SumAsync(c => (int?)c.PointsEarned) ?? 0;
+            // 2. Total akumulasi poin check-in 1 bulan (30 hari target)
+            int monthlyTargetDays = settings.MonthlyStreakDays > 0 ? settings.MonthlyStreakDays : 30;
+            int totalMonthlyCheckInPoints = (monthlyTargetDays * settings.DailyCheckInPoints) + settings.MonthlyStreakBonusPoints;
+            int halfMonthlyCheckInPoints = totalMonthlyCheckInPoints / 2;
 
+            // 3. Hitung hari check-in aktif yang ditempuh user
+            var today = DateTime.Today;
+            var lastCheckIn = await _db.DailyCheckIns
+                .Where(c => c.UserId == userId)
+                .OrderByDescending(c => c.CheckInDate)
+                .FirstOrDefaultAsync();
+
+            int currentStreak = 0;
+            if (lastCheckIn != null)
+            {
+                var daysDiff = (int)(today - lastCheckIn.CheckInDate.Date).TotalDays;
+                if (daysDiff <= 1 || daysDiff < settings.MissedDaysReset)
+                {
+                    currentStreak = lastCheckIn.StreakDay;
+                }
+            }
+
+            var startOfMonth = new DateTime(today.Year, today.Month, 1);
+            var checkInsThisMonth = await _db.DailyCheckIns
+                .Where(c => c.UserId == userId && c.CheckInDate >= startOfMonth)
+                .Select(c => c.CheckInDate.Date)
+                .Distinct()
+                .CountAsync();
+
+            int effectiveCheckInDays = Math.Max(currentStreak, checkInsThisMonth);
+
+            // 4. Logika Poin Daily Check-In:
+            // - Selalu dimulai dari 0
+            // - Jika menempuh 15 hari -> 1/2 dari total poin
+            // - Jika menempuh 30 hari -> 1x dari total poin
+            int currentCycleCheckInPoints = 0;
+            string checkInTierStatus = "Terkunci (Belum mencapai 15 hari)";
+
+            if (effectiveCheckInDays >= monthlyTargetDays)
+            {
+                currentCycleCheckInPoints = totalMonthlyCheckInPoints;
+                checkInTierStatus = $"Target 30 Hari Tercapai: 1x Penuh (+{totalMonthlyCheckInPoints:N0} pts)";
+            }
+            else if (effectiveCheckInDays >= 15)
+            {
+                currentCycleCheckInPoints = halfMonthlyCheckInPoints;
+                checkInTierStatus = $"Target 15 Hari Tercapai: 1/2 Poin (+{halfMonthlyCheckInPoints:N0} pts)";
+            }
+            else
+            {
+                currentCycleCheckInPoints = 0;
+                checkInTierStatus = $"Hari ke-{effectiveCheckInDays}/{monthlyTargetDays}: 0 Poin (Mulai 1/2 Poin di Hari ke-15)";
+            }
+
+            // 5. Akumulasi milestone 30-hari dari siklus sebelumnya
+            var pastMilestonesCount = await _db.DailyCheckIns
+                .CountAsync(c => c.UserId == userId && c.IsMonthlyMilestone);
+
+            int priorMilestones = effectiveCheckInDays >= monthlyTargetDays
+                ? Math.Max(0, pastMilestonesCount - 1)
+                : pastMilestonesCount;
+            int pastMilestoneBonus = priorMilestones * totalMonthlyCheckInPoints;
+
+            int totalCheckInPoints = currentCycleCheckInPoints + pastMilestoneBonus;
+
+            // 6. Poin terpakai untuk klaim hadiah
             var spentPoints = await _db.RewardClaims
                 .Where(r => r.UserId == userId && r.Status != ClaimStatus.Rejected)
                 .SumAsync(r => (int?)r.PointsSpent) ?? 0;
@@ -431,7 +494,10 @@ namespace TrackerKerja.Services
             return new GamificationUserPointsDto
             {
                 BadgePoints = badgePoints,
-                CheckInPoints = checkInPoints,
+                CheckInPoints = totalCheckInPoints,
+                PotentialMonthlyCheckInPoints = totalMonthlyCheckInPoints,
+                EffectiveCheckInDays = effectiveCheckInDays,
+                CheckInTierStatus = checkInTierStatus,
                 SpentPoints = spentPoints,
                 PointValueRupiah = settings.PointValueRupiah
             };
@@ -569,9 +635,25 @@ namespace TrackerKerja.Services
 
             var updatedPoints = await GetUserPointsSummaryAsync(userId);
 
-            string msg = isMonthlyMilestone
-                ? $"Luar biasa! Anda berhasil check-in hari ke-{newStreak} dan mencapai target 1 BULAN penuh! Bonus {pointsEarned} poin telah ditambahkan. Hadiah bulanan kini siap diklaim!"
-                : $"Daily check-in berhasil! Hari ke-{newStreak} streak aktif. Anda mendapatkan +{pointsEarned} poin (senilai Rp {(pointsEarned * settings.PointValueRupiah):N0}).";
+            string msg;
+            if (isMonthlyMilestone || newStreak >= settings.MonthlyStreakDays)
+            {
+                msg = $"Luar biasa! Anda berhasil check-in hari ke-{newStreak} (30 Hari Penuh)! Akumulasi saldo poin check-in 1x penuh ({updatedPoints.CheckInPoints} Poin) telah aktif di saldo hadiah Anda. Hadiah bulanan kini siap diklaim!";
+            }
+            else if (newStreak == 15)
+            {
+                msg = $"Selamat! Anda telah mencapai 15 hari check-in berturut-turut! 1/2 dari total poin bulanan ({updatedPoints.CheckInPoints} Poin) telah berhasil dicairkan ke saldo hadiah Anda!";
+            }
+            else if (newStreak < 15)
+            {
+                int remainingToHalf = 15 - newStreak;
+                msg = $"Daily check-in hari ke-{newStreak} berhasil dicatat! Saldo hadiah check-in dimulai dari 0 dan akan mencairkan 1/2 total poin saat mencapai 15 hari ({remainingToHalf} hari lagi).";
+            }
+            else
+            {
+                int remainingToFull = Math.Max(0, settings.MonthlyStreakDays - newStreak);
+                msg = $"Daily check-in hari ke-{newStreak} berhasil dicatat! Anda telah membuka 1/2 poin bulanan. Lanjutkan hingga hari ke-30 ({remainingToFull} hari lagi) untuk mendapatkan 1x total akumulasi poin penuh!";
+            }
 
             return new DailyCheckInResultDto
             {

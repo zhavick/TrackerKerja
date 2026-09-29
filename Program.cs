@@ -353,6 +353,11 @@ using (var scope = app.Services.CreateScope())
     try { db.Database.ExecuteSqlRaw("ALTER TABLE AspNetUsers ADD COLUMN RejectionReason TEXT NULL;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE AspNetUsers ADD COLUMN CoverPictureUrl TEXT NULL;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN CompanyId INTEGER;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN ClientName TEXT NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN Budget REAL NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN ActualCost REAL NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN ProjectManagerId TEXT NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN Tags TEXT NULL;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Tasks ADD COLUMN CompanyId INTEGER;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Notes ADD COLUMN CompanyId INTEGER;"); } catch { }
 

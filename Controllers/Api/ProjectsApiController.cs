@@ -38,6 +38,7 @@ namespace TrackerKerja.Controllers.Api
             var userCompanyId = currentUser?.CompanyId;
 
             var query = _db.Projects
+                .Include(p => p.ProjectManager)
                 .Include(p => p.Tasks)
                     .ThenInclude(t => t.Sessions)
                 .AsNoTracking()
@@ -80,6 +81,7 @@ namespace TrackerKerja.Controllers.Api
             var isAdmin = User.IsInRole("Admin");
 
             var project = await _db.Projects
+                .Include(p => p.ProjectManager)
                 .Include(p => p.Tasks)
                     .ThenInclude(t => t.Sessions)
                 .AsNoTracking()
@@ -123,6 +125,11 @@ namespace TrackerKerja.Controllers.Api
                 Color = string.IsNullOrWhiteSpace(dto.Color) ? "#6366F1" : dto.Color.Trim(),
                 Deadline = dto.Deadline,
                 Status = dto.Status,
+                ClientName = dto.ClientName?.Trim(),
+                Budget = dto.Budget,
+                ActualCost = dto.ActualCost,
+                ProjectManagerId = dto.ProjectManagerId,
+                Tags = dto.Tags?.Trim(),
                 CompanyId = userCompanyId,
                 CreatedAt = DateTime.Now
             };
@@ -170,11 +177,17 @@ namespace TrackerKerja.Controllers.Api
             project.Color = string.IsNullOrWhiteSpace(dto.Color) ? "#6366F1" : dto.Color.Trim();
             project.Deadline = dto.Deadline;
             project.Status = dto.Status;
+            project.ClientName = dto.ClientName?.Trim();
+            project.Budget = dto.Budget;
+            project.ActualCost = dto.ActualCost;
+            project.ProjectManagerId = dto.ProjectManagerId;
+            project.Tags = dto.Tags?.Trim();
 
             await _db.SaveChangesAsync();
 
             // Reload for stats
             var updated = await _db.Projects
+                .Include(p => p.ProjectManager)
                 .Include(p => p.Tasks)
                     .ThenInclude(t => t.Sessions)
                 .AsNoTracking()
@@ -353,6 +366,12 @@ namespace TrackerKerja.Controllers.Api
                 Color = p.Color,
                 Deadline = p.Deadline,
                 Status = p.Status.ToString(),
+                ClientName = p.ClientName,
+                Budget = p.Budget,
+                ActualCost = p.ActualCost,
+                ProjectManagerId = p.ProjectManagerId,
+                ProjectManagerName = p.ProjectManager?.FullName ?? p.ProjectManager?.UserName,
+                Tags = p.Tags,
                 TotalTasks = p.TotalTasks,
                 CompletedTasks = p.CompletedTasks,
                 ProgressPercent = p.ProgressPercent,

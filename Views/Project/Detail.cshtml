@@ -1,112 +1,584 @@
 @model TrackerKerja.Models.Project
 @{
-    ViewData["Title"] = Model.Name;
+    ViewData["Title"] = $"Proyek - {Model.Name}";
+    var companyMembers = ViewBag.CompanyMembers as List<TrackerKerja.Models.AppUser> ?? new List<TrackerKerja.Models.AppUser>();
+    var tagsList = !string.IsNullOrWhiteSpace(Model.Tags)
+        ? Model.Tags.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+        : Array.Empty<string>();
+
+    // Task breakdowns by Milestone
+    var milestones = new[] { "Requirement", "Planning", "Design", "Implementation", "Testing", "Deployment" };
+    var tasksByMilestone = Model.Tasks.GroupBy(t => string.IsNullOrWhiteSpace(t.Milestone) ? "Implementation" : t.Milestone)
+                                      .ToDictionary(g => g.Key, g => g.ToList());
+
+    // Task breakdowns by Assignee
+    var tasksByAssignee = Model.Tasks.GroupBy(t => t.AssignedToUser != null ? t.AssignedToUser.FullName : "Belum Ditugaskan")
+                                     .OrderByDescending(g => g.Count())
+                                     .ToList();
 }
 
-<div class="mb-5">
-    <a href="/Project" class="text-indigo-500 hover:text-indigo-700 text-sm flex items-center gap-1.5">
-        <i class="fas fa-arrow-left"></i> Kembali ke Proyek
-    </a>
-</div>
+<div class="w-full space-y-6">
+    <!-- Breadcrumb & Quick Actions -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <a href="/Project" class="text-indigo-600 hover:text-indigo-800 text-sm font-semibold flex items-center gap-2 transition-colors">
+            <i class="fas fa-arrow-left"></i> Kembali ke Daftar Proyek
+        </a>
 
-<!-- Project Header -->
-<div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden mb-5">
-    <div class="h-3 w-full" style="background: @Model.Color"></div>
-    <div class="p-6">
-        <div class="flex items-start justify-between gap-4">
-            <div class="flex items-center gap-4">
-                <div class="w-14 h-14 rounded-2xl flex items-center justify-center shadow-md" style="background: @Model.Color + '22'">
-                    <i class="fas fa-folder text-2xl" style="color: @Model.Color"></i>
-                </div>
-                <div>
-                    <h2 class="text-2xl font-extrabold text-slate-800">@Model.Name</h2>
-                    <p class="text-slate-500 text-sm mt-0.5">@Model.Description</p>
-                </div>
-            </div>
+        <div class="flex items-center gap-2.5 flex-wrap">
             @if (User.IsInRole("Admin"))
             {
-                <div class="flex gap-2">
-                    <a href="/Project/Edit/@Model.Id" class="bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
-                        <i class="fas fa-edit mr-1"></i>Edit
-                    </a>
-                </div>
+                <button type="button" onclick="openBulkAssignModal()"
+                        class="px-4 py-2 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-bold text-xs rounded-xl border border-indigo-200 transition-all flex items-center gap-1.5 shadow-sm">
+                    <i class="fas fa-users-cog"></i> Alokasi PIC Massal
+                </button>
+                <a href="/Project/Edit/@Model.Id"
+                   class="px-4 py-2 bg-amber-50 hover:bg-amber-100 text-amber-700 font-bold text-xs rounded-xl border border-amber-200 transition-all flex items-center gap-1.5 shadow-sm">
+                    <i class="fas fa-edit"></i> Edit Proyek
+                </a>
             }
-        </div>
-
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6">
-            <div class="text-center p-3 bg-slate-50 rounded-xl">
-                <p class="text-2xl font-black text-slate-800">@Model.TotalTasks</p>
-                <p class="text-xs text-slate-500">Total Tugas</p>
-            </div>
-            <div class="text-center p-3 bg-emerald-50 rounded-xl">
-                <p class="text-2xl font-black text-emerald-600">@Model.CompletedTasks</p>
-                <p class="text-xs text-slate-500">Selesai</p>
-            </div>
-            <div class="text-center p-3 bg-indigo-50 rounded-xl">
-                <p class="text-2xl font-black text-indigo-600">@Model.ProgressPercent%</p>
-                <p class="text-xs text-slate-500">Progress</p>
-            </div>
-            <div class="text-center p-3 @(Model.Deadline < DateTime.Now && Model.Status != TrackerKerja.Models.ProjectStatus.Completed ? "bg-red-50" : "bg-amber-50") rounded-xl">
-                <p class="text-sm font-bold @(Model.Deadline < DateTime.Now && Model.Status != TrackerKerja.Models.ProjectStatus.Completed ? "text-red-600" : "text-amber-600")">@(Model.Deadline?.ToString("dd MMM yy") ?? "-")</p>
-                <p class="text-xs text-slate-500">Deadline</p>
-            </div>
-        </div>
-
-        <div class="mt-4">
-            <div class="w-full bg-slate-100 rounded-full h-3">
-                <div class="h-3 rounded-full transition-all duration-700 shadow-sm"
-                     style="width:@Model.ProgressPercent%; background: linear-gradient(to right, @Model.Color, @Model.Color)"></div>
-            </div>
+            <a href="/Task/Create?projectId=@Model.Id"
+               class="px-4 py-2 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs rounded-xl transition-all flex items-center gap-1.5 shadow-sm hover:shadow-indigo-200">
+                <i class="fas fa-plus"></i> Tambah Tugas
+            </a>
         </div>
     </div>
-</div>
 
-<!-- Tasks in Project -->
-<div class="bg-white rounded-2xl shadow-sm border border-indigo-100">
-    <div class="p-5 border-b border-slate-100 flex items-center justify-between">
-        <h3 class="font-bold text-slate-800 flex items-center gap-2">
-            <i class="fas fa-tasks text-indigo-500"></i>
-            Daftar Tugas dalam Proyek
-        </h3>
-        <a href="/Task/Create?projectId=@Model.Id" class="bg-gradient-to-r from-indigo-500 to-purple-600 text-white text-xs font-semibold px-3 py-2 rounded-lg hover:shadow-md transition-all">
-            <i class="fas fa-plus mr-1"></i>Tambah Tugas
-        </a>
-    </div>
+    <!-- Project Header Hero Card -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="h-3.5 w-full" style="background: @Model.Color"></div>
+        <div class="p-6 md:p-8">
+            <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-6">
+                <div class="flex items-start gap-4">
+                    <div class="w-16 h-16 rounded-2xl flex items-center justify-center shadow-md flex-shrink-0"
+                         style="background: @Model.Color; color: white">
+                        <i class="fas fa-folder-open text-2xl"></i>
+                    </div>
+                    <div>
+                        <div class="flex items-center gap-3 flex-wrap">
+                            <h1 class="text-2xl md:text-3xl font-black text-slate-800 tracking-tight">@Model.Name</h1>
+                            @if (Model.Status == TrackerKerja.Models.ProjectStatus.Active)
+                            {
+                                <span class="px-3 py-1 bg-emerald-100 text-emerald-700 text-xs font-extrabold rounded-full flex items-center gap-1.5">
+                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span> Aktif
+                                </span>
+                            }
+                            else if (Model.Status == TrackerKerja.Models.ProjectStatus.Completed)
+                            {
+                                <span class="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-extrabold rounded-full flex items-center gap-1.5">
+                                    <i class="fas fa-check-circle text-blue-500"></i> Selesai
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="px-3 py-1 bg-slate-100 text-slate-600 text-xs font-extrabold rounded-full flex items-center gap-1.5">
+                                    <i class="fas fa-archive"></i> Diarsipkan
+                                </span>
+                            }
+                        </div>
 
-    @if (!Model.Tasks.Any())
-    {
-        <div class="p-12 text-center text-slate-400">
-            <i class="fas fa-clipboard-list text-4xl mb-3 text-slate-200 block"></i>
-            <p>Belum ada tugas dalam proyek ini</p>
-        </div>
-    }
-    else
-    {
-        <div class="divide-y divide-slate-50">
-            @foreach (var task in Model.Tasks.OrderBy(t => t.Status))
-            {
-                var statusColor = task.Status switch {
-                    TrackerKerja.Models.TaskStatus.Done => "text-emerald-600",
-                    TrackerKerja.Models.TaskStatus.InProgress => "text-indigo-600",
-                    _ => "text-slate-400"
-                };
-                <div class="p-4 flex items-center gap-3 hover:bg-indigo-50/30 transition-colors">
-                    <i class="fas @(task.Status == TrackerKerja.Models.TaskStatus.Done ? "fa-check-circle text-emerald-500" : task.Status == TrackerKerja.Models.TaskStatus.InProgress ? "fa-spinner text-indigo-500" : "fa-circle text-slate-300") w-5"></i>
-                    <div class="flex-1 min-w-0">
-                        <p class="font-semibold text-slate-800 text-sm truncate @(task.Status == TrackerKerja.Models.TaskStatus.Done ? "line-through text-slate-400" : "")">@task.Title</p>
-                        <div class="flex items-center gap-2 mt-0.5">
-                            <span class="text-xs text-slate-400">@task.DueDate?.ToString("dd MMM yyyy")</span>
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100">
-                                @(task.Milestone ?? "Implementation")
+                        <p class="text-slate-600 text-sm mt-2 max-w-4xl leading-relaxed">
+                            @(string.IsNullOrWhiteSpace(Model.Description) ? "Tidak ada deskripsi rinci untuk proyek ini." : Model.Description)
+                        </p>
+
+                        <!-- Metadata Badges -->
+                        <div class="flex items-center gap-2.5 mt-4 flex-wrap">
+                            @if (!string.IsNullOrWhiteSpace(Model.ClientName))
+                            {
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-amber-50 text-amber-800 border border-amber-200 rounded-xl text-xs font-semibold">
+                                    <i class="fas fa-building text-amber-600"></i> Klien: @Model.ClientName
+                                </span>
+                            }
+
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-indigo-50 text-indigo-700 border border-indigo-200 rounded-xl text-xs font-semibold">
+                                <i class="fas fa-user-tie text-indigo-600"></i> PM: @(Model.ProjectManager?.FullName ?? "Belum Ditentukan")
                             </span>
+
+                            @if (Model.Deadline.HasValue)
+                            {
+                                var daysLeft = (int)Math.Ceiling((Model.Deadline.Value.Date - DateTime.Now.Date).TotalDays);
+                                var isOverdue = daysLeft < 0 && Model.Status != TrackerKerja.Models.ProjectStatus.Completed;
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 @(isOverdue ? "bg-rose-50 text-rose-700 border-rose-200" : "bg-purple-50 text-purple-700 border-purple-200") border rounded-xl text-xs font-semibold">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Deadline: @Model.Deadline.Value.ToString("dd MMM yyyy")
+                                    <span class="font-bold">(@(isOverdue ? $"Lewat {Math.Abs(daysLeft)} hari" : $"{daysLeft} hari lagi"))</span>
+                                </span>
+                            }
+
+                            @foreach (var tag in tagsList)
+                            {
+                                <span class="inline-flex items-center gap-1 px-2.5 py-0.5 bg-slate-100 text-slate-700 rounded-lg text-xs font-medium">
+                                    #@tag
+                                </span>
+                            }
                         </div>
                     </div>
-                    <span class="text-xs font-mono text-slate-400">@task.TotalDurationFormatted</span>
-                    <a href="/Task/Edit/@task.Id" class="text-slate-300 hover:text-indigo-500">
-                        <i class="fas fa-external-link-alt text-xs"></i>
-                    </a>
+                </div>
+
+                <!-- Progress Circle / Overall Progress Gauge -->
+                <div class="flex-shrink-0 bg-slate-50 p-5 rounded-2xl border border-slate-100 flex items-center gap-5 min-w-[240px]">
+                    <div class="relative w-16 h-16 flex items-center justify-center">
+                        <svg class="w-16 h-16 transform -rotate-90" viewBox="0 0 36 36">
+                            <path class="text-slate-200" stroke-width="3.5" stroke="currentColor" fill="none"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                            <path class="text-indigo-600" stroke-dasharray="@Model.ProgressPercent, 100" stroke-width="3.5" stroke-linecap="round" stroke="currentColor" fill="none"
+                                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831" />
+                        </svg>
+                        <span class="absolute text-sm font-black text-slate-800">@Model.ProgressPercent%</span>
+                    </div>
+                    <div>
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Status Progres</p>
+                        <p class="text-lg font-black text-slate-800">@Model.CompletedTasks / @Model.TotalTasks</p>
+                        <p class="text-xs text-slate-500">Tugas Telah Selesai</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Executive Financial & Health KPI Cards -->
+    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+        <!-- Anggaran Total -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Anggaran Total</span>
+                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-coins"></i>
+                </div>
+            </div>
+            <p class="text-xl font-black text-slate-800 truncate">
+                @(Model.Budget.HasValue ? $"Rp {Model.Budget.Value:N0}" : "-")
+            </p>
+            <p class="text-xs text-slate-400 mt-1">Estimasi Alokasi Dana</p>
+        </div>
+
+        <!-- Biaya Aktual -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Biaya Aktual</span>
+                <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-receipt"></i>
+                </div>
+            </div>
+            <p class="text-xl font-black text-rose-600 truncate">
+                @(Model.ActualCost.HasValue ? $"Rp {Model.ActualCost.Value:N0}" : "Rp 0")
+            </p>
+            <p class="text-xs text-slate-400 mt-1">Realisasi Pengeluaran</p>
+        </div>
+
+        <!-- Sisa Anggaran -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sisa Anggaran</span>
+                <div class="w-8 h-8 rounded-lg @(Model.IsOverBudget ? "bg-rose-50 text-rose-600" : "bg-indigo-50 text-indigo-600") flex items-center justify-center text-xs">
+                    <i class="fas @(Model.IsOverBudget ? "fa-exclamation-triangle" : "fa-wallet")"></i>
+                </div>
+            </div>
+            <p class="text-xl font-black @(Model.IsOverBudget ? "text-rose-600" : "text-emerald-600") truncate">
+                @if (Model.Budget.HasValue)
+                {
+                    @($"Rp {Model.RemainingBudget:N0}")
+                }
+                else
+                {
+                    <span>-</span>
+                }
+            </p>
+            <div class="flex items-center gap-1.5 mt-1">
+                <span class="text-[11px] font-bold @(Model.IsOverBudget ? "text-rose-500" : "text-slate-400")">
+                    @(Model.IsOverBudget ? "Overbudget!" : $"Burn {Model.BudgetBurnPercent}%")
+                </span>
+            </div>
+        </div>
+
+        <!-- Total Jam Kerja -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Jam Kerja</span>
+                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-stopwatch"></i>
+                </div>
+            </div>
+            <p class="text-xl font-black text-slate-800">
+                @Model.TotalWorkHours.ToString("F1") <span class="text-xs text-slate-400 font-normal">jam</span>
+            </p>
+            <p class="text-xs text-slate-400 mt-1">Total Waktu Tercatat</p>
+        </div>
+
+        <!-- Tugas Aktif -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Dalam Proses</span>
+                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                    <i class="fas fa-spinner"></i>
+                </div>
+            </div>
+            <p class="text-xl font-black text-amber-600">
+                @Model.InProgressTasks <span class="text-xs text-slate-400 font-normal">/ @(Model.TodoTasks + Model.InProgressTasks) aktif</span>
+            </p>
+            <p class="text-xs text-slate-400 mt-1">@Model.TodoTasks Menunggu Antrean</p>
+        </div>
+
+        <!-- Tugas Terlambat -->
+        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Overdue</span>
+                <div class="w-8 h-8 rounded-lg @(Model.OverdueTasks > 0 ? "bg-rose-50 text-rose-600" : "bg-slate-50 text-slate-400") flex items-center justify-center text-xs">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+            <p class="text-xl font-black @(Model.OverdueTasks > 0 ? "text-rose-600" : "text-slate-800")">
+                @Model.OverdueTasks <span class="text-xs text-slate-400 font-normal">tugas</span>
+            </p>
+            <p class="text-xs text-slate-400 mt-1">Melebihi Tenggat Waktu</p>
+        </div>
+    </div>
+
+    <!-- 2 Column Section: Milestones Pipeline & Team Workload -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- SDLC Milestone Pipeline -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i class="fas fa-stream text-indigo-500"></i> Distribusi Fase & Milestone
+                </h3>
+                <span class="text-xs text-slate-400">@milestones.Length Tahapan</span>
+            </div>
+
+            <div class="space-y-3.5">
+                @foreach (var stage in milestones)
+                {
+                    var count = tasksByMilestone.ContainsKey(stage) ? tasksByMilestone[stage].Count : 0;
+                    var completedCount = tasksByMilestone.ContainsKey(stage) ? tasksByMilestone[stage].Count(t => t.Status == TrackerKerja.Models.TaskStatus.Done) : 0;
+                    var percent = count > 0 ? (int)Math.Round(((double)completedCount / count) * 100) : 0;
+
+                    <div>
+                        <div class="flex items-center justify-between text-xs mb-1.5 font-semibold">
+                            <span class="text-slate-700 flex items-center gap-2">
+                                <span class="w-2 h-2 rounded-full @(count > 0 ? "bg-indigo-500" : "bg-slate-300")"></span>
+                                @stage
+                            </span>
+                            <span class="text-slate-500 font-mono">
+                                @completedCount / @count Selesai (@percent%)
+                            </span>
+                        </div>
+                        <div class="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                            <div class="bg-gradient-to-r from-indigo-500 to-purple-600 h-2 rounded-full transition-all duration-500"
+                                 style="width: @percent%"></div>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <!-- Contributor / Team Workload Breakdown -->
+        <div class="bg-white rounded-3xl p-6 border border-slate-100 shadow-sm">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="font-bold text-slate-800 text-base flex items-center gap-2">
+                    <i class="fas fa-user-friends text-purple-500"></i> Beban Kerja & Kontributor Tim
+                </h3>
+                <span class="text-xs text-slate-400">@tasksByAssignee.Count PIC</span>
+            </div>
+
+            @if (!tasksByAssignee.Any())
+            {
+                <div class="py-8 text-center text-slate-400 text-sm">
+                    Belum ada tugas atau kontributor yang ditugaskan.
+                </div>
+            }
+            else
+            {
+                <div class="divide-y divide-slate-100 max-h-[280px] overflow-y-auto pr-1">
+                    @foreach (var group in tasksByAssignee)
+                    {
+                        var memberTasks = group.ToList();
+                        var doneCount = memberTasks.Count(t => t.Status == TrackerKerja.Models.TaskStatus.Done);
+                        var totalHours = memberTasks.SelectMany(t => t.Sessions).Sum(s => (long?)s.Duration ?? 0) / 3600.0;
+                        var isUnassigned = group.Key == "Belum Ditugaskan";
+
+                        <div class="py-3 flex items-center justify-between gap-3">
+                            <div class="flex items-center gap-3 min-w-0">
+                                <div class="w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs @(isUnassigned ? "bg-slate-100 text-slate-400" : "bg-indigo-100 text-indigo-700")">
+                                    @(isUnassigned ? "?" : group.Key.Substring(0, Math.Min(2, group.Key.Length)).ToUpper())
+                                </div>
+                                <div class="truncate">
+                                    <p class="text-sm font-bold text-slate-800 truncate">@group.Key</p>
+                                    <p class="text-xs text-slate-400">
+                                        @doneCount / @memberTasks.Count tugas selesai
+                                    </p>
+                                </div>
+                            </div>
+
+                            <div class="text-right flex-shrink-0">
+                                <span class="text-xs font-mono font-bold text-indigo-600 block">
+                                    @totalHours.ToString("F1") jam
+                                </span>
+                                <span class="text-[10px] text-slate-400">
+                                    @(memberTasks.Count - doneCount) aktif
+                                </span>
+                            </div>
+                        </div>
+                    }
                 </div>
             }
         </div>
-    }
+    </div>
+
+    <!-- Tasks Management Table -->
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <h3 class="text-lg font-black text-slate-800 flex items-center gap-2">
+                    <i class="fas fa-tasks text-indigo-600"></i> Daftar Tugas Proyek
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Kelola deliverable, prioritas, dan PIC untuk proyek ini</p>
+            </div>
+
+            <!-- Task Filter Controls -->
+            <div class="flex items-center gap-3 flex-wrap">
+                <div class="relative">
+                    <i class="fas fa-search absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-xs"></i>
+                    <input type="text" id="taskSearchInput" placeholder="Cari nama tugas / PIC..."
+                           onkeyup="filterTaskTable()"
+                           class="pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 w-48 sm:w-64">
+                </div>
+
+                <select id="taskStatusFilter" onchange="filterTaskTable()"
+                        class="px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-700 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                    <option value="ALL">Semua Status</option>
+                    <option value="TODO">To Do</option>
+                    <option value="INPROGRESS">In Progress</option>
+                    <option value="DONE">Selesai</option>
+                </select>
+            </div>
+        </div>
+
+        @if (!Model.Tasks.Any())
+        {
+            <div class="py-16 text-center text-slate-400">
+                <div class="w-16 h-16 rounded-full bg-slate-50 flex items-center justify-center mx-auto mb-3">
+                    <i class="fas fa-clipboard-list text-2xl text-slate-300"></i>
+                </div>
+                <h4 class="font-bold text-slate-700 text-base">Belum Ada Tugas</h4>
+                <p class="text-xs text-slate-400 mt-1 max-w-sm mx-auto">
+                    Mulai pecah objektif proyek ini menjadi tugas-tugas kecil yang terukur untuk tim Anda.
+                </p>
+                <a href="/Task/Create?projectId=@Model.Id" class="inline-flex items-center gap-2 mt-4 px-5 py-2.5 bg-indigo-600 text-white font-bold text-xs rounded-xl shadow-md hover:bg-indigo-700 transition-all">
+                    <i class="fas fa-plus"></i> Tambah Tugas Pertama
+                </a>
+            </div>
+        }
+        else
+        {
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse" id="projectTasksTable">
+                    <thead>
+                        <tr class="bg-slate-50 text-[11px] font-bold text-slate-400 uppercase tracking-wider border-b border-slate-100">
+                            <th class="py-3 px-5">Tugas</th>
+                            <th class="py-3 px-4">Milestone</th>
+                            <th class="py-3 px-4">PIC / Assignee</th>
+                            <th class="py-3 px-4">Prioritas</th>
+                            <th class="py-3 px-4">Deadline</th>
+                            <th class="py-3 px-4">Durasi</th>
+                            <th class="py-3 px-4 text-center">Status</th>
+                            <th class="py-3 px-4 text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm">
+                        @foreach (var task in Model.Tasks.OrderBy(t => t.Status == TrackerKerja.Models.TaskStatus.Done ? 1 : 0).ThenBy(t => t.DueDate))
+                        {
+                            var isDone = task.Status == TrackerKerja.Models.TaskStatus.Done;
+                            var isInProgress = task.Status == TrackerKerja.Models.TaskStatus.InProgress;
+                            var statusCode = isDone ? "DONE" : isInProgress ? "INPROGRESS" : "TODO";
+                            var isOverdue = task.DueDate < DateTime.Now && !isDone;
+
+                            <tr class="hover:bg-slate-50/70 transition-colors task-row" data-status="@statusCode">
+                                <td class="py-3.5 px-5">
+                                    <div class="flex items-center gap-3">
+                                        <i class="fas @(isDone ? "fa-check-circle text-emerald-500" : isInProgress ? "fa-spinner fa-spin text-indigo-500" : "fa-circle text-slate-300")"></i>
+                                        <div class="min-w-0">
+                                            <a href="/Task/Edit/@task.Id" class="font-bold text-slate-800 hover:text-indigo-600 transition-colors line-clamp-1 @(isDone ? "line-through text-slate-400" : "")">
+                                                @task.Title
+                                            </a>
+                                            @if (task.Category != null)
+                                            {
+                                                <span class="text-[10px] text-slate-400 font-medium">@task.Category.Name</span>
+                                            }
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    <span class="px-2.5 py-1 rounded-lg bg-indigo-50 text-indigo-700 text-[11px] font-bold border border-indigo-100">
+                                        @(string.IsNullOrWhiteSpace(task.Milestone) ? "Implementation" : task.Milestone)
+                                    </span>
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    @if (task.AssignedToUser != null)
+                                    {
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-6 h-6 rounded-full bg-purple-100 text-purple-700 font-bold text-[10px] flex items-center justify-center">
+                                                @task.AssignedToUser.FullName.Substring(0, Math.Min(2, task.AssignedToUser.FullName.Length)).ToUpper()
+                                            </div>
+                                            <span class="text-xs font-semibold text-slate-700 truncate max-w-[120px]">
+                                                @task.AssignedToUser.FullName
+                                            </span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-400 italic">Belum ada PIC</span>
+                                    }
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    @if (task.Priority == TrackerKerja.Models.TaskPriority.High)
+                                    {
+                                        <span class="px-2 py-0.5 rounded-md bg-rose-50 text-rose-700 text-[10px] font-bold border border-rose-200">
+                                            🔥 Tinggi
+                                        </span>
+                                    }
+                                    else if (task.Priority == TrackerKerja.Models.TaskPriority.Medium)
+                                    {
+                                        <span class="px-2 py-0.5 rounded-md bg-amber-50 text-amber-700 text-[10px] font-bold border border-amber-200">
+                                            ⚡ Sedang
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-600 text-[10px] font-semibold">
+                                            ☕ Rendah
+                                        </span>
+                                    }
+                                </td>
+                                <td class="py-3.5 px-4">
+                                    @if (task.DueDate.HasValue)
+                                    {
+                                        <span class="text-xs font-medium @(isOverdue ? "text-rose-600 font-bold" : "text-slate-600")">
+                                            @task.DueDate.Value.ToString("dd MMM yyyy")
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-xs text-slate-300">-</span>
+                                    }
+                                </td>
+                                <td class="py-3.5 px-4 font-mono text-xs text-slate-600">
+                                    @task.TotalDurationFormatted
+                                </td>
+                                <td class="py-3.5 px-4 text-center">
+                                    @if (isDone)
+                                    {
+                                        <span class="px-2.5 py-1 rounded-full bg-emerald-50 text-emerald-700 text-[11px] font-bold">
+                                            Selesai
+                                        </span>
+                                    }
+                                    else if (isInProgress)
+                                    {
+                                        <span class="px-2.5 py-1 rounded-full bg-indigo-50 text-indigo-700 text-[11px] font-bold">
+                                            Dikerjakan
+                                        </span>
+                                    }
+                                    else
+                                    {
+                                        <span class="px-2.5 py-1 rounded-full bg-slate-100 text-slate-600 text-[11px] font-semibold">
+                                            To Do
+                                        </span>
+                                    }
+                                </td>
+                                <td class="py-3.5 px-4 text-right">
+                                    <a href="/Task/Edit/@task.Id" class="text-slate-400 hover:text-indigo-600 p-1.5 transition-colors" title="Edit Tugas">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
 </div>
+
+<!-- Bulk Assign Modal -->
+<div id="bulkAssignModal" class="fixed inset-0 z-50 bg-black/50 backdrop-blur-sm hidden flex items-center justify-center p-4">
+    <div class="bg-white rounded-3xl shadow-2xl border border-slate-100 w-full max-w-lg overflow-hidden animate-in fade-in zoom-in duration-200">
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 p-6 text-white flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-white/20 flex items-center justify-center text-white">
+                    <i class="fas fa-users-cog text-lg"></i>
+                </div>
+                <div>
+                    <h3 class="font-bold text-lg">Alokasi PIC Massal</h3>
+                    <p class="text-indigo-100 text-xs mt-0.5">Tugaskan semua tugas aktif proyek ini ke satu anggota tim</p>
+                </div>
+            </div>
+            <button type="button" onclick="closeBulkAssignModal()" class="text-white/70 hover:text-white transition-colors">
+                <i class="fas fa-times text-lg"></i>
+            </button>
+        </div>
+
+        <form method="post" action="/Project/BulkAssignTasks" class="p-6">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="projectId" value="@Model.Id" />
+
+            <div class="mb-5">
+                <label class="block text-sm font-bold text-slate-700 mb-2">
+                    <i class="fas fa-user-check text-indigo-600 mr-1.5"></i>Pilih Anggota Tim / PIC Tujuan
+                </label>
+                <select name="assigneeUserId" required class="select2 w-full" data-placeholder="Pilih Anggota Tim">
+                    <option value="">-- Pilih Anggota Tim --</option>
+                    @foreach (var member in companyMembers)
+                    {
+                        <option value="@member.Id">
+                            @member.FullName (@(string.IsNullOrEmpty(member.JobTitle) ? member.Email : member.JobTitle))
+                        </option>
+                    }
+                </select>
+                <p class="text-xs text-slate-400 mt-2">
+                    <i class="fas fa-info-circle mr-1 text-indigo-500"></i>
+                    Semua tugas aktif (yang berstatus <b>To Do</b> & <b>In Progress</b>) pada proyek <b>@Model.Name</b> akan dialokasikan kepada anggota yang dipilih.
+                </p>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
+                <button type="button" onclick="closeBulkAssignModal()"
+                        class="px-5 py-2.5 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-bold text-xs transition-all">
+                    Batal
+                </button>
+                <button type="submit"
+                        class="px-6 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold text-xs rounded-xl shadow-md transition-all">
+                    Tugaskan Sekarang
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+    function openBulkAssignModal() {
+        document.getElementById('bulkAssignModal').classList.remove('hidden');
+    }
+
+    function closeBulkAssignModal() {
+        document.getElementById('bulkAssignModal').classList.add('hidden');
+    }
+
+    function filterTaskTable() {
+        const search = (document.getElementById('taskSearchInput')?.value || '').toLowerCase();
+        const status = document.getElementById('taskStatusFilter')?.value || 'ALL';
+        const rows = document.querySelectorAll('.task-row');
+
+        rows.forEach(row => {
+            const rowStatus = row.getAttribute('data-status');
+            const rowText = row.innerText.toLowerCase();
+            const matchesSearch = rowText.includes(search);
+            const matchesStatus = (status === 'ALL' || rowStatus === status);
+
+            if (matchesSearch && matchesStatus) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+</script>
+}

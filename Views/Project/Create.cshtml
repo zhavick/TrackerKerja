@@ -1,96 +1,169 @@
 @model TrackerKerja.Models.Project
 @{
-    var isEdit = Model.Id > 0;
-    ViewData["Title"] = isEdit ? "Edit Proyek" : "Proyek Baru";
+    ViewData["Title"] = "Proyek Baru";
     var colors = new[] { "#6366F1","#06B6D4","#10B981","#F59E0B","#EF4444","#8B5CF6","#EC4899" };
+    var managers = ViewBag.Managers as List<TrackerKerja.Models.AppUser> ?? new List<TrackerKerja.Models.AppUser>();
 }
 
-<div class="max-w-2xl mx-auto">
-    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-        <div class="bg-gradient-to-r from-amber-400 to-orange-500 p-6">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <i class="fas @(isEdit ? "fa-edit" : "fa-folder-plus") text-white"></i>
+<div class="max-w-4xl mx-auto">
+    <div class="mb-5">
+        <a href="/Project" class="text-indigo-600 hover:text-indigo-800 text-sm font-medium flex items-center gap-1.5 transition-colors">
+            <i class="fas fa-arrow-left"></i> Kembali ke Daftar Proyek
+        </a>
+    </div>
+
+    <div class="bg-white rounded-3xl shadow-sm border border-slate-100 overflow-hidden">
+        <div class="bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-500 p-8 text-white">
+            <div class="flex items-center gap-4">
+                <div class="w-14 h-14 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center shadow-inner">
+                    <i class="fas fa-folder-plus text-2xl text-white"></i>
                 </div>
                 <div>
-                    <h2 class="text-white font-bold text-lg">@(isEdit ? "Edit Proyek" : "Buat Proyek Baru")</h2>
-                    <p class="text-orange-100 text-sm">@(isEdit ? "Perbarui informasi proyek" : "Tambahkan proyek baru")</p>
+                    <h2 class="text-2xl font-black tracking-tight">Buat Proyek Baru</h2>
+                    <p class="text-indigo-100 text-sm mt-0.5">Definisikan proyek, estimasi anggaran, klien, serta alokasi Project Manager</p>
                 </div>
             </div>
         </div>
 
-        <div class="p-6">
-            <form method="post" action="@(isEdit ? $"/Project/Edit/{Model.Id}" : "/Project/Create")">
+        <div class="p-8">
+            <form method="post" action="/Project/Create">
                 @Html.AntiForgeryToken()
-                @if (isEdit) { <input type="hidden" name="Id" value="@Model.Id" /> }
 
-                <div class="mb-5">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        <i class="fas fa-folder text-amber-400 mr-2"></i>Nama Proyek <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="Name" value="@Model.Name" required
-                           class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-slate-800 transition-all">
-                </div>
-
-                <div class="mb-5">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        <i class="fas fa-align-left text-amber-400 mr-2"></i>Deskripsi
-                    </label>
-                    <textarea name="Description" rows="3"
-                              class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-slate-800 transition-all resize-none">@Model.Description</textarea>
-                </div>
-
-                <div class="grid grid-cols-2 gap-4 mb-5">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-palette text-amber-400 mr-2"></i>Warna
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+                    <!-- Project Name -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            <i class="fas fa-folder text-indigo-500 mr-2"></i>Nama Proyek <span class="text-red-500">*</span>
                         </label>
-                        <div class="flex items-center gap-3">
+                        <input type="text" name="Name" value="@Model.Name" required
+                               placeholder="Contoh: Redesign Aplikasi Mobile HRIS"
+                               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 transition-all font-medium">
+                    </div>
+
+                    <!-- Client Name -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            <i class="fas fa-building text-amber-500 mr-2"></i>Nama Klien / Stakeholder
+                        </label>
+                        <input type="text" name="ClientName" value="@Model.ClientName"
+                               placeholder="Contoh: PT Wahana Makmur Sejahtera"
+                               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 transition-all">
+                    </div>
+
+                    <!-- Project Manager -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            <i class="fas fa-user-tie text-indigo-500 mr-2"></i>Project Manager (PM)
+                        </label>
+                        <select name="ProjectManagerId" class="select2 w-full" data-placeholder="Pilih Project Manager">
+                            <option value="">-- Pilih Project Manager --</option>
+                            @foreach (var mgr in managers)
+                            {
+                                <option value="@mgr.Id" selected="@(Model.ProjectManagerId == mgr.Id)">
+                                    @mgr.FullName (@(string.IsNullOrEmpty(mgr.JobTitle) ? mgr.Email : mgr.JobTitle))
+                                </option>
+                            }
+                        </select>
+                    </div>
+
+                    <!-- Budget -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            <i class="fas fa-coins text-emerald-500 mr-2"></i>Anggaran / Budget (Rp)
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">Rp</span>
+                            <input type="number" name="Budget" value="@(Model.Budget.HasValue ? Model.Budget.Value.ToString("0") : "")" step="100000" min="0"
+                                   placeholder="Contoh: 50000000"
+                                   class="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 transition-all font-mono">
+                        </div>
+                    </div>
+
+                    <!-- Actual Cost -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            <i class="fas fa-receipt text-rose-500 mr-2"></i>Realisasi Biaya Aktual (Rp)
+                        </label>
+                        <div class="relative">
+                            <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">Rp</span>
+                            <input type="number" name="ActualCost" value="@(Model.ActualCost.HasValue ? Model.ActualCost.Value.ToString("0") : "0")" step="100000" min="0"
+                                   placeholder="Contoh: 15000000"
+                                   class="w-full pl-12 pr-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-800 transition-all font-mono">
+                        </div>
+                    </div>
+
+                    <!-- Deadline -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            <i class="fas fa-calendar-alt text-indigo-500 mr-2"></i>Target Deadline
+                        </label>
+                        <input type="date" name="Deadline" value="@(Model.Deadline?.ToString("yyyy-MM-dd"))"
+                               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-700 transition-all">
+                    </div>
+
+                    <!-- Status -->
+                    <div>
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            <i class="fas fa-toggle-on text-indigo-500 mr-2"></i>Status Proyek
+                        </label>
+                        <select name="Status" class="select2 w-full" data-placeholder="Pilih Status">
+                            <option value="Active" selected="@(Model.Status == TrackerKerja.Models.ProjectStatus.Active)">🟢 Aktif / In Progress</option>
+                            <option value="Completed" selected="@(Model.Status == TrackerKerja.Models.ProjectStatus.Completed)">✅ Selesai (Completed)</option>
+                            <option value="Archived" selected="@(Model.Status == TrackerKerja.Models.ProjectStatus.Archived)">📦 Diarsipkan (Archived)</option>
+                        </select>
+                    </div>
+
+                    <!-- Tags -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            <i class="fas fa-tags text-purple-500 mr-2"></i>Label / Kategori / Tags
+                        </label>
+                        <input type="text" name="Tags" value="@Model.Tags"
+                               placeholder="Pisahkan dengan koma, contoh: Mobile, Android, iOS, High-Priority"
+                               class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-purple-500 text-slate-800 transition-all">
+                        <p class="text-xs text-slate-400 mt-1.5">Gunakan tag untuk mengelompokkan proyek berdasarkan teknologi atau inisiatif bisnis.</p>
+                    </div>
+
+                    <!-- Description -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            <i class="fas fa-align-left text-slate-500 mr-2"></i>Deskripsi & Ruang Lingkup Proyek
+                        </label>
+                        <textarea name="Description" rows="4"
+                                  placeholder="Jelaskan ringkasan objektif, deliverable utama, dan batasan pekerjaan proyek ini..."
+                                  class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-800 transition-all resize-none">@Model.Description</textarea>
+                    </div>
+
+                    <!-- Color Picker -->
+                    <div class="md:col-span-2">
+                        <label class="block text-sm font-bold text-slate-700 mb-2">
+                            <i class="fas fa-palette text-pink-500 mr-2"></i>Tema Warna Proyek
+                        </label>
+                        <div class="flex items-center gap-4 p-3 bg-slate-50 rounded-2xl border border-slate-100">
                             <input type="color" name="Color" value="@(string.IsNullOrEmpty(Model.Color) ? "#6366F1" : Model.Color)"
-                                   class="w-12 h-12 rounded-xl border border-indigo-200 cursor-pointer">
-                            <div class="flex gap-2 flex-wrap">
+                                   class="w-12 h-12 rounded-xl border border-slate-200 cursor-pointer p-0.5">
+                            <div class="flex gap-2.5 flex-wrap">
                                 @foreach (var color in colors)
                                 {
                                     <button type="button" onclick="document.querySelector('[name=Color]').value='@color'"
-                                            class="w-7 h-7 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform"
+                                            class="w-8 h-8 rounded-full border-2 border-white shadow-sm hover:scale-110 transition-transform cursor-pointer"
                                             style="background:@color"></button>
                                 }
                             </div>
+                            <span class="text-xs text-slate-500 ml-auto hidden sm:inline">Pilih warna untuk identitas visual proyek pada kalender dan dashboard</span>
                         </div>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-toggle-on text-amber-400 mr-2"></i>Status
-                        </label>
-                        <select name="Status" class="select2 w-full" data-placeholder="Pilih Status">
-                            @if (Model.Status == TrackerKerja.Models.ProjectStatus.Active)
-                            { <option value="Active" selected>🟢 Active</option> }
-                            else { <option value="Active">🟢 Active</option> }
-                            @if (Model.Status == TrackerKerja.Models.ProjectStatus.Completed)
-                            { <option value="Completed" selected>✅ Completed</option> }
-                            else { <option value="Completed">✅ Completed</option> }
-                            @if (Model.Status == TrackerKerja.Models.ProjectStatus.Archived)
-                            { <option value="Archived" selected>📦 Archived</option> }
-                            else { <option value="Archived">📦 Archived</option> }
-                        </select>
-                    </div>
                 </div>
 
-                <div class="mb-6">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        <i class="fas fa-calendar text-amber-400 mr-2"></i>Deadline
-                    </label>
-                    <input type="date" name="Deadline" value="@(Model.Deadline?.ToString("yyyy-MM-dd"))"
-                           class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-slate-700">
-                </div>
-
-                <div class="flex gap-3">
+                <div class="flex items-center justify-end gap-3 pt-6 border-t border-slate-100">
+                    <a href="/Project" class="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 hover:bg-slate-50 font-semibold transition-all">
+                        Batal
+                    </a>
                     <button type="submit"
-                            class="flex-1 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-semibold py-3 rounded-xl hover:shadow-lg transition-all">
-                        <i class="fas @(isEdit ? "fa-save" : "fa-plus") mr-2"></i>
-                        @(isEdit ? "Simpan" : "Buat Proyek")
+                            class="px-8 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-bold rounded-xl shadow-md hover:shadow-indigo-200 transition-all flex items-center gap-2">
+                        <i class="fas fa-check"></i>
+                        Simpan Proyek Baru
                     </button>
-                    <a href="/Project" class="px-6 py-3 rounded-xl border border-slate-200 text-slate-600 hover:border-amber-300 font-medium transition-all">Batal</a>
                 </div>
             </form>
         </div>

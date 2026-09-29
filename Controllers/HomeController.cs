@@ -362,5 +362,227 @@ namespace TrackerKerja.Controllers
                 overdueTasks = tasks.Count(t => t.DueDate.HasValue && t.DueDate.Value < DateTime.Now && t.Status != Models.TaskStatus.Done)
             });
         }
+
+        // ── AJAX: DASHBOARD ANALYTICS FILTER BY PERIOD ──────────────
+        [HttpGet]
+        public async Task<IActionResult> GetDashboardAnalytics(string period = "week", int? projectId = null)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+            var today = DateTime.Today;
+
+            // Determine date range based on period
+            DateTime dateFrom;
+            DateTime dateTo = today.AddDays(1).AddTicks(-1);
+            string periodLabel;
+            int dayCount;
+
+            switch (period)
+            {
+                case "today":
+                    dateFrom = today;
+                    periodLabel = "Hari Ini";
+                    dayCount = 1;
+                    break;
+                case "week":
+                    dateFrom = today.AddDays(-6);
+                    periodLabel = "7 Hari Terakhir";
+                    dayCount = 7;
+                    break;
+                case "month":
+                    dateFrom = today.AddDays(-29);
+                    periodLabel = "30 Hari Terakhir";
+                    dayCount = 30;
+                    break;
+                case "quarter":
+                    dateFrom = today.AddDays(-89);
+                    periodLabel = "90 Hari Terakhir";
+                    dayCount = 90;
+                    break;
+                default:
+                    dateFrom = today.AddDays(-6);
+                    periodLabel = "7 Hari Terakhir";
+                    dayCount = 7;
+                    break;
+            }
+
+            // Base queries with company scope
+            var tasksQuery = _db.Tasks
+                .Include(t => t.Project)
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.Sessions)
+                .AsQueryable();
+
+            var sessionsQuery = _db.Sessions
+                .Include(s => s.Task)
+                    .ThenInclude(t => t!.Project)
+                .AsQueryable();
+
+            var usersQuery = _db.Users
+                .OrderBy(u => u.FullName)
+                .AsQueryable();
+
+            if (!isAdmin)
+            {
+                tasksQuery = tasksQuery.Where(t =>
+                    t.CompanyId == userCompanyId ||
+                    (t.Project != null && t.Project.CompanyId == userCompanyId));
+                sessionsQuery = sessionsQuery.Where(s =>
+                    s.Task != null &&
+                    (s.Task.CompanyId == userCompanyId ||
+                     (s.Task.Project != null && s.Task.Project.CompanyId == userCompanyId)));
+                usersQuery = usersQuery.Where(u => u.CompanyId == userCompanyId);
+            }
+
+            // Optional project filter
+            if (projectId.HasValue && projectId.Value > 0)
+            {
+                tasksQuery = tasksQuery.Where(t => t.ProjectId == projectId.Value);
+                sessionsQuery = sessionsQuery.Where(s => s.Task != null && s.Task.ProjectId == projectId.Value);
+            }
+
+            // Load data
+            var allTasks = await tasksQuery.ToListAsync();
+            var periodSessions = await sessionsQuery
+                .Where(s => s.StartTime.Date >= dateFrom.Date && s.StartTime.Date <= today)
+                .ToListAsync();
+            var allUsers = await usersQuery.ToListAsync();
+
+            // KPI counts (all-time totals for counts, period for hours)
+            var totalWork = periodSessions.Sum(s => s.Duration);
+            var totalWorkHours = Math.Round(totalWork / 3600.0, 1);
+            var avgDailyHours = dayCount > 0 ? Math.Round(totalWorkHours / dayCount, 1) : 0;
+
+            // Build day-by-day trend
+            var trendLabels = new List<string>();
+            var trendHours = new List<double>();
+            var trendDone = new List<int>();
+
+            // Use compact label based on period
+            string dayFormat = dayCount > 30 ? "dd/MM" : (dayCount > 7 ? "dd MMM" : "ddd dd/M");
+            for (int i = dayCount - 1; i >= 0; i--)
+            {
+                var d = today.AddDays(-i);
+                trendLabels.Add(d.ToString(dayFormat));
+                var dayHours = periodSessions
+                    .Where(s => s.StartTime.Date == d.Date)
+                    .Sum(s => s.Duration) / 3600.0;
+                trendHours.Add(Math.Round(dayHours, 1));
+                var dayDone = allTasks
+                    .Count(t => t.Status == Models.TaskStatus.Done && t.UpdatedAt.Date == d.Date);
+                trendDone.Add(dayDone);
+            }
+
+            // Member productivity
+            var memberProductivity = allUsers.Select(u =>
+            {
+                var uTasks = allTasks.Where(t => t.AssignedToUserId == u.Id).ToList();
+                var uSecs = periodSessions
+                    .Where(s => s.UserId == u.Id)
+                    .Sum(s => s.Duration);
+                var nameParts = u.FullName.Trim().Split(' ', StringSplitOptions.RemoveEmptyEntries);
+                var shortName = nameParts.Length >= 2
+                    ? $"{nameParts[0]} {nameParts[1][0]}."
+                    : (nameParts.Length == 1 ? nameParts[0] : u.UserName ?? "User");
+                return new MemberProductivityItemDto
+                {
+                    MemberId = u.Id,
+                    MemberName = shortName,
+                    MemberColor = u.AvatarColor ?? "#6366F1",
+                    Initials = u.Initials,
+                    DoneTasks = uTasks.Count(t => t.Status == Models.TaskStatus.Done),
+                    TotalTasks = uTasks.Count,
+                    WorkHours = Math.Round(uSecs / 3600.0, 1)
+                };
+            }).Where(m => m.TotalTasks > 0).ToList();
+
+            var dto = new DashboardAnalyticsDto
+            {
+                TotalTasks = allTasks.Count,
+                DoneTasks = allTasks.Count(t => t.Status == Models.TaskStatus.Done),
+                InProgressTasks = allTasks.Count(t => t.Status == Models.TaskStatus.InProgress),
+                TodoTasks = allTasks.Count(t => t.Status == Models.TaskStatus.Todo),
+                OverdueTasks = allTasks.Count(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done),
+                TotalWorkHours = totalWorkHours,
+                AvgDailyWorkHours = avgDailyHours,
+                TrendLabels = trendLabels,
+                TrendHours = trendHours,
+                TrendDoneTasks = trendDone,
+                StatusLabels = new List<string> { "Todo", "In Progress", "Done", "Overdue" },
+                StatusCounts = new List<int>
+                {
+                    allTasks.Count(t => t.Status == Models.TaskStatus.Todo && (t.DueDate == null || t.DueDate >= DateTime.Now)),
+                    allTasks.Count(t => t.Status == Models.TaskStatus.InProgress),
+                    allTasks.Count(t => t.Status == Models.TaskStatus.Done),
+                    allTasks.Count(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done)
+                },
+                MemberProductivity = memberProductivity,
+                Period = period,
+                PeriodLabel = periodLabel,
+                DateFrom = dateFrom.ToString("dd MMM yyyy"),
+                DateTo = today.ToString("dd MMM yyyy")
+            };
+
+            return Json(dto);
+        }
+
+        // ── AJAX: KPI DRILL-DOWN TASK LIST ──────────────────────────
+        [HttpGet]
+        public async Task<IActionResult> GetKpiDrillDown(string kpi, string period = "week", int? projectId = null)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var isAdmin = User.IsInRole("Admin");
+            var userCompanyId = currentUser?.CompanyId;
+            var today = DateTime.Today;
+
+            DateTime dateFrom = period switch
+            {
+                "today" => today,
+                "month" => today.AddDays(-29),
+                "quarter" => today.AddDays(-89),
+                _ => today.AddDays(-6)
+            };
+
+            var tasksQuery = _db.Tasks
+                .Include(t => t.Project)
+                .Include(t => t.AssignedToUser)
+                .Include(t => t.Sessions)
+                .AsQueryable();
+
+            if (!isAdmin)
+                tasksQuery = tasksQuery.Where(t =>
+                    t.CompanyId == userCompanyId ||
+                    (t.Project != null && t.Project.CompanyId == userCompanyId));
+
+            if (projectId.HasValue && projectId.Value > 0)
+                tasksQuery = tasksQuery.Where(t => t.ProjectId == projectId.Value);
+
+            tasksQuery = kpi switch
+            {
+                "done" => tasksQuery.Where(t => t.Status == Models.TaskStatus.Done),
+                "inprogress" => tasksQuery.Where(t => t.Status == Models.TaskStatus.InProgress),
+                "todo" => tasksQuery.Where(t => t.Status == Models.TaskStatus.Todo && (t.DueDate == null || t.DueDate >= DateTime.Now)),
+                "overdue" => tasksQuery.Where(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done),
+                _ => tasksQuery
+            };
+
+            var tasks = await tasksQuery.OrderByDescending(t => t.UpdatedAt).Take(50).ToListAsync();
+
+            var result = tasks.Select(t => new DrillDownTaskDto
+            {
+                Id = t.Id,
+                Title = t.Title,
+                Status = t.Status.ToString(),
+                Priority = t.Priority.ToString(),
+                ProjectName = t.Project?.Name,
+                AssigneeName = t.AssignedToUser?.FullName,
+                DueDate = t.DueDate?.ToString("dd MMM yyyy"),
+                IsOverdue = t.DueDate.HasValue && t.DueDate.Value < DateTime.Now && t.Status != Models.TaskStatus.Done,
+                WorkHours = Math.Round(t.Sessions.Sum(s => s.Duration) / 3600.0, 1)
+            }).ToList();
+
+            return Json(new { success = true, tasks = result, kpi, total = result.Count });
+        }
     }
 }

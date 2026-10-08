@@ -128,7 +128,7 @@ namespace TrackerKerja.Controllers.Api
                 ClientName = dto.ClientName?.Trim(),
                 Budget = dto.Budget,
                 ActualCost = dto.ActualCost,
-                ProjectManagerId = dto.ProjectManagerId,
+                ProjectManagerId = string.IsNullOrWhiteSpace(dto.ProjectManagerId) ? null : dto.ProjectManagerId.Trim(),
                 Tags = dto.Tags?.Trim(),
                 CompanyId = userCompanyId,
                 CreatedAt = DateTime.Now
@@ -180,7 +180,7 @@ namespace TrackerKerja.Controllers.Api
             project.ClientName = dto.ClientName?.Trim();
             project.Budget = dto.Budget;
             project.ActualCost = dto.ActualCost;
-            project.ProjectManagerId = dto.ProjectManagerId;
+            project.ProjectManagerId = string.IsNullOrWhiteSpace(dto.ProjectManagerId) ? null : dto.ProjectManagerId.Trim();
             project.Tags = dto.Tags?.Trim();
 
             await _db.SaveChangesAsync();

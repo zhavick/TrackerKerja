@@ -144,6 +144,10 @@ namespace TrackerKerja.Controllers
             var isAdmin = User.IsInRole("Admin");
             var companyId = currentUser?.CompanyId ?? 1;
 
+            ModelState.Remove("Company");
+            ModelState.Remove("ProjectManager");
+            ModelState.Remove("Tasks");
+
             if (!ModelState.IsValid)
             {
                 var managersQuery = _db.Users.AsQueryable();
@@ -164,16 +168,46 @@ namespace TrackerKerja.Controllers
                 return View(model);
             }
 
-            if (!isAdmin || !model.CompanyId.HasValue)
+            try
             {
-                model.CompanyId = companyId;
-            }
-            model.CreatedAt = DateTime.Now;
+                if (!isAdmin || !model.CompanyId.HasValue)
+                {
+                    model.CompanyId = companyId;
+                }
+                model.Name = model.Name.Trim();
+                model.Description = model.Description?.Trim();
+                model.Color = string.IsNullOrWhiteSpace(model.Color) ? "#6366F1" : model.Color.Trim();
+                model.ClientName = model.ClientName?.Trim();
+                model.Tags = model.Tags?.Trim();
+                model.ProjectManagerId = string.IsNullOrWhiteSpace(model.ProjectManagerId) ? null : model.ProjectManagerId.Trim();
+                model.CreatedAt = DateTime.Now;
 
-            _db.Projects.Add(model);
-            await _db.SaveChangesAsync();
-            TempData["Success"] = $"Proyek '{model.Name}' berhasil dibuat!";
-            return RedirectToAction(nameof(Index));
+                _db.Projects.Add(model);
+                await _db.SaveChangesAsync();
+                TempData["Success"] = $"Proyek '{model.Name}' berhasil dibuat!";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"Gagal membuat proyek: {ex.Message}");
+
+                var managersQuery = _db.Users.AsQueryable();
+                if (!isAdmin)
+                {
+                    managersQuery = managersQuery.Where(u => u.CompanyId == companyId);
+                }
+
+                ViewBag.Managers = await managersQuery
+                    .OrderBy(u => u.FullName)
+                    .ToListAsync();
+
+                if (isAdmin)
+                {
+                    ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
+                }
+
+                return View(model);
+            }
         }
 
         public async Task<IActionResult> Edit(int id)
@@ -227,6 +261,10 @@ namespace TrackerKerja.Controllers
                 return RedirectToAction(nameof(Index));
             }
 
+            ModelState.Remove("Company");
+            ModelState.Remove("ProjectManager");
+            ModelState.Remove("Tasks");
+
             if (!ModelState.IsValid)
             {
                 var companyId = existing.CompanyId ?? currentUser?.CompanyId ?? 1;
@@ -248,25 +286,50 @@ namespace TrackerKerja.Controllers
                 return View(model);
             }
 
-            existing.Name = model.Name;
-            existing.Description = model.Description;
-            existing.Color = model.Color;
-            existing.Deadline = model.Deadline;
-            existing.Status = model.Status;
-            existing.ClientName = model.ClientName;
-            existing.Budget = model.Budget;
-            existing.ActualCost = model.ActualCost;
-            existing.ProjectManagerId = model.ProjectManagerId;
-            existing.Tags = model.Tags;
-            if (isAdmin && model.CompanyId.HasValue)
+            try
             {
-                existing.CompanyId = model.CompanyId;
-            }
+                existing.Name = model.Name.Trim();
+                existing.Description = model.Description?.Trim();
+                existing.Color = string.IsNullOrWhiteSpace(model.Color) ? "#6366F1" : model.Color.Trim();
+                existing.Deadline = model.Deadline;
+                existing.Status = model.Status;
+                existing.ClientName = model.ClientName?.Trim();
+                existing.Budget = model.Budget;
+                existing.ActualCost = model.ActualCost;
+                existing.ProjectManagerId = string.IsNullOrWhiteSpace(model.ProjectManagerId) ? null : model.ProjectManagerId.Trim();
+                existing.Tags = model.Tags?.Trim();
+                if (isAdmin && model.CompanyId.HasValue)
+                {
+                    existing.CompanyId = model.CompanyId;
+                }
 
-            _db.Projects.Update(existing);
-            await _db.SaveChangesAsync();
-            TempData["Success"] = $"Proyek '{existing.Name}' berhasil diperbarui!";
-            return RedirectToAction(nameof(Index));
+                _db.Projects.Update(existing);
+                await _db.SaveChangesAsync();
+                TempData["Success"] = $"Proyek '{existing.Name}' berhasil diperbarui!";
+                return RedirectToAction(nameof(Index));
+            }
+            catch (Exception ex)
+            {
+                ModelState.AddModelError("", $"Gagal memperbarui proyek: {ex.Message}");
+
+                var companyId = existing.CompanyId ?? currentUser?.CompanyId ?? 1;
+                var managersQuery = _db.Users.AsQueryable();
+                if (!isAdmin)
+                {
+                    managersQuery = managersQuery.Where(u => u.CompanyId == companyId);
+                }
+
+                ViewBag.Managers = await managersQuery
+                    .OrderBy(u => u.FullName)
+                    .ToListAsync();
+
+                if (isAdmin)
+                {
+                    ViewBag.Companies = await _db.Companies.OrderBy(c => c.Name).ToListAsync();
+                }
+
+                return View(model);
+            }
         }
 
         [HttpPost]

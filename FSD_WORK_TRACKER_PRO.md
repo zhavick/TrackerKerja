@@ -5,14 +5,14 @@
 
 ### INFORMASI DOKUMEN
 - **Nama Aplikasi**: Work Tracker Pro (TrackerKerja)
-- **Versi Dokumen**: 3.7 (Multi-Company Corporate Code Isolation, Project Finance, Admin Company Grouping & Gamification Edition)
+- **Versi Dokumen**: 3.8 (Full-Width Responsive Studio Layout, QA E2E Tracking Suite & Projects REST API Edition)
 - **Status**: Disetujui & Terimplementasi Penuh (Production-Ready)
 - **Target Platform**: Web Application (ASP.NET Core 8.0 MVC / REST API / Docker Linux Container)
 - **Basis Data**: Entity Framework Core 8.0 dengan SQLite Database Engine (`/app/data/trackerkerja.db` via `./db_data` volume)
 - **Engine Spreadsheet**: ClosedXML 0.104.2 (Format ARMS 21-kolom, Template Standar 9-kolom, & Timesheet Personal)
 - **Dokumentasi REST API**: OpenAPI 3.0 via Swashbuckle Swagger UI (`/swagger`) dengan Strict JWT Bearer Authorization & Postman Collection
 - **Repositori Source Code**: [https://github.com/zhavick/TrackerKerja.git](https://github.com/zhavick/TrackerKerja.git)
-- **Tanggal Rilis & Pembaruan**: 29 September 2026
+- **Tanggal Rilis & Pembaruan**: 08 Oktober 2026
 
 ---
 
@@ -46,6 +46,8 @@
    - [5.18 Modul Integrasi Server Email (SMTP) & Sub-Modul Template Email Event](#518-modul-integrasi-server-email-smtp--sub-modul-template-email-event)
    - [5.19 Pembaruan Navigasi, Ergonomi Antarmuka, Halaman Login Lottie, Onboarding Tour & AJAX Grid Table Pagination](#519-pembaruan-navigasi-ergonomi-antarmuka-halaman-login-lottie-onboarding-tour--ajax-grid-table-pagination)
    - [5.20 Modul Gamifikasi, Daily Check-In, Aturan Streak, Master Badge Gaul & Klaim Hadiah](#520-modul-gamifikasi-daily-check-in-aturan-streak-master-badge-gaul--klaim-hadiah)
+   - [5.21 Modul Tata Letak Studio Bentang Penuh (Full-Width Responsive Studio Layout)](#521-modul-tata-letak-studio-bentang-penuh-full-width-responsive-studio-layout)
+   - [5.22 Paket Pengujian Mutu (Quality Assurance - QA) & Matriks Pelacakan End-to-End](#522-paket-pengujian-mutu-quality-assurance---qa--matriks-pelacakan-end-to-end)
 6. [Spesifikasi Non-Fungsional, Keamanan & Privasi Data](#6-spesifikasi-non-fungsional-keamanan--privasi-data)
 7. [Panduan Docker Containerization, Git Repository & Deployment](#7-panduan-docker-containerization-git-repository--deployment)
 
@@ -748,6 +750,38 @@ Modul ini mengimplementasikan sistem gamifikasi komprehensif untuk meningkatkan 
 - **5.20.7 Integrasi Card & Widget Pengingat Check-In pada Dashboard Utama**:
   - **Kartu Metrik ke-5 (Personal Metrics)**: Dashboard menampilkan kartu *Daily Check-In & Streak* di samping 4 kartu metrik utama. Jika pengguna belum check-in, kartu menampilkan tombol *Check-In Sekarang (+10 Poin)* dengan indikator api menyala.
   - **Spanduk Pengingat Wajib Hari Ini**: Spanduk cerdas beranimasi di bawah salam personal yang memberitahukan sisa streak, peringatan reset 2 hari, dan tombol aksi langsung tanpa reload peramban.
+
+### 5.21 Modul Tata Letak Studio Bentang Penuh (Full-Width Responsive Studio Layout)
+Seluruh formulir kerja inti telah dimodernisasi dari struktur sempit (`max-w-4xl`, `max-w-2xl`) menjadi tata letak studio bentang penuh (`w-full` dengan CSS Grid 12-kolom `lg:grid-cols-12`) yang mengoptimalkan penggunaan monitor resolusi tinggi (1080p, 1440p, 4K) dan tetap responsif pada perangkat seluler:
+- **5.21.1 Detail & Edit Tugas (`/Task/Edit/{id}`)**:
+  - *Header Eksekutif Bentang Penuh*: Kode tugas, kode induk, tanggal, judul tugas, dan total durasi waktu kerja.
+  - *Kolom Kiri (8 Kolom)*: Input judul tugas, deskripsi kerja, panel dokumentasi kendala (*Obstacle*) bernuansa amber dan solusi (*Solution*) bernuansa emerald, pencatatan jam kerja manual terintegrasi (+30m, +1h, +2h, +4h, Reset), riwayat sesi kerja (*Work Sessions*), dan catatan terkait.
+  - *Kolom Kanan (4 Kolom - Sticky)*: Dropdown status alur kerja, slider progress persentase (0-100%), penugasan PIC, prioritas, milestone waterfall SDLC, asosiasi proyek/kategori, jadwal mulai/deadline, dan hierarki sub-tugas (*Child Tasks*).
+  - *Bilah Aksi Mengambang (Sticky Bottom Action Bar)*: Membentang penuh di bawah layar memuat ringkasan status dan tombol *"Simpan Semua Perubahan"*.
+- **5.21.2 Edit Catatan & Dokumentasi (`/Note/Edit/{id}`)**:
+  - Kolom utama 8-kolom menyajikan area pengetikan editor Quill.js yang luas (min-height 420px) serta panel upload dan riwayat lampiran multi-file terorganisir per folder user.
+  - Kolom samping 4-kolom memuat kategori, warna aksen catatan, penautan ke tugas, sematkan (pin), dan tombol simpan.
+- **5.21.3 Edit Anggota Tim (`/Member/Edit/{id}`)**:
+  - Kolom utama 8-kolom memuat nama lengkap, email, spesialisasi jabatan, dan nomor kontak WhatsApp.
+  - Kolom samping 4-kolom memuat pengaturan hak akses peran (*Role Admin vs Member*), pemilih 8 warna aksen avatar dengan pratinjau inisial langsung, dan tombol simpan.
+- **5.21.4 Profil Pengguna & Ultra-Wide Cover (`/Account/Profile`)**:
+  - Banner cover foto profil membentang panoramik penuh (*Ultra-Wide Panoramic Banner*).
+  - Formulir identitas akun, pemilihan galeri cover latar, dan ganti kata sandi tertata proporsional tanpa pembatasan lebar horizontal.
+- **5.21.5 Edit Proyek & Manajemen Finansial (`/Project/Edit/{id}`)**:
+  - Kolom utama 8-kolom memuat nama proyek, deskripsi ruang lingkup, tags, klien, serta anggaran finansial (*Budget*) dan biaya aktual (*Actual Cost*).
+  - Kolom samping 4-kolom memuat status alur kerja (*Active, Completed, Archived*), Project Manager (PM), pemilih perusahaan (*Corporate Code*), target deadline, dan tema warna visual proyek.
+
+### 5.22 Paket Pengujian Mutu (Quality Assurance - QA) & Matriks Pelacakan End-to-End
+Sistem dilengkapi paket artefak pengujian mutu terstandarisasi untuk menjamin keandalan fungsional, performa, dan keamanan lintas rilis:
+- **5.22.1 Repositori Artefak QA & Berkas Pelacakan Interaktif (`QA/Tracking_Test_Case_E2E_TrackerKerja.xlsx`)**:
+  - *Sheet Dashboard & Metrics*: Ringkasan statistik eksekutif dengan formula dinamis (`COUNTA`, `COUNTIF`, `% Completion`, `% Pass Rate`) dan tabel kemajuan 19 modul aplikasi.
+  - *Sheet E2E Test Cases Master*: Repositori 65+ skenario pengujian end-to-end terstruktur mencakup alur positif, negatif, keamanan RBAC, dan validasi data dengan dropdown validation serta conditional formatting.
+  - *Sheet Execution Cycles*: Pelacakan siklus rilis pengujian (*Smoke/Sanity, Multi-Company Regression, ClosedXML ARMS Interop, Full E2E Sprint, dan UAT*).
+  - *Sheet Defect Log*: Pencatatan temuan bug terhubung dengan ID Test Case, tingkat keparahan (*Severity*), dan penugasan developer.
+- **5.22.2 Cakupan 65+ Skenario Uji E2E Melintasi 19 Modul Sistem**:
+  - Menguji Autentikasi Ganda, Multi-Company Isolation, Manajemen Proyek, Parenting Tugas, Kanban Board, Timesheet & Multi-Timer, Presensi & Rekonsiliasi, Catatan & Upload File, Import/Export ClosedXML (9-kolom & ARMS 21-kolom), Direktori Tim, Kalender, Developer Tools (SQL & JSON), Audit Trail, Master Data, Gamifikasi, Notifikasi SMTP, Sinkronisasi Host Induk, Tema & Font Engine, serta REST API & Swagger Bearer Token.
+- **5.22.3 Standar Operasional QA (`QA/README.md`)**:
+  - Konvensi penamaan test case (`TC-[MODUL]-[NO]`), matriks keparahan defect (*Blocker, Major, Moderate, Minor*), dan tata cara sign-off pengujian.
 
 ---
 

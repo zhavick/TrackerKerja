@@ -65,7 +65,24 @@
 - **Tur Interaktif Layar (*Interactive Onboarding Tour*)**: 6 spotlight interaktif memandu pengguna baru (`onboarding-tour.js`).
 - **Paginasi Grid Tabel AJAX (*Zero Reload*)**: Navigasi tabel Tugas, Anggota Tim, Presensi, Audit Trail, dan Timesheet instan (`ajax-grid-manager.js`).
 
-### 🛡️ 8. Konfigurasi Sistem 4-Tab Modular, Audit Trail & Backup
+### 🖥️ 8. Tata Letak Studio Bentang Penuh (Full-Width Responsive Studio Layout)
+- **Desain Studio 2-Kolom Ergonomis**: Seluruh formulir kerja inti telah di-refactor menggunakan layout bentang penuh (`w-full` dengan CSS Grid 12-kolom `lg:grid-cols-12`):
+  - **Detail & Edit Tugas (`/Task/Edit/{id}`)**: Kolom Kiri 8-kolom untuk konten tugas, log *Obstacle & Solution*, jam kerja manual, dan catatan terkait; Kolom Kanan 4-kolom *sticky* untuk status alur kerja, slider progress, penugasan PIC, prioritas, milestone waterfall, proyek, jadwal, dan sub-tugas.
+  - **Edit Catatan (`/Note/Edit/{id}`)**: Area pengetikan editor Quill.js yang luas (min-height 420px), dropzone berkas lampiran multi-file, dan sidebar inspektor kategori/warna.
+  - **Edit Anggota Tim (`/Member/Edit/{id}`)**: Formulir identitas anggota dan sidebar inspektor hak akses peran (*Role*) serta aksen avatar.
+  - **Profil Pengguna & Cover (`/Account/Profile`)**: Tampilan banner sampul *Ultra-Wide Panoramic*, formulir profil dan keamanan kata sandi bentang penuh.
+  - **Edit Proyek (`/Project/Edit/{id}`)**: Ruang lingkup dan analitik anggaran/finansial di kolom utama, status alur kerja dan penugasan Project Manager (PM) di sidebar inspektor.
+- **Bilah Aksi Mengambang (*Sticky Bottom Action Bar*)**: Membentang penuh di bagian bawah layar memudahkan penyimpanan instan satu klik tanpa perlu menggulir (*scroll*) halaman.
+
+### 🧪 9. Paket Pengujian Mutu (QA) & E2E Test Case Tracking Matrix
+- **Spreadsheet Pelacakan Interaktif (`QA/Tracking_Test_Case_E2E_TrackerKerja.xlsx`)**:
+  - *Dashboard & Metrics*: Kartu KPI eksekutif dengan formula dinamis (`COUNTA`, `COUNTIF`, `% Completion`, `% Pass Rate`) dan tabel ringkasan status 19 modul aplikasi.
+  - *E2E Test Cases Master*: 65+ skenario pengujian end-to-end terstruktur mencakup alur positif, negatif, keamanan RBAC, dan validasi data dengan dropdown validation & conditional formatting.
+  - *Execution Cycles*: Pelacakan siklus rilis pengujian (*Smoke/Sanity, Regression, Interoperability, UAT*).
+  - *Defect Log*: Pencatatan temuan bug terhubung dengan ID Test Case, tingkat keparahan (*Severity*), dan penugasan developer.
+- **Buku Panduan Standar QA (`QA/README.md`)**: Konvensi penamaan test case (`TC-[MODUL]-[NO]`), matriks keparahan defect, dan siklus rilis pengujian mutu.
+
+### 🛡️ 10. Konfigurasi Sistem 4-Tab Modular, Audit Trail & Backup
 - **Arsitektur Konfigurasi 4-Tab Modular (`/Configuration`)**:
   1. *Sinkronisasi Host Induk & Cabang*: Parameter host, uji ping, push/pull sync.
   2. *Database & Pemeliharaan*: Monitoring SQLite, VACUUM compaction, backup/restore `.db` & `.sql`.
@@ -187,6 +204,8 @@ Untuk mengunggah kode terbaru ke GitHub menggunakan Personal Access Token (PAT):
 - 📐 **[FSD_WORK_TRACKER_PRO.md](file:///c:/TEMP/VSCODE/TrackerKerja/FSD_WORK_TRACKER_PRO.md)**: Dokumen Spesifikasi Fungsional (FSD), arsitektur modul, diagram Mermaid, dan alur bisnis.
 - 📘 **[TSD_WORK_TRACKER_PRO.md](file:///c:/TEMP/VSCODE/TrackerKerja/TSD_WORK_TRACKER_PRO.md)**: Dokumen Spesifikasi Teknis (TSD), controller & API retrieval procedures, arsitektur basis data, ERD, dan sample data.
 - 📖 **[USER_GUIDE.md](file:///c:/TEMP/VSCODE/TrackerKerja/USER_GUIDE.md)**: Panduan pengguna menyeluruh dengan alur kerja seluruh fitur dan modul.
+- 🧪 **[QA/README.md](file:///c:/TEMP/VSCODE/TrackerKerja/QA/README.md)**: Panduan pengujian mutu (QA), prosedur rilis, dan standar pengujian end-to-end.
+- 📊 **[QA/Tracking_Test_Case_E2E_TrackerKerja.xlsx](file:///c:/TEMP/VSCODE/TrackerKerja/QA/Tracking_Test_Case_E2E_TrackerKerja.xlsx)**: Workbook spreadsheet pelacakan eksekutif 65+ E2E Test Case dengan formula dinamis dan status tracking.
 - 🐳 **[DOCKER_GUIDE.md](file:///c:/TEMP/VSCODE/TrackerKerja/DOCKER_GUIDE.md)**: Panduan lengkap Docker, volume data, backup, dan perintah maintenance.
 
 ### Format Microsoft Word (.docx - Tampilan Eksekutif & Profesional)

@@ -1,624 +1,681 @@
 @model TrackerKerja.ViewModels.TaskFormViewModel
 @{
-    ViewData["Title"] = "Edit Tugas";
+    ViewData["Title"] = "Detail & Edit Tugas";
     var priorities = new[] { ("Low","🟢 Low"), ("Medium","🔵 Medium"), ("High","🟡 High"), ("Critical","🔴 Critical") };
     var statuses = new[] { ("Todo","📋 Todo"), ("InProgress","🔄 In Progress"), ("Done","✅ Done") };
     var sessions = Model.Task.Sessions.OrderByDescending(s => s.StartTime).ToList();
+    var taskNotes = Model.Task.Notes?.OrderByDescending(n => n.UpdatedAt).ToList() ?? new();
 }
 
-<div class="max-w-4xl mx-auto space-y-6">
+<div class="w-full space-y-6">
 
     <!-- Alert Notifications -->
     @if (TempData["Success"] != null)
     {
-        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3">
+        <div class="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 shadow-xs">
             <i class="fas fa-check-circle text-emerald-500 text-lg"></i>
             <p class="text-emerald-700 text-sm font-semibold">@TempData["Success"]</p>
         </div>
     }
     @if (TempData["Error"] != null)
     {
-        <div class="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3">
+        <div class="p-4 bg-red-50 border border-red-200 rounded-2xl flex items-center gap-3 shadow-xs">
             <i class="fas fa-exclamation-circle text-red-500 text-lg"></i>
             <p class="text-red-700 text-sm font-semibold">@TempData["Error"]</p>
         </div>
     }
 
-    <!-- Main Edit Form Card -->
-    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-        <div class="bg-gradient-to-r from-indigo-500 to-purple-600 p-6 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-edit text-white"></i>
-                </div>
-                <div>
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-white font-bold text-lg">Edit Tugas: @Model.Task.Title</h2>
-                        <span class="bg-white/20 text-white font-mono text-xs px-2 py-0.5 rounded-md font-bold">@Model.Task.TaskCode</span>
-                    </div>
-                    <p class="text-indigo-200 text-xs mt-0.5">
-                        Kode Induk: <strong class="text-white font-mono">@Model.Task.ParentCode</strong> • Dibuat @Model.Task.CreatedAt.ToString("dd MMM yyyy HH:mm")
-                    </p>
-                </div>
+    <!-- Top Executive Header Banner (Full Width) -->
+    <div class="bg-gradient-to-r from-slate-900 via-indigo-950 to-slate-900 rounded-3xl p-5 sm:p-6 text-white shadow-xl border border-indigo-900/40 flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div class="flex items-start sm:items-center gap-4 min-w-0">
+            <div class="w-12 h-12 rounded-2xl bg-white/10 backdrop-blur-md flex items-center justify-center text-white text-xl shadow-inner shrink-0 border border-white/20">
+                <i class="fas fa-tasks"></i>
             </div>
-            <a href="/Task" class="text-white/80 hover:text-white text-xs bg-white/10 hover:bg-white/20 px-3 py-1.5 rounded-lg transition-colors">
-                <i class="fas fa-arrow-left mr-1"></i>Kembali
+            <div class="min-w-0">
+                <div class="flex flex-wrap items-center gap-2 mb-1">
+                    <a href="/Task" class="text-slate-400 hover:text-white text-xs font-semibold flex items-center gap-1 transition-colors">
+                        <i class="fas fa-arrow-left text-[10px]"></i> Daftar Tugas
+                    </a>
+                    <span class="text-slate-600 text-xs">/</span>
+                    <span class="bg-indigo-500/30 text-indigo-200 border border-indigo-400/30 font-mono text-xs px-2.5 py-0.5 rounded-lg font-bold">@Model.Task.TaskCode</span>
+                    @if (!string.IsNullOrEmpty(Model.Task.ParentCode))
+                    {
+                        <span class="bg-purple-500/30 text-purple-200 border border-purple-400/30 font-mono text-xs px-2.5 py-0.5 rounded-lg font-bold" title="Kode Induk">Induk: @Model.Task.ParentCode</span>
+                    }
+                    <span class="text-slate-400 text-xs">• Dibuat @Model.Task.CreatedAt.ToString("dd MMM yyyy HH:mm")</span>
+                </div>
+                <h1 class="text-xl sm:text-2xl font-black text-white tracking-tight truncate" title="@Model.Task.Title">
+                    @Model.Task.Title
+                </h1>
+            </div>
+        </div>
+        <div class="flex items-center gap-3 shrink-0">
+            <div class="bg-white/10 backdrop-blur-md px-4 py-2 rounded-2xl border border-white/15 text-right">
+                <p class="text-[10px] text-indigo-200 uppercase font-bold tracking-wider">Total Durasi</p>
+                <p class="text-lg sm:text-xl font-black font-mono text-white">@Model.Task.TotalDurationFormatted</p>
+            </div>
+            <a href="/Task" class="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all border border-white/20 flex items-center gap-1.5 shadow-xs">
+                <i class="fas fa-list"></i>
+                <span class="hidden sm:inline">Kembali</span>
             </a>
         </div>
+    </div>
 
-        <div class="p-6">
-            <form method="post" action="/Task/Edit/@Model.Task.Id" id="taskEditForm">
-                @Html.AntiForgeryToken()
-                <input type="hidden" name="Id" value="@Model.Task.Id" />
+    <!-- Main Edit Form (2-Column Studio Layout) -->
+    <form method="post" action="/Task/Edit/@Model.Task.Id" id="taskEditForm" class="space-y-6">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="Id" value="@Model.Task.Id" />
 
-                <!-- Title -->
-                <div class="mb-5">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        <i class="fas fa-heading text-indigo-400 mr-2"></i>Judul Tugas <span class="text-red-500">*</span>
-                    </label>
-                    <input type="text" name="Title" value="@Model.Task.Title" required
-                           class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 transition-all font-medium">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+
+            <!-- ========================================== -->
+            <!-- LEFT COLUMN: MAIN CONTENT STREAM (8 COLS)  -->
+            <!-- ========================================== -->
+            <div class="lg:col-span-8 space-y-6">
+
+                <!-- Card 1: Judul & Deskripsi Tugas -->
+                <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-indigo-500 to-purple-600 px-6 py-4 flex items-center justify-between text-white">
+                        <div class="flex items-center gap-2.5">
+                            <i class="fas fa-file-alt text-lg"></i>
+                            <h2 class="font-bold text-base">Detail & Konten Utama Tugas</h2>
+                        </div>
+                        <span class="text-xs bg-white/20 px-2.5 py-0.5 rounded-md font-mono font-bold">@Model.Task.TaskCode</span>
+                    </div>
+
+                    <div class="p-6 space-y-5">
+                        <!-- Judul -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                <i class="fas fa-heading text-indigo-500 mr-2"></i>Judul Tugas <span class="text-red-500">*</span>
+                            </label>
+                            <input type="text" name="Title" value="@Model.Task.Title" required
+                                   class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 transition-all font-medium text-base shadow-2xs">
+                        </div>
+
+                        <!-- Deskripsi -->
+                        <div>
+                            <label class="block text-sm font-semibold text-slate-700 mb-2">
+                                <i class="fas fa-align-left text-indigo-500 mr-2"></i>Deskripsi & Spesifikasi Pengerjaan
+                            </label>
+                            <textarea name="Description" rows="5" placeholder="Tuliskan rincian deskripsi tugas, acuan teknis, atau catatan pengembang..."
+                                      class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 transition-all resize-y shadow-2xs">@Model.Task.Description</textarea>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Description -->
-                <div class="mb-5">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        <i class="fas fa-align-left text-indigo-400 mr-2"></i>Deskripsi Tugas
-                    </label>
-                    <textarea name="Description" rows="3" placeholder="Deskripsi tugas (opsional)..."
-                              class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-800 transition-all resize-none">@Model.Task.Description</textarea>
+                <!-- Card 2: Dokumentasi Kendala & Solusi (Obstacle & Solution) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                    <div class="bg-slate-100 px-6 py-3.5 border-b border-slate-200 flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-slate-700">
+                            <i class="fas fa-clipboard-check text-indigo-600"></i>
+                            <h3 class="font-bold text-sm">Dokumentasi Kendala & Solusi Teknis</h3>
+                        </div>
+                        <span class="text-xs text-slate-400">Troubleshooting Log</span>
+                    </div>
+
+                    <div class="p-6">
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                            <!-- Kendala / Hambatan -->
+                            <div>
+                                <label class="block text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+                                    <i class="fas fa-exclamation-triangle text-amber-500"></i>Kendala / Isu / Hambatan
+                                </label>
+                                <textarea name="Obstacle" rows="4" placeholder="Tuliskan kendala teknis atau blocker yang dihadapi..."
+                                          class="w-full px-4 py-3 rounded-xl border border-amber-300 focus:outline-none focus:ring-2 focus:ring-amber-400 text-slate-800 transition-all resize-y bg-amber-50/20 shadow-2xs">@Model.Task.Obstacle</textarea>
+                                <p class="text-[11px] text-slate-400 mt-1.5">Membantu tim mengetahui titik kendala operasional.</p>
+                            </div>
+
+                            <!-- Solusi / Tindakan Penyelesaian -->
+                            <div>
+                                <label class="block text-sm font-semibold text-emerald-800 mb-2 flex items-center gap-2">
+                                    <i class="fas fa-lightbulb text-emerald-500"></i>Solusi / Rencana Penyelesaian
+                                </label>
+                                <textarea name="Solution" rows="4" placeholder="Tuliskan solusi teknis, tindakan penyelesaian, atau cara perbaikan..."
+                                          class="w-full px-4 py-3 rounded-xl border border-emerald-300 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800 transition-all resize-y bg-emerald-50/20 shadow-2xs">@Model.Task.Solution</textarea>
+                                <p class="text-[11px] text-slate-400 mt-1.5">Mencatat solusi untuk referensi di masa mendatang.</p>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Kendala / Hambatan -->
-                <div class="mb-5">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        <i class="fas fa-exclamation-triangle text-amber-500 mr-2"></i>Kendala / Isu / Hambatan
-                    </label>
-                    <textarea name="Obstacle" rows="3" placeholder="Tuliskan kendala atau masalah yang dihadapi dalam pengerjaan tugas (opsional)..."
-                              class="w-full px-4 py-3 rounded-xl border border-amber-200 focus:outline-none focus:ring-2 focus:ring-amber-400 text-slate-800 transition-all resize-none bg-amber-50/20">@Model.Task.Obstacle</textarea>
-                </div>
+                <!-- Card 3: Pencatatan Jam Kerja & Riwayat Sesi (Work Duration & Timesheet) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-amber-500 to-orange-600 px-6 py-4 flex items-center justify-between text-white">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-clock text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-base leading-tight">Pencatatan Jam Kerja & Riwayat Sesi</h3>
+                                <p class="text-amber-100 text-xs">Kelola durasi kerja manual terintegrasi dan pantau log sesi</p>
+                            </div>
+                        </div>
+                        <div class="bg-white/20 rounded-xl px-3.5 py-1.5 text-right backdrop-blur-sm">
+                            <p class="text-[10px] text-amber-100 font-bold uppercase">Total Waktu</p>
+                            <p class="text-base font-black font-mono text-white">@Model.Task.TotalDurationFormatted</p>
+                        </div>
+                    </div>
 
-                <!-- Solusi / Tindakan Penyelesaian -->
-                <div class="mb-5">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        <i class="fas fa-lightbulb text-emerald-500 mr-2"></i>Solusi / Rencana Penyelesaian
-                    </label>
-                    <textarea name="Solution" rows="3" placeholder="Tuliskan solusi, tindakan penanganan, atau hasil troubleshooting (opsional)..."
-                              class="w-full px-4 py-3 rounded-xl border border-emerald-200 focus:outline-none focus:ring-2 focus:ring-emerald-400 text-slate-800 transition-all resize-none bg-emerald-50/20">@Model.Task.Solution</textarea>
-                </div>
+                    <div class="p-6 space-y-6">
+                        <!-- Input Tambahan Jam Kerja Terintegrasi -->
+                        <div class="bg-amber-50/70 rounded-2xl p-5 border border-amber-200/90 shadow-xs">
+                            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
+                                <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
+                                    <i class="fas fa-stopwatch text-amber-600"></i>
+                                    Input Tambahan Jam Kerja (Disimpan Bersama Detail Tugas)
+                                </h4>
+                                <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-100/90 px-3 py-1 rounded-lg border border-amber-200">
+                                    <i class="fas fa-info-circle text-amber-600"></i>
+                                    Biarkan 0 jika hanya ingin mengubah detail tugas
+                                </span>
+                            </div>
 
-                <!-- Assignee (Ditugaskan Kepada) -->
-                <div class="mb-5">
-                    <label class="block text-sm font-semibold text-slate-700 mb-2">
-                        <i class="fas fa-user-check text-indigo-500 mr-2"></i>Ditugaskan Kepada (PIC)
-                    </label>
-                    <select name="AssignedToUserId" class="select2 w-full" data-placeholder="-- Cari PIC / Anggota Tim --">
-                        <option value="">-- Tanpa Penugasan / Belum Ditugaskan --</option>
-                        @foreach (var u in Model.Users)
-                        {
-                            if (Model.Task.AssignedToUserId == u.Id)
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
+                                <!-- Jam -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">
+                                        <i class="fas fa-hourglass-half text-amber-500 mr-1"></i>Jam
+                                    </label>
+                                    <input type="number" name="manualHours" id="manualHours" min="0" max="999" value="0"
+                                           class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
+                                </div>
+
+                                <!-- Menit -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">
+                                        <i class="fas fa-clock text-amber-500 mr-1"></i>Menit
+                                    </label>
+                                    <input type="number" name="manualMinutes" id="manualMinutes" min="0" max="59" value="0"
+                                           class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
+                                </div>
+
+                                <!-- Tanggal -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">
+                                        <i class="fas fa-calendar-alt text-amber-500 mr-1"></i>Tanggal Pengerjaan
+                                    </label>
+                                    <input type="date" name="manualSessionDate" id="manualSessionDate" value="@DateTime.Today.ToString("yyyy-MM-dd")"
+                                           class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
+                                </div>
+
+                                <!-- Catatan -->
+                                <div>
+                                    <label class="block text-xs font-semibold text-slate-700 mb-1">
+                                        <i class="fas fa-comment-alt text-amber-500 mr-1"></i>Catatan Sesi
+                                    </label>
+                                    <input type="text" name="manualNotes" id="manualNotes" placeholder="Contoh: Coding fitur auth"
+                                           class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
+                                </div>
+                            </div>
+
+                            <!-- Preset Cepat -->
+                            <div class="flex items-center justify-between gap-2 flex-wrap pt-2.5 border-t border-amber-200/70 text-xs">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-slate-500 font-medium text-[11px] mr-1">Preset Cepat:</span>
+                                    <button type="button" onclick="setManualTime(0, 30)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer shadow-2xs">+30 Menit</button>
+                                    <button type="button" onclick="setManualTime(1, 0)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer shadow-2xs">+1 Jam</button>
+                                    <button type="button" onclick="setManualTime(2, 0)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer shadow-2xs">+2 Jam</button>
+                                    <button type="button" onclick="setManualTime(4, 0)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer shadow-2xs">+4 Jam</button>
+                                    <button type="button" onclick="setManualTime(0, 0)" class="px-2.5 py-1 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg text-slate-600 font-semibold text-[11px] transition-all cursor-pointer">Reset (0)</button>
+                                </div>
+                                <p class="text-[11px] text-amber-700 italic flex items-center gap-1">
+                                    <i class="fas fa-check text-[10px]"></i>
+                                    Waktu kerja akan tercatat otomatis saat menyimpan perubahan tugas.
+                                </p>
+                            </div>
+                        </div>
+
+                        <!-- Riwayat Sesi Kerja Table -->
+                        <div>
+                            <h4 class="font-bold text-slate-800 text-sm mb-3 flex items-center justify-between">
+                                <span class="flex items-center gap-2">
+                                    <i class="fas fa-history text-slate-400"></i>
+                                    Riwayat Sesi Kerja (@sessions.Count sesi)
+                                </span>
+                            </h4>
+
+                            @if (!sessions.Any())
                             {
-                                <option value="@u.Id" selected>👤 @u.FullName (@u.Email - @u.JobTitle)</option>
+                                <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-100 text-slate-400">
+                                    <i class="fas fa-hourglass-start text-2xl mb-2 text-slate-300 block"></i>
+                                    <p class="text-xs">Belum ada sesi kerja tercatat untuk tugas ini.</p>
+                                </div>
                             }
                             else
                             {
-                                <option value="@u.Id">👤 @u.FullName (@u.Email - @u.JobTitle)</option>
+                                <div class="overflow-x-auto rounded-xl border border-slate-200 shadow-2xs">
+                                    <table class="w-full text-sm">
+                                        <thead>
+                                            <tr class="bg-slate-50 border-b border-slate-200 text-slate-500 text-xs">
+                                                <th class="text-left px-4 py-2.5 font-semibold">Waktu Mulai</th>
+                                                <th class="text-left px-4 py-2.5 font-semibold">Waktu Selesai</th>
+                                                <th class="text-left px-4 py-2.5 font-semibold">Durasi</th>
+                                                <th class="text-left px-4 py-2.5 font-semibold">Keterangan</th>
+                                                <th class="text-right px-4 py-2.5 font-semibold">Aksi</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody class="divide-y divide-slate-100">
+                                            @foreach (var session in sessions)
+                                            {
+                                                var h = session.Duration / 3600;
+                                                var m = (session.Duration % 3600) / 60;
+                                                var s = session.Duration % 60;
+                                                var isRunning = session.EndTime == null;
+
+                                                <tr class="hover:bg-slate-50/80 transition-colors">
+                                                    <td class="px-4 py-2.5 text-xs text-slate-700 whitespace-nowrap">
+                                                        @session.StartTime.ToString("dd MMM yyyy HH:mm")
+                                                    </td>
+                                                    <td class="px-4 py-2.5 text-xs text-slate-700 whitespace-nowrap">
+                                                        @if (isRunning)
+                                                        {
+                                                            <span class="inline-flex items-center gap-1.5 text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
+                                                                <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                                                                Sedang Berjalan
+                                                            </span>
+                                                        }
+                                                        else
+                                                        {
+                                                            @(session.EndTime?.ToString("dd MMM yyyy HH:mm") ?? "-")
+                                                        }
+                                                    </td>
+                                                    <td class="px-4 py-2.5 font-mono font-bold text-xs text-slate-800 whitespace-nowrap">
+                                                        @if (isRunning)
+                                                        {
+                                                            <span class="text-emerald-600">--:--:--</span>
+                                                        }
+                                                        else
+                                                        {
+                                                            <span>@($"{h:D2}:{m:D2}:{s:D2}")</span>
+                                                            <span class="text-slate-400 font-sans text-[11px] font-normal">(@h j @m m)</span>
+                                                        }
+                                                    </td>
+                                                    <td class="px-4 py-2.5 text-xs text-slate-500">
+                                                        @(string.IsNullOrEmpty(session.Notes) ? "Otomatis (Timer)" : session.Notes)
+                                                    </td>
+                                                    <td class="px-4 py-2.5 text-right whitespace-nowrap">
+                                                        @if (!isRunning)
+                                                        {
+                                                            <button type="button" onclick="confirmDeleteSession(@session.Id)"
+                                                                    class="text-red-400 hover:text-red-600 p-1.5 rounded-lg hover:bg-red-50 transition-colors cursor-pointer"
+                                                                    title="Hapus Sesi Kerja">
+                                                                <i class="fas fa-trash-alt text-xs"></i>
+                                                            </button>
+                                                        }
+                                                    </td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </div>
                             }
-                        }
-                    </select>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Parent Task (Tugas Induk) -->
-                <div class="mb-5 bg-slate-50/70 p-4 rounded-2xl border border-slate-200/80">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-sm font-semibold text-slate-700">
-                            <i class="fas fa-sitemap text-indigo-500 mr-2"></i>Tugas Induk (Parent Task)
-                        </label>
-                        <span class="text-[11px] font-bold text-slate-500 bg-white px-2.5 py-1 rounded-lg border border-slate-200">
-                            Kode Induk: <strong class="font-mono text-indigo-600">@Model.Task.ParentCode</strong>
-                        </span>
+                <!-- Card 4: Catatan & Dokumentasi Terkait (Linked Notes) -->
+                <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                    <div class="bg-gradient-to-r from-violet-600 to-indigo-600 px-6 py-4 flex items-center justify-between text-white">
+                        <div class="flex items-center gap-3">
+                            <div class="w-9 h-9 bg-white/20 rounded-xl flex items-center justify-center">
+                                <i class="fas fa-book-open text-white"></i>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-base leading-tight">Catatan & Dokumentasi Terkait (@taskNotes.Count)</h3>
+                                <p class="text-indigo-100 text-xs">Dokumentasi teknis dan referensi terkait tugas ini</p>
+                            </div>
+                        </div>
+                        <a href="/Note/Create?taskId=@Model.Task.Id"
+                           class="bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-3.5 py-1.5 rounded-xl text-xs flex items-center gap-1.5 shadow-md hover:scale-105 transition-all">
+                            <i class="fas fa-plus"></i>
+                            <span>Tulis Catatan</span>
+                        </a>
                     </div>
-                    <select name="ParentTaskId" id="parentTaskEditSelect" class="select2 w-full" data-search="true" data-placeholder="-- Cari & Pilih Tugas Induk (Ketik Kode / Judul / Proyek) --">
-                        <option value="">-- (Tugas Utama / Mandiri - Tanpa Induk) --</option>
-                        @foreach (var parent in Model.AvailableParentTasks)
-                        {
-                            <option value="@parent.Id" selected="@(Model.Task.ParentTaskId == parent.Id)">
-                                [@parent.TaskCode] @parent.Title (@(parent.Project?.Name ?? "Tanpa Proyek"))
-                            </option>
-                        }
-                    </select>
-                    <p class="text-[11px] text-slate-500 mt-2">
-                        <i class="fas fa-search text-indigo-500 mr-1"></i>Ketik kode tugas, judul, atau nama proyek untuk mencari tugas induk dengan cepat. Jika tanpa induk, kode induk otomatis adalah: <strong class="font-mono">@Model.Task.TaskCode</strong>.
-                    </p>
 
-                    @if (Model.Task.ChildTasks != null && Model.Task.ChildTasks.Any())
-                    {
-                        <div class="mt-3 pt-3 border-t border-slate-200">
-                            <p class="text-xs font-bold text-slate-700 mb-2">
-                                <i class="fas fa-network-wired text-purple-500 mr-1.5"></i>Daftar Sub-Task / Child Tasks (@Model.Task.ChildTasks.Count):
-                            </p>
-                            <div class="space-y-1.5">
-                                @foreach (var child in Model.Task.ChildTasks)
+                    <div class="p-6">
+                        @if (!taskNotes.Any())
+                        {
+                            <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-100 text-slate-400">
+                                <i class="fas fa-sticky-note text-2xl mb-2 text-slate-300 block"></i>
+                                <p class="text-xs">Belum ada catatan atau dokumentasi yang ditautkan ke tugas ini.</p>
+                                <a href="/Note/Create?taskId=@Model.Task.Id" class="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-indigo-600 hover:underline">
+                                    <i class="fas fa-pen-nib"></i> Tulis catatan sekarang
+                                </a>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                @foreach (var n in taskNotes)
                                 {
-                                    <div class="flex items-center justify-between p-2 rounded-xl bg-white border border-slate-200 text-xs">
-                                        <div class="flex items-center gap-2">
-                                            <span class="font-mono font-bold text-[10px] text-indigo-600 bg-indigo-50 px-1.5 py-0.5 rounded">@child.TaskCode</span>
-                                            <span class="font-semibold text-slate-800">@child.Title</span>
+                                    <div class="bg-slate-50 hover:bg-white rounded-2xl p-4 border border-slate-200 hover:border-indigo-200 hover:shadow-md transition-all flex flex-col justify-between group">
+                                        <div>
+                                            <div class="flex items-center justify-between gap-2 mb-2">
+                                                <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                                                    @n.Category
+                                                </span>
+                                                <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100">
+                                                    <a href="/Note/Details/@n.Id" class="p-1 text-slate-400 hover:text-indigo-600" title="Buka Catatan">
+                                                        <i class="fas fa-external-link-alt text-xs"></i>
+                                                    </a>
+                                                    <a href="/Note/Edit/@n.Id" class="p-1 text-slate-400 hover:text-indigo-600" title="Edit">
+                                                        <i class="fas fa-pencil-alt text-xs"></i>
+                                                    </a>
+                                                </div>
+                                            </div>
+                                            <a href="/Note/Details/@n.Id" class="block font-black text-slate-800 text-sm group-hover:text-indigo-600 transition-colors line-clamp-1">
+                                                @n.Title
+                                            </a>
+                                            <p class="text-slate-500 text-xs mt-1 line-clamp-2">
+                                                @n.PlainTextPreview
+                                            </p>
                                         </div>
-                                        <div class="flex items-center gap-2">
-                                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-full @(child.Status == TrackerKerja.Models.TaskStatus.Done ? "bg-emerald-100 text-emerald-700" : "bg-indigo-100 text-indigo-700")">
-                                                @child.Status (@child.Progress%)
+
+                                        <div class="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-400">
+                                            <span class="font-medium text-slate-600">
+                                                👤 @(n.AuthorUser?.FullName ?? "Pengguna")
                                             </span>
-                                            <a href="/Task/Edit/@child.Id" class="text-indigo-600 hover:text-indigo-800 text-[11px] font-bold">Edit &rarr;</a>
+                                            <span>@n.UpdatedAt.ToString("dd MMM yyyy")</span>
                                         </div>
                                     </div>
                                 }
                             </div>
-                        </div>
-                    }
+                        }
+                    </div>
                 </div>
 
-                <!-- Milestone (SDLC Waterfall Phase) -->
-                <div class="mb-5 bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-sm font-semibold text-slate-700">
-                            <i class="fas fa-layer-group text-indigo-500 mr-2"></i>Milestone (Fase SDLC Waterfall) <span class="text-indigo-600 font-bold">*</span>
-                        </label>
-                        <span class="text-[11px] font-bold text-indigo-700 bg-white px-2 py-0.5 rounded-lg border border-indigo-200">
-                            Waterfall SDLC
+            </div>
+
+            <!-- ============================================== -->
+            <!-- RIGHT COLUMN: SIDEBAR INSPECTOR (4 COLS)       -->
+            <!-- ============================================== -->
+            <div class="lg:col-span-4 space-y-6 lg:sticky lg:top-4">
+
+                <!-- Inspector Card 1: Status Alur Kerja & Progress -->
+                <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                    <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 flex items-center justify-between text-slate-700">
+                        <span class="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                            <i class="fas fa-sliders-h text-indigo-500"></i>Status & Progres
                         </span>
-                    </div>
-                    <select name="Milestone" class="select2 w-full" data-placeholder="-- Pilih Milestone Fase SDLC --">
-                        @if (Model.Milestones != null && Model.Milestones.Any())
-                        {
-                            foreach (var m in Model.Milestones)
-                            {
-                                <option value="@m.Name" selected="@(Model.Task.Milestone == m.Name)">
-                                    🎯 @m.Name (@m.Description)
-                                </option>
-                            }
-                        }
-                        else
-                        {
-                            <option value="Requirement Analysis" selected="@(Model.Task.Milestone == "Requirement Analysis")">📋 1. Requirement Analysis (Analisis Kebutuhan & Dokumen SRS/BRD)</option>
-                            <option value="System Design" selected="@(Model.Task.Milestone == "System Design")">📐 2. System Design (Desain Sistem, Arsitektur & UI/UX)</option>
-                            <option value="Implementation" selected="@(string.IsNullOrEmpty(Model.Task.Milestone) || Model.Task.Milestone == "Implementation")">💻 3. Implementation (Pengembangan & Coding Backend/Frontend)</option>
-                            <option value="Testing & QA" selected="@(Model.Task.Milestone == "Testing & QA")">🧪 4. Testing & QA (Pengujian, QA, Bug Fixing & UAT)</option>
-                            <option value="Deployment" selected="@(Model.Task.Milestone == "Deployment")">🚀 5. Deployment (Penyebaran / Rilis Production & CI/CD)</option>
-                            <option value="Maintenance" selected="@(Model.Task.Milestone == "Maintenance")">🛠️ 6. Maintenance (Pemeliharaan, Monitoring & Support)</option>
-                        }
-                    </select>
-                    <p class="text-[11px] text-slate-500 mt-2">
-                        <i class="fas fa-info-circle text-indigo-400 mr-1"></i>Pilih fase SDLC Waterfall yang sesuai untuk memproyeksikan tahapan siklus hidup tugas ini.
-                    </p>
-                </div>
-
-                <!-- Project & Category -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-folder text-amber-400 mr-2"></i>Proyek
-                        </label>
-                        <select name="ProjectId" class="select2 w-full" data-placeholder="-- Pilih Proyek --">
-                            <option value="">-- Pilih Proyek --</option>
-                            @foreach (var proj in Model.Projects)
-                            {
-                                if (Model.Task.ProjectId == proj.Id)
-                                {
-                                    <option value="@proj.Id" selected>@proj.Name</option>
-                                }
-                                else
-                                {
-                                    <option value="@proj.Id">@proj.Name</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-tag text-cyan-400 mr-2"></i>Kategori
-                        </label>
-                        <select name="CategoryId" class="select2 w-full" data-placeholder="-- Pilih Kategori --">
-                            <option value="">-- Pilih Kategori --</option>
-                            @foreach (var cat in Model.Categories)
-                            {
-                                if (Model.Task.CategoryId == cat.Id)
-                                {
-                                    <option value="@cat.Id" selected>@cat.Name</option>
-                                }
-                                else
-                                {
-                                    <option value="@cat.Id">@cat.Name</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Priority & Status -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-5">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-flag text-red-400 mr-2"></i>Prioritas
-                        </label>
-                        <select name="Priority" class="select2 w-full" data-placeholder="-- Pilih Prioritas --">
-                            @foreach (var (val, label) in priorities)
-                            {
-                                if (Model.Task.Priority.ToString() == val)
-                                {
-                                    <option value="@val" selected>@label</option>
-                                }
-                                else
-                                {
-                                    <option value="@val">@label</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-spinner text-indigo-400 mr-2"></i>Status
-                        </label>
-                        <select name="Status" id="taskEditStatusSelect" class="select2 w-full" data-placeholder="-- Pilih Status --">
-                            @foreach (var (val, label) in statuses)
-                            {
-                                if (Model.Task.Status.ToString() == val)
-                                {
-                                    <option value="@val" selected>@label</option>
-                                }
-                                else
-                                {
-                                    <option value="@val">@label</option>
-                                }
-                            }
-                        </select>
-                    </div>
-                </div>
-
-                <!-- Progress Task (%) -->
-                <div class="mb-5 bg-indigo-50/40 p-4 rounded-2xl border border-indigo-100/80">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="text-sm font-semibold text-slate-700 flex items-center gap-2">
-                            <i class="fas fa-chart-line text-indigo-500"></i>Progress Pengerjaan Tugas
-                        </label>
-                        <span id="editProgressDisplay" class="text-sm font-extrabold text-indigo-600 bg-white px-3 py-1 rounded-xl shadow-xs border border-indigo-100">
+                        <span id="editProgressDisplay" class="text-xs font-black text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-0.5 rounded-lg shadow-2xs">
                             @(Model.Task.Progress)%
                         </span>
                     </div>
 
-                    <input type="range" name="Progress" id="editProgressSlider" min="0" max="100" step="5" value="@Model.Task.Progress"
-                           class="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
-
-                    <!-- Quick Preset Buttons -->
-                    <div class="flex items-center justify-between gap-1.5 mt-3 flex-wrap sm:flex-nowrap">
-                        <button type="button" onclick="setEditProgress(0)" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all cursor-pointer">0%</button>
-                        <button type="button" onclick="setEditProgress(25)" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all cursor-pointer">25%</button>
-                        <button type="button" onclick="setEditProgress(50)" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all cursor-pointer">50%</button>
-                        <button type="button" onclick="setEditProgress(75)" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-white border border-slate-200 text-slate-600 hover:bg-indigo-50 hover:text-indigo-600 transition-all cursor-pointer">75%</button>
-                        <button type="button" onclick="setEditProgress(100)" class="flex-1 py-1.5 text-xs font-bold rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 transition-all cursor-pointer">100%</button>
-                    </div>
-                </div>
-
-                <!-- Dates -->
-                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-6">
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-play-circle text-emerald-400 mr-2"></i>Tanggal Mulai
-                        </label>
-                        <input type="date" name="StartDate" value="@(Model.Task.StartDate?.ToString("yyyy-MM-dd"))"
-                               class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-700 transition-all">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-slate-700 mb-2">
-                            <i class="fas fa-calendar-times text-red-400 mr-2"></i>Deadline
-                        </label>
-                        <input type="date" name="DueDate" value="@(Model.Task.DueDate?.ToString("yyyy-MM-dd"))"
-                               class="w-full px-4 py-3 rounded-xl border border-indigo-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-700 transition-all">
-                    </div>
-                </div>
-
-                <!-- Bottom Hint in Card 1 -->
-                <div class="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-slate-500">
-                    <span class="inline-flex items-center gap-2 text-slate-600 font-medium">
-                        <i class="fas fa-clock text-amber-500 text-sm"></i>
-                        Lengkapi pencatatan jam kerja di bawah, lalu klik tombol <strong>Simpan Semua Perubahan</strong>.
-                    </span>
-                    <a href="/Task" class="text-slate-400 hover:text-slate-600 font-medium transition-colors">
-                        Batal
-                    </a>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- WORK DURATION & MANUAL LOGGING CARD -->
-    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-        <div class="bg-gradient-to-r from-amber-500 to-orange-600 p-6 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-clock text-white"></i>
-                </div>
-                <div>
-                    <h3 class="text-white font-bold text-lg">Pencatatan & Penyesuaian Jam Kerja Manual</h3>
-                    <p class="text-amber-100 text-sm">Kelola durasi waktu pengerjaan tugas secara manual atau otomatis</p>
-                </div>
-            </div>
-            <!-- Current Total Duration Badge -->
-            <div class="bg-white/20 rounded-2xl px-4 py-2 text-right backdrop-blur-sm">
-                <p class="text-[11px] text-amber-100 font-semibold uppercase">Total Durasi</p>
-                <p class="text-2xl font-black font-mono text-white">@Model.Task.TotalDurationFormatted</p>
-            </div>
-        </div>
-
-        <div class="p-6">
-            <!-- Unified Manual Log Input Section (No Separate Form/Button) -->
-            <div class="bg-amber-50/70 rounded-2xl p-5 border border-amber-200/90 mb-6 shadow-xs">
-                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-3">
-                    <h4 class="font-bold text-slate-800 text-sm flex items-center gap-2">
-                        <i class="fas fa-stopwatch text-amber-600"></i>
-                        Input Tambahan Jam Kerja (Disimpan Bersama Detail Tugas)
-                    </h4>
-                    <span class="inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-800 bg-amber-100/90 px-3 py-1 rounded-lg border border-amber-200">
-                        <i class="fas fa-info-circle text-amber-600"></i>
-                        Biarkan 0 jika hanya ingin mengubah detail tugas
-                    </span>
-                </div>
-
-                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 mb-3">
-                    <!-- Hours -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">
-                            <i class="fas fa-hourglass-half text-amber-500 mr-1"></i>Jam
-                        </label>
-                        <input type="number" name="manualHours" id="manualHours" form="taskEditForm" min="0" max="999" value="0"
-                               class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
-                    </div>
-
-                    <!-- Minutes -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">
-                            <i class="fas fa-clock text-amber-500 mr-1"></i>Menit
-                        </label>
-                        <input type="number" name="manualMinutes" id="manualMinutes" form="taskEditForm" min="0" max="59" value="0"
-                               class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm font-bold text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
-                    </div>
-
-                    <!-- Date -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">
-                            <i class="fas fa-calendar-alt text-amber-500 mr-1"></i>Tanggal Pengerjaan
-                        </label>
-                        <input type="date" name="manualSessionDate" id="manualSessionDate" form="taskEditForm" value="@DateTime.Today.ToString("yyyy-MM-dd")"
-                               class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
-                    </div>
-
-                    <!-- Notes -->
-                    <div>
-                        <label class="block text-xs font-semibold text-slate-700 mb-1">
-                            <i class="fas fa-comment-alt text-amber-500 mr-1"></i>Catatan / Keterangan
-                        </label>
-                        <input type="text" name="manualNotes" id="manualNotes" form="taskEditForm" placeholder="Opsional: contoh 'Coding modul auth'"
-                               class="w-full px-3 py-2.5 rounded-xl border border-amber-300 text-sm text-slate-800 focus:outline-none focus:ring-2 focus:ring-amber-400 bg-white shadow-2xs">
-                    </div>
-                </div>
-
-                <!-- Quick Presets -->
-                <div class="flex items-center justify-between gap-2 flex-wrap pt-2.5 border-t border-amber-200/70 text-xs">
-                    <div class="flex items-center gap-1.5 flex-wrap">
-                        <span class="text-slate-500 font-medium text-[11px] mr-1">Preset Cepat:</span>
-                        <button type="button" onclick="setManualTime(0, 30)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer">+30 Menit</button>
-                        <button type="button" onclick="setManualTime(1, 0)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer">+1 Jam</button>
-                        <button type="button" onclick="setManualTime(2, 0)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer">+2 Jam</button>
-                        <button type="button" onclick="setManualTime(4, 0)" class="px-2.5 py-1 bg-white border border-amber-200 hover:border-amber-400 hover:bg-amber-100/60 rounded-lg text-amber-900 font-semibold text-[11px] transition-all cursor-pointer">+4 Jam</button>
-                        <button type="button" onclick="setManualTime(0, 0)" class="px-2.5 py-1 bg-slate-100 border border-slate-200 hover:bg-slate-200 rounded-lg text-slate-600 font-semibold text-[11px] transition-all cursor-pointer">Reset (0)</button>
-                    </div>
-                    <p class="text-[11px] text-amber-700 italic flex items-center gap-1">
-                        <i class="fas fa-check text-[10px]"></i>
-                        Waktu kerja di atas akan otomatis disimpan saat tombol "Simpan Semua Perubahan" ditekan.
-                    </p>
-                </div>
-            </div>
-
-            <!-- Sessions History Table -->
-            <div>
-                <h4 class="font-bold text-slate-800 text-sm mb-3 flex items-center justify-between">
-                    <span class="flex items-center gap-2">
-                        <i class="fas fa-history text-slate-400"></i>
-                        Riwayat Sesi Kerja (@sessions.Count sesi)
-                    </span>
-                </h4>
-
-                @if (!sessions.Any())
-                {
-                    <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-100 text-slate-400">
-                        <i class="fas fa-hourglass-start text-2xl mb-2 text-slate-300 block"></i>
-                        <p class="text-xs">Belum ada sesi kerja tercatat untuk tugas ini.</p>
-                    </div>
-                }
-                else
-                {
-                    <div class="overflow-x-auto rounded-xl border border-slate-100">
-                        <table class="w-full text-sm">
-                            <thead>
-                                <tr class="bg-slate-50 border-b border-slate-100 text-slate-500 text-xs">
-                                    <th class="text-left px-4 py-2.5 font-semibold">Waktu Mulai</th>
-                                    <th class="text-left px-4 py-2.5 font-semibold">Waktu Selesai</th>
-                                    <th class="text-left px-4 py-2.5 font-semibold">Durasi</th>
-                                    <th class="text-left px-4 py-2.5 font-semibold">Keterangan</th>
-                                    <th class="text-right px-4 py-2.5 font-semibold">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-slate-50">
-                                @foreach (var session in sessions)
+                    <div class="p-5 space-y-4">
+                        <!-- Status -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                <i class="fas fa-spinner text-indigo-400 mr-1.5"></i>Status Tugas
+                            </label>
+                            <select name="Status" id="taskEditStatusSelect" class="select2 w-full" data-placeholder="-- Pilih Status --">
+                                @foreach (var (val, label) in statuses)
                                 {
-                                    var h = session.Duration / 3600;
-                                    var m = (session.Duration % 3600) / 60;
-                                    var s = session.Duration % 60;
-                                    var isRunning = session.EndTime == null;
-
-                                    <tr class="hover:bg-slate-50/80 transition-colors">
-                                        <td class="px-4 py-2.5 text-xs text-slate-700 whitespace-nowrap">
-                                            @session.StartTime.ToString("dd MMM yyyy HH:mm")
-                                        </td>
-                                        <td class="px-4 py-2.5 text-xs text-slate-700 whitespace-nowrap">
-                                            @if (isRunning)
-                                            {
-                                                <span class="inline-flex items-center gap-1.5 text-emerald-600 font-bold bg-emerald-50 px-2 py-0.5 rounded-full">
-                                                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
-                                                    Sedang Berjalan
-                                                </span>
-                                            }
-                                            else
-                                            {
-                                                @(session.EndTime?.ToString("dd MMM yyyy HH:mm") ?? "-")
-                                            }
-                                        </td>
-                                        <td class="px-4 py-2.5 font-mono font-bold text-xs text-slate-800 whitespace-nowrap">
-                                            @if (isRunning)
-                                            {
-                                                <span class="text-emerald-600">--:--:--</span>
-                                            }
-                                            else
-                                            {
-                                                <span>@($"{h:D2}:{m:D2}:{s:D2}")</span>
-                                                <span class="text-slate-400 font-sans text-[11px] font-normal">(@h j @m m)</span>
-                                            }
-                                        </td>
-                                        <td class="px-4 py-2.5 text-xs text-slate-500">
-                                            @(string.IsNullOrEmpty(session.Notes) ? "Otomatis (Timer)" : session.Notes)
-                                        </td>
-                                        <td class="px-4 py-2.5 text-right whitespace-nowrap">
-                                            @if (!isRunning)
-                                            {
-                                                <form method="post" action="/Task/DeleteSession" class="inline"
-                                                      data-confirm="Apakah Anda yakin ingin menghapus catatan sesi kerja ini? Durasi kerja yang tersimpan akan dikurangi."
-                                                      data-confirm-title="Hapus Sesi Kerja"
-                                                      data-confirm-btn="<i class='fas fa-trash-alt mr-1.5'></i>Hapus Sesi">
-                                                    @Html.AntiForgeryToken()
-                                                    <input type="hidden" name="sessionId" value="@session.Id" />
-                                                    <input type="hidden" name="taskId" value="@Model.Task.Id" />
-                                                    <button type="submit" class="text-red-400 hover:text-red-600 p-1 rounded-lg hover:bg-red-50 transition-colors cursor-pointer" title="Hapus Sesi">
-                                                        <i class="fas fa-trash-alt text-xs"></i>
-                                                    </button>
-                                                </form>
-                                            }
-                                        </td>
-                                    </tr>
+                                    <option value="@val" selected="@(Model.Task.Status.ToString() == val)">@label</option>
                                 }
-                            </tbody>
-                        </table>
-                    </div>
-                }
-            </div>
-        </div>
-    </div>
+                            </select>
+                        </div>
 
-    <!-- SINGLE UNIFIED SAVE ACTION BAR -->
-    <div class="sticky bottom-4 z-30 bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-indigo-100 shadow-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 transition-all">
-        <div class="flex items-center gap-3">
-            <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-200">
-                <i class="fas fa-save text-lg"></i>
-            </div>
-            <div>
-                <div class="flex items-center gap-2">
-                    <p class="font-bold text-slate-800 text-sm sm:text-base line-clamp-1">
-                        @Model.Task.Title
-                    </p>
-                    <span class="font-mono text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 font-bold shrink-0">@Model.Task.TaskCode</span>
-                </div>
-                <p class="text-xs text-slate-500 mt-0.5">
-                    Total Durasi: <strong class="font-mono text-indigo-600 font-bold">@Model.Task.TotalDurationFormatted</strong>
-                    <span class="text-slate-300 mx-1.5">•</span>
-                    Status: <strong class="font-semibold text-slate-700">@Model.Task.Status</strong> (@Model.Task.Progress%)
-                </p>
-            </div>
-        </div>
-        <div class="flex items-center gap-3 shrink-0">
-            <a href="/Task" class="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 font-semibold text-sm transition-all text-center">
-                Batal
-            </a>
-            <button type="submit" form="taskEditForm" id="btnSaveTaskUnified"
-                    class="flex-1 sm:flex-none bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-7 py-3 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 cursor-pointer flex items-center justify-center gap-2.5 text-sm sm:text-base">
-                <i class="fas fa-save text-base"></i>
-                <span>Simpan Semua Perubahan</span>
-            </button>
-        </div>
-    </div>
+                        <!-- Progress Slider -->
+                        <div class="pt-2 border-t border-slate-100">
+                            <label class="text-xs font-bold text-slate-700 uppercase tracking-wider block mb-2">
+                                Persentase Penyelesaian
+                            </label>
+                            <input type="range" name="Progress" id="editProgressSlider" min="0" max="100" step="5" value="@Model.Task.Progress"
+                                   class="w-full h-2.5 bg-slate-200 rounded-lg appearance-none cursor-pointer accent-indigo-600">
 
-    <!-- LINKED NOTES / DOCUMENTATION CARD -->
-    @{
-        var taskNotes = Model.Task.Notes?.OrderByDescending(n => n.UpdatedAt).ToList() ?? new();
-    }
-    <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
-        <div class="bg-gradient-to-r from-violet-600 to-indigo-600 p-6 flex items-center justify-between">
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-                    <i class="fas fa-book-open text-white"></i>
-                </div>
-                <div>
-                    <h3 class="text-white font-bold text-lg">Catatan & Dokumentasi Tugas (@taskNotes.Count)</h3>
-                    <p class="text-indigo-100 text-sm">Dokumentasi teknis, instruksi, dan catatan yang ditautkan ke tugas ini</p>
-                </div>
-            </div>
-            <a href="/Note/Create?taskId=@Model.Task.Id"
-               class="bg-white text-indigo-700 hover:bg-indigo-50 font-bold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-md hover:scale-105 transition-all">
-                <i class="fas fa-plus"></i>
-                <span>Tulis Catatan</span>
-            </a>
-        </div>
-
-        <div class="p-6">
-            @if (!taskNotes.Any())
-            {
-                <div class="p-8 text-center bg-slate-50 rounded-2xl border border-slate-100 text-slate-400">
-                    <i class="fas fa-sticky-note text-2xl mb-2 text-slate-300 block"></i>
-                    <p class="text-xs">Belum ada catatan atau dokumentasi yang ditautkan ke tugas ini.</p>
-                    <a href="/Note/Create?taskId=@Model.Task.Id" class="inline-flex items-center gap-1.5 mt-3 text-xs font-bold text-indigo-600 hover:underline">
-                        <i class="fas fa-pen-nib"></i> Tulis catatan sekarang
-                    </a>
-                </div>
-            }
-            else
-            {
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    @foreach (var n in taskNotes)
-                    {
-                        var nColor = string.IsNullOrEmpty(n.Color) ? "#6366F1" : n.Color;
-                        <div class="bg-slate-50 hover:bg-white rounded-2xl p-4 border border-slate-200 hover:border-indigo-200 hover:shadow-md transition-all flex flex-col justify-between group">
-                            <div>
-                                <div class="flex items-center justify-between gap-2 mb-2">
-                                    <span class="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
-                                        @n.Category
-                                    </span>
-                                    <div class="flex items-center gap-1 opacity-80 group-hover:opacity-100">
-                                        <a href="/Note/Details/@n.Id" class="p-1 text-slate-400 hover:text-indigo-600" title="Buka Catatan">
-                                            <i class="fas fa-external-link-alt text-xs"></i>
-                                        </a>
-                                        <a href="/Note/Edit/@n.Id" class="p-1 text-slate-400 hover:text-indigo-600" title="Edit">
-                                            <i class="fas fa-pencil-alt text-xs"></i>
-                                        </a>
-                                    </div>
-                                </div>
-                                <a href="/Note/Details/@n.Id" class="block font-black text-slate-800 text-sm group-hover:text-indigo-600 transition-colors line-clamp-1">
-                                    @n.Title
-                                </a>
-                                <p class="text-slate-500 text-xs mt-1 line-clamp-2">
-                                    @n.PlainTextPreview
-                                </p>
-                            </div>
-
-                            <div class="mt-3 pt-2.5 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-400">
-                                <span class="font-medium text-slate-600">
-                                    👤 @(n.AuthorUser?.FullName ?? "Pengguna")
-                                </span>
-                                <span>@n.UpdatedAt.ToString("dd MMM yyyy")</span>
+                            <!-- Preset Cepat -->
+                            <div class="grid grid-cols-5 gap-1 mt-3">
+                                <button type="button" onclick="setEditProgress(0)" class="py-1 text-[11px] font-bold rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-all cursor-pointer text-center">0%</button>
+                                <button type="button" onclick="setEditProgress(25)" class="py-1 text-[11px] font-bold rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-all cursor-pointer text-center">25%</button>
+                                <button type="button" onclick="setEditProgress(50)" class="py-1 text-[11px] font-bold rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-all cursor-pointer text-center">50%</button>
+                                <button type="button" onclick="setEditProgress(75)" class="py-1 text-[11px] font-bold rounded-lg bg-slate-100 hover:bg-indigo-50 hover:text-indigo-600 text-slate-600 transition-all cursor-pointer text-center">75%</button>
+                                <button type="button" onclick="setEditProgress(100)" class="py-1 text-[11px] font-bold rounded-lg bg-emerald-100 hover:bg-emerald-200 text-emerald-800 transition-all cursor-pointer text-center">100%</button>
                             </div>
                         </div>
-                    }
+                    </div>
                 </div>
-            }
+
+                <!-- Inspector Card 2: Penugasan & Metadata Proyek -->
+                <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                    <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 text-slate-700">
+                        <span class="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                            <i class="fas fa-info-circle text-indigo-500"></i>Metadata & Penugasan
+                        </span>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <!-- PIC -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                <i class="fas fa-user-check text-indigo-500 mr-1.5"></i>Ditugaskan Kepada (PIC)
+                            </label>
+                            <select name="AssignedToUserId" class="select2 w-full" data-placeholder="-- Cari PIC / Anggota Tim --">
+                                <option value="">-- Tanpa Penugasan / Belum Ditugaskan --</option>
+                                @foreach (var u in Model.Users)
+                                {
+                                    <option value="@u.Id" selected="@(Model.Task.AssignedToUserId == u.Id)">
+                                        👤 @u.FullName (@u.Email - @u.JobTitle)
+                                    </option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Prioritas -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                <i class="fas fa-flag text-red-400 mr-1.5"></i>Prioritas Tugas
+                            </label>
+                            <select name="Priority" class="select2 w-full" data-placeholder="-- Pilih Prioritas --">
+                                @foreach (var (val, label) in priorities)
+                                {
+                                    <option value="@val" selected="@(Model.Task.Priority.ToString() == val)">@label</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Milestone -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                <i class="fas fa-layer-group text-indigo-500 mr-1.5"></i>Milestone (SDLC Waterfall) <span class="text-indigo-600 font-bold">*</span>
+                            </label>
+                            <select name="Milestone" class="select2 w-full" data-placeholder="-- Pilih Milestone Fase SDLC --">
+                                @if (Model.Milestones != null && Model.Milestones.Any())
+                                {
+                                    foreach (var m in Model.Milestones)
+                                    {
+                                        <option value="@m.Name" selected="@(Model.Task.Milestone == m.Name)">
+                                            🎯 @m.Name (@m.Description)
+                                        </option>
+                                    }
+                                }
+                                else
+                                {
+                                    <option value="Requirement Analysis" selected="@(Model.Task.Milestone == "Requirement Analysis")">📋 1. Requirement Analysis</option>
+                                    <option value="System Design" selected="@(Model.Task.Milestone == "System Design")">📐 2. System Design</option>
+                                    <option value="Implementation" selected="@(string.IsNullOrEmpty(Model.Task.Milestone) || Model.Task.Milestone == "Implementation")">💻 3. Implementation</option>
+                                    <option value="Testing & QA" selected="@(Model.Task.Milestone == "Testing & QA")">🧪 4. Testing & QA</option>
+                                    <option value="Deployment" selected="@(Model.Task.Milestone == "Deployment")">🚀 5. Deployment</option>
+                                    <option value="Maintenance" selected="@(Model.Task.Milestone == "Maintenance")">🛠️ 6. Maintenance</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Proyek -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                <i class="fas fa-folder text-amber-500 mr-1.5"></i>Proyek
+                            </label>
+                            <select name="ProjectId" class="select2 w-full" data-placeholder="-- Pilih Proyek --">
+                                <option value="">-- Pilih Proyek --</option>
+                                @foreach (var proj in Model.Projects)
+                                {
+                                    <option value="@proj.Id" selected="@(Model.Task.ProjectId == proj.Id)">@proj.Name</option>
+                                }
+                            </select>
+                        </div>
+
+                        <!-- Kategori -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                <i class="fas fa-tag text-cyan-500 mr-1.5"></i>Kategori
+                            </label>
+                            <select name="CategoryId" class="select2 w-full" data-placeholder="-- Pilih Kategori --">
+                                <option value="">-- Pilih Kategori --</option>
+                                @foreach (var cat in Model.Categories)
+                                {
+                                    <option value="@cat.Id" selected="@(Model.Task.CategoryId == cat.Id)">@cat.Name</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inspector Card 3: Jadwal & Waktu Pengerjaan -->
+                <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                    <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 text-slate-700">
+                        <span class="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                            <i class="fas fa-calendar-alt text-indigo-500"></i>Jadwal & Batas Waktu
+                        </span>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                <i class="fas fa-play-circle text-emerald-500 mr-1.5"></i>Tanggal Mulai
+                            </label>
+                            <input type="date" name="StartDate" value="@(Model.Task.StartDate?.ToString("yyyy-MM-dd"))"
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-700 text-sm shadow-2xs">
+                        </div>
+
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                <i class="fas fa-calendar-times text-red-500 mr-1.5"></i>Deadline (Due Date)
+                            </label>
+                            <input type="date" name="DueDate" value="@(Model.Task.DueDate?.ToString("yyyy-MM-dd"))"
+                                   class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-400 text-slate-700 text-sm shadow-2xs">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inspector Card 4: Hierarki Tugas & Sub-Task -->
+                <div class="bg-white rounded-2xl shadow-sm border border-indigo-100 overflow-hidden">
+                    <div class="bg-slate-100 px-5 py-3 border-b border-slate-200 flex items-center justify-between text-slate-700">
+                        <span class="font-bold text-xs uppercase tracking-wider flex items-center gap-2">
+                            <i class="fas fa-sitemap text-indigo-500"></i>Hierarki & Sub-Task
+                        </span>
+                        <span class="text-[10px] font-mono text-indigo-700 bg-white px-2 py-0.5 rounded border border-slate-200 font-bold">
+                            @Model.Task.TaskCode
+                        </span>
+                    </div>
+
+                    <div class="p-5 space-y-4">
+                        <!-- Parent Task -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                Tugas Induk (Parent Task)
+                            </label>
+                            <select name="ParentTaskId" id="parentTaskEditSelect" class="select2 w-full" data-search="true" data-placeholder="-- Cari Tugas Induk --">
+                                <option value="">-- (Tugas Mandiri / Tanpa Induk) --</option>
+                                @foreach (var parent in Model.AvailableParentTasks)
+                                {
+                                    <option value="@parent.Id" selected="@(Model.Task.ParentTaskId == parent.Id)">
+                                        [@parent.TaskCode] @parent.Title
+                                    </option>
+                                }
+                            </select>
+                            <p class="text-[11px] text-slate-400 mt-1.5">
+                                Jika tanpa induk, tugas ini bertindak sebagai tugas utama.
+                            </p>
+                        </div>
+
+                        <!-- Sub-Tasks List -->
+                        <div class="pt-3 border-t border-slate-100">
+                            <div class="flex items-center justify-between mb-2">
+                                <label class="text-xs font-bold text-slate-700 uppercase tracking-wider">
+                                    Sub-Task (@(Model.Task.ChildTasks?.Count ?? 0))
+                                </label>
+                                <a href="/Task/Create?parentId=@Model.Task.Id" class="text-[11px] font-bold text-indigo-600 hover:text-indigo-800 flex items-center gap-1">
+                                    <i class="fas fa-plus"></i> Tambah Subtask
+                                </a>
+                            </div>
+
+                            @if (Model.Task.ChildTasks != null && Model.Task.ChildTasks.Any())
+                            {
+                                <div class="space-y-1.5 max-h-48 overflow-y-auto pr-1">
+                                    @foreach (var child in Model.Task.ChildTasks)
+                                    {
+                                        <div class="flex items-center justify-between p-2 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+                                            <div class="flex items-center gap-1.5 min-w-0">
+                                                <span class="font-mono font-bold text-[10px] text-indigo-600 bg-indigo-50 px-1 py-0.5 rounded shrink-0">@child.TaskCode</span>
+                                                <span class="font-semibold text-slate-800 truncate" title="@child.Title">@child.Title</span>
+                                            </div>
+                                            <div class="flex items-center gap-1.5 shrink-0">
+                                                <span class="text-[10px] font-bold px-1.5 py-0.5 rounded-full @(child.Status == TrackerKerja.Models.TaskStatus.Done ? "bg-emerald-100 text-emerald-700" : "bg-indigo-100 text-indigo-700")">
+                                                    @(child.Progress)%
+                                                </span>
+                                                <a href="/Task/Edit/@child.Id" class="text-indigo-600 hover:text-indigo-800 font-bold ml-1" title="Buka Subtask">
+                                                    <i class="fas fa-external-link-alt text-[10px]"></i>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    }
+                                </div>
+                            }
+                            else
+                            {
+                                <p class="text-[11px] text-slate-400 italic">Belum ada sub-task di bawah tugas ini.</p>
+                            }
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
         </div>
-    </div>
+
+        <!-- Sticky Bottom Unified Action Bar (Full Width) -->
+        <div class="sticky bottom-4 z-30 bg-white/95 backdrop-blur-md p-4 sm:p-5 rounded-2xl border border-indigo-100 shadow-xl flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-4 transition-all">
+            <div class="flex items-center gap-3 min-w-0">
+                <div class="w-11 h-11 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-indigo-200">
+                    <i class="fas fa-save text-lg"></i>
+                </div>
+                <div class="min-w-0">
+                    <div class="flex items-center gap-2">
+                        <p class="font-bold text-slate-800 text-sm sm:text-base truncate">
+                            @Model.Task.Title
+                        </p>
+                        <span class="font-mono text-xs text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md border border-indigo-100 font-bold shrink-0">@Model.Task.TaskCode</span>
+                    </div>
+                    <p class="text-xs text-slate-500 mt-0.5 truncate">
+                        Total Durasi: <strong class="font-mono text-indigo-600 font-bold">@Model.Task.TotalDurationFormatted</strong>
+                        <span class="text-slate-300 mx-1.5">•</span>
+                        Status: <strong class="font-semibold text-slate-700">@Model.Task.Status</strong> (<span id="bottomBarProgressDisplay">@Model.Task.Progress%</span>)
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-3 shrink-0">
+                <a href="/Task" class="px-5 py-3 rounded-xl border border-slate-200 text-slate-600 hover:border-indigo-300 hover:text-indigo-600 font-semibold text-sm transition-all text-center">
+                    Batal
+                </a>
+                <button type="submit" id="btnSaveTaskUnified"
+                        class="flex-1 sm:flex-none bg-gradient-to-r from-indigo-600 via-purple-600 to-indigo-700 hover:from-indigo-700 hover:to-purple-700 text-white font-bold px-7 py-3 rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 cursor-pointer flex items-center justify-center gap-2.5 text-sm sm:text-base">
+                    <i class="fas fa-save text-base"></i>
+                    <span>Simpan Semua Perubahan</span>
+                </button>
+            </div>
+        </div>
+
+    </form>
+
+    <!-- Hidden Form for Deleting Work Session -->
+    <form id="deleteSessionForm" method="post" action="/Task/DeleteSession" class="hidden">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="sessionId" id="delSessionId" value="" />
+        <input type="hidden" name="taskId" value="@Model.Task.Id" />
+    </form>
+
 </div>
 
 @section Scripts {
@@ -650,12 +707,14 @@
 
     const editSlider = document.getElementById('editProgressSlider');
     const editDisplay = document.getElementById('editProgressDisplay');
+    const bottomBarDisplay = document.getElementById('bottomBarProgressDisplay');
     const editStatusSelect = document.getElementById('taskEditStatusSelect');
 
     function updateEditProgress(val) {
         val = parseInt(val) || 0;
         if (editSlider) editSlider.value = val;
         if (editDisplay) editDisplay.innerText = val + '%';
+        if (bottomBarDisplay) bottomBarDisplay.innerText = val + '%';
         if (editStatusSelect) {
             var oldVal = editStatusSelect.value;
             var newVal = oldVal;
@@ -705,24 +764,16 @@
         if (mInput) mInput.value = minutes;
     }
 
-    // Ensure manual work time fields are included on submission
-    const taskEditForm = document.getElementById('taskEditForm');
-    if (taskEditForm) {
-        taskEditForm.addEventListener('submit', function() {
-            ['manualHours', 'manualMinutes', 'manualSessionDate', 'manualNotes'].forEach(function(fieldId) {
-                const inputEl = document.getElementById(fieldId);
-                if (inputEl && !taskEditForm.contains(inputEl)) {
-                    let existing = taskEditForm.querySelector(`input[name="${fieldId}"][type="hidden"]`);
-                    if (!existing) {
-                        existing = document.createElement('input');
-                        existing.type = 'hidden';
-                        existing.name = fieldId;
-                        taskEditForm.appendChild(existing);
-                    }
-                    existing.value = inputEl.value;
-                }
-            });
-        });
+    // Confirm and trigger session deletion via dedicated hidden form
+    function confirmDeleteSession(sessionId) {
+        if (confirm("Apakah Anda yakin ingin menghapus catatan sesi kerja ini? Durasi kerja yang tersimpan akan dikurangi.")) {
+            const delInput = document.getElementById('delSessionId');
+            const delForm = document.getElementById('deleteSessionForm');
+            if (delInput && delForm) {
+                delInput.value = sessionId;
+                delForm.submit();
+            }
+        }
     }
 </script>
 }

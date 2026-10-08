@@ -1,9 +1,9 @@
 # Buku Panduan Pengguna (User Guide)
 # Work Tracker Pro (TrackerKerja)
 
-> **Versi Aplikasi**: 3.7 (Multi-Company Corporate Code Isolation, Project Finance, Admin Company Grouping & Gamification Edition)  
+> **Versi Aplikasi**: 3.8 (Full-Width Studio Layout, Projects REST API & Enterprise QA Testing Edition)  
 > **Target Pengguna**: Seluruh Karyawan, System Analyst, Developer, QA, Technical Writer, Project Lead, dan Administrator  
-> **Terakhir Diperbarui**: 29 September 2026  
+> **Terakhir Diperbarui**: 08 Oktober 2026  
 
 ---
 
@@ -76,7 +76,18 @@
     - 14.3 [Koleksi 40+ Master Badge Gaul & Modern Anak Muda](#143-koleksi-40-master-badge-gaul--modern-anak-muda)
     - 14.4 [Katalog Hadiah & Penukaran Poin (1 Poin = Rp 100)](#144-katalog-hadiah--penukaran-poin-1-poin--rp-100)
     - 14.5 [Manajemen Master Hadiah & Persetujuan Klaim (Admin Approval)](#145-manajemen-master-hadiah--persetujuan-klaim-admin-approval)
-15. [Tips & Pertanyaan Umum (FAQ)](#15-tips--pertanyaan-umum-faq)
+15. [Tata Letak Studio Bentang Penuh (Full-Width Responsive Studio Layout)](#15-tata-letak-studio-bentang-penuh-full-width-responsive-studio-layout)
+    - 15.1 [Prinsip Kerja Kanvas Studio 2-Kolom & Bilah Aksi Bawah](#151-prinsip-kerja-kanvas-studio-2-kolom--bilah-aksi-bawah)
+    - 15.2 [Operasional Halaman Edit Tugas (/Task/Edit)](#152-operasional-halaman-edit-tugas-taskedit)
+    - 15.3 [Operasional Halaman Edit Catatan (/Note/Edit)](#153-operasional-halaman-edit-catatan-noteedit)
+    - 15.4 [Operasional Halaman Edit Anggota Tim (/Member/Edit)](#154-operasional-halaman-edit-anggota-tim-memberedit)
+    - 15.5 [Operasional Halaman Edit Proyek (/Project/Edit)](#155-operasional-halaman-edit-proyek-projectedit)
+    - 15.6 [Operasional Halaman Profil Akun (/Account/Profile)](#156-operasional-halaman-profil-akun-accountprofile)
+16. [Panduan Pengujian Mutu (QA) & Pelacakan Test Case E2E Excel](#16-panduan-pengujian-mutu-qa--pelacakan-test-case-e2e-excel)
+    - 16.1 [Struktur Paket Pengujian QA & Berkas Matriks](#161-struktur-paket-pengujian-qa--berkas-matriks)
+    - 16.2 [Navigasi 4 Lembar Kerja Buku Tracking Excel](#162-navigasi-4-lembar-kerja-buku-tracking-excel)
+    - 16.3 [Prosedur Eksekusi Pengujian & Pencatatan Bug (Defect Logging)](#163-prosedur-eksekusi-pengujian--pencatatan-bug-defect-logging)
+17. [Tips & Pertanyaan Umum (FAQ)](#17-tips--pertanyaan-umum-faq)
 
 ---
 
@@ -651,7 +662,124 @@ Khusus Administrator melalui menu **Master Data > Tab Poin & Hadiah (`/MasterDat
 
 ---
 
-## 15. Tips & Pertanyaan Umum (FAQ)
+## 15. Tata Letak Studio Bentang Penuh (Full-Width Responsive Studio Layout)
+
+Mulai versi 3.8, Work Tracker Pro menghadirkan pengalaman visual baru dengan tata letak **Full-Width Responsive Studio Layout** pada lima halaman operasional utama. Tata letak ini menggantikan model formulir sempit terpusat lama menjadi kanvas studio profesional yang memaksimalkan area layar monitor lebar (*widescreen* / FHD / QHD) untuk kenyamanan bekerja multi-tasking.
+
+### 15.1 Prinsip Kerja Kanvas Studio 2-Kolom & Bilah Aksi Bawah
+Tata letak studio membagi ruang kerja menjadi dua area fungsional komplementer:
+1. **Kanvas Utama Kiri (8 Kolom / Lebar ~66%)**:
+   - Area terfokus untuk konten inti yang memerlukan ruang ketik dan pembacaan luas: Judul tugas, editor deskripsi dokumen, pencatatan kendala & solusi teknis, entri manual timesheet, dan manajemen sub-tugas.
+2. **Bilah Pengawas Metadata Kanan (Sticky Metadata Inspector Sidebar - 4 Kolom / Lebar ~33%)**:
+   - Berisi kartu-kartu atribut seperti pemilih Proyek, Assignee (PIC), Kategori, Prioritas, Status, Milestone, Slider Kemajuan, dan Pemilih Tanggal.
+   - Bilah ini bersifat **mengambang lengket (*sticky*)** saat Anda menggulir halaman, sehingga Anda dapat mengubah status atau memeriksa deadline kapan saja tanpa harus menggulir ke atas kembali.
+3. **Bilah Tombol Aksi Bawah Lengket (Sticky Bottom Action Bar)**:
+   - Panel tombol aksi di bagian paling bawah layar dengan efek kaca (*backdrop-blur*) yang selalu melayang di atas footer.
+   - Tombol **Simpan Perubahan**, **Kembali / Batal**, dan aksi utilitas sekunder selalu terlihat dan siap diklik secara instan.
+
+### 15.2 Operasional Halaman Edit Tugas (`/Task/Edit`)
+1. **Menyunting Konten & Kendala**:
+   - Ketik atau perbarui deskripsi tugas pada kanvas kiri.
+   - Jika menghadapi hambatan, isi kolom **Kendala (Obstacle)** dan **Solusi Teknis**.
+2. **Pencatatan Jam Manual & Sub-Task**:
+   - Pada kanvas kiri bawah, Anda dapat langsung menambahkan sesi jam kerja manual tanpa berpindah ke modul timesheet.
+   - Tambahkan dan kelola daftar *sub-task* (anak tugas) secara hierarkis.
+3. **Mengatur Metadata di Sisi Kanan**:
+   - Ubah Status (Pending, In Progress, Review, Done) atau sesuaikan Slider Kemajuan (0–100%).
+   - Tentukan tanggal mulai dan tenggat waktu (*Due Date*).
+4. **Menyimpan**: Cukup klik tombol biru **Simpan Perubahan** pada bilah bawah lengket.
+
+### 15.3 Operasional Halaman Edit Catatan (`/Note/Edit`)
+1. **Penyusunan Catatan Dokumen**:
+   - Kanvas kiri menyajikan editor catatan dokumen luas dengan format teks kaya (Rich-Text Editor) dan pengelola lampiran berkas multi-file.
+2. **Panel Konfigurasi Kanan**:
+   - Pilih palet warna visual kartu catatan (Putih, Biru, Hijau, Kuning, Merah, Ungu, dsb.).
+   - Atur Kategori Catatan dan aktifkan sakelar **Sematkan Catatan (Pin Note)** agar catatan selalu berada di urutan teratas.
+   - Hubungkan catatan ke tugas kerja tertentu melalui dropdown pencarian tugas.
+
+### 15.4 Operasional Halaman Edit Anggota Tim (`/Member/Edit`)
+1. **Informasi Profil Karyawan (Kanvas Kiri)**:
+   - Mengubah Nama Lengkap, Alamat Email, Nomor WhatsApp/Telepon, Jabatan (*Job Title*), dan Divisi.
+   - Mengatur hak akses peran (*Role Assignment*: Administrator atau User).
+2. **Pengaturan Akun & Tenant (Panel Kanan)**:
+   - Mengatur status persetujuan akun (*Approval Status*: Disetujui atau Menunggu Persetujuan).
+   - Menetapkan afiliasi perusahaan (*Company Tenant*) untuk menjaga isolasi data.
+   - Pratinjau avatar foto profil dan inisial warna.
+
+### 15.5 Operasional Halaman Edit Proyek (`/Project/Edit`)
+1. **Data Utama Proyek (Kanvas Kiri)**:
+   - Memperbarui Nama Proyek, Deskripsi Ruang Lingkup (*Scope*), Klien (*Client Name*), serta Tagar Label Proyek.
+2. **Indikator Finansial & Parameter (Panel Kanan)**:
+   - Memantau dan mengubah Alokasi Anggaran (*Budget*) dan Biaya Aktual (*Actual Cost*).
+   - Memantau persentase *Burn Rate* secara real-time.
+   - Memilih Manajer Proyek (PM), Tanggal Tenggat Waktu (*Deadline*), Warna Identitas Proyek, dan Status Proyek.
+
+### 15.6 Operasional Halaman Profil Akun (`/Account/Profile`)
+1. **Kanvas Identitas Diri**:
+   - Halaman profil kini membentang penuh (*full-width*) dengan tampilan banner cover dan foto profil modern.
+   - Pengguna dapat mengganti foto avatar, memilih banner latar belakang, serta memperbarui bio dan kontak.
+2. **Badge Perusahaan & Keamanan Akun**:
+   - Menampilkan badge resmi nama perusahaan dan kode perusahaan tenant tempat Anda terdaftar.
+   - Menyediakan panel instan ganti kata sandi dengan validasi keamanan ganda.
+
+---
+
+## 16. Panduan Pengujian Mutu (QA) & Pelacakan Test Case E2E Excel
+
+Untuk memastikan kualitas, keandalan, dan stabilitas operasional sistem, Work Tracker Pro dilengkapi rangkaian dokumentasi dan alat pelacakan jaminan kualitas terpadu (*Quality Assurance Package*) pada folder `/QA`.
+
+### 16.1 Struktur Paket Pengujian QA & Berkas Matriks
+Paket QA terdiri dari:
+1. **`QA/Tracking_Test_Case_E2E_TrackerKerja.xlsx`**: Berkas spreadsheet pelacak matriks pengujian end-to-end yang mencakup seluruh fungsionalitas sistem.
+2. **`QA/README.md`**: Panduan SOP pengujian, tata kelola siklus rilis (*release cycles*), dan klasifikasi keparahan bug (*bug triage*).
+
+### 16.2 Navigasi 4 Lembar Kerja Buku Tracking Excel
+Buka berkas `Tracking_Test_Case_E2E_TrackerKerja.xlsx` menggunakan Microsoft Excel, WPS Office, atau LibreOffice:
+1. **Lembar Kerja 1: `Dashboard & Metrik`**:
+   - Menyajikan KPI eksekutif secara real-time: Total Test Cases, Jumlah Lolos (*Pass*), Gagal (*Fail*), Terhalang (*Blocked*), dan Belum Diuji (*Untested*).
+   - Memperlihatkan persentase tingkat keberhasilan (*Pass Rate %*) dan ringkasan distribusi cacat berdasarkan tingkat urgensi.
+2. **Lembar Kerja 2: `Master Test Case E2E`**:
+   - Memuat lebih dari 65 skenario pengujian komprehensif yang mencakup 19 modul sistem:
+     - Autentikasi & Registrasi Kode Perusahaan (`TC-AUTH`)
+     - Tugas & Full-Width Studio (`TC-TSK`)
+     - Proyek & Finansial (`TC-PRJ`)
+     - Timesheet & Multi-Timer (`TC-TMS`)
+     - Presensi Kehadiran (`TC-ATT`)
+     - Kalender RBAC (`TC-CAL`)
+     - Catatan & Lampiran (`TC-NOT`)
+     - JSON & SQL Tools (`TC-JSON`, `TC-SQL`)
+     - Laporan & Ekspor (`TC-RPT`)
+     - Direktori Anggota & Tenant (`TC-MBR`)
+     - Master Data & Konfigurasi 4-Tab (`TC-MST`, `TC-CFG`)
+     - Sinkronisasi Multi-Instance (`TC-SYNC`)
+     - Gamifikasi & Hadiah (`TC-GAM`)
+     - Notifikasi & Audit Trail (`TC-NOTIF`, `TC-AUD`)
+     - Impor Excel Standar/ARMS (`TC-IMP`)
+     - RESTful Web API & Swagger (`TC-API`)
+3. **Lembar Kerja 3: `Siklus Eksekusi`**:
+   - Digunakan oleh tim QA untuk mencatat hasil pengujian bertahap: *Cycle 1 (Uji Asap / Smoke Test)*, *Cycle 2 (Uji Regresi Penuh)*, dan *Cycle 3 (Uji Penerimaan Pengguna / UAT)*.
+4. **Lembar Kerja 4: `Defect Log`**:
+   - Lembar pelacakan penemuan bug atau anomali. Setiap temuan dicatat lengkap dengan referensi Test Case, tingkat keparahan (*Critical, Major, Minor, Trivial*), penanggung jawab developer, dan status perbaikan.
+
+### 16.3 Prosedur Eksekusi Pengujian & Pencatatan Bug (Defect Logging)
+1. **Menjalankan Pengujian**:
+   - Buka lembar kerja `Master Test Case E2E`.
+   - Pilih modul yang akan diuji, ikuti kolom **Langkah Pengujian (Test Steps)** pada aplikasi peramban.
+   - Cocokkan perilaku aplikasi dengan kolom **Hasil yang Diharapkan (Expected Result)**.
+   - Ubah kolom **Status**:
+     - Pilih **Pass** jika hasil sesuai ekspektasi.
+     - Pilih **Fail** jika ditemukan kegagalan fungsi atau kesalahan tampilan.
+     - Pilih **Blocked** jika pengujian terhambat oleh ketergantungan fitur lain.
+   - Masukkan nama penguji di kolom **Tester** dan tanggal eksekusi di kolom **Execution Date**.
+2. **Mencatat Temuan Masalah ke Defect Log**:
+   - Jika suatu pengujian berstatus *Fail*, buka lembar `Defect Log`.
+   - Tambahkan baris baru dengan ID cacat berurutan (contoh: `DEF-001`, `DEF-002`).
+   - Tulis ringkasan kendala, langkah mereproduksi masalah, dan lampirkan catatan screenshot.
+   - Tentukan tingkat keparahan (*Severity*) dan tetapkan developer terkait untuk segera ditindaklanjuti.
+
+---
+
+## 17. Tips & Pertanyaan Umum (FAQ)
 
 ### Q1: Bagaimana cara mencetak atau menyimpan panduan ini ke format PDF?
 > **Jawaban**: Klik menu **📖 Panduan Pengguna** pada bilah samping (Sidebar) navigasi aplikasi di bagian bawah (*Akun & Bantuan*). Pada jendela modal panduan yang terbuka, klik tombol **🖨️ Cetak / Simpan PDF**. Pada jendela print peramban, pilih tujuan printer sebagai **Save as PDF (Simpan sebagai PDF)** dan klik **Save**.

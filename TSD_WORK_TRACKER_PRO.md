@@ -2,11 +2,11 @@
 # WORK TRACKER PRO (TRACKERKERJA)
 
 > **Dokumen Spesifikasi Teknis: Arsitektur Pengambilan Data, Controller, API Endpoint, Layanan Backend, dan Desain Basis Data Relasional**  
-> **Versi Sistem:** v3.7 Multi-Company Isolation, Project Finance, Admin Company Grouping & Gamification Edition  
+> **Versi Sistem:** v3.8 Full-Width Studio Layout, Projects REST API & Enterprise QA Testing Edition  
 > **Target Framework:** .NET 8.0 (C# 12), ASP.NET Core MVC & RESTful Web API, Entity Framework Core 8  
 > **Mesin Basis Data:** SQLite 3 (Write-Ahead Logging / WAL Mode)  
 > **Status Dokumen:** Approved & Published  
-> **Tanggal Rilis:** 29 September 2026  
+> **Tanggal Rilis:** 08 Oktober 2026  
 
 ---
 
@@ -32,6 +32,8 @@
    - 2.12 Modul Master Data & Pengaturan Sistem (Master Data & Settings)
    - 2.13 Modul Dashboard Eksekutif & Visualisasi Metrik (Dashboard Analytics)
    - 2.14 Modul Autentikasi, Token JWT & Validasi Sesi (Auth & Session Guard)
+   - 2.15 Arsitektur Tata Letak Studio Bentang Penuh (Full-Width Responsive Studio Layout)
+   - 2.16 Spesifikasi Teknis Pengujian Mutu Terpadu (QA Verification Engine & E2E Test Matrix Architecture)
 3. [SECTION KHUSUS: DATABASE SPECIFICATION & ARCHITECTURE](#3-section-khusus-database-specification--architecture)
    - 3.1 Filosofi Desain Basis Data & Storage Engine
    - 3.2 Entity Relationship Diagram (ERD Lengkap)
@@ -54,11 +56,11 @@
 | Properti Dokumen | Rincian Teknis |
 | :--- | :--- |
 | **Nama Dokumen** | Technical Specification Document (TSD) Work Tracker Pro |
-| **Kode Dokumen** | TSD-WTP-3.7-202609 |
-| **Versi Aplikasi** | v3.7 Multi-Company Isolation, Project Finance, Admin Company Grouping & Gamification Edition |
+| **Kode Dokumen** | TSD-WTP-3.8-202610 |
+| **Versi Aplikasi** | v3.8 Full-Width Studio Layout, Projects REST API & Enterprise QA Testing Edition |
 | **Arsitek Sistem** | Senior Systems & Software Engineering Team |
 | **Klasifikasi Akses** | Internal Development Team, Technical Leads, DevOps, & DB Administrator |
-| **Tanggal Pembaruan** | 29 September 2026 |
+| **Tanggal Pembaruan** | 08 Oktober 2026 |
 
 ---
 
@@ -298,11 +300,15 @@ public async Task<IActionResult> Edit(
 | :--- | :--- | :--- | :--- | :--- |
 | **MVC** | `GET /Project/Index` | `ProjectController` | `Task<IActionResult> Index(...)` | Menampilkan kartu proyek dengan persentase progres, Serapan Budget, Client, dan PM |
 | **MVC** | `GET /Project/Details/{id}` | `ProjectController` | `Task<IActionResult> Details(int id)` | Menampilkan tugas-tugas proyek, rekap jam, burn rate finansial, dan modal bulk assign |
+| **MVC** | `GET /Project/Edit/{id}` | `ProjectController` | `Task<IActionResult> Edit(int id)` | Merender formulir studio 2-kolom full-width penyuntingan data proyek |
 | **MVC** | `POST /Project/AssignTasks` | `ProjectController` | `Task<IActionResult> AssignTasks(int projectId, int[] taskIds)` | Menugaskan sekumpulan tugas sekaligus ke dalam proyek (*Bulk Task Assignment*) |
-| **API** | `GET /api/projects` | `ProjectsApiController` | `Task<IActionResult> GetAll(...)` | Mengambil daftar proyek terfilter status dan perusahaan |
-| **API** | `GET /api/projects/{id}` | `ProjectsApiController` | `Task<IActionResult> GetById(int id)` | Mengambil detail proyek beserta ringkasan progres tugas |
-| **API** | `GET /api/projects/{id}/tasks`| `ProjectsApiController` | `Task<IActionResult> GetProjectTasks(...)`| Mengambil daftar seluruh tugas milik proyek tertentu |
-| **API** | `GET /api/projects/{id}/analytics`| `ProjectsApiController` | `Task<IActionResult> GetProjectAnalytics(...)`| Menghitung rekapitulasi waktu kerja, biaya, dan status tugas |
+| **API** | `GET /api/projects` | `ProjectsApiController` | `Task<IActionResult> GetAll(...)` | Mengambil daftar proyek terfilter status, pencarian, dan companyId |
+| **API** | `GET /api/projects/{id}` | `ProjectsApiController` | `Task<IActionResult> GetById(int id)` | Mengambil detail proyek beserta ringkasan progres dan jam kerja |
+| **API** | `POST /api/projects` | `ProjectsApiController` | `Task<IActionResult> Create([FromBody] CreateProjectRequestDto dto)` | Membuat proyek baru dengan validasi atribut dan isolasi Company |
+| **API** | `PUT /api/projects/{id}` | `ProjectsApiController` | `Task<IActionResult> Update(int id, [FromBody] UpdateProjectRequestDto dto)` | Memperbarui data proyek, anggaran (budget), actual cost, dan PM |
+| **API** | `DELETE /api/projects/{id}` | `ProjectsApiController` | `Task<IActionResult> Delete(int id)` | Menghapus proyek dan melepaskan relasi tugas (`ProjectId = null`) secara aman |
+| **API** | `GET /api/projects/{id}/tasks`| `ProjectsApiController` | `Task<IActionResult> GetProjectTasks(int id)`| Mengambil daftar seluruh tugas milik proyek tertentu lengkap dengan relasi DTO |
+| **API** | `GET /api/projects/summary` | `ProjectsApiController` | `Task<IActionResult> GetSummary()` | Mengambil ringkasan metrik total jam, tugas selesai, dan progres seluruh proyek |
 
 #### B. Logika Pengambilan Data Proyek & Kalkulasi Finansial
 1. **Pengambilan Proyek & Metrik Finansial (`ProjectController.Index` & `ProjectsApiController.GetAll`)**:
@@ -321,31 +327,67 @@ if (!isAdmin && currentUser != null)
 else if (companyId.HasValue)
     query = query.Where(p => p.CompanyId == companyId.Value);
 
-// Proyeksi ke DTO dan kalkulasi agregasi
-var result = await query.Select(p => new ProjectResponseDto
+if (status.HasValue)
+    query = query.Where(p => p.Status == status.Value);
+
+if (!string.IsNullOrWhiteSpace(search))
 {
-    Id = p.Id,
-    Name = p.Name,
-    Description = p.Description,
-    ClientName = p.ClientName,
-    ProjectManagerId = p.ProjectManagerId,
-    ProjectManagerName = p.ProjectManager != null ? p.ProjectManager.FullName : "-",
-    Budget = p.Budget,
-    ActualCost = p.ActualCost,
-    BurnRatePercent = p.Budget > 0 ? (int)Math.Round((double)(p.ActualCost / p.Budget * 100)) : 0,
-    Color = p.Color,
-    Deadline = p.Deadline,
-    Status = p.Status.ToString(),
-    CompanyId = p.CompanyId,
-    CompanyName = p.Company != null ? p.Company.Name : "-",
-    TotalTasks = p.Tasks.Count,
-    CompletedTasks = p.Tasks.Count(t => t.Status == TaskStatus.Done),
-    ProgressPercent = p.Tasks.Any() ? (int)Math.Round(p.Tasks.Average(t => (double)t.Progress)) : 0,
-    TotalDurationSeconds = p.Tasks.SelectMany(t => t.Sessions).Sum(s => s.Duration)
-}).ToListAsync();
+    var term = search.Trim().ToLower();
+    query = query.Where(p => p.Name.ToLower().Contains(term) || (p.Description != null && p.Description.ToLower().Contains(term)));
+}
+
+var projects = await query.OrderByDescending(p => p.CreatedAt).ToListAsync();
+var dtos = projects.Select(MapToResponseDto).ToList();
 ```
 
-2. **Alokasi Massal Tugas ke Proyek (`ProjectController.AssignTasks`)**:
+2. **Pembuatan & Pembaruan Proyek via REST API (`ProjectsApiController.Create` & `Update`)**:
+```csharp
+// POST /api/projects
+[HttpPost]
+public async Task<IActionResult> Create([FromBody] CreateProjectRequestDto dto)
+{
+    if (!ModelState.IsValid)
+        return BadRequest(ApiResponse<ProjectResponseDto>.Fail("Validasi gagal.", ModelState.Values.SelectMany(v => v.Errors).Select(e => e.ErrorMessage).ToList()));
+
+    var currentUser = await _userManager.GetUserAsync(User);
+    var project = new Project
+    {
+        Name = dto.Name.Trim(),
+        Description = dto.Description?.Trim(),
+        Color = string.IsNullOrWhiteSpace(dto.Color) ? "#6366F1" : dto.Color.Trim(),
+        Deadline = dto.Deadline,
+        Status = dto.Status,
+        ClientName = dto.ClientName?.Trim(),
+        Budget = dto.Budget,
+        ActualCost = dto.ActualCost,
+        ProjectManagerId = string.IsNullOrWhiteSpace(dto.ProjectManagerId) ? null : dto.ProjectManagerId.Trim(),
+        Tags = dto.Tags?.Trim(),
+        CompanyId = currentUser?.CompanyId,
+        CreatedAt = DateTime.Now
+    };
+
+    _db.Projects.Add(project);
+    await _db.SaveChangesAsync();
+    return CreatedAtAction(nameof(GetById), new { id = project.Id }, ApiResponse<ProjectResponseDto>.Ok(MapToResponseDto(project), "Proyek berhasil dibuat."));
+}
+
+// DELETE /api/projects/{id} - Pembersihan Relasi Aman
+[HttpDelete("{id:int}")]
+public async Task<IActionResult> Delete(int id)
+{
+    var project = await _db.Projects.Include(p => p.Tasks).FirstOrDefaultAsync(p => p.Id == id);
+    if (project == null) return NotFound(ApiResponse<object>.Fail($"Proyek ID {id} tidak ditemukan."));
+
+    // Menjaga integritas data: lepaskan referensi projectId pada tugas agar tidak terjadi orphan cascade
+    foreach (var task in project.Tasks) { task.ProjectId = null; }
+
+    _db.Projects.Remove(project);
+    await _db.SaveChangesAsync();
+    return Ok(ApiResponse<object>.Ok(new { id }, $"Proyek '{project.Name}' berhasil dihapus."));
+}
+```
+
+3. **Alokasi Massal Tugas ke Proyek (`ProjectController.AssignTasks`)**:
 ```csharp
 [HttpPost]
 [ValidateAntiForgeryToken]
@@ -722,6 +764,95 @@ Antarmuka Konfigurasi Sistem (`Views/Configuration/Index.cshtml`) dirancang ergo
 | **MVC** | `POST /Account/Logout` | `AccountController` | `Task<IActionResult> Logout()` | Mengakhiri sesi cookie dan membersihkan auth state |
 | **API** | `POST /api/auth/login` | `AuthApiController` | `Task<IActionResult> Login(...)` | Menghasilkan token JWT Bearer (HMAC-SHA256) |
 | **API** | `GET /api/auth/me` | `AuthApiController` | `Task<IActionResult> GetProfile()` | Mengambil data akun dari claims token yang aktif |
+
+---
+
+### 2.15 Arsitektur Tata Letak Studio Bentang Penuh (Full-Width Responsive Studio Layout)
+
+#### A. Konsep Desain & Rasional Arsitektur
+Sebelum v3.8, formulir penyuntingan entitas menggunakan kartu terpusat sempit bertipe fixed container (`max-w-4xl` / `max-w-5xl` ~900px-1100px) yang menyebabkan ruang horizontal terbuang sia-sia pada monitor lebar (FHD, QHD, Ultrawide). Hal ini memicu kelelahan visual akibat scroll vertikal yang panjang pada formulir kompleks.
+
+Arsitektur **Full-Width Responsive Studio Layout** menerapkan pola kanvas studio kerja modern:
+1. **Viewport-Filling Container**: Membentang penuh memanfaatkan 100% lebar viewport yang tersedia (`w-full max-w-full px-4 sm:px-6 lg:px-8 py-6`).
+2. **Asymmetric 12-Column Responsive Grid (`lg:grid-cols-12 gap-6 lg:gap-8`)**:
+   - **Kanvas Kerja Utama (Main Form Canvas - `lg:col-span-8 space-y-6`)**: Mengakomodasi judul, deskripsi rich-text WYSIWYG, textarea kendala/solusi, alokasi jam kerja manual, serta manajemen subtask anak.
+   - **Bilah Samping Pengawas Metadata (Sticky Metadata Inspector Sidebar - `lg:col-span-4 space-y-6 lg:sticky lg:top-20 self-start`)**: Mengelompokkan atribut status, prioritas, PIC/Assignee, deadline, proyek/kategori, milestone, dan kartu ringkasan audit (`CreatedAt`, `UpdatedAt`) dalam posisi mengambang lengket (*sticky*) yang selalu terlihat saat operator menggulir kanvas utama.
+3. **Bilah Tombol Aksi Bawah Lengket (Sticky Bottom Action Bar)**: Komponen bilah aksi `sticky bottom-0 z-30 bg-card/90 backdrop-blur border-t border-border p-4 shadow-lg flex items-center justify-between` yang menjamin tombol "Simpan Perubahan", "Batal", dan tombol utilitas hapus selalu dalam jangkauan satu klik tanpa perlu menggulir ke dasar dokumen.
+4. **Pola Formulir Terpisah (Decoupled Form Isolation Pattern)**: Untuk menghindari benturan tag formulir bersarang (*nested `<form>` collision*) yang dilarang dalam spesifikasi HTML5 W3C, aksi sekunder seperti Hapus Entitas atau Tambah Subtask menggunakan elemen `<form>` terpisah di luar formulir induk atau memanfaatkan atribut HTML5 `form="form-id"`.
+
+#### B. Matriks Implementasi pada 5 Modul Entitas
+| Halaman & Rute View | File Template Razor | Struktur Kanvas Kiri (8 Kolom) | Struktur Inspector Kanan (4 Kolom) |
+| :--- | :--- | :--- | :--- |
+| **Edit Tugas** (`/Task/Edit/{id}`) | `Views/Task/Edit.cshtml` | Judul, Deskripsi, Kendala & Solusi, Tambah Jam Manual, Daftar Sub-Task | Proyek, PIC Assignee, Kategori, Prioritas, Status, Milestone, Slider Progres (0-100%), Tanggal & Deadline |
+| **Edit Catatan** (`/Note/Edit/{id}`) | `Views/Note/Edit.cshtml` | Judul Catatan, Editor Konten HTML/Rich-Text, Pengelola Berkas Lampiran Multi-File | Pilihan Warna Catatan (Color Swatches), Kategori Catatan, Sematkan (Pin Note Toggle), Asosiasi Tugas Terkait |
+| **Edit Anggota** (`/Member/Edit/{id}`) | `Views/Member/Edit.cshtml` | Profil Lengkap, Email, No. Telepon, Jabatan/Divisi, Hak Akses / Penetapan Role | Status Akun (Aktif/Nonaktif), Status Approval (Disetujui/Pending), Asosiasi Perusahaan (Tenant Multi-Company), Avatar Preview |
+| **Edit Proyek** (`/Project/Edit/{id}`) | `Views/Project/Edit.cshtml` | Nama Proyek, Deskripsi Lengkap, Nama Klien, Tag Proyek, Daftar Alokasi Tugas | Status Proyek, Manajer Proyek (PM), Anggaran (Budget), Biaya Aktual, Indikator Burn Rate %, Warna Aksen Proyek, Batas Akhir |
+| **Profil Pengguna** (`/Account/Profile`) | `Views/Account/Profile.cshtml` | Kanvas Profil Bentang Penuh: Identitas Diri, Avatar & Cover Customizer, Pengaturan Keamanan Kata Sandi | Badge Kode Perusahaan Tenant, Statistik Pencapaian Pribadi, Riwayat Aktivitas & Performa Kerja |
+
+---
+
+### 2.16 Spesifikasi Teknis Pengujian Mutu Terpadu (QA Verification Engine & E2E Test Matrix Architecture)
+
+#### A. Arsitektur Paket Artefak QA (`/QA`)
+Untuk menjamin keandalan sistem berstandar korporat enterprise, repositori dilengkapi modul jaminan kualitas terpadu pada direktori `QA/`:
+1. **`QA/Tracking_Test_Case_E2E_TrackerKerja.xlsx`**: Buku kerja OpenXML Spreadsheet terstruktur yang menyatukan pelacakan pengujian fungsional, non-fungsional, dan integrasi secara *end-to-end* (E2E).
+2. **`QA/README.md`**: Dokumen manual SOP jaminan kualitas perangkat lunak, siklus eksekusi pengujian, klasifikasi keparahan cacat (*defect severity*), serta panduan kontribusi pengujian.
+
+#### B. Arsitektur Struktur 4 Lembar Kerja (Worksheet) Matrix
+Buku kerja excel dikonstruksi secara programatik menggunakan pustaka Python `openpyxl` dengan skema multi-sheet:
+
+```mermaid
+graph TD
+    Workbook["QA/Tracking_Test_Case_E2E_TrackerKerja.xlsx"]
+    Sheet1["Sheet 1: Dashboard & Metrik\n(Executive Summary, Pass/Fail KPI, Defect Summary)"]
+    Sheet2["Sheet 2: Master Test Case E2E\n(65+ Test Cases across 19 Modules)"]
+    Sheet3["Sheet 3: Siklus Eksekusi\n(Cycle 1 Smoke, Cycle 2 Regression, Cycle 3 UAT)"]
+    Sheet4["Sheet 4: Defect Log\n(Bug Tracker, Severity, Root Cause, SLA Tracking)"]
+
+    Workbook --> Sheet1
+    Workbook --> Sheet2
+    Workbook --> Sheet3
+    Workbook --> Sheet4
+```
+
+1. **Sheet 1 - Dashboard & Metrik**:
+   - Menghitung secara dinamis metrik kunci: Total Test Cases (65+), Passed, Failed, Blocked, Untested, serta persentase *Pass Rate*.
+   - Tabel visual distribusi status modul dan pemantauan jumlah bug aktif berdasarkan tingkat keparahan (*Critical, Major, Minor, Trivial*).
+2. **Sheet 2 - Master Test Case E2E (19 Modul Sistem)**:
+   - Meliputi 19 modul lengkap:
+     - `TC-AUTH`: Autentikasi, Registrasi Kode Perusahaan, Persetujuan Admin, Sesi 1 Jam.
+     - `TC-TSK`: Manajemen Tugas, Subtask Hierarkis, Slider Progres, Kendala & Solusi, Full-Width Studio.
+     - `TC-PRJ`: Proyek, Analitik Finansial, Alokasi Massal Tugas, REST API Proyek.
+     - `TC-TMS`: Timesheet, Live Multi-Timer, Entri Manual, Export Excel Elistec.
+     - `TC-ATT`: Presensi Kehadiran, Status Hadir/WFH/Izin/Sakit/Cuti, Rekapitulasi Presensi.
+     - `TC-CAL`: Kalender Kerja Interaktif, Filter RBAC Tim/Pribadi, Deteksi Irisan Jadwal.
+     - `TC-NOT`: Catatan Kerja Rich-Text, Multi-Attachment Upload, Pinned Notes, Full-Width Studio.
+     - `TC-JSON`: JSON Formatter, Minifier, Syntax Validator, Preset Storage.
+     - `TC-SQL`: SQL Beautifier 15+ Dialek, Kueri Validator, Snippet Organizer.
+     - `TC-RPT`: Laporan Kinerja, Ekspor PDF/Excel, Ringkasan Distribusi Beban Tim.
+     - `TC-MBR`: Direktori Anggota, Grouping Perusahaan Admin, Edit Member Full-Width.
+     - `TC-MST`: Master Data Kategori, Prioritas, Milestone Waterfall, Hari Libur Nasional.
+     - `TC-CFG`: Konfigurasi Sistem 4-Tab Modular, Vacuum SQLite, Backup Transaksional.
+     - `TC-SYNC`: Sinkronisasi Multi-Instance, Streaming Delta Base64, Paket Ekspor/Impor ZIP.
+     - `TC-GAM`: Gamifikasi, Aturan Streak 2-Hari, Milestone 30-Hari, Katalog Hadiah, Approval Klaim.
+     - `TC-NOTIF`: Notifikasi Real-Time Lonceng, Pengingat Cut-Off Timesheet Tanggal 25.
+     - `TC-AUD`: Audit Trail Mutasi, Detail Log JSON Payload, Penjejak IP & User.
+     - `TC-IMP`: Impor Massal Tugas Excel (Format Standar Elistec & ARMS System).
+     - `TC-API`: Validasi Kontrak RESTful Web API, Autentikasi JWT Bearer, Swagger UI.
+   - Kolom Data: `Test Case ID`, `Modul`, `Judul Skenario`, `Pra-Kondisi`, `Langkah Pengujian`, `Hasil yang Diharapkan`, `Status`, `Prioritas (P1-P3)`, `Tanggal Uji`, `Tester`, `Catatan`.
+3. **Sheet 3 - Siklus Eksekusi (Execution Cycles)**:
+   - Pelacakan berjenjang per siklus: *Cycle 1 (Smoke Test)*, *Cycle 2 (Full Regression Test)*, dan *Cycle 3 (UAT & Go-Live Readiness)*.
+4. **Sheet 4 - Defect Log (Pelacak Cacat & Bug)**:
+   - Kolom Pelacak: `Defect ID`, `Test Case Ref`, `Modul Terkait`, `Deskripsi Ringkas Masalah`, `Langkah Reproduksi`, `Keparahan (Critical/Major/Minor/Trivial)`, `Prioritas`, `Status (Open/In Progress/Resolved/Closed)`, `Penetapan Developer`, `Tanggal Temuan`, `Tanggal Selesai`, `Analisis Akar Masalah (RCA)`.
+
+#### C. Standar Desain Openpyxl Spreadsheet
+- **Tipografi Korporat**: Menggunakan jenis huruf *Segoe UI* (Header: Bold 11pt, Isi: Regular 10pt).
+- **Palet Warna Status**:
+  - *Pass / Approved*: Hijau Emerald (`#D1FAE5` background, `#065F46` text font).
+  - *Fail / Critical Defect*: Merah Ruby (`#FEE2E2` background, `#991B1B` text font).
+  - *Blocked / Major Defect*: Oranye Amber (`#FEF3C7` background, `#92400E` text font).
+  - *Header Kolom*: Biru Navy Eksekutif (`#1E3A8A` background, `#FFFFFF` text font).
+- **Ergonomi Data**: Penerapan fitur *Freeze Panes* pada baris judul kolom dan *Auto-fit Column Width* dengan margin bantalan 3 karakter untuk kemudahan inspeksi auditor.
 
 ---
 

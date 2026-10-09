@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace TrackerKerja.Models
 {
     public enum TaskPriority { Low, Medium, High, Critical }
-    public enum TaskStatus { Todo, InProgress, Done, Overdue }
+    public enum TaskStatus { Todo = 0, InProgress = 1, Done = 2, Overdue = 3, Review = 4 }
 
     public class WorkTask
     {

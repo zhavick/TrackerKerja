@@ -914,6 +914,42 @@ using (var scope = app.Services.CreateScope())
             CREATE INDEX IF NOT EXISTS IX_RewardClaims_UserId ON RewardClaims (UserId);");
     } catch { }
 
+    // Announcements Table
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS Announcements (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                Title TEXT NOT NULL,
+                Content TEXT NOT NULL,
+                AnnouncementDate TEXT NOT NULL,
+                EndDate TEXT NOT NULL,
+                Status TEXT NOT NULL DEFAULT 'Pengumuman Umum',
+                IsActive INTEGER NOT NULL DEFAULT 1,
+                CreatedByUserId TEXT NULL,
+                CreatedAt TEXT NOT NULL,
+                UpdatedAt TEXT NOT NULL,
+                FOREIGN KEY (CreatedByUserId) REFERENCES AspNetUsers(Id) ON DELETE SET NULL
+            );
+            CREATE INDEX IF NOT EXISTS IX_Announcements_Dates_Active ON Announcements (IsActive, AnnouncementDate, EndDate);");
+    } catch { }
+
+    if (!db.Announcements.Any())
+    {
+        db.Announcements.Add(new Announcement
+        {
+            Title = "Selamat Datang di Work Tracker Pro Versi Terbaru! 🚀",
+            Content = "Sistem telah diperbarui dengan berbagai fitur produktivitas baru termasuk Modul Pengumuman Resmi, Analitik Status Tugas Realtime, Daily Check-In, dan Sistem Gamifikasi. Selamat bekerja dan tingkatkan performa tim Anda!",
+            AnnouncementDate = DateTime.Today,
+            EndDate = DateTime.Today.AddDays(30),
+            Status = "Pengumuman Umum",
+            IsActive = true,
+            CreatedAt = DateTime.Now,
+            UpdatedAt = DateTime.Now
+        });
+        db.SaveChanges();
+    }
+
     // Seed default Gamification Settings
     if (!db.SystemSettings.Any(s => s.Key == "Gamification_DailyCheckInPoints"))
     {

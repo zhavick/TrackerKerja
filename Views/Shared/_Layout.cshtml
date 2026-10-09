@@ -275,6 +275,11 @@
                     <span class="text-sm font-medium">Master Data</span>
                 </a>
 
+                <a href="/Announcement" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "Announcement" ? "active" : "")">
+                    <i class="fas fa-bullhorn w-5 text-center text-rose-500"></i>
+                    <span class="text-sm font-medium">Pengumuman</span>
+                </a>
+
                 <a href="/AuditTrail" class="sidebar-link flex items-center gap-3 px-3 py-2.5 rounded-xl @(ViewContext.RouteData.Values["controller"]?.ToString() == "AuditTrail" ? "active" : "")">
                     <i class="fas fa-shield-alt w-5 text-center text-amber-500"></i>
                     <span class="text-sm font-medium">Audit Trail</span>
@@ -1853,6 +1858,7 @@
             modal.classList.add('hidden');
             document.body.style.overflow = '';
         }
+        window.dispatchEvent(new CustomEvent('wtp:panduan_closed', { detail: { source: 'userGuideModal' } }));
     }
 
     function printUserGuideFromModal() {
@@ -1954,6 +1960,7 @@
 <script src="~/js/onboarding-tour.js"></script>
 <script src="~/js/session-manager.js"></script>
 @await Html.PartialAsync("_OnboardingTour")
+@await Html.PartialAsync("_AnnouncementModal")
 
 @await RenderSectionAsync("Scripts", required: false)
 </body>

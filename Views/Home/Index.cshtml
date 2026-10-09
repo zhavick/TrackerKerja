@@ -234,7 +234,7 @@
             <span class="text-[11px] text-indigo-600 font-semibold">Tugas ditugaskan kepada Anda</span>
         </div>
 
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-4">
             <!-- My Total Tasks -->
             <div class="card-hover bg-white rounded-2xl p-4 shadow-sm border border-indigo-100 relative overflow-hidden">
                 <div class="flex items-center justify-between mb-2">
@@ -243,8 +243,20 @@
                         <i class="fas fa-user-check"></i>
                     </div>
                 </div>
-                <p class="text-2xl font-black text-slate-800">@Model.MyTotalTasks</p>
+                <p class="text-2xl font-black text-slate-800" id="myTotalTasksCount">@Model.MyTotalTasks</p>
                 <p class="text-[11px] text-slate-400 mt-0.5">Penugasan Personal</p>
+            </div>
+
+            <!-- My Todo Tasks -->
+            <div class="card-hover bg-white rounded-2xl p-4 shadow-sm border border-slate-200 relative overflow-hidden">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-500">Antrian Todo</span>
+                    <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-xs">
+                        <i class="fas fa-clipboard-list"></i>
+                    </div>
+                </div>
+                <p class="text-2xl font-black text-slate-700" id="myTodoTasksCount">@Model.MyTodoTasks</p>
+                <p class="text-[11px] text-slate-500 font-semibold mt-0.5">Belum Dikerjakan</p>
             </div>
 
             <!-- My In Progress -->
@@ -255,7 +267,7 @@
                         <i class="fas fa-spinner"></i>
                     </div>
                 </div>
-                <p class="text-2xl font-black text-cyan-600">@Model.MyInProgressTasks</p>
+                <p class="text-2xl font-black text-cyan-600" id="myInProgressTasksCount">@Model.MyInProgressTasks</p>
                 <p class="text-[11px] text-cyan-600 font-semibold mt-0.5">Aktif Berjalan</p>
             </div>
 
@@ -267,7 +279,7 @@
                         <i class="fas fa-check-circle"></i>
                     </div>
                 </div>
-                <p class="text-2xl font-black text-emerald-600">@Model.MyDoneTasks</p>
+                <p class="text-2xl font-black text-emerald-600" id="myDoneTasksCount">@Model.MyDoneTasks</p>
                 <p class="text-[11px] text-emerald-600 font-semibold mt-0.5">Terselesaikan</p>
             </div>
 
@@ -279,7 +291,7 @@
                         <i class="fas fa-clock"></i>
                     </div>
                 </div>
-                <p class="text-2xl font-black text-purple-600 font-mono">@Model.MyTodayWorkFormatted</p>
+                <p class="text-2xl font-black text-purple-600 font-mono" id="myTodayWorkFormatted">@Model.MyTodayWorkFormatted</p>
                 <p class="text-[11px] text-purple-600 font-semibold mt-0.5">Log Personal Anda</p>
             </div>
 
@@ -368,7 +380,7 @@
                         <i class="fas fa-chart-pie text-cyan-500"></i>
                         Status Tugas Global
                     </h3>
-                    <span class="text-xs font-bold text-slate-400">@Model.TotalTasks Task</span>
+                    <span class="text-xs font-bold text-slate-400" id="statusGlobalTotalCount">@Model.TotalTasks Task</span>
                 </div>
                 <div class="relative flex items-center justify-center h-48">
                     <canvas id="statusDoughnutChart"></canvas>
@@ -552,12 +564,20 @@
                                 </div>
                             </div>
 
-                            <!-- Status Badge -->
-                            <span class="text-[10px] font-bold px-2 py-0.5 rounded-lg
-                                @(isDone ? "bg-emerald-100 text-emerald-700" :
-                                  task.Status == TrackerKerja.Models.TaskStatus.InProgress ? "bg-indigo-100 text-indigo-700" : "bg-slate-100 text-slate-600")">
-                                @task.Status
-                            </span>
+                            <!-- Quick Status Selector -->
+                            <div class="relative flex-shrink-0">
+                                <select onchange="quickUpdateTaskStatus(@task.Id, this.value)"
+                                        class="text-[11px] font-bold py-1 px-2.5 rounded-xl border transition-all focus:outline-none focus:ring-2 focus:ring-indigo-400 cursor-pointer shadow-2xs
+                                        @(isDone ? "bg-emerald-50 text-emerald-700 border-emerald-200" :
+                                          task.Status == TrackerKerja.Models.TaskStatus.InProgress ? "bg-cyan-50 text-cyan-700 border-cyan-200" :
+                                          task.Status == TrackerKerja.Models.TaskStatus.Review ? "bg-purple-50 text-purple-700 border-purple-200" :
+                                          "bg-slate-50 text-slate-700 border-slate-200")">
+                                    <option value="Todo" selected="@(task.Status == TrackerKerja.Models.TaskStatus.Todo)">📋 Todo</option>
+                                    <option value="InProgress" selected="@(task.Status == TrackerKerja.Models.TaskStatus.InProgress)">🔄 In Progress</option>
+                                    <option value="Review" selected="@(task.Status == TrackerKerja.Models.TaskStatus.Review)">🔍 Review</option>
+                                    <option value="Done" selected="@(task.Status == TrackerKerja.Models.TaskStatus.Done)">✅ Done</option>
+                                </select>
+                            </div>
 
                             <!-- Actions -->
                             <div class="flex items-center gap-1.5">
@@ -747,41 +767,55 @@
     );
 
 
-    // 2. Status Doughnut Chart
-    const ctxStatus = document.getElementById('statusDoughnutChart').getContext('2d');
-    new Chart(ctxStatus, {
-        type: 'doughnut',
-        data: {
-            labels: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusChartLabels)),
-            datasets: [{
-                data: @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusChartCounts)),
-                backgroundColor: [
-                    '#F59E0B', // Todo - Amber
-                    '#06B6D4', // In Progress - Cyan
-                    '#10B981', // Done - Emerald
-                    '#EF4444'  // Overdue - Red
-                ],
-                borderWidth: 2,
-                borderColor: '#FFFFFF',
-                hoverOffset: 4
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            cutout: '70%',
-            plugins: {
-                legend: {
-                    position: 'bottom',
-                    labels: {
-                        boxWidth: 10,
-                        font: { size: 11, weight: '500' },
-                        padding: 10
+    // 2. Status Doughnut Chart (Dynamic Instance)
+    let statusChartInstance = null;
+    function updateStatusDoughnutChart(labels, counts, colors) {
+        const canvas = document.getElementById('statusDoughnutChart');
+        if (!canvas) return;
+        const ctxStatus = canvas.getContext('2d');
+        if (statusChartInstance) {
+            statusChartInstance.destroy();
+        }
+
+        const fallbackColors = ['#64748B', '#6366F1', '#8B5CF6', '#10B981', '#EF4444', '#3B82F6', '#EC4899'];
+        const chartColors = (colors && colors.length === labels.length) ? colors : labels.map((_, i) => fallbackColors[i % fallbackColors.length]);
+
+        statusChartInstance = new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: counts,
+                    backgroundColor: chartColors,
+                    borderWidth: 2,
+                    borderColor: '#FFFFFF',
+                    hoverOffset: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '68%',
+                plugins: {
+                    legend: {
+                        position: 'bottom',
+                        labels: {
+                            boxWidth: 10,
+                            font: { size: 10, weight: '600' },
+                            padding: 8
+                        }
                     }
                 }
             }
-        }
-    });
+        });
+    }
+
+    // Initial render using Model data
+    updateStatusDoughnutChart(
+        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusChartLabels)),
+        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusChartCounts)),
+        @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.StatusChartColors))
+    );
 
     // 3. Member Workload Distribution Chart (Task per Member)
     const ctxMember = document.getElementById('memberWorkloadChart').getContext('2d');
@@ -1007,13 +1041,25 @@
             const prodBadge = document.getElementById('productivityPeriodBadge');
             if (prodBadge) prodBadge.textContent = data.periodLabel;
 
-            // Render KPI cards
+            // 1. Live Update Status Doughnut Chart (Dynamic)
+            updateStatusDoughnutChart(data.statusLabels, data.statusCounts, data.statusColors);
+            const globalTotalEl = document.getElementById('statusGlobalTotalCount');
+            if (globalTotalEl) globalTotalEl.textContent = `${data.totalTasks} Task`;
+
+            // 2. Live Update Personal Summary Counters
+            const myTotalEl = document.getElementById('myTotalTasksCount'); if (myTotalEl) myTotalEl.textContent = data.myTotalTasks;
+            const myTodoEl = document.getElementById('myTodoTasksCount'); if (myTodoEl) myTodoEl.textContent = data.myTodoTasks;
+            const myInProgEl = document.getElementById('myInProgressTasksCount'); if (myInProgEl) myInProgEl.textContent = data.myInProgressTasks;
+            const myDoneEl = document.getElementById('myDoneTasksCount'); if (myDoneEl) myDoneEl.textContent = data.myDoneTasks;
+            const myWorkEl = document.getElementById('myTodayWorkFormatted'); if (myWorkEl) myWorkEl.textContent = data.myTodayWorkFormatted;
+
+            // 3. Render Dynamic Analytics KPI cards (Unmerged Todo, InProgress, Review, Done, etc.)
             renderAnalyticsKpiCards(data, period);
 
-            // Update trend chart
+            // 4. Update trend chart
             buildTrendChart(data.trendLabels, data.trendHours, data.trendDoneTasks, trendShowHours ? 'hours' : 'done');
 
-            // Update productivity table
+            // 5. Update productivity table
             renderProductivityTable(data.memberProductivity);
 
         } catch(e) {
@@ -1029,29 +1075,45 @@
 
         const pct = data.completionRatePercent;
         const pctColor = pct >= 75 ? 'text-emerald-600' : pct >= 40 ? 'text-amber-600' : 'text-rose-600';
-        const pctBg = pct >= 75 ? 'bg-emerald-50' : pct >= 40 ? 'bg-amber-50' : 'bg-rose-50';
 
-        row.innerHTML = `
-            <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors group" onclick="openDrillDown('done','${period}')">
-                <p class="text-2xl font-black text-emerald-600">${data.doneTasks}</p>
-                <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-emerald-700">✅ Selesai</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
-            </div>
-            <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors group" onclick="openDrillDown('inprogress','${period}')">
-                <p class="text-2xl font-black text-cyan-600">${data.inProgressTasks}</p>
-                <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-cyan-700">🔄 In Progress</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
-            </div>
-            <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors group" onclick="openDrillDown('todo','${period}')">
-                <p class="text-2xl font-black text-amber-600">${data.todoTasks}</p>
-                <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-amber-700">📋 Todo</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
-            </div>
-            <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-rose-50/40 transition-colors group" onclick="openDrillDown('overdue','${period}')">
-                <p class="text-2xl font-black text-rose-600">${data.overdueTasks}</p>
-                <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-rose-700">⚠️ Overdue</p>
-                <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
-            </div>
+        let cardsHtml = '';
+        if (data.statusMetrics && data.statusMetrics.length > 0) {
+            cardsHtml = data.statusMetrics.map(m => `
+                <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors group" onclick="openDrillDown('${m.key}','${period}','${(m.displayName || '').replace(/'/g, "\\'")}', '${m.color}', '${m.icon}')">
+                    <p class="text-2xl font-black" style="color: ${m.color}">${m.count}</p>
+                    <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-slate-800 flex items-center justify-center gap-1.5">
+                        <i class="fas ${m.icon} text-[10px]" style="color: ${m.color}"></i> ${m.displayName}
+                    </p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
+                </div>
+            `).join('');
+        } else {
+            cardsHtml = `
+                <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors group" onclick="openDrillDown('todo','${period}','Todo','#64748B','fa-clipboard-list')">
+                    <p class="text-2xl font-black text-slate-700">${data.todoTasks}</p>
+                    <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-slate-800">📋 Todo</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
+                </div>
+                <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors group" onclick="openDrillDown('inprogress','${period}','In Progress','#6366F1','fa-spinner')">
+                    <p class="text-2xl font-black text-indigo-600">${data.inProgressTasks}</p>
+                    <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-indigo-700">🔄 In Progress</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
+                </div>
+                <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-indigo-50/40 transition-colors group" onclick="openDrillDown('done','${period}','Done','#10B981','fa-check-circle')">
+                    <p class="text-2xl font-black text-emerald-600">${data.doneTasks}</p>
+                    <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-emerald-700">✅ Selesai</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
+                </div>
+                <div class="p-4 text-center border-r border-slate-100 cursor-pointer hover:bg-rose-50/40 transition-colors group" onclick="openDrillDown('overdue','${period}','Overdue','#EF4444','fa-exclamation-triangle')">
+                    <p class="text-2xl font-black text-rose-600">${data.overdueTasks}</p>
+                    <p class="text-[11px] font-bold text-slate-500 mt-0.5 group-hover:text-rose-700">⚠️ Overdue</p>
+                    <p class="text-[10px] text-slate-400 mt-0.5">Klik → Detail</p>
+                </div>
+            `;
+        }
+
+        // Always append Jam Kerja and Completion Rate cards
+        cardsHtml += `
             <div class="p-4 text-center border-r border-slate-100">
                 <p class="text-2xl font-black text-indigo-600">${data.totalWorkHours}j</p>
                 <p class="text-[11px] font-bold text-slate-500 mt-0.5">⏱️ Jam Kerja</p>
@@ -1065,6 +1127,10 @@
                 </div>
             </div>
         `;
+
+        const totalCols = (data.statusMetrics ? data.statusMetrics.length : 4) + 2;
+        row.style.gridTemplateColumns = window.innerWidth >= 1024 ? `repeat(${totalCols}, minmax(0, 1fr))` : '';
+        row.innerHTML = cardsHtml;
     }
 
     function renderProductivityTable(members) {
@@ -1110,28 +1176,36 @@
 
     // ── KPI DRILL-DOWN MODAL ────────────────────────────────────────
     const kpiConfig = {
-        done:      { title: 'Tugas Selesai', color: '#10B981', icon: 'fa-check-circle', bg: 'bg-emerald-500' },
-        inprogress:{ title: 'Tugas In Progress', color: '#06B6D4', icon: 'fa-spinner', bg: 'bg-cyan-500' },
-        todo:      { title: 'Tugas Todo', color: '#F59E0B', icon: 'fa-clipboard-list', bg: 'bg-amber-500' },
-        overdue:   { title: 'Tugas Overdue', color: '#EF4444', icon: 'fa-exclamation-triangle', bg: 'bg-rose-500' },
+        done:       { title: 'Tugas Selesai', color: '#10B981', icon: 'fa-check-circle', bg: 'bg-emerald-500' },
+        inprogress: { title: 'Tugas In Progress', color: '#6366F1', icon: 'fa-spinner', bg: 'bg-indigo-600' },
+        review:     { title: 'Tugas Dalam Review', color: '#8B5CF6', icon: 'fa-search', bg: 'bg-purple-600' },
+        todo:       { title: 'Tugas Todo', color: '#64748B', icon: 'fa-clipboard-list', bg: 'bg-slate-600' },
+        overdue:    { title: 'Tugas Overdue', color: '#EF4444', icon: 'fa-exclamation-triangle', bg: 'bg-rose-500' },
     };
 
-    async function openDrillDown(kpi, period) {
+    async function openDrillDown(kpi, period, customTitle, customColor, customIcon) {
         const modal = document.getElementById('kpiDrillDownModal');
-        const cfg = kpiConfig[kpi] || kpiConfig.done;
+        const cfg = kpiConfig[kpi] || {
+            title: customTitle || ('Tugas ' + kpi),
+            color: customColor || '#6366F1',
+            icon: customIcon || 'fa-tasks',
+            bg: 'bg-indigo-600'
+        };
         modal.classList.remove('hidden');
         document.body.style.overflow = 'hidden';
 
-        // Update header
-        document.getElementById('drillDownTitle').textContent = cfg.title;
+        // Update modal header
+        document.getElementById('drillDownTitle').textContent = customTitle || cfg.title;
         document.getElementById('drillDownSubtitle').textContent = 'Memuat daftar tugas...';
-        document.getElementById('drillDownIconBox').className = `w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm ${cfg.bg}`;
-        document.getElementById('drillDownIconBox').innerHTML = `<i class="fas ${cfg.icon}"></i>`;
+        const iconBox = document.getElementById('drillDownIconBox');
+        iconBox.className = `w-10 h-10 rounded-xl flex items-center justify-center text-white text-sm ${cfg.bg || 'bg-indigo-600'}`;
+        if (customColor) iconBox.style.backgroundColor = customColor;
+        iconBox.innerHTML = `<i class="fas ${customIcon || cfg.icon}"></i>`;
         document.getElementById('drillDownContent').innerHTML = '<div class="text-center py-8 text-slate-400"><i class="fas fa-spinner fa-spin"></i></div>';
 
         try {
             const projectId = document.getElementById('analyticsProjectFilter')?.value || 0;
-            const res = await fetch(`/Home/GetKpiDrillDown?kpi=${kpi}&period=${period}&projectId=${projectId}`);
+            const res = await fetch(`/Home/GetKpiDrillDown?kpi=${encodeURIComponent(kpi)}&period=${period}&projectId=${projectId}`);
             const data = await res.json();
 
             document.getElementById('drillDownSubtitle').textContent = `${data.total} tugas ditemukan`;
@@ -1144,15 +1218,23 @@
             }
 
             const priorityColors = { Critical: 'bg-red-100 text-red-700', High: 'bg-amber-100 text-amber-700', Medium: 'bg-blue-100 text-blue-700', Low: 'bg-emerald-100 text-emerald-700' };
-            const statusColors  = { Done: 'bg-emerald-100 text-emerald-700', InProgress: 'bg-cyan-100 text-cyan-700', Todo: 'bg-slate-100 text-slate-600', Overdue: 'bg-rose-100 text-rose-700' };
+
+            const statusesList = (data.statuses && data.statuses.length > 0)
+                ? data.statuses
+                : [
+                    { name: 'Todo', color: '#64748B' },
+                    { name: 'InProgress', color: '#6366F1' },
+                    { name: 'Review', color: '#8B5CF6' },
+                    { name: 'Done', color: '#10B981' }
+                ];
 
             document.getElementById('drillDownContent').innerHTML = `
-                <div class="space-y-2">
+                <div class="space-y-2.5">
                     ${data.tasks.map(t => `
-                        <a href="${t.editUrl}" class="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50 transition-all group border border-transparent hover:border-indigo-200">
+                        <div class="flex items-start gap-3 p-3 rounded-2xl bg-slate-50 hover:bg-indigo-50/40 transition-all group border border-slate-100 hover:border-indigo-200">
                             <div class="flex-1 min-w-0">
                                 <div class="flex items-center gap-1.5 flex-wrap mb-1">
-                                    <span class="text-xs font-bold text-slate-800 group-hover:text-indigo-700 truncate max-w-xs">${t.title}</span>
+                                    <a href="${t.editUrl}" class="text-xs font-bold text-slate-800 hover:text-indigo-700 truncate max-w-xs block">${t.title}</a>
                                     ${t.isOverdue ? '<span class="text-[9px] bg-rose-100 text-rose-600 font-extrabold px-1.5 py-0.5 rounded">Telat</span>' : ''}
                                 </div>
                                 <div class="flex items-center gap-2 flex-wrap text-[10px] text-slate-400">
@@ -1162,11 +1244,19 @@
                                     <span class="font-mono text-indigo-600 font-bold">⏱ ${t.workHours}j</span>
                                 </div>
                             </div>
-                            <div class="flex flex-col items-end gap-1.5 flex-shrink-0">
+                            <div class="flex items-center gap-2 flex-shrink-0">
                                 <span class="text-[9px] font-bold px-2 py-0.5 rounded-lg ${priorityColors[t.priority] || 'bg-slate-100 text-slate-600'}">${t.priority}</span>
-                                <span class="text-[9px] font-bold px-2 py-0.5 rounded-lg ${statusColors[t.status] || 'bg-slate-100 text-slate-600'}">${t.status}</span>
+                                <select onchange="quickUpdateTaskStatusFromModal(${t.id}, this.value, '${kpi}', '${period}')"
+                                        class="text-[10px] font-bold py-1 px-2 rounded-xl border border-slate-200 bg-white cursor-pointer focus:outline-none focus:ring-1 focus:ring-indigo-400 shadow-2xs">
+                                    ${statusesList.map(s => `
+                                        <option value="${s.name}" ${t.status.toLowerCase() === s.name.toLowerCase() ? 'selected' : ''}>${s.name}</option>
+                                    `).join('')}
+                                </select>
+                                <a href="${t.editUrl}" class="p-1.5 rounded-xl bg-white hover:bg-slate-200 text-slate-600 text-xs border border-slate-200" title="Buka Detail">
+                                    <i class="fas fa-external-link-alt text-[10px]"></i>
+                                </a>
                             </div>
-                        </a>
+                        </div>
                     `).join('')}
                 </div>
             `;
@@ -1183,16 +1273,55 @@
 
     document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrillDown(); });
 
+    // ── QUICK STATUS UPDATE (INSTANT DASHBOARD SYNC) ───────────
+    async function quickUpdateTaskStatus(taskId, newStatus) {
+        try {
+            const res = await fetch(`/Task/UpdateStatus?id=${taskId}&status=${encodeURIComponent(newStatus)}`, {
+                method: 'POST'
+            });
+            const data = await res.json();
+            if (data.success) {
+                if (typeof showToast === 'function') {
+                    showToast(`Status tugas diubah ke ${newStatus}`, 'success');
+                }
+                // Live update analytics without manual reload
+                loadAnalytics(currentAnalyticsPeriod);
+                // Broadcast change across tabs
+                localStorage.setItem('tracker_task_status_changed', JSON.stringify({
+                    taskId: taskId,
+                    status: newStatus,
+                    timestamp: Date.now()
+                }));
+            } else {
+                if (typeof showToast === 'function') {
+                    showToast(data.message || 'Gagal mengubah status', 'error');
+                } else {
+                    alert(data.message || 'Gagal mengubah status');
+                }
+            }
+        } catch (err) {
+            console.error('Quick status update failed', err);
+        }
+    }
+
+    async function quickUpdateTaskStatusFromModal(taskId, newStatus, currentKpi, currentPeriod) {
+        await quickUpdateTaskStatus(taskId, newStatus);
+        // Refresh drilldown modal task list
+        openDrillDown(currentKpi, currentPeriod);
+    }
+
     // Auto-load analytics on page load (default: week)
     loadAnalytics('week');
 
     // Timer functions
     function startTimer(taskId, taskTitle) {
         startGlobalTimer(taskId, taskTitle);
+        setTimeout(() => loadAnalytics(currentAnalyticsPeriod), 500);
     }
 
     function stopCurrentTimer(sessionId) {
         stopGlobalTimer(sessionId);
+        setTimeout(() => loadAnalytics(currentAnalyticsPeriod), 500);
     }
 
     // ── DASHBOARD BACKGROUND SYNC WORKER ──────────────────────
@@ -1209,6 +1338,8 @@
             if (data.success) {
                 const tsElem = document.getElementById('bgSyncTimestamp');
                 if (tsElem) tsElem.innerText = 'Sync: ' + data.timestamp;
+                // Live refresh analytics on sync
+                loadAnalytics(currentAnalyticsPeriod);
             }
         } catch (e) {
             console.error('Background sync failed:', e);
@@ -1223,6 +1354,17 @@
 
     // Auto-run background sync every 30 seconds
     setInterval(runBackgroundProcess, 30000);
+
+    // ── CROSS-TAB & WINDOW EVENT LISTENERS ────────────────────
+    window.addEventListener('storage', function(e) {
+        if (e.key === 'tracker_task_status_changed') {
+            loadAnalytics(currentAnalyticsPeriod);
+        }
+    });
+
+    window.addEventListener('focus', function() {
+        loadAnalytics(currentAnalyticsPeriod);
+    });
 
     // ── DASHBOARD DAILY CHECK-IN HANDLER ──────────────────────
     async function performDashboardCheckIn() {

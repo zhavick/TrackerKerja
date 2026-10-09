@@ -1,0 +1,367 @@
+@* 
+    WORK TRACKER PRO — MODAL POPUP PENGUMUMAN RESMI SISTEM
+    Menampilkan pengumuman resmi & informasi penting dari Administrator ke seluruh pengguna.
+    Mematuhi sequencing rule: Modal pengumuman TIDAK AKAN ditampilkan jika panduan (guide / tour) sedang aktif.
+    Begitu user menutup panduan, modal pengumuman akan otomatis muncul.
+*@
+
+<div id="announcementPopupBackdrop" class="hidden fixed inset-0 z-[99990] bg-slate-950/75 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 transition-all duration-300" role="dialog" aria-modal="true" aria-labelledby="announcementPopupTitle">
+    <div id="announcementPopupCard" class="relative bg-white dark:bg-slate-800 rounded-3xl shadow-2xl border border-slate-200/80 dark:border-slate-700 w-full max-w-xl max-h-[90vh] flex flex-col overflow-hidden animate-fade-in transition-all duration-300 scale-95 opacity-0">
+        
+        <!-- Header Dynamic Bar -->
+        <div id="announcementPopupHeader" class="px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-700 text-white flex items-center justify-between relative overflow-hidden flex-shrink-0">
+            <!-- Background Glow Decor -->
+            <div class="absolute -right-6 -bottom-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none"></div>
+
+            <div class="flex items-center gap-3 relative z-10 min-w-0 flex-1 mr-3">
+                <div id="announcementPopupIconWrap" class="w-10 h-10 rounded-2xl bg-white/20 backdrop-blur-md flex items-center justify-center text-white text-lg shadow-inner ring-2 ring-white/30 flex-shrink-0">
+                    <i id="announcementPopupIcon" class="fas fa-bullhorn"></i>
+                </div>
+                <div class="min-w-0 flex-1">
+                    <div class="flex items-center gap-2 flex-wrap">
+                        <span id="announcementPopupBadge" class="text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/25 text-white shadow-xs">
+                            PENGUMUMAN UMUM
+                        </span>
+                        <span id="announcementQueueIndicator" class="hidden text-[10px] font-bold px-2 py-0.5 rounded-full bg-black/20 text-white/90">
+                            1 dari 1
+                        </span>
+                    </div>
+                    <p class="text-[11px] text-white/80 font-medium truncate mt-0.5">Pemberitahuan Resmi Administrator</p>
+                </div>
+            </div>
+
+            <button type="button" onclick="AnnouncementModal.close(false)" class="w-8 h-8 rounded-xl bg-white/15 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer relative z-10 flex-shrink-0" title="Tutup">
+                <i class="fas fa-times text-sm"></i>
+            </button>
+        </div>
+
+        <!-- Scrollable Modal Body -->
+        <div class="p-6 overflow-y-auto flex-1 space-y-4 bg-slate-50/60 dark:bg-slate-900/60">
+            
+            <!-- Dates & Publisher Metadata -->
+            <div class="flex flex-wrap items-center justify-between gap-2 pb-3 border-b border-slate-200/80 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400">
+                <div class="flex items-center gap-1.5">
+                    <i class="fas fa-calendar-alt text-rose-500"></i>
+                    <span>Berlaku: <strong id="announcementDatesText" class="text-slate-700 dark:text-slate-200">-</strong></span>
+                </div>
+                <div class="flex items-center gap-1.5">
+                    <i class="fas fa-user-shield text-indigo-500"></i>
+                    <span id="announcementPublisherText">Administrator</span>
+                </div>
+            </div>
+
+            <!-- Important Warning Banner (Hidden for general announcements) -->
+            <div id="announcementUrgentBanner" class="hidden p-3.5 rounded-2xl bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-800 text-rose-800 dark:text-rose-200 text-xs font-semibold items-center gap-3">
+                <div class="w-7 h-7 rounded-lg bg-rose-500 text-white flex items-center justify-center text-xs flex-shrink-0">
+                    <i class="fas fa-exclamation-triangle"></i>
+                </div>
+                <div class="flex-1 text-[11.5px] leading-relaxed">
+                    <strong>Pemberitahuan Penting:</strong> Harap baca dan perhatikan arahan ini dengan seksama demi kelancaran operasional kerja bersama.
+                </div>
+            </div>
+
+            <!-- Title -->
+            <div>
+                <h3 id="announcementPopupTitle" class="text-base sm:text-lg font-black text-slate-800 dark:text-white leading-snug">
+                    Judul Pengumuman
+                </h3>
+            </div>
+
+            <!-- Content -->
+            <div class="p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200/70 dark:border-slate-700 shadow-2xs">
+                <div id="announcementPopupContent" class="text-xs sm:text-sm text-slate-700 dark:text-slate-300 whitespace-pre-line leading-relaxed">
+                    Isi pengumuman...
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Footer Bar -->
+        <div class="px-6 py-3.5 bg-white dark:bg-slate-800 border-t border-slate-200/80 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 flex-shrink-0">
+            <!-- Left: Checkbox Don't show again -->
+            <label class="flex items-center gap-2 cursor-pointer select-none text-xs text-slate-500 dark:text-slate-400">
+                <input type="checkbox" id="chkDontShowAnnouncementAgain" class="rounded border-slate-300 text-rose-600 focus:ring-rose-500 w-3.5 h-3.5">
+                <span>Jangan tampilkan lagi</span>
+            </label>
+
+            <!-- Right: Actions & Stepper -->
+            <div class="flex items-center gap-2">
+                <button type="button" id="btnAnnouncementPrev" onclick="AnnouncementModal.prev()" class="hidden px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 transition-all cursor-pointer">
+                    &larr; Sebelumnya
+                </button>
+                <button type="button" id="btnAnnouncementNext" onclick="AnnouncementModal.next()" class="hidden px-3.5 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-900 text-white text-xs font-bold transition-all cursor-pointer">
+                    Berikutnya &rarr;
+                </button>
+                <button type="button" onclick="AnnouncementModal.close(true)" class="px-5 py-2 rounded-xl bg-gradient-to-r from-rose-600 to-pink-600 hover:from-rose-700 hover:to-pink-700 text-white text-xs font-bold transition-all shadow-md shadow-rose-500/20 cursor-pointer">
+                    Tutup & Mengerti
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+/**
+ * AnnouncementModal Engine
+ * Coordinates popup lifecycle with strict priority sequencing against User Guide & Onboarding Tour.
+ */
+(function (window, document) {
+    'use strict';
+
+    const AnnouncementModal = {
+        queue: [],
+        currentIndex: 0,
+        isOpen: false,
+        hasChecked: false,
+
+        // Check if ANY guide / panduan / tour is currently active or about to be active
+        isPanduanActive: function () {
+            // 1. Onboarding Welcome Modal
+            const welcomeModal = document.getElementById('onboardingWelcomeModal');
+            if (welcomeModal && welcomeModal.classList.contains('active')) {
+                return true;
+            }
+
+            // 2. Interactive Spotlight Tour
+            if (window.OnboardingTour && window.OnboardingTour.isActive) {
+                return true;
+            }
+
+            // 3. User Guide PDF Modal
+            const guideModal = document.getElementById('userGuideModal');
+            if (guideModal && !guideModal.classList.contains('hidden')) {
+                return true;
+            }
+
+            // 4. Onboarding scheduled for first-time login
+            if (window.OnboardingTour && window.OnboardingTour.userId && window.OnboardingTour.userId !== 'guest') {
+                const hasSeen = localStorage.getItem('wtp_onboarding_dismissed_' + window.OnboardingTour.userId);
+                if (!hasSeen) {
+                    return true;
+                }
+            }
+
+            // 5. Query param forced tour
+            const urlParams = new URLSearchParams(window.location.search);
+            if (urlParams.get('tour') === 'true' || urlParams.get('onboarding') === 'true') {
+                return true;
+            }
+
+            return false;
+        },
+
+        init: function () {
+            // Listen for panduan closed events from onboarding tour & user guide modal
+            window.addEventListener('wtp:panduan_closed', () => {
+                setTimeout(() => {
+                    this.tryShowAnnouncements();
+                }, 350);
+            });
+
+            // Observe DOM mutations on onboardingWelcomeModal & userGuideModal as safety fallback
+            this.setupMutationWatchers();
+
+            // Initial check on load (delayed slightly to allow onboarding tour script to initialize)
+            setTimeout(() => {
+                this.tryShowAnnouncements();
+            }, 1200);
+
+            // Escape key handler
+            document.addEventListener('keydown', (e) => {
+                if (this.isOpen && e.key === 'Escape') {
+                    this.close(false);
+                }
+            });
+        },
+
+        setupMutationWatchers: function () {
+            const welcomeModal = document.getElementById('onboardingWelcomeModal');
+            if (welcomeModal) {
+                const observer = new MutationObserver(() => {
+                    if (!welcomeModal.classList.contains('active')) {
+                        setTimeout(() => this.tryShowAnnouncements(), 300);
+                    }
+                });
+                observer.observe(welcomeModal, { attributes: true, attributeFilter: ['class'] });
+            }
+
+            const guideModal = document.getElementById('userGuideModal');
+            if (guideModal) {
+                const observer = new MutationObserver(() => {
+                    if (guideModal.classList.contains('hidden')) {
+                        setTimeout(() => this.tryShowAnnouncements(), 300);
+                    }
+                });
+                observer.observe(guideModal, { attributes: true, attributeFilter: ['class'] });
+            }
+        },
+
+        tryShowAnnouncements: async function () {
+            // If already open, do not re-run
+            if (this.isOpen) return;
+
+            // STRICT CONSTRAINT: If panduan is currently active, DO NOT show announcement!
+            if (this.isPanduanActive()) {
+                console.log('[AnnouncementModal] Panduan is active. Announcement modal waiting.');
+                return;
+            }
+
+            // Fetch active announcements if queue is empty
+            if (this.queue.length === 0 && !this.hasChecked) {
+                this.hasChecked = true;
+                try {
+                    const response = await fetch('/Announcement/GetActiveAnnouncements');
+                    if (!response.ok) return;
+                    const data = await response.json();
+                    if (data && data.success && Array.isArray(data.announcements)) {
+                        // Filter out announcements permanently dismissed by user in localStorage
+                        this.queue = data.announcements.filter(a => {
+                            const dismissed = localStorage.getItem('wtp_announcement_dismissed_' + a.id);
+                            const sessionSeen = sessionStorage.getItem('wtp_announcement_seen_' + a.id);
+                            return !dismissed && !sessionSeen;
+                        });
+                    }
+                } catch (err) {
+                    console.error('[AnnouncementModal] Error fetching active announcements:', err);
+                    return;
+                }
+            }
+
+            // If we have items in queue and panduan is not active, display!
+            if (this.queue.length > 0 && !this.isPanduanActive()) {
+                this.renderCurrent();
+                this.show();
+            }
+        },
+
+        renderCurrent: function () {
+            if (this.currentIndex >= this.queue.length) {
+                this.currentIndex = 0;
+            }
+            const item = this.queue[this.currentIndex];
+            if (!item) return;
+
+            const header = document.getElementById('announcementPopupHeader');
+            const icon = document.getElementById('announcementPopupIcon');
+            const badge = document.getElementById('announcementPopupBadge');
+            const urgentBanner = document.getElementById('announcementUrgentBanner');
+            const titleEl = document.getElementById('announcementPopupTitle');
+            const contentEl = document.getElementById('announcementPopupContent');
+            const datesEl = document.getElementById('announcementDatesText');
+            const publisherEl = document.getElementById('announcementPublisherText');
+            const queueIndicator = document.getElementById('announcementQueueIndicator');
+            const btnPrev = document.getElementById('btnAnnouncementPrev');
+            const btnNext = document.getElementById('btnAnnouncementNext');
+            const chkDontShow = document.getElementById('chkDontShowAnnouncementAgain');
+
+            if (chkDontShow) chkDontShow.checked = false;
+
+            titleEl.textContent = item.title;
+            contentEl.textContent = item.content;
+            datesEl.textContent = `${item.announcementDate} s/d ${item.endDate}`;
+            publisherEl.textContent = item.createdByName || 'Administrator';
+
+            if (item.isImportant) {
+                header.className = 'px-6 py-4 bg-gradient-to-r from-red-600 via-rose-600 to-amber-600 text-white flex items-center justify-between relative overflow-hidden flex-shrink-0';
+                icon.className = 'fas fa-exclamation-triangle';
+                badge.textContent = '🚨 INFORMASI PENTING';
+                badge.className = 'text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/30 text-white shadow-xs';
+                urgentBanner.classList.remove('hidden');
+                urgentBanner.classList.add('flex');
+            } else {
+                header.className = 'px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-violet-700 text-white flex items-center justify-between relative overflow-hidden flex-shrink-0';
+                icon.className = 'fas fa-bullhorn';
+                badge.textContent = '📢 PENGUMUMAN UMUM';
+                badge.className = 'text-[10px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-white/20 text-white shadow-xs';
+                urgentBanner.classList.add('hidden');
+                urgentBanner.classList.remove('flex');
+            }
+
+            // Queue navigation if > 1 announcement
+            if (this.queue.length > 1) {
+                queueIndicator.classList.remove('hidden');
+                queueIndicator.textContent = `${this.currentIndex + 1} dari ${this.queue.length}`;
+                if (btnPrev && btnNext) {
+                    btnPrev.classList.remove('hidden');
+                    btnNext.classList.remove('hidden');
+                    btnPrev.disabled = this.currentIndex === 0;
+                    btnPrev.style.opacity = this.currentIndex === 0 ? '0.4' : '1';
+                    btnNext.disabled = this.currentIndex === this.queue.length - 1;
+                    btnNext.style.opacity = this.currentIndex === this.queue.length - 1 ? '0.4' : '1';
+                }
+            } else {
+                queueIndicator.classList.add('hidden');
+                if (btnPrev) btnPrev.classList.add('hidden');
+                if (btnNext) btnNext.classList.add('hidden');
+            }
+        },
+
+        show: function () {
+            const backdrop = document.getElementById('announcementPopupBackdrop');
+            const card = document.getElementById('announcementPopupCard');
+            if (backdrop && card) {
+                backdrop.classList.remove('hidden');
+                document.body.style.overflow = 'hidden';
+                this.isOpen = true;
+
+                // Animate card entry
+                setTimeout(() => {
+                    card.classList.remove('scale-95', 'opacity-0');
+                    card.classList.add('scale-100', 'opacity-100');
+                }, 30);
+            }
+        },
+
+        close: function (markAsRead) {
+            const backdrop = document.getElementById('announcementPopupBackdrop');
+            const card = document.getElementById('announcementPopupCard');
+            const currentItem = this.queue[this.currentIndex];
+
+            if (currentItem) {
+                const chkDontShow = document.getElementById('chkDontShowAnnouncementAgain');
+                if (chkDontShow && chkDontShow.checked) {
+                    localStorage.setItem('wtp_announcement_dismissed_' + currentItem.id, 'true');
+                } else if (markAsRead) {
+                    sessionStorage.setItem('wtp_announcement_seen_' + currentItem.id, 'true');
+                }
+            }
+
+            if (card) {
+                card.classList.remove('scale-100', 'opacity-100');
+                card.classList.add('scale-95', 'opacity-0');
+            }
+
+            setTimeout(() => {
+                if (backdrop) backdrop.classList.add('hidden');
+                document.body.style.overflow = '';
+                this.isOpen = false;
+
+                // If user didn't permanently dismiss and there are remaining items in queue, user can close peacefully
+            }, 250);
+        },
+
+        next: function () {
+            if (this.currentIndex < this.queue.length - 1) {
+                this.currentIndex++;
+                this.renderCurrent();
+            }
+        },
+
+        prev: function () {
+            if (this.currentIndex > 0) {
+                this.currentIndex--;
+                this.renderCurrent();
+            }
+        }
+    };
+
+    window.AnnouncementModal = AnnouncementModal;
+
+    // Auto-init on page load
+    document.addEventListener('DOMContentLoaded', function () {
+        AnnouncementModal.init();
+    });
+
+})(window, document);
+</script>

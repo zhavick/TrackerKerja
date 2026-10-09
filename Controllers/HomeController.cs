@@ -102,14 +102,46 @@ namespace TrackerKerja.Controllers
                 weekHours.Add(daySeconds / 3600);
             }
 
-            // ── STATUS DISTRIBUTION (OVERALL) ─────────────────
-            var overdueCount = allTasks.Count(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done);
-            var inProgressCount = allTasks.Count(t => t.Status == Models.TaskStatus.InProgress);
-            var doneCount = allTasks.Count(t => t.Status == Models.TaskStatus.Done);
-            var todoCount = allTasks.Count(t => t.Status == Models.TaskStatus.Todo && (t.DueDate == null || t.DueDate >= DateTime.Now));
+            // ── STATUS DISTRIBUTION (DYNAMIC FROM MASTERSTATUSES) ─────────
+            var masterStatuses = await _db.MasterStatuses
+                .OrderBy(s => s.OrderIndex)
+                .ThenBy(s => s.Id)
+                .ToListAsync();
 
-            var statusLabels = new List<string> { "Todo", "In Progress", "Done", "Overdue" };
-            var statusCounts = new List<int> { todoCount, inProgressCount, doneCount, overdueCount };
+            if (!masterStatuses.Any())
+            {
+                masterStatuses = new List<MasterStatus>
+                {
+                    new MasterStatus { Name = "Todo", Color = "#64748B", OrderIndex = 1 },
+                    new MasterStatus { Name = "InProgress", Color = "#6366F1", OrderIndex = 2 },
+                    new MasterStatus { Name = "Review", Color = "#8B5CF6", OrderIndex = 3 },
+                    new MasterStatus { Name = "Done", Color = "#10B981", IsDoneState = true, OrderIndex = 4 },
+                    new MasterStatus { Name = "Overdue", Color = "#EF4444", OrderIndex = 5 }
+                };
+            }
+
+            var statusMetrics = masterStatuses.Select(ms => new StatusMetricDto
+            {
+                Id = ms.Id,
+                Key = GetStatusKey(ms.Name),
+                Name = ms.Name,
+                DisplayName = GetStatusDisplayName(ms.Name),
+                Color = string.IsNullOrWhiteSpace(ms.Color) ? "#6366F1" : ms.Color,
+                Icon = GetStatusIcon(ms.Name),
+                Count = GetTaskCountForStatus(ms, allTasks),
+                IsDoneState = ms.IsDoneState,
+                OrderIndex = ms.OrderIndex
+            }).ToList();
+
+            var statusLabels = statusMetrics.Select(m => m.DisplayName).ToList();
+            var statusCounts = statusMetrics.Select(m => m.Count).ToList();
+            var statusColors = statusMetrics.Select(m => m.Color).ToList();
+
+            var todoCount = allTasks.Count(t => t.Status == Models.TaskStatus.Todo);
+            var inProgressCount = allTasks.Count(t => t.Status == Models.TaskStatus.InProgress);
+            var reviewCount = allTasks.Count(t => t.Status == Models.TaskStatus.Review);
+            var doneCount = allTasks.Count(t => t.Status == Models.TaskStatus.Done);
+            var overdueCount = allTasks.Count(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done);
 
             // ── PROJECT TASK DISTRIBUTION ─────────────────────
             var projectLabels = new List<string>();
@@ -207,6 +239,7 @@ namespace TrackerKerja.Controllers
                 MyDoneTasks = myTasks.Count(t => t.Status == Models.TaskStatus.Done),
                 MyInProgressTasks = myTasks.Count(t => t.Status == Models.TaskStatus.InProgress),
                 MyTodoTasks = myTasks.Count(t => t.Status == Models.TaskStatus.Todo),
+                MyReviewTasks = myTasks.Count(t => t.Status == Models.TaskStatus.Review),
                 MyOverdueTasks = myTasks.Count(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done),
                 MyTodayWorkSeconds = myTodaySessions.Sum(s => s.Duration),
                 MyTasks = myTasks.OrderByDescending(t => t.CreatedAt).Take(8).ToList(),
@@ -214,8 +247,9 @@ namespace TrackerKerja.Controllers
 
                 TotalTasks = allTasks.Count,
                 DoneTasks = doneCount,
-                PendingTasks = allTasks.Count(t => t.Status == Models.TaskStatus.Todo),
+                PendingTasks = todoCount,
                 InProgressTasks = inProgressCount,
+                ReviewTasks = reviewCount,
                 OverdueTasks = overdueCount,
                 TotalProjects = allProjects.Count,
                 TodayWorkSeconds = todaySessions.Sum(s => s.Duration),
@@ -227,6 +261,8 @@ namespace TrackerKerja.Controllers
                 WeekHours = weekHours,
                 StatusChartLabels = statusLabels,
                 StatusChartCounts = statusCounts,
+                StatusChartColors = statusColors,
+                StatusMetrics = statusMetrics,
                 ProjectChartLabels = projectLabels,
                 ProjectChartTodo = projectTodo,
                 ProjectChartInProgress = projectInProgress,
@@ -497,26 +533,74 @@ namespace TrackerKerja.Controllers
                 };
             }).Where(m => m.TotalTasks > 0).ToList();
 
+            // Load master statuses dynamically
+            var masterStatuses = await _db.MasterStatuses
+                .OrderBy(s => s.OrderIndex)
+                .ThenBy(s => s.Id)
+                .ToListAsync();
+
+            if (!masterStatuses.Any())
+            {
+                masterStatuses = new List<MasterStatus>
+                {
+                    new MasterStatus { Name = "Todo", Color = "#64748B", OrderIndex = 1 },
+                    new MasterStatus { Name = "InProgress", Color = "#6366F1", OrderIndex = 2 },
+                    new MasterStatus { Name = "Review", Color = "#8B5CF6", OrderIndex = 3 },
+                    new MasterStatus { Name = "Done", Color = "#10B981", IsDoneState = true, OrderIndex = 4 },
+                    new MasterStatus { Name = "Overdue", Color = "#EF4444", OrderIndex = 5 }
+                };
+            }
+
+            var statusMetrics = masterStatuses.Select(ms => new StatusMetricDto
+            {
+                Id = ms.Id,
+                Key = GetStatusKey(ms.Name),
+                Name = ms.Name,
+                DisplayName = GetStatusDisplayName(ms.Name),
+                Color = string.IsNullOrWhiteSpace(ms.Color) ? "#6366F1" : ms.Color,
+                Icon = GetStatusIcon(ms.Name),
+                Count = GetTaskCountForStatus(ms, allTasks),
+                IsDoneState = ms.IsDoneState,
+                OrderIndex = ms.OrderIndex
+            }).ToList();
+
+            var currentUserId = currentUser?.Id ?? "";
+            var myTasks = allTasks.Where(t => t.AssignedToUserId == currentUserId).ToList();
+            var myTodaySessions = periodSessions
+                .Where(s => s.StartTime.Date == today && s.Task != null && s.Task.AssignedToUserId == currentUserId)
+                .ToList();
+            var myTodaySecs = myTodaySessions.Sum(s => s.Duration);
+            var myH = myTodaySecs / 3600;
+            var myM = (myTodaySecs % 3600) / 60;
+            var myTodayFormatted = $"{myH}j {myM}m";
+
             var dto = new DashboardAnalyticsDto
             {
                 TotalTasks = allTasks.Count,
                 DoneTasks = allTasks.Count(t => t.Status == Models.TaskStatus.Done),
                 InProgressTasks = allTasks.Count(t => t.Status == Models.TaskStatus.InProgress),
                 TodoTasks = allTasks.Count(t => t.Status == Models.TaskStatus.Todo),
+                ReviewTasks = allTasks.Count(t => t.Status == Models.TaskStatus.Review),
                 OverdueTasks = allTasks.Count(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done),
+
+                MyTotalTasks = myTasks.Count,
+                MyTodoTasks = myTasks.Count(t => t.Status == Models.TaskStatus.Todo),
+                MyInProgressTasks = myTasks.Count(t => t.Status == Models.TaskStatus.InProgress),
+                MyReviewTasks = myTasks.Count(t => t.Status == Models.TaskStatus.Review),
+                MyDoneTasks = myTasks.Count(t => t.Status == Models.TaskStatus.Done),
+                MyTodayWorkFormatted = myTodayFormatted,
+
                 TotalWorkHours = totalWorkHours,
                 AvgDailyWorkHours = avgDailyHours,
                 TrendLabels = trendLabels,
                 TrendHours = trendHours,
                 TrendDoneTasks = trendDone,
-                StatusLabels = new List<string> { "Todo", "In Progress", "Done", "Overdue" },
-                StatusCounts = new List<int>
-                {
-                    allTasks.Count(t => t.Status == Models.TaskStatus.Todo && (t.DueDate == null || t.DueDate >= DateTime.Now)),
-                    allTasks.Count(t => t.Status == Models.TaskStatus.InProgress),
-                    allTasks.Count(t => t.Status == Models.TaskStatus.Done),
-                    allTasks.Count(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done)
-                },
+
+                StatusLabels = statusMetrics.Select(m => m.DisplayName).ToList(),
+                StatusCounts = statusMetrics.Select(m => m.Count).ToList(),
+                StatusColors = statusMetrics.Select(m => m.Color).ToList(),
+                StatusMetrics = statusMetrics,
+
                 MemberProductivity = memberProductivity,
                 Period = period,
                 PeriodLabel = periodLabel,
@@ -558,16 +642,39 @@ namespace TrackerKerja.Controllers
             if (projectId.HasValue && projectId.Value > 0)
                 tasksQuery = tasksQuery.Where(t => t.ProjectId == projectId.Value);
 
-            tasksQuery = kpi switch
+            var normKpi = (kpi ?? "").Trim().ToLowerInvariant().Replace(" ", "");
+
+            if (normKpi == "done" || normKpi == "selesai")
             {
-                "done" => tasksQuery.Where(t => t.Status == Models.TaskStatus.Done),
-                "inprogress" => tasksQuery.Where(t => t.Status == Models.TaskStatus.InProgress),
-                "todo" => tasksQuery.Where(t => t.Status == Models.TaskStatus.Todo && (t.DueDate == null || t.DueDate >= DateTime.Now)),
-                "overdue" => tasksQuery.Where(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done),
-                _ => tasksQuery
-            };
+                tasksQuery = tasksQuery.Where(t => t.Status == Models.TaskStatus.Done);
+            }
+            else if (normKpi == "inprogress" || normKpi == "sedangdikerjakan")
+            {
+                tasksQuery = tasksQuery.Where(t => t.Status == Models.TaskStatus.InProgress);
+            }
+            else if (normKpi == "review" || normKpi == "inreview" || normKpi == "codereview" || normKpi == "ditinjau")
+            {
+                tasksQuery = tasksQuery.Where(t => t.Status == Models.TaskStatus.Review);
+            }
+            else if (normKpi == "todo" || normKpi == "antrian")
+            {
+                tasksQuery = tasksQuery.Where(t => t.Status == Models.TaskStatus.Todo);
+            }
+            else if (normKpi == "overdue" || normKpi == "terlambat")
+            {
+                tasksQuery = tasksQuery.Where(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done);
+            }
+            else if (Enum.TryParse<Models.TaskStatus>(normKpi, true, out var customEnum))
+            {
+                tasksQuery = tasksQuery.Where(t => t.Status == customEnum);
+            }
 
             var tasks = await tasksQuery.OrderByDescending(t => t.UpdatedAt).Take(50).ToListAsync();
+
+            var availableStatuses = await _db.MasterStatuses
+                .OrderBy(s => s.OrderIndex)
+                .Select(s => new { s.Id, s.Name, s.Color })
+                .ToListAsync();
 
             var result = tasks.Select(t => new DrillDownTaskDto
             {
@@ -582,7 +689,63 @@ namespace TrackerKerja.Controllers
                 WorkHours = Math.Round(t.Sessions.Sum(s => s.Duration) / 3600.0, 1)
             }).ToList();
 
-            return Json(new { success = true, tasks = result, kpi, total = result.Count });
+            return Json(new { success = true, tasks = result, kpi, total = result.Count, statuses = availableStatuses });
+        }
+
+        // ── STATUS HELPER METHODS ──────────────────────────────────
+        private static int GetTaskCountForStatus(MasterStatus s, List<WorkTask> tasks)
+        {
+            var normName = s.Name.Replace(" ", "").ToLowerInvariant();
+            if (normName == "todo" || normName == "antrian")
+                return tasks.Count(t => t.Status == Models.TaskStatus.Todo);
+            if (normName == "inprogress" || normName == "sedangdikerjakan")
+                return tasks.Count(t => t.Status == Models.TaskStatus.InProgress);
+            if (normName == "review" || normName == "inreview" || normName == "codereview" || normName == "ditinjau")
+                return tasks.Count(t => t.Status == Models.TaskStatus.Review);
+            if (normName == "done" || normName == "selesai")
+                return tasks.Count(t => t.Status == Models.TaskStatus.Done);
+            if (normName == "overdue" || normName == "terlambat")
+                return tasks.Count(t => t.DueDate < DateTime.Now && t.Status != Models.TaskStatus.Done);
+
+            if (Enum.TryParse<Models.TaskStatus>(s.Name.Replace(" ", ""), true, out var parsedEnum))
+                return tasks.Count(t => t.Status == parsedEnum);
+
+            return tasks.Count(t => string.Equals(t.Status.ToString(), s.Name.Replace(" ", ""), StringComparison.OrdinalIgnoreCase));
+        }
+
+        private static string GetStatusIcon(string name)
+        {
+            var norm = name.Replace(" ", "").ToLowerInvariant();
+            if (norm == "todo" || norm == "antrian") return "fa-clipboard-list";
+            if (norm == "inprogress" || norm == "sedangdikerjakan") return "fa-spinner";
+            if (norm == "review" || norm == "inreview" || norm == "codereview" || norm == "ditinjau") return "fa-search";
+            if (norm == "done" || norm == "selesai") return "fa-check-circle";
+            if (norm == "overdue" || norm == "terlambat") return "fa-exclamation-triangle";
+            if (norm.Contains("test")) return "fa-vial";
+            if (norm.Contains("block")) return "fa-ban";
+            return "fa-tasks";
+        }
+
+        private static string GetStatusKey(string name)
+        {
+            var norm = name.Replace(" ", "").ToLowerInvariant();
+            if (norm == "todo" || norm == "antrian") return "todo";
+            if (norm == "inprogress" || norm == "sedangdikerjakan") return "inprogress";
+            if (norm == "review" || norm == "inreview" || norm == "codereview" || norm == "ditinjau") return "review";
+            if (norm == "done" || norm == "selesai") return "done";
+            if (norm == "overdue" || norm == "terlambat") return "overdue";
+            return norm;
+        }
+
+        private static string GetStatusDisplayName(string name)
+        {
+            var norm = name.Replace(" ", "").ToLowerInvariant();
+            if (norm == "todo") return "Todo";
+            if (norm == "inprogress") return "In Progress";
+            if (norm == "review") return "Review";
+            if (norm == "done") return "Done";
+            if (norm == "overdue") return "Overdue";
+            return name;
         }
     }
 }

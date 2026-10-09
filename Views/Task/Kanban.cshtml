@@ -319,6 +319,12 @@
             const result = await resp.json();
             if (result.success) {
                 showToast('Status Tugas Diperbarui', result.message, 'success');
+                // Broadcast change to dashboard and other tabs
+                localStorage.setItem('tracker_task_status_changed', JSON.stringify({
+                    taskId: taskId,
+                    status: targetStatus,
+                    timestamp: Date.now()
+                }));
             } else {
                 showToast('Gagal', result.message || 'Gagal mengubah status', 'error');
             }

@@ -59,6 +59,22 @@
 - **Daily Check-In Harian & Aturan Streak (Reset 2 Hari)**: Tombol *1-click check-in* (+10 Poin) dan streak counter api. Toleransi absen 2 hari berturut-turut sebelum streak di-reset ke Hari 1.
 - **Modul Klaim Hadiah (Reward Claim)**: Saldo poin dapat ditukar ke Voucher Pulsa/E-Wallet, Kopi, Merchandise, atau Hadiah Bulanan dengan kalkulasi saldo ketat (1 Poin = Rp 100) dan approval Administrator.
 
+### 📢 7. Modul Pengumuman Resmi & Modal Popup Terpadu (Announcement Module)
+- **Pengelolaan Pengumuman oleh Administrator (`/Announcement`)**: Admin dapat membuat, mengedit, menghapus, dan mengaktifkan/menonaktifkan pengumuman melalui antarmuka tabel interaktif lengkap dengan kartu metrik statistik dan simulator pratinjau modal popup.
+- **Formulir Isian Lengkap**:
+  - *Judul Pengumuman*: Judul resmi yang tampil di header popup modal.
+  - *Tanggal Pemberitahuan / Pengumuman*: Tanggal mulai pengumuman ditayangkan kepada seluruh pengguna.
+  - *Tanggal Berakhir*: Tanggal batas akhir pengumuman (otomatis kedaluwarsa setelah tanggal ini).
+  - *Status*: Pilihan kategori **"Informasi Penting"** (peringatan mendesak, warna merah/rose dengan banner darurat) atau **"Pengumuman Umum"** (informasi standar, warna ungu/indigo).
+  - *Isi Pengumuman*: Teks pengumuman lengkap atau instruksi kerja.
+  - *Status Aktif*: Toggle switch aktif/nonaktif.
+- **Impact Modal Popup ke Seluruh Pengguna**: Pengumuman aktif langsung muncul di layar pengguna saat membuka aplikasi dalam bentuk modal popup responsif.
+- **Sequencing Ketat dengan Panduan (Anti-Overlap Rule)**:
+  - Modal pengumuman **tidak akan pernah muncul berbarengan** dengan panduan pengguna (baik Onboarding Welcome Tour maupun User Guide Modal).
+  - Jika pengguna belum menutup panduan, pengumuman tetap menunggu di latar belakang.
+  - Segera setelah pengguna menutup panduan, modal pengumuman otomatis muncul ke layar dengan transisi animasi halus.
+- **Kontrol Pengguna ("Jangan Tampilkan Lagi")**: Pengguna dapat menandai opsi agar pengumuman yang sudah dibaca tidak muncul kembali berulang kali.
+
 ### 🎨 7. 40 Tema Eye-Friendly & 5 Google Fonts Switcher
 - **40 Tema Tampilan Dinamis**: 22 Tema Terang + 18 Tema Gelap ramah mata bertenaga CSS custom tokens (`themes.css`).
 - **Global Font Switcher**: 5 opsi Google Fonts pilihan (*Inter, Plus Jakarta Sans, Outfit, Poppins, Roboto*) instan tanpa reload halaman (*Anti-FOUC*).

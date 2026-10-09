@@ -1805,6 +1805,43 @@ Pada modul `NoteController` dan `NotesApiController`:
 - Nama file fisik disanitasi dan diganti dengan pola aman ber-hash: `{timestamp}_{hash}_{sanitizedOriginalName}` untuk mencegah *path traversal attacks* (`../../`).
 - Berkas disimpan di luar root eksekusi skrip server dan disajikan sebagai berkas statis terproteksi atau melalui controller unduhan aman.
 
+### 4.5 Arsitektur & Spesifikasi Teknis Modul Pengumuman (Announcement Module)
+Modul pengumuman dirancang dengan pemisahan peran yang tegas (*Admin CRUD vs User-Facing Popup Modal*) dan koordinasi siklus antrean event (*Event-Driven Anti-Overlap Sequencing*):
+
+1. **Skema Tabel Basis Data (`Announcements`)**:
+   ```sql
+   CREATE TABLE IF NOT EXISTS Announcements (
+       Id INTEGER PRIMARY KEY AUTOINCREMENT,
+       Title TEXT NOT NULL,
+       Content TEXT NOT NULL,
+       AnnouncementDate TEXT NOT NULL,
+       EndDate TEXT NOT NULL,
+       Status TEXT NOT NULL DEFAULT 'Pengumuman Umum',
+       IsActive INTEGER NOT NULL DEFAULT 1,
+       CreatedByUserId TEXT NULL,
+       CreatedAt TEXT NOT NULL,
+       UpdatedAt TEXT NOT NULL,
+       FOREIGN KEY (CreatedByUserId) REFERENCES AspNetUsers(Id) ON DELETE SET NULL
+   );
+   CREATE INDEX IF NOT EXISTS IX_Announcements_Dates_Active 
+   ON Announcements (IsActive, AnnouncementDate, EndDate);
+   ```
+
+2. **Daftar Endpoint Kontroler (`AnnouncementController`)**:
+   - `GET /Announcement` — Halaman index manajemen pengumuman Admin (`[Authorize(Roles = "Admin")]`).
+   - `GET /Announcement/Create` & `POST /Announcement/Create` — Form penambahan pengumuman baru dengan validasi tanggal (`EndDate >= AnnouncementDate`) dan audit logging.
+   - `GET /Announcement/Edit/{id}` & `POST /Announcement/Edit/{id}` — Form pembaruan data pengumuman.
+   - `POST /Announcement/Delete/{id}` — Penghapusan pengumuman dengan konfirmasi SweetAlert.
+   - `POST /Announcement/ToggleActive/{id}` — Toggle AJAX untuk status aktif/nonaktif pengumuman secara instan.
+   - `GET /Announcement/GetActiveAnnouncements` — Endpoint publik terotentikasi (`[AllowAnonymous]`) mengembalikan JSON pengumuman aktif dalam rentang `AnnouncementDate <= today <= EndDate` dengan prioritas *"Informasi Penting"* teratas.
+
+3. **Mekanisme Anti-Overlap Sequencing dengan Panduan**:
+   - Skrip `_AnnouncementModal.cshtml` dan `onboarding-tour.js` beroperasi secara terkoordinasi:
+     - Jika panduan aktif (`#onboardingWelcomeModal.classList.contains('active')`, `OnboardingTour.isActive`, atau modal panduan pengguna `userGuideModal` tidak hidden), pengumuman **TIDAK DITAMPILKAN**.
+     - Begitu fungsi `closeWelcomeModal()`, `endTour()`, atau `closeUserGuideModal()` dieksekusi, sistem memicu event global `window.dispatchEvent(new CustomEvent('wtp:panduan_closed'))` disertai pengawasan mutasi DOM (`MutationObserver`).
+     - Handler event menangkap penutupan tersebut dan memunculkan modal pengumuman secara tertib dengan transisi fade-in 350ms.
+   - Preferensi penutupan *"Jangan tampilkan lagi"* disimpan di `localStorage.setItem('wtp_announcement_dismissed_' + id, 'true')` per item ID pengumuman.
+
 ---
 
 ## 5. KESIMPULAN

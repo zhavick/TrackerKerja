@@ -18,7 +18,9 @@ TrackerKerja_Publish.zip
 *.db-wal
 db_data/
 uploads/
-data/
+/data/
+!Data/
+!Data/**
 
 ## Logs & Temp
 *.log

@@ -775,5 +775,15 @@
             }
         }
     }
+
+    // Broadcast status change across tabs on form submit
+    document.getElementById('taskEditForm')?.addEventListener('submit', function() {
+        const select = document.getElementById('editStatusSelect') || document.querySelector('select[name="Task.Status"]');
+        localStorage.setItem('tracker_task_status_changed', JSON.stringify({
+            taskId: @Model.Task.Id,
+            status: select ? select.value : '',
+            timestamp: Date.now()
+        }));
+    });
 </script>
 }

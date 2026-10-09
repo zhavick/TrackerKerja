@@ -158,6 +158,9 @@
             if (forceDismiss || (dontShowCheckbox && dontShowCheckbox.checked)) {
                 localStorage.setItem('wtp_onboarding_dismissed_' + this.userId, 'true');
             }
+
+            // Dispatch global event that panduan has been closed
+            window.dispatchEvent(new CustomEvent('wtp:panduan_closed', { detail: { source: 'welcomeModal' } }));
         },
 
         goToSlide: function (index) {
@@ -266,6 +269,9 @@
 
             // Save completed status
             localStorage.setItem('wtp_onboarding_dismissed_' + this.userId, 'true');
+
+            // Dispatch global event that panduan/tour has been closed
+            window.dispatchEvent(new CustomEvent('wtp:panduan_closed', { detail: { source: 'endTour' } }));
 
             // Show friendly completion toast
             if (typeof Swal !== 'undefined') {

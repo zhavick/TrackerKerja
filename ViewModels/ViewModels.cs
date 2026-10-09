@@ -9,6 +9,7 @@ namespace TrackerKerja.ViewModels
         public int PendingTasks { get; set; }
         public int OverdueTasks { get; set; }
         public int InProgressTasks { get; set; }
+        public int ReviewTasks { get; set; }
         public int TotalProjects { get; set; }
         public long TodayWorkSeconds { get; set; }
 
@@ -36,6 +37,7 @@ namespace TrackerKerja.ViewModels
         public int MyDoneTasks { get; set; }
         public int MyInProgressTasks { get; set; }
         public int MyTodoTasks { get; set; }
+        public int MyReviewTasks { get; set; }
         public int MyOverdueTasks { get; set; }
         public long MyTodayWorkSeconds { get; set; }
         public string MyTodayWorkFormatted
@@ -61,6 +63,8 @@ namespace TrackerKerja.ViewModels
         // Status Distribution Chart
         public List<string> StatusChartLabels { get; set; } = new();
         public List<int> StatusChartCounts { get; set; } = new();
+        public List<string> StatusChartColors { get; set; } = new();
+        public List<StatusMetricDto> StatusMetrics { get; set; } = new();
 
         // Project Task Distribution Chart
         public List<string> ProjectChartLabels { get; set; } = new();
@@ -80,6 +84,19 @@ namespace TrackerKerja.ViewModels
         public List<ProjectMemberDistributionDto> ProjectMemberDistributions { get; set; } = new();
     }
 
+    public class StatusMetricDto
+    {
+        public int Id { get; set; }
+        public string Key { get; set; } = string.Empty;
+        public string Name { get; set; } = string.Empty;
+        public string DisplayName { get; set; } = string.Empty;
+        public string Color { get; set; } = "#6366F1";
+        public string Icon { get; set; } = "fa-clipboard-list";
+        public int Count { get; set; }
+        public bool IsDoneState { get; set; }
+        public int OrderIndex { get; set; }
+    }
+
     // ── Dashboard Period-Filtered Analytics DTO ───────────────────
     public class DashboardAnalyticsDto
     {
@@ -88,8 +105,17 @@ namespace TrackerKerja.ViewModels
         public int DoneTasks { get; set; }
         public int InProgressTasks { get; set; }
         public int TodoTasks { get; set; }
+        public int ReviewTasks { get; set; }
         public int OverdueTasks { get; set; }
         public int CompletionRatePercent => TotalTasks > 0 ? (int)Math.Round((double)DoneTasks / TotalTasks * 100) : 0;
+
+        // Personal Stats
+        public int MyTotalTasks { get; set; }
+        public int MyTodoTasks { get; set; }
+        public int MyInProgressTasks { get; set; }
+        public int MyReviewTasks { get; set; }
+        public int MyDoneTasks { get; set; }
+        public string MyTodayWorkFormatted { get; set; } = "0j 0m";
 
         // Work hours
         public double TotalWorkHours { get; set; }
@@ -102,9 +128,11 @@ namespace TrackerKerja.ViewModels
         // Trend Chart: tasks done per day
         public List<int> TrendDoneTasks { get; set; } = new();
 
-        // Status chart
+        // Status chart (Dynamic)
         public List<string> StatusLabels { get; set; } = new();
         public List<int> StatusCounts { get; set; } = new();
+        public List<string> StatusColors { get; set; } = new();
+        public List<StatusMetricDto> StatusMetrics { get; set; } = new();
 
         // Productivity by Member (name, done, hours)
         public List<MemberProductivityItemDto> MemberProductivity { get; set; } = new();

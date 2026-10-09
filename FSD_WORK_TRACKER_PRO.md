@@ -783,6 +783,32 @@ Sistem dilengkapi paket artefak pengujian mutu terstandarisasi untuk menjamin ke
 - **5.22.3 Standar Operasional QA (`QA/README.md`)**:
   - Konvensi penamaan test case (`TC-[MODUL]-[NO]`), matriks keparahan defect (*Blocker, Major, Moderate, Minor*), dan tata cara sign-off pengujian.
 
+### 5.23 Modul Pengumuman Resmi & Modal Popup Terpadu (Announcement Module)
+Modul terpusat bagi Administrator untuk menyiarkan informasi operasional penting, agenda tim, pemeliharaan sistem, atau pengumuman umum kepada seluruh pengguna melalui dialog modal popup interaktif:
+- **5.23.1 Pengelolaan Pengumuman oleh Administrator (`/Announcement`)**:
+  - *Tabel Manajemen Pengumuman*: Menampilkan seluruh pengumuman dengan indikator status penayangan real-time (*Sedang Tayang, Akan Datang, Kedaluwarsa*), status aktif toggle switch AJAX, pencarian teks, dan filter kategori.
+  - *Statistik Eksekutif*: Ringkasan metrik: Total Pengumuman, Sedang Tayang, Informasi Penting, Pengumuman Umum, dan Kedaluwarsa.
+  - *Simulator Pratinjau Modal (Live Preview Modal)*: Tombol ikon mata (*Pratinjau*) untuk menyimulasikan bagaimana dialog popup akan tampil di layar pengguna.
+- **5.23.2 Form Pembuatan & Pengeditan Pengumuman (`/Announcement/Create`, `/Announcement/Edit/{id}`)**:
+  - *Judul Pengumuman (`Title`)*: Maksimal 200 karakter.
+  - *Status Kategori (`Status`)*:
+    1. **Informasi Penting**: Peringatan mendesak (*urgent*), aksen visual merah/rose dengan lencana darurat dan penempatan prioritas teratas di antrean popup.
+    2. **Pengumuman Umum**: Pemberitahuan reguler kerja, kabar terbaru, atau agenda tim bernuansa ungu/indigo.
+  - *Tanggal Pemberitahuan / Pengumuman (`AnnouncementDate`)*: Tanggal dimulainya penayangan modal popup ke pengguna.
+  - *Tanggal Berakhir (`EndDate`)*: Batas akhir masa berlaku pengumuman (otomatis berhenti tayang setelah tanggal ini).
+  - *Isi Pengumuman (`Content`)*: Teks instruksi kerja atau pengumuman lengkap dengan dukungan multibaris.
+  - *Status Aktif (`IsActive`)*: Toggle switch untuk mengaktifkan atau menonaktifkan penayangan secara instan.
+  - *Interactive Live Simulation Card*: Kartu pratinjau di kolom samping yang secara real-time merespons input ketikan admin sebelum form disubmit.
+- **5.23.3 Dampak Modal Popup ke Pengguna (User-Facing Modal Popup)**:
+  - Komponen partial view `Views/Shared/_AnnouncementModal.cshtml` terpasang secara global pada layout aplikasi.
+  - Pengumuman aktif diambil melalui endpoint `GET /Announcement/GetActiveAnnouncements`.
+  - Desain popup responsif beranimasi halus, memuat informasi masa berlaku (*"Berlaku s/d [Tanggal]"*), identitas penerbit (*"Administrator"*), banner urgensi khusus bila bertipe Informasi Penting, dan navigasi stepper bila terdapat lebih dari 1 pengumuman aktif.
+  - Opsi *"Jangan tampilkan lagi"*: Menyimpan preferensi pengguna di `localStorage` per ID pengumuman sehingga pengguna tidak terganggu berulang kali.
+- **5.23.4 Aturan Urutan Tampilan dengan Panduan (Anti-Overlap Sequencing Rule)**:
+  - **Pencegahan Tumpukan Visual**: Modal popup pengumuman dijamin **TIDAK PERNAH** tampil berbarengan atau bertumpukan dengan panduan pengguna (baik Onboarding Welcome Modal, Interactive Spotlight Tour, maupun User Guide Modal).
+  - **Mekanisme Antrean Cerdas**: Bila salah satu panduan sedang terbuka (`#onboardingWelcomeModal.classList.contains('active')`, `OnboardingTour.isActive`, atau `!#userGuideModal.classList.contains('hidden')`), modal pengumuman secara tertib menahan diri di latar belakang.
+  - **Pemicu Otomatis Pasca-Tutup**: Segera setelah pengguna menutup panduan (mengeklik tombol X, Tutup, atau menekan tombol `Esc`), sistem menangkap event global `wtp:panduan_closed` serta mutasi DOM, kemudian memunculkan modal pengumuman secara mulus dengan transisi animasi 350ms.
+
 ---
 
 ## 6. SPESIFIKASI NON-FUNGSIONAL, KEAMANAN & PRIVASI DATA

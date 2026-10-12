@@ -21,19 +21,22 @@ namespace TrackerKerja.Controllers.Api
         private readonly IWebHostEnvironment _env;
         private readonly UserManager<AppUser> _userManager;
         private readonly Services.IDatabaseExportService _exportService;
+        private readonly Services.IGamificationService _gamificationService;
 
         public ConfigurationApiController(
             AppDbContext db,
             IConfiguration config,
             IWebHostEnvironment env,
             UserManager<AppUser> userManager,
-            Services.IDatabaseExportService exportService)
+            Services.IDatabaseExportService exportService,
+            Services.IGamificationService gamificationService)
         {
             _db = db;
             _config = config;
             _env = env;
             _userManager = userManager;
             _exportService = exportService;
+            _gamificationService = gamificationService;
         }
 
         /// <summary>
@@ -262,6 +265,16 @@ namespace TrackerKerja.Controllers.Api
             var deletedCounts = new Dictionary<string, int>();
             var clearedTables = new List<string>();
 
+            GamificationResetResultDto? gamResult = null;
+            if (dto.ResetGamification)
+            {
+                gamResult = await _gamificationService.ResetGamificationDataAsync(dto.Mode, User.Identity?.Name ?? "Admin");
+                deletedCounts["UserBadges"] = gamResult.BadgesBackedUpCount;
+                deletedCounts["DailyCheckIns"] = gamResult.CheckInsClearedCount;
+                deletedCounts["RewardClaims"] = gamResult.ClaimsClearedCount;
+                clearedTables.AddRange(new[] { "UserBadges", "DailyCheckIns", "RewardClaims" });
+            }
+
             if (string.Equals(dto.Mode, "factory", StringComparison.OrdinalIgnoreCase))
             {
                 // Mode Factory Reset: Bersihkan semua transaksi, notes, attachments, audit logs, json histories, import logs, dan tasks
@@ -314,10 +327,13 @@ namespace TrackerKerja.Controllers.Api
                 var res = new ResetDatabaseResponseDto
                 {
                     Mode = "factory",
+                    GamificationReset = dto.ResetGamification,
+                    BadgesSnapshottedCount = gamResult?.BadgesBackedUpCount ?? 0,
                     ClearedTables = clearedTables,
                     DeletedCounts = deletedCounts,
                     FinalDatabaseSizeFormatted = FormatBytes(finalSize),
-                    Message = "Factory reset berhasil. Seluruh data transaksi, catatan, dan tugas telah dibersihkan."
+                    Message = "Factory reset berhasil. Seluruh data transaksi, catatan, dan tugas telah dibersihkan." + 
+                              (dto.ResetGamification ? $" Poin gamifikasi di-reset ({gamResult?.BadgesBackedUpCount} badge dicadangkan ke snapshot)." : "")
                 };
 
                 return Ok(ApiResponse<ResetDatabaseResponseDto>.Ok(res, res.Message));
@@ -351,10 +367,13 @@ namespace TrackerKerja.Controllers.Api
                 var res = new ResetDatabaseResponseDto
                 {
                     Mode = "transactional",
+                    GamificationReset = dto.ResetGamification,
+                    BadgesSnapshottedCount = gamResult?.BadgesBackedUpCount ?? 0,
                     ClearedTables = clearedTables,
                     DeletedCounts = deletedCounts,
                     FinalDatabaseSizeFormatted = FormatBytes(finalSize),
-                    Message = "Reset data transaksi (Sessions, Audit Logs, JSON History, Import Logs) berhasil."
+                    Message = "Reset data transaksi (Sessions, Audit Logs, JSON History, Import Logs) berhasil." +
+                              (dto.ResetGamification ? $" Poin gamifikasi di-reset ({gamResult?.BadgesBackedUpCount} badge dicadangkan ke snapshot)." : "")
                 };
 
                 return Ok(ApiResponse<ResetDatabaseResponseDto>.Ok(res, res.Message));

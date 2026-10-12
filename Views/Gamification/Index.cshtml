@@ -93,6 +93,12 @@
                 <a href="/Gamification?tab=badges" class="flex-1 md:flex-none justify-center px-4 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-2 @(activeTab == "badges" ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/50" : "text-slate-300 hover:text-white hover:bg-white/5")">
                     <i class="fas fa-medal"></i> <span>Badge &amp; EXP (@gam.UnlockedBadgesCount/@gam.TotalBadgesCount)</span>
                 </a>
+                @if (User.IsInRole("Admin"))
+                {
+                    <a href="/Configuration/BadgeRecovery" class="flex-1 md:flex-none justify-center px-3.5 py-2.5 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 text-amber-300 hover:text-white hover:bg-white/10 border border-amber-400/30">
+                        <i class="fas fa-history text-amber-400"></i> <span>Pemulihan Badge</span>
+                    </a>
+                }
             </div>
 
             <!-- Streak Counter Pill -->

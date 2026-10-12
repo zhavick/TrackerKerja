@@ -55,11 +55,19 @@ namespace TrackerKerja.Services
                 .ToListAsync();
 
             var userBadgeIds = user.UserBadges.Select(ub => ub.BadgeId).ToHashSet();
+            
+            // Tahan badge yang ada di snapshot reset sampai admin memulihkannya (A4 requirement)
+            var pendingSnapshotBadgeIds = (await _db.UserBadgeSnapshots
+                .Where(s => s.UserId == userId && !s.IsRestored)
+                .Select(s => s.BadgeId)
+                .ToListAsync())
+                .ToHashSet();
+
             var newlyUnlockedBadges = new List<MasterBadge>();
 
             foreach (var badge in activeBadges)
             {
-                if (userBadgeIds.Contains(badge.Id))
+                if (userBadgeIds.Contains(badge.Id) || pendingSnapshotBadgeIds.Contains(badge.Id))
                     continue;
 
                 bool shouldUnlock = false;
@@ -752,6 +760,347 @@ namespace TrackerKerja.Services
                 .Where(c => c.UserId == userId)
                 .OrderByDescending(c => c.ClaimedAt)
                 .ToListAsync();
+        }
+
+        // ══════════════════════════════════════════════════════════════════════
+        // RESET DATABASE & GAMIFICATION SNAPSHOT RECOVERY IMPLEMENTATION
+        // ══════════════════════════════════════════════════════════════════════
+
+        public async Task<GamificationResetResultDto> ResetGamificationDataAsync(string mode, string initiatedBy)
+        {
+            var batchId = $"SNAP-{DateTime.UtcNow:yyyyMMdd-HHmmss}";
+
+            // 1. Ambil seluruh UserBadges saat ini dan buat catatan snapshot
+            var existingBadges = await _db.UserBadges.ToListAsync();
+            if (existingBadges.Any())
+            {
+                var snapshots = existingBadges.Select(ub => new UserBadgeSnapshot
+                {
+                    SnapshotBatchId = batchId,
+                    ResetMode = mode,
+                    UserId = ub.UserId,
+                    BadgeId = ub.BadgeId,
+                    OriginalUnlockedAt = ub.UnlockedAt,
+                    IsFeatured = ub.IsFeatured,
+                    AwardedBy = ub.AwardedBy,
+                    SnapshotCreatedAt = DateTime.UtcNow,
+                    IsRestored = false
+                }).ToList();
+
+                _db.UserBadgeSnapshots.AddRange(snapshots);
+            }
+
+            int badgesCount = existingBadges.Count;
+            int checkInsCount = await _db.DailyCheckIns.CountAsync();
+            int claimsCount = await _db.RewardClaims.CountAsync();
+
+            // 2. Bersihkan seluruh UserBadges, DailyCheckIns, dan RewardClaims
+            _db.UserBadges.RemoveRange(_db.UserBadges);
+            _db.DailyCheckIns.RemoveRange(_db.DailyCheckIns);
+            _db.RewardClaims.RemoveRange(_db.RewardClaims);
+
+            await _db.SaveChangesAsync();
+
+            return new GamificationResetResultDto
+            {
+                Success = true,
+                BatchId = batchId,
+                BadgesBackedUpCount = badgesCount,
+                CheckInsClearedCount = checkInsCount,
+                ClaimsClearedCount = claimsCount,
+                Message = $"Reset gamifikasi berhasil! {badgesCount} badge dicadangkan ke snapshot '{batchId}', {checkInsCount} daily check-in dan {claimsCount} klaim hadiah telah dibersihkan."
+            };
+        }
+
+        public async Task<List<BadgeSnapshotRecoveryDto>> GetPendingBadgeSnapshotsAsync(string? userId = null, string? batchId = null)
+        {
+            var query = _db.UserBadgeSnapshots
+                .Include(s => s.User)
+                .Include(s => s.Badge)
+                .AsQueryable();
+
+            if (!string.IsNullOrEmpty(userId))
+            {
+                query = query.Where(s => s.UserId == userId);
+            }
+
+            if (!string.IsNullOrEmpty(batchId))
+            {
+                query = query.Where(s => s.SnapshotBatchId == batchId);
+            }
+
+            var snapshots = await query
+                .OrderByDescending(s => s.SnapshotCreatedAt)
+                .ThenBy(s => s.UserId)
+                .ToListAsync();
+
+            if (!snapshots.Any())
+                return new List<BadgeSnapshotRecoveryDto>();
+
+            var userIds = snapshots.Select(s => s.UserId).Distinct().ToList();
+            var userMetricsMap = new Dictionary<string, UserMetricsSnapshot>();
+
+            foreach (var uid in userIds)
+            {
+                var u = snapshots.FirstOrDefault(s => s.UserId == uid)?.User;
+                var userEmail = u?.Email;
+
+                var doneTasks = await _db.Tasks.CountAsync(t => t.AssignedToUserId == uid && t.Status == Models.TaskStatus.Done);
+                var totalTasks = await _db.Tasks.CountAsync(t => t.AssignedToUserId == uid);
+                var totalWorkSeconds = await _db.Sessions.Where(s => s.UserId == uid).SumAsync(s => (long?)s.Duration) ?? 0;
+                var totalHours = totalWorkSeconds / 3600.0;
+                var notes = await _db.Notes.CountAsync(n => n.AuthorUserId == uid);
+                var attendances = await _db.Attendances.CountAsync(a => a.UserId == uid);
+                var timesheets = await _db.Sessions.CountAsync(s => s.UserId == uid);
+                var json = await _db.JsonHistories.CountAsync(j => j.UserId == uid);
+                var sql = await _db.SqlHistories.CountAsync(s => s.UserId == uid);
+                var logins = await _db.AuditLogs.CountAsync(a => (a.UserId == uid || (userEmail != null && a.UserEmail == userEmail)) && ((a.ControllerName == "Account" && a.ActionName == "Login") || (a.Path != null && a.Path.ToLower().Contains("/login"))));
+                var logouts = await _db.AuditLogs.CountAsync(a => (a.UserId == uid || (userEmail != null && a.UserEmail == userEmail)) && ((a.ControllerName == "Account" && a.ActionName == "Logout") || (a.Path != null && a.Path.ToLower().Contains("/logout"))));
+                var checkIns = await _db.DailyCheckIns.CountAsync(c => c.UserId == uid);
+                var streak = await _db.DailyCheckIns.Where(c => c.UserId == uid).Select(c => (int?)c.StreakDay).MaxAsync() ?? 0;
+                var profileComplete = u != null && !string.IsNullOrWhiteSpace(u.FullName) && !string.IsNullOrWhiteSpace(u.JobTitle) && !string.IsNullOrWhiteSpace(u.ProfilePictureUrl);
+
+                userMetricsMap[uid] = new UserMetricsSnapshot
+                {
+                    DoneTasks = doneTasks,
+                    TotalTasks = totalTasks,
+                    TotalHours = totalHours,
+                    Notes = notes,
+                    Attendances = attendances,
+                    Timesheets = timesheets,
+                    Json = json,
+                    Sql = sql,
+                    Logins = logins,
+                    Logouts = logouts,
+                    CheckIns = checkIns,
+                    Streak = streak,
+                    ProfileComplete = profileComplete
+                };
+            }
+
+            var result = new List<BadgeSnapshotRecoveryDto>();
+
+            foreach (var s in snapshots)
+            {
+                var badge = s.Badge;
+                if (badge == null) continue;
+
+                var user = s.User;
+                var m = userMetricsMap.ContainsKey(s.UserId) ? userMetricsMap[s.UserId] : new UserMetricsSnapshot();
+
+                bool isMet = false;
+                double currentVal = 0;
+                string conditionSummary = "";
+
+                switch (badge.TriggerType)
+                {
+                    case BadgeTriggerType.Manual:
+                        isMet = true;
+                        currentVal = 1;
+                        conditionSummary = "Badge Spesial / Diberikan Manual Admin (Selalu Memenuhi Syarat)";
+                        break;
+
+                    case BadgeTriggerType.Auto_DoneTasks:
+                        currentVal = m.DoneTasks;
+                        isMet = m.DoneTasks >= badge.TriggerThreshold;
+                        conditionSummary = $"Tugas Selesai: {m.DoneTasks} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_TotalTasks:
+                        currentVal = m.TotalTasks;
+                        isMet = m.TotalTasks >= badge.TriggerThreshold;
+                        conditionSummary = $"Total Tugas: {m.TotalTasks} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_TotalHours:
+                        currentVal = Math.Round(m.TotalHours, 1);
+                        isMet = m.TotalHours >= badge.TriggerThreshold;
+                        conditionSummary = $"Jam Kerja: {m.TotalHours:F1} / {badge.TriggerThreshold} Jam ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_NotesCount:
+                        currentVal = m.Notes;
+                        isMet = m.Notes >= badge.TriggerThreshold;
+                        conditionSummary = $"Catatan: {m.Notes} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_ProfileComplete:
+                        currentVal = m.ProfileComplete ? 1 : 0;
+                        isMet = m.ProfileComplete;
+                        conditionSummary = m.ProfileComplete ? "Profil Lengkap (Memenuhi)" : "Profil Belum Lengkap (Foto/Jabatan/Nama)";
+                        break;
+
+                    case BadgeTriggerType.Auto_AttendanceCount:
+                        currentVal = m.Attendances;
+                        isMet = m.Attendances >= badge.TriggerThreshold;
+                        conditionSummary = $"Presensi: {m.Attendances} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_TimesheetCount:
+                        currentVal = m.Timesheets;
+                        isMet = m.Timesheets >= badge.TriggerThreshold;
+                        conditionSummary = $"Timesheet: {m.Timesheets} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_JsonCount:
+                        currentVal = m.Json;
+                        isMet = m.Json >= badge.TriggerThreshold;
+                        conditionSummary = $"Format JSON: {m.Json} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_SqlCount:
+                        currentVal = m.Sql;
+                        isMet = m.Sql >= badge.TriggerThreshold;
+                        conditionSummary = $"Format SQL: {m.Sql} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_LoginCount:
+                        currentVal = m.Logins;
+                        isMet = m.Logins >= badge.TriggerThreshold;
+                        conditionSummary = $"Login: {m.Logins} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_LogoutCount:
+                        currentVal = m.Logouts;
+                        isMet = m.Logouts >= badge.TriggerThreshold;
+                        conditionSummary = $"Logout: {m.Logouts} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_DailyCheckInCount:
+                        currentVal = m.CheckIns;
+                        isMet = m.CheckIns >= badge.TriggerThreshold;
+                        conditionSummary = $"Daily Check-In: {m.CheckIns} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+
+                    case BadgeTriggerType.Auto_DailyCheckInStreak:
+                        currentVal = m.Streak;
+                        isMet = m.Streak >= badge.TriggerThreshold;
+                        conditionSummary = $"Streak Check-In: {m.Streak} / {badge.TriggerThreshold} ({(isMet ? "Memenuhi" : "Belum Memenuhi")})";
+                        break;
+                }
+
+                result.Add(new BadgeSnapshotRecoveryDto
+                {
+                    SnapshotId = s.Id,
+                    BatchId = s.SnapshotBatchId,
+                    SnapshotDate = s.SnapshotCreatedAt,
+                    ResetMode = s.ResetMode,
+                    UserId = s.UserId,
+                    UserName = user?.FullName ?? user?.UserName ?? "Pengguna",
+                    UserEmail = user?.Email ?? "-",
+                    UserAvatar = user?.ProfilePictureUrl,
+                    UserAvatarColor = user?.AvatarColor ?? "#6366F1",
+                    UserInitial = user?.Initials ?? "?",
+                    UserJobTitle = user?.JobTitle ?? "-",
+                    BadgeId = badge.Id,
+                    BadgeCode = badge.Code,
+                    BadgeName = badge.Name,
+                    BadgeDescription = badge.Description,
+                    BadgeCategory = badge.Category,
+                    BadgeIcon = badge.Icon,
+                    BadgeColor = badge.Color,
+                    BadgePoints = badge.Points,
+                    BadgeRarity = badge.Rarity,
+                    TriggerType = badge.TriggerType,
+                    TriggerThreshold = badge.TriggerThreshold,
+                    CurrentMetricValue = currentVal,
+                    IsConditionCurrentlyMet = isMet,
+                    ConditionSummary = conditionSummary,
+                    OriginalUnlockedAt = s.OriginalUnlockedAt,
+                    WasFeatured = s.IsFeatured,
+                    AwardedBy = s.AwardedBy,
+                    IsRestored = s.IsRestored,
+                    RestoredAt = s.RestoredAt,
+                    RestoredBy = s.RestoredBy
+                });
+            }
+
+            return result;
+        }
+
+        public async Task<bool> RestoreSnapshotBadgeAsync(int snapshotId, string restoredByAdmin)
+        {
+            var snapshot = await _db.UserBadgeSnapshots
+                .Include(s => s.Badge)
+                .FirstOrDefaultAsync(s => s.Id == snapshotId);
+
+            if (snapshot == null || snapshot.IsRestored)
+                return false;
+
+            // Cegah duplikasi badge pada user
+            var alreadyExists = await _db.UserBadges.AnyAsync(ub => ub.UserId == snapshot.UserId && ub.BadgeId == snapshot.BadgeId);
+            if (!alreadyExists)
+            {
+                var userBadge = new UserBadge
+                {
+                    UserId = snapshot.UserId,
+                    BadgeId = snapshot.BadgeId,
+                    UnlockedAt = DateTime.UtcNow,
+                    IsFeatured = snapshot.IsFeatured,
+                    AwardedBy = $"Dipulihkan oleh {restoredByAdmin} (Snapshot {snapshot.SnapshotBatchId})"
+                };
+                _db.UserBadges.Add(userBadge);
+            }
+
+            snapshot.IsRestored = true;
+            snapshot.RestoredAt = DateTime.UtcNow;
+            snapshot.RestoredBy = restoredByAdmin;
+
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<int> RestoreAllSnapshotBadgesAsync(string? userId, bool onlyIfConditionMet, string restoredByAdmin)
+        {
+            var candidates = await GetPendingBadgeSnapshotsAsync(userId: userId);
+            var pending = candidates.Where(c => !c.IsRestored).ToList();
+
+            if (onlyIfConditionMet)
+            {
+                pending = pending.Where(c => c.IsConditionCurrentlyMet).ToList();
+            }
+
+            int restoredCount = 0;
+            foreach (var item in pending)
+            {
+                var ok = await RestoreSnapshotBadgeAsync(item.SnapshotId, restoredByAdmin);
+                if (ok) restoredCount++;
+            }
+
+            return restoredCount;
+        }
+
+        public async Task<bool> DismissSnapshotBadgeAsync(int snapshotId)
+        {
+            var snapshot = await _db.UserBadgeSnapshots.FindAsync(snapshotId);
+            if (snapshot == null)
+                return false;
+
+            _db.UserBadgeSnapshots.Remove(snapshot);
+            await _db.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<int> GetPendingBadgeSnapshotsCountAsync()
+        {
+            return await _db.UserBadgeSnapshots.CountAsync(s => !s.IsRestored);
+        }
+
+        private class UserMetricsSnapshot
+        {
+            public int DoneTasks { get; set; }
+            public int TotalTasks { get; set; }
+            public double TotalHours { get; set; }
+            public int Notes { get; set; }
+            public int Attendances { get; set; }
+            public int Timesheets { get; set; }
+            public int Json { get; set; }
+            public int Sql { get; set; }
+            public int Logins { get; set; }
+            public int Logouts { get; set; }
+            public int CheckIns { get; set; }
+            public int Streak { get; set; }
+            public bool ProfileComplete { get; set; }
         }
     }
 }

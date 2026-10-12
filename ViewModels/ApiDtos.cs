@@ -494,15 +494,28 @@ namespace TrackerKerja.ViewModels
 
         [Required(ErrorMessage = "Kode konfirmasi wajib diisi.")]
         public string ConfirmationCode { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Apakah poin dan badge gamifikasi juga di-reset (snapshot disimpan untuk pemulihan)
+        /// </summary>
+        public bool ResetGamification { get; set; } = false;
     }
 
     public class ResetDatabaseResponseDto
     {
         public string Mode { get; set; } = string.Empty;
+        public bool GamificationReset { get; set; }
+        public int BadgesSnapshottedCount { get; set; }
         public List<string> ClearedTables { get; set; } = new();
         public Dictionary<string, int> DeletedCounts { get; set; } = new();
         public string FinalDatabaseSizeFormatted { get; set; } = string.Empty;
         public string Message { get; set; } = string.Empty;
+    }
+
+    public class RestoreSnapshotBadgeRequestDto
+    {
+        public string? UserId { get; set; }
+        public bool OnlyIfConditionMet { get; set; } = true;
     }
 
     public class ApiDocSummaryDto

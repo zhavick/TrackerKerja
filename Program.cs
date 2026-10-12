@@ -851,6 +851,29 @@ using (var scope = app.Services.CreateScope())
             );");
     } catch { }
 
+    try
+    {
+        db.Database.ExecuteSqlRaw(@"
+            CREATE TABLE IF NOT EXISTS UserBadgeSnapshots (
+                Id INTEGER PRIMARY KEY AUTOINCREMENT,
+                SnapshotBatchId TEXT NOT NULL,
+                ResetMode TEXT NOT NULL DEFAULT 'transactional',
+                UserId TEXT NOT NULL,
+                BadgeId INTEGER NOT NULL,
+                OriginalUnlockedAt TEXT NOT NULL,
+                IsFeatured INTEGER NOT NULL DEFAULT 0,
+                AwardedBy TEXT NULL,
+                SnapshotCreatedAt TEXT NOT NULL,
+                IsRestored INTEGER NOT NULL DEFAULT 0,
+                RestoredAt TEXT NULL,
+                RestoredBy TEXT NULL,
+                FOREIGN KEY (UserId) REFERENCES AspNetUsers(Id) ON DELETE CASCADE,
+                FOREIGN KEY (BadgeId) REFERENCES MasterBadges(Id) ON DELETE CASCADE
+            );
+            CREATE INDEX IF NOT EXISTS IX_UserBadgeSnapshots_User_Badge ON UserBadgeSnapshots (UserId, BadgeId, IsRestored);
+            CREATE INDEX IF NOT EXISTS IX_UserBadgeSnapshots_Batch ON UserBadgeSnapshots (SnapshotBatchId);");
+    } catch { }
+
     try { db.Database.ExecuteSqlRaw("ALTER TABLE JsonHistories ADD COLUMN UserId TEXT NULL;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE SqlHistories ADD COLUMN UserId TEXT NULL;"); } catch { }
 

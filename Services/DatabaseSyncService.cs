@@ -688,7 +688,8 @@ namespace TrackerKerja.Services
                 { "MasterStatuses", await _db.MasterStatuses.CountAsync() },
                 { "MasterMilestones", await _db.MasterMilestones.CountAsync() },
                 { "MasterBadges", await _db.MasterBadges.CountAsync() },
-                { "UserBadges", await _db.UserBadges.CountAsync() }
+                { "UserBadges", await _db.UserBadges.CountAsync() },
+                { "UserBadgeSnapshots", await _db.UserBadgeSnapshots.CountAsync() }
             };
 
             return new SyncPayloadDto

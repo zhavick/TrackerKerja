@@ -1,0 +1,448 @@
+@model TrackerKerja.ViewModels.BadgeRecoveryViewModel
+@{
+    ViewData["Title"] = "Pemulihan Badge Gamifikasi";
+    var activeFilter = Model.StatusFilter ?? "all";
+}
+
+<div class="space-y-6 pb-12 animate-fade-in">
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- 1. BREADCRUMB & HEADER BANNER                                           -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="flex items-center justify-between flex-wrap gap-3">
+        <nav class="flex items-center gap-2 text-xs text-slate-500 font-medium">
+            <a href="/Configuration" class="hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                <i class="fas fa-cogs"></i> Konfigurasi
+            </a>
+            <i class="fas fa-chevron-right text-[10px] text-slate-400"></i>
+            <a href="/Gamification" class="hover:text-indigo-600 transition-colors flex items-center gap-1.5">
+                <i class="fas fa-gift"></i> Gamifikasi
+            </a>
+            <i class="fas fa-chevron-right text-[10px] text-slate-400"></i>
+            <span class="text-slate-800 font-bold">Pemulihan Badge</span>
+        </nav>
+
+        <div class="flex items-center gap-2">
+            <a href="/Configuration" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition-all shadow-xs">
+                <i class="fas fa-arrow-left"></i> Kembali ke Konfigurasi
+            </a>
+            <a href="/Gamification" class="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-indigo-200 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-bold transition-all shadow-xs">
+                <i class="fas fa-trophy"></i> Halaman Gamifikasi
+            </a>
+        </div>
+    </div>
+
+    <!-- HERO HEADER -->
+    <div class="bg-gradient-to-r from-slate-950 via-indigo-950 to-slate-900 rounded-3xl p-6 md:p-8 text-white shadow-2xl relative overflow-hidden border border-indigo-900/40">
+        <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none"></div>
+        <div class="absolute -left-10 -top-10 w-64 h-64 bg-indigo-500/15 rounded-full blur-3xl pointer-events-none"></div>
+
+        <div class="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div class="space-y-2">
+                <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gradient-to-r from-amber-500/20 to-orange-500/20 border border-amber-500/30 text-amber-300 text-xs font-bold backdrop-blur-md">
+                    <i class="fas fa-history text-amber-400"></i> Pemulihan Snapshot Gamifikasi
+                </div>
+                <h1 class="text-2xl md:text-3xl font-black text-white tracking-tight flex items-center gap-3">
+                    Pemulihan Badge Gamifikasi 🏆
+                </h1>
+                <p class="text-slate-300 text-xs md:text-sm max-w-3xl leading-relaxed">
+                    Kelola dan pulihkan badge yang dicadangkan saat proses <strong>Reset Database</strong>. 
+                    Admin dapat mengembalikan badge kepada pengguna secara selektif per individu atau massal berdasarkan 
+                    <strong>kriteria syarat yang telah dipenuhi pengguna</strong> saat ini.
+                </p>
+            </div>
+
+            <!-- Quick Batch Buttons on Banner -->
+            @if (Model.TotalPendingCount > 0)
+            {
+                <div class="bg-white/10 backdrop-blur-xl border border-white/20 p-4 rounded-2xl flex flex-col gap-2.5 shrink-0 min-w-[260px]">
+                    <span class="text-[11px] font-bold text-amber-300 uppercase tracking-wider block">
+                        <i class="fas fa-bolt mr-1"></i>Aksi Cepat Admin
+                    </span>
+
+                    <form method="post" asp-action="RestoreAllSnapshotBadges" asp-controller="Configuration"
+                          data-confirm="Pulihkan seluruh badge yang saat ini syaratnya telah terpenuhi untuk pengguna yang dipilih? Poin dan level anggota akan otomatis bertambah."
+                          data-confirm-title="Pemulihan Badge yang Memenuhi Syarat"
+                          data-confirm-btn="<i class='fas fa-check-double mr-1'></i>Ya, Pulihkan Sekarang">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="userId" value="@Model.SelectedUserId" />
+                        <input type="hidden" name="onlyIfConditionMet" value="true" />
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-2 px-3 rounded-xl text-xs shadow-md transition-all cursor-pointer">
+                            <i class="fas fa-check-double"></i>
+                            <span>Pulihkan Badge Memenuhi Syarat (@Model.EligiblePendingCount)</span>
+                        </button>
+                    </form>
+
+                    <form method="post" asp-action="RestoreAllSnapshotBadges" asp-controller="Configuration"
+                          data-confirm="Pulihkan SELURUH @Model.TotalPendingCount badge yang ada di snapshot kepada pengguna (tanpa memeriksa ulang syarat)? Poin dan level anggota akan otomatis bertambah."
+                          data-confirm-title="Pemulihan Seluruh Badge"
+                          data-confirm-btn="<i class='fas fa-sparkles mr-1'></i>Ya, Pulihkan Semua">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="userId" value="@Model.SelectedUserId" />
+                        <input type="hidden" name="onlyIfConditionMet" value="false" />
+                        <button type="submit" class="w-full flex items-center justify-center gap-2 bg-white/15 hover:bg-white/25 text-white font-bold py-2 px-3 rounded-xl text-xs transition-all border border-white/20 cursor-pointer">
+                            <i class="fas fa-sparkles"></i>
+                            <span>Pulihkan Seluruh Badge (@Model.TotalPendingCount)</span>
+                        </button>
+                    </form>
+                </div>
+            }
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- 2. STATISTIC SUMMARY CARDS                                              -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+        <!-- Card 1: Total Pending -->
+        <div class="bg-white rounded-3xl p-5 shadow-xs border border-amber-100 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500">Badge Tertunda</span>
+                <div class="w-8 h-8 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center text-sm font-bold">
+                    <i class="fas fa-hourglass-half"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-800 mt-2">@Model.TotalPendingCount</p>
+            <span class="text-[11px] text-amber-700 font-semibold block mt-0.5">Menunggu konfirmasi admin</span>
+        </div>
+
+        <!-- Card 2: Eligible Now -->
+        <div class="bg-white rounded-3xl p-5 shadow-xs border border-emerald-100 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500">Syarat Terpenuhi</span>
+                <div class="w-8 h-8 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center text-sm font-bold">
+                    <i class="fas fa-check-circle"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-emerald-600 mt-2">@Model.EligiblePendingCount</p>
+            <span class="text-[11px] text-emerald-700 font-semibold block mt-0.5">Siap dipulihkan instan</span>
+        </div>
+
+        <!-- Card 3: Ineligible -->
+        <div class="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500">Syarat Belum Tercapai</span>
+                <div class="w-8 h-8 rounded-xl bg-slate-100 text-slate-600 flex items-center justify-center text-sm font-bold">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-slate-600 mt-2">@Model.IneligiblePendingCount</p>
+            <span class="text-[11px] text-slate-400 font-medium block mt-0.5">Metrik aktivitas belum tembus</span>
+        </div>
+
+        <!-- Card 4: Restored -->
+        <div class="bg-white rounded-3xl p-5 shadow-xs border border-indigo-100 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500">Telah Dipulihkan</span>
+                <div class="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center text-sm font-bold">
+                    <i class="fas fa-award"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-indigo-600 mt-2">@Model.TotalRestoredCount</p>
+            <span class="text-[11px] text-indigo-700 font-semibold block mt-0.5">Aktif di profil pengguna</span>
+        </div>
+
+        <!-- Card 5: Total Points in Pending -->
+        <div class="bg-white rounded-3xl p-5 shadow-xs border border-yellow-100 relative overflow-hidden col-span-2 md:col-span-4 lg:col-span-1">
+            <div class="flex items-center justify-between">
+                <span class="text-xs font-bold text-slate-500">Poin Dicadangkan</span>
+                <div class="w-8 h-8 rounded-xl bg-yellow-50 text-yellow-600 flex items-center justify-center text-sm font-bold">
+                    <i class="fas fa-coins"></i>
+                </div>
+            </div>
+            <p class="text-2xl font-black text-amber-500 mt-2">@Model.TotalPointsInPending.ToString("N0") <span class="text-xs font-bold text-slate-400">PTS</span></p>
+            <span class="text-[11px] text-amber-700 font-semibold block mt-0.5">Total EXP tertahan</span>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- 3. FILTERS & SEARCH CONTROLS                                            -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <div class="bg-white rounded-3xl p-5 shadow-xs border border-slate-100 space-y-4">
+        <form method="get" asp-action="BadgeRecovery" asp-controller="Configuration" class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+            <input type="hidden" name="statusFilter" value="@activeFilter" />
+
+            <div class="flex flex-wrap items-center gap-3 flex-1">
+                <!-- User Filter -->
+                <div class="min-w-[200px]">
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Filter Anggota Tim</label>
+                    <select name="userId" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Semua Anggota Tim (@Model.Users.Count)</option>
+                        @foreach (var u in Model.Users)
+                        {
+                            <option value="@u.Id" selected="@(Model.SelectedUserId == u.Id)">@u.FullName (@u.Email)</option>
+                        }
+                    </select>
+                </div>
+
+                <!-- Batch Snapshot Filter -->
+                <div class="min-w-[180px]">
+                    <label class="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1">Batch Reset Snapshot</label>
+                    <select name="batchId" onchange="this.form.submit()" class="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500">
+                        <option value="">Semua Batch Snapshot (@Model.BatchIds.Count)</option>
+                        @foreach (var b in Model.BatchIds)
+                        {
+                            <option value="@b" selected="@(Model.SelectedBatchId == b)">@b</option>
+                        }
+                    </select>
+                </div>
+
+                @if (!string.IsNullOrEmpty(Model.SelectedUserId) || !string.IsNullOrEmpty(Model.SelectedBatchId) || activeFilter != "all")
+                {
+                    <div class="pt-5">
+                        <a href="/Configuration/BadgeRecovery" class="px-3 py-2 rounded-xl text-xs font-bold text-rose-600 hover:bg-rose-50 border border-rose-200 transition-colors inline-flex items-center gap-1.5">
+                            <i class="fas fa-times"></i> Reset Filter
+                        </a>
+                    </div>
+                }
+            </div>
+
+            <!-- Status Tabs -->
+            <div class="flex items-center bg-slate-100 p-1 rounded-2xl overflow-x-auto">
+                <a href="/Configuration/BadgeRecovery?userId=@Model.SelectedUserId&batchId=@Model.SelectedBatchId&statusFilter=all"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap @(activeFilter == "all" ? "bg-white text-indigo-600 shadow-xs" : "text-slate-600 hover:text-slate-900")">
+                    Semua (@Model.Snapshots.Count)
+                </a>
+                <a href="/Configuration/BadgeRecovery?userId=@Model.SelectedUserId&batchId=@Model.SelectedBatchId&statusFilter=eligible"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap flex items-center gap-1 @(activeFilter == "eligible" ? "bg-emerald-600 text-white shadow-xs" : "text-emerald-700 hover:text-emerald-900")">
+                    <i class="fas fa-check-circle text-[10px]"></i> Memenuhi Syarat (@Model.EligiblePendingCount)
+                </a>
+                <a href="/Configuration/BadgeRecovery?userId=@Model.SelectedUserId&batchId=@Model.SelectedBatchId&statusFilter=ineligible"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap @(activeFilter == "ineligible" ? "bg-slate-700 text-white shadow-xs" : "text-slate-600 hover:text-slate-900")">
+                    Belum Memenuhi (@Model.IneligiblePendingCount)
+                </a>
+                <a href="/Configuration/BadgeRecovery?userId=@Model.SelectedUserId&batchId=@Model.SelectedBatchId&statusFilter=restored"
+                   class="px-3 py-1.5 rounded-xl text-xs font-bold transition-all whitespace-nowrap @(activeFilter == "restored" ? "bg-indigo-600 text-white shadow-xs" : "text-indigo-700 hover:text-indigo-900")">
+                    Dipulihkan (@Model.TotalRestoredCount)
+                </a>
+            </div>
+        </form>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    <!-- 4. SNAPSHOT BADGE LISTINGS (GROUPED BY USER)                           -->
+    <!-- ═══════════════════════════════════════════════════════════════════════ -->
+    @if (!Model.Snapshots.Any())
+    {
+        <div class="bg-white rounded-3xl p-12 text-center shadow-xs border border-slate-100">
+            <div class="w-16 h-16 rounded-3xl bg-slate-50 text-slate-400 flex items-center justify-center text-2xl mx-auto mb-4 border border-slate-100">
+                <i class="fas fa-medal"></i>
+            </div>
+            <h3 class="text-base font-bold text-slate-800">Tidak Ada Data Snapshot Badge</h3>
+            <p class="text-xs text-slate-500 max-w-md mx-auto mt-1 leading-relaxed">
+                @if (activeFilter != "all" || !string.IsNullOrEmpty(Model.SelectedUserId))
+                {
+                    <span>Tidak ada catatan badge yang sesuai dengan kriteria filter yang Anda pilih. Silakan sesuaikan atau bersihkan filter.</span>
+                }
+                else
+                {
+                    <span>Belum ada snapshot badge yang dicadangkan. Snapshot akan otomatis terisi saat admin melakukan Reset Database dengan mencentang opsi <em>'Reset Poin &amp; Badge Gamifikasi'</em>.</span>
+                }
+            </p>
+            @if (activeFilter != "all" || !string.IsNullOrEmpty(Model.SelectedUserId))
+            {
+                <a href="/Configuration/BadgeRecovery" class="inline-flex items-center gap-2 mt-4 px-4 py-2 rounded-xl bg-indigo-50 text-indigo-600 text-xs font-bold hover:bg-indigo-100 transition-colors">
+                    <i class="fas fa-redo"></i> Tampilkan Semua Snapshot
+                </a>
+            }
+        </div>
+    }
+    else
+    {
+        var groupedByUser = Model.Snapshots.GroupBy(s => s.UserId).ToList();
+
+        <div class="space-y-6">
+            @foreach (var userGroup in groupedByUser)
+            {
+                var first = userGroup.First();
+                var userEligibleCount = userGroup.Count(s => !s.IsRestored && s.IsConditionCurrentlyMet);
+                var userPendingCount = userGroup.Count(s => !s.IsRestored);
+                var userRestoredCount = userGroup.Count(s => s.IsRestored);
+
+                <div class="bg-white rounded-3xl shadow-xs border border-slate-200/80 overflow-hidden transition-all hover:shadow-md">
+                    <!-- User Header Bar -->
+                    <div class="p-5 bg-gradient-to-r from-slate-50 via-white to-slate-50/50 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div class="flex items-center gap-3.5">
+                            @if (!string.IsNullOrEmpty(first.UserAvatar))
+                            {
+                                <img src="@first.UserAvatar" alt="@first.UserName" class="w-11 h-11 rounded-2xl object-cover border border-slate-200 shadow-xs" />
+                            }
+                            else
+                            {
+                                <div class="w-11 h-11 rounded-2xl flex items-center justify-center text-white font-black text-sm shadow-xs"
+                                     style="background: @first.UserAvatarColor">
+                                    @first.UserInitial
+                                </div>
+                            }
+
+                            <div>
+                                <div class="flex items-center gap-2">
+                                    <h3 class="text-sm font-bold text-slate-800">@first.UserName</h3>
+                                    <span class="px-2 py-0.5 rounded-full text-[10px] font-bold bg-slate-100 text-slate-600">@first.UserJobTitle</span>
+                                </div>
+                                <p class="text-xs text-slate-400 mt-0.5 font-medium">@first.UserEmail</p>
+                            </div>
+                        </div>
+
+                        <!-- User Batch Recovery Buttons -->
+                        <div class="flex items-center gap-2 flex-wrap">
+                            @if (userEligibleCount > 0)
+                            {
+                                <form method="post" asp-action="RestoreAllSnapshotBadges" asp-controller="Configuration"
+                                      data-confirm="Kembalikan @userEligibleCount badge yang memenuhi syarat untuk @first.UserName?"
+                                      data-confirm-title="Pulihkan Badge Anggota"
+                                      data-confirm-btn="<i class='fas fa-check mr-1'></i>Pulihkan (@userEligibleCount Badge)">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="userId" value="@first.UserId" />
+                                    <input type="hidden" name="onlyIfConditionMet" value="true" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 text-emerald-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs">
+                                        <i class="fas fa-check-circle"></i>
+                                        <span>Pulihkan Yang Memenuhi (@userEligibleCount)</span>
+                                    </button>
+                                </form>
+                            }
+
+                            @if (userPendingCount > 0)
+                            {
+                                <form method="post" asp-action="RestoreAllSnapshotBadges" asp-controller="Configuration"
+                                      data-confirm="Kembalikan SELURUH @userPendingCount badge di snapshot untuk @first.UserName (termasuk yang belum mencapai threshold)?"
+                                      data-confirm-title="Pulihkan Semua Badge Anggota"
+                                      data-confirm-btn="<i class='fas fa-sparkles mr-1'></i>Kembalikan Semua">
+                                    @Html.AntiForgeryToken()
+                                    <input type="hidden" name="userId" value="@first.UserId" />
+                                    <input type="hidden" name="onlyIfConditionMet" value="false" />
+                                    <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                    <button type="submit" class="px-3 py-1.5 rounded-xl bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 text-indigo-700 text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 shadow-xs">
+                                        <i class="fas fa-sparkles"></i>
+                                        <span>Kembalikan Semua (@userPendingCount)</span>
+                                    </button>
+                                </form>
+                            }
+
+                            <a href="/Member/Details/@first.UserId" target="_blank" class="px-2.5 py-1.5 rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 text-xs font-semibold transition-colors" title="Buka Detail Profil Anggota">
+                                <i class="fas fa-external-link-alt"></i> Profil
+                            </a>
+                        </div>
+                    </div>
+
+                    <!-- Badges Grid for this user -->
+                    <div class="p-5 grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+                        @foreach (var s in userGroup)
+                        {
+                            <div class="p-4 rounded-2xl border transition-all @(s.IsRestored ? "bg-slate-50/60 border-slate-200 opacity-80" : s.IsConditionCurrentlyMet ? "bg-emerald-50/30 border-emerald-200 hover:shadow-sm" : "bg-white border-slate-200 hover:shadow-sm") flex flex-col justify-between">
+                                <div class="space-y-3">
+                                    <!-- Badge Header & Icon -->
+                                    <div class="flex items-start justify-between gap-3">
+                                        <div class="flex items-center gap-3">
+                                            <div class="w-12 h-12 rounded-2xl flex items-center justify-center text-white text-xl shadow-sm shrink-0"
+                                                 style="background: @s.BadgeColor">
+                                                <i class="@s.BadgeIcon"></i>
+                                            </div>
+                                            <div>
+                                                <div class="flex items-center gap-1.5 flex-wrap">
+                                                    <h4 class="text-sm font-bold text-slate-800">@s.BadgeName</h4>
+                                                    @if (s.WasFeatured)
+                                                    {
+                                                        <span class="px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200" title="Sebelumnya Disematkan / Featured">
+                                                            ★ PINNED
+                                                        </span>
+                                                    }
+                                                </div>
+                                                <p class="text-[11px] text-slate-500 font-medium line-clamp-1 mt-0.5">@s.BadgeDescription</p>
+                                            </div>
+                                        </div>
+
+                                        <!-- Points Pill -->
+                                        <span class="px-2.5 py-1 rounded-xl text-xs font-black bg-amber-50 text-amber-700 border border-amber-200 shrink-0">
+                                            +@s.BadgePoints pts
+                                        </span>
+                                    </div>
+
+                                    <!-- Requirement Met Status Pill -->
+                                    <div class="text-[11px] p-2.5 rounded-xl border @(s.IsConditionCurrentlyMet ? "bg-emerald-50/80 border-emerald-200 text-emerald-800" : "bg-slate-50 border-slate-200 text-slate-600")">
+                                        <div class="flex items-center justify-between font-bold mb-0.5">
+                                            <span class="flex items-center gap-1">
+                                                @if (s.IsConditionCurrentlyMet)
+                                                {
+                                                    <i class="fas fa-check-circle text-emerald-600"></i>
+                                                    <span>Syarat Terpenuhi</span>
+                                                }
+                                                else
+                                                {
+                                                    <i class="fas fa-hourglass-start text-amber-500"></i>
+                                                    <span>Syarat Belum Tercapai</span>
+                                                }
+                                            </span>
+                                            <span class="text-[10px] text-slate-400 font-mono">@s.BadgeCategory</span>
+                                        </div>
+                                        <p class="text-[11px] text-slate-600 font-medium">@s.ConditionSummary</p>
+                                    </div>
+
+                                    <!-- Metadata Snapshot -->
+                                    <div class="text-[10px] text-slate-400 space-y-0.5 pt-1 border-t border-slate-100">
+                                        <div class="flex justify-between">
+                                            <span>Snapshot Batch:</span>
+                                            <span class="font-mono text-slate-600 font-bold">@s.BatchId</span>
+                                        </div>
+                                        <div class="flex justify-between">
+                                            <span>Diraih Awal:</span>
+                                            <span class="text-slate-600">@s.OriginalUnlockedAt.ToString("dd MMM yyyy HH:mm")</span>
+                                        </div>
+                                        @if (!string.IsNullOrEmpty(s.AwardedBy))
+                                        {
+                                            <div class="flex justify-between">
+                                                <span>Diberikan Oleh:</span>
+                                                <span class="text-slate-600">@s.AwardedBy</span>
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+
+                                <!-- Action Buttons -->
+                                <div class="pt-3 mt-3 border-t border-slate-100 flex items-center justify-between gap-2">
+                                    @if (s.IsRestored)
+                                    {
+                                        <div class="w-full py-1.5 px-3 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs font-bold flex items-center justify-between">
+                                            <span class="flex items-center gap-1.5">
+                                                <i class="fas fa-check-double text-emerald-600"></i> Telah Dipulihkan
+                                            </span>
+                                            <span class="text-[10px] text-emerald-600 font-medium">
+                                                @s.RestoredAt?.ToString("dd/MM/yy HH:mm")
+                                            </span>
+                                        </div>
+                                    }
+                                    else
+                                    {
+                                        <form method="post" asp-action="RestoreSnapshotBadge" asp-controller="Configuration" class="flex-1">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="snapshotId" value="@s.SnapshotId" />
+                                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                            <button type="submit" class="w-full flex items-center justify-center gap-1.5 @(s.IsConditionCurrentlyMet ? "bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs" : "bg-indigo-600 hover:bg-indigo-700 text-white shadow-xs") py-1.5 px-3 rounded-xl text-xs font-bold transition-all cursor-pointer">
+                                                <i class="fas fa-award"></i>
+                                                <span>Kembalikan Badge</span>
+                                            </button>
+                                        </form>
+
+                                        <form method="post" asp-action="DismissSnapshotBadge" asp-controller="Configuration"
+                                              data-confirm="Abaikan dan hapus snapshot badge '@s.BadgeName' untuk @first.UserName?"
+                                              data-confirm-title="Abaikan Snapshot"
+                                              data-confirm-btn="<i class='fas fa-trash-alt mr-1'></i>Ya, Hapus">
+                                            @Html.AntiForgeryToken()
+                                            <input type="hidden" name="snapshotId" value="@s.SnapshotId" />
+                                            <input type="hidden" name="returnUrl" value="@Context.Request.Path@Context.Request.QueryString" />
+                                            <button type="submit" class="p-1.5 rounded-xl text-slate-400 hover:text-rose-600 hover:bg-rose-50 border border-transparent hover:border-rose-200 transition-all cursor-pointer" title="Hapus / Abaikan Catatan Snapshot Ini">
+                                                <i class="fas fa-trash-alt text-xs"></i>
+                                            </button>
+                                        </form>
+                                    }
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+        </div>
+    }
+
+</div>

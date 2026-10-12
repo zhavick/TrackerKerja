@@ -31,6 +31,7 @@ namespace TrackerKerja.Data
         public DbSet<RewardItem> RewardItems { get; set; }
         public DbSet<RewardClaim> RewardClaims { get; set; }
         public DbSet<Announcement> Announcements { get; set; }
+        public DbSet<UserBadgeSnapshot> UserBadgeSnapshots { get; set; }
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
@@ -195,6 +196,23 @@ namespace TrackerKerja.Data
                  .WithMany(mb => mb.UserBadges)
                  .HasForeignKey(ub => ub.BadgeId)
                  .OnDelete(DeleteBehavior.Cascade);
+            });
+
+            // UserBadgeSnapshot Configuration
+            modelBuilder.Entity<UserBadgeSnapshot>(b =>
+            {
+                b.HasOne(s => s.User)
+                 .WithMany()
+                 .HasForeignKey(s => s.UserId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(s => s.Badge)
+                 .WithMany()
+                 .HasForeignKey(s => s.BadgeId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasIndex(s => new { s.UserId, s.BadgeId, s.IsRestored });
+                b.HasIndex(s => s.SnapshotBatchId);
             });
 
             // AttendanceRecord Configuration

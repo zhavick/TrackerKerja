@@ -139,5 +139,71 @@ namespace TrackerKerja.Controllers.Api
 
             return Ok(new { success = true, message = "Badge penghargaan berhasil diberikan kepada anggota!" });
         }
+
+        /// <summary>
+        /// Mengambil daftar snapshot badge gamifikasi yang tersimpan pasca reset database (Hanya Admin).
+        /// </summary>
+        [HttpGet("snapshots")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> GetSnapshots([FromQuery] string? userId = null, [FromQuery] string? batchId = null)
+        {
+            var snapshots = await _gamificationService.GetPendingBadgeSnapshotsAsync(userId, batchId);
+            return Ok(new
+            {
+                success = true,
+                total = snapshots.Count,
+                data = snapshots
+            });
+        }
+
+        /// <summary>
+        /// Memulihkan badge tunggal dari snapshot kepada pengguna (Hanya Admin).
+        /// </summary>
+        [HttpPost("snapshots/{id}/restore")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RestoreSnapshot(int id)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var adminName = currentUser?.FullName ?? "Admin";
+
+            var success = await _gamificationService.RestoreSnapshotBadgeAsync(id, adminName);
+            if (!success)
+                return BadRequest(new { success = false, message = "Gagal memulihkan badge atau badge telah dipulihkan sebelumnya." });
+
+            return Ok(new { success = true, message = "Badge berhasil dipulihkan kepada pengguna!" });
+        }
+
+        /// <summary>
+        /// Memulihkan seluruh badge dari snapshot secara massal (Hanya Admin).
+        /// </summary>
+        [HttpPost("snapshots/restore-all")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> RestoreAllSnapshots([FromBody] RestoreSnapshotBadgeRequestDto dto)
+        {
+            var currentUser = await _userManager.GetUserAsync(User);
+            var adminName = currentUser?.FullName ?? "Admin";
+
+            var count = await _gamificationService.RestoreAllSnapshotBadgesAsync(dto.UserId, dto.OnlyIfConditionMet, adminName);
+            return Ok(new
+            {
+                success = true,
+                restoredCount = count,
+                message = $"Sebanyak {count} badge berhasil dipulihkan kepada pengguna!"
+            });
+        }
+
+        /// <summary>
+        /// Menghapus/mengabaikan catatan snapshot badge tertentu (Hanya Admin).
+        /// </summary>
+        [HttpDelete("snapshots/{id}")]
+        [Authorize(Roles = "Admin")]
+        public async Task<IActionResult> DismissSnapshot(int id)
+        {
+            var success = await _gamificationService.DismissSnapshotBadgeAsync(id);
+            if (!success)
+                return NotFound(new { success = false, message = "Catatan snapshot tidak ditemukan." });
+
+            return Ok(new { success = true, message = "Catatan snapshot berhasil dihapus." });
+        }
     }
 }

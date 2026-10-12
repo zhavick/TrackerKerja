@@ -18,5 +18,13 @@ namespace TrackerKerja.Services
         Task<RewardClaimResultDto> ClaimRewardAsync(string userId, int rewardItemId, string? userNotes);
         Task<List<RewardItem>> GetActiveRewardsAsync();
         Task<List<RewardClaim>> GetUserClaimsAsync(string userId);
+
+        // Reset Database & Snapshot Recovery Methods
+        Task<GamificationResetResultDto> ResetGamificationDataAsync(string mode, string initiatedBy);
+        Task<List<BadgeSnapshotRecoveryDto>> GetPendingBadgeSnapshotsAsync(string? userId = null, string? batchId = null);
+        Task<bool> RestoreSnapshotBadgeAsync(int snapshotId, string restoredByAdmin);
+        Task<int> RestoreAllSnapshotBadgesAsync(string? userId, bool onlyIfConditionMet, string restoredByAdmin);
+        Task<bool> DismissSnapshotBadgeAsync(int snapshotId);
+        Task<int> GetPendingBadgeSnapshotsCountAsync();
     }
 }

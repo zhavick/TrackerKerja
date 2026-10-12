@@ -19,6 +19,7 @@ namespace TrackerKerja.Controllers
         private readonly Services.IDatabaseExportService _exportService;
         private readonly Services.IDatabaseSyncService _syncService;
         private readonly Services.IEmailService _emailService;
+        private readonly Services.IGamificationService _gamificationService;
 
         public ConfigurationController(
             AppDbContext db,
@@ -27,7 +28,8 @@ namespace TrackerKerja.Controllers
             UserManager<AppUser> userManager,
             Services.IDatabaseExportService exportService,
             Services.IDatabaseSyncService syncService,
-            Services.IEmailService emailService)
+            Services.IEmailService emailService,
+            Services.IGamificationService gamificationService)
         {
             _db = db;
             _config = config;
@@ -36,11 +38,15 @@ namespace TrackerKerja.Controllers
             _exportService = exportService;
             _syncService = syncService;
             _emailService = emailService;
+            _gamificationService = gamificationService;
         }
 
         public async Task<IActionResult> Index()
         {
             ViewData["Title"] = "Konfigurasi Sistem & Database";
+
+            // 0. Gamification Pending Badge Snapshots
+            ViewBag.PendingBadgeSnapshotsCount = await _gamificationService.GetPendingBadgeSnapshotsCountAsync();
 
             // 1. Global Base URL
             var setting = await _db.SystemSettings.FirstOrDefaultAsync(s => s.Key == "GlobalBaseUrl");
@@ -262,12 +268,18 @@ namespace TrackerKerja.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
-        public async Task<IActionResult> ResetDatabase(string mode, string confirmationCode)
+        public async Task<IActionResult> ResetDatabase(string mode, string confirmationCode, bool resetGamification = false)
         {
             if (!string.Equals(confirmationCode, "RESET-CONFIRM", StringComparison.OrdinalIgnoreCase))
             {
                 TempData["Error"] = "Kode konfirmasi salah! Ketikkan 'RESET-CONFIRM' dengan tepat untuk menyetujui reset data.";
                 return RedirectToAction(nameof(Index));
+            }
+
+            GamificationResetResultDto? gamResult = null;
+            if (resetGamification)
+            {
+                gamResult = await _gamificationService.ResetGamificationDataAsync(mode, User.Identity?.Name ?? "Admin");
             }
 
             if (string.Equals(mode, "factory", StringComparison.OrdinalIgnoreCase))
@@ -294,7 +306,10 @@ namespace TrackerKerja.Controllers
                 }
 
                 await _db.Database.ExecuteSqlRawAsync("VACUUM;");
-                TempData["Success"] = "Factory reset berhasil! Seluruh data transaksi, catatan, dan tugas telah dibersihkan.";
+                var gamInfo = gamResult != null 
+                    ? $" Poin & badge gamifikasi juga telah di-reset ({gamResult.BadgesBackedUpCount} badge dicadangkan ke snapshot '{gamResult.BatchId}' untuk pemulihan)." 
+                    : "";
+                TempData["Success"] = $"Factory reset berhasil! Seluruh data transaksi, catatan, dan tugas telah dibersihkan.{gamInfo}";
             }
             else
             {
@@ -305,10 +320,124 @@ namespace TrackerKerja.Controllers
 
                 await _db.SaveChangesAsync();
                 await _db.Database.ExecuteSqlRawAsync("VACUUM;");
-                TempData["Success"] = "Reset data transaksi (Sessions, Audit Logs, JSON History, Import Logs) berhasil!";
+                var gamInfo = gamResult != null 
+                    ? $" Poin & badge gamifikasi juga telah di-reset ({gamResult.BadgesBackedUpCount} badge dicadangkan ke snapshot '{gamResult.BatchId}' untuk pemulihan)." 
+                    : "";
+                TempData["Success"] = $"Reset data transaksi (Sessions, Audit Logs, JSON History, Import Logs) berhasil!{gamInfo}";
             }
 
             return RedirectToAction(nameof(Index));
+        }
+
+        // ── PEMULIHAN BADGE GAMIFIKASI PASCA RESET ───────────────
+        [HttpGet]
+        public async Task<IActionResult> BadgeRecovery(string? userId, string? batchId, string? statusFilter)
+        {
+            ViewData["Title"] = "Pemulihan Badge Gamifikasi";
+
+            var snapshots = await _gamificationService.GetPendingBadgeSnapshotsAsync(userId, batchId);
+
+            var allUsers = await _db.Users.OrderBy(u => u.FullName).ToListAsync();
+            var allBatches = await _db.UserBadgeSnapshots
+                .Select(s => s.SnapshotBatchId)
+                .Distinct()
+                .OrderByDescending(b => b)
+                .ToListAsync();
+
+            var filter = string.IsNullOrWhiteSpace(statusFilter) ? "all" : statusFilter.ToLowerInvariant();
+            var filteredSnapshots = snapshots.AsEnumerable();
+
+            if (filter == "eligible")
+            {
+                filteredSnapshots = filteredSnapshots.Where(s => !s.IsRestored && s.IsConditionCurrentlyMet);
+            }
+            else if (filter == "ineligible")
+            {
+                filteredSnapshots = filteredSnapshots.Where(s => !s.IsRestored && !s.IsConditionCurrentlyMet);
+            }
+            else if (filter == "restored")
+            {
+                filteredSnapshots = filteredSnapshots.Where(s => s.IsRestored);
+            }
+            else
+            {
+                filteredSnapshots = filteredSnapshots.OrderBy(s => s.IsRestored).ThenByDescending(s => s.IsConditionCurrentlyMet);
+            }
+
+            var model = new BadgeRecoveryViewModel
+            {
+                Snapshots = filteredSnapshots.ToList(),
+                Users = allUsers,
+                BatchIds = allBatches,
+                SelectedUserId = userId,
+                SelectedBatchId = batchId,
+                StatusFilter = filter,
+                TotalPendingCount = snapshots.Count(s => !s.IsRestored),
+                EligiblePendingCount = snapshots.Count(s => !s.IsRestored && s.IsConditionCurrentlyMet),
+                IneligiblePendingCount = snapshots.Count(s => !s.IsRestored && !s.IsConditionCurrentlyMet),
+                TotalRestoredCount = snapshots.Count(s => s.IsRestored),
+                TotalPointsInPending = snapshots.Where(s => !s.IsRestored).Sum(s => s.BadgePoints)
+            };
+
+            return View(model);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RestoreSnapshotBadge(int snapshotId, string? returnUrl)
+        {
+            var adminName = User.Identity?.Name ?? "Admin";
+            var success = await _gamificationService.RestoreSnapshotBadgeAsync(snapshotId, adminName);
+
+            if (success)
+            {
+                TempData["Success"] = "Badge berhasil dipulihkan kepada pengguna! Poin dan level gamifikasi pengguna telah bertambah secara otomatis.";
+            }
+            else
+            {
+                TempData["Error"] = "Gagal memulihkan badge atau badge telah dipulihkan sebelumnya.";
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl)) return Redirect(returnUrl);
+            return RedirectToAction(nameof(BadgeRecovery));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> RestoreAllSnapshotBadges(string? userId, bool onlyIfConditionMet = true, string? returnUrl = null)
+        {
+            var adminName = User.Identity?.Name ?? "Admin";
+            var count = await _gamificationService.RestoreAllSnapshotBadgesAsync(userId, onlyIfConditionMet, adminName);
+
+            if (count > 0)
+            {
+                TempData["Success"] = $"Sebanyak {count} badge berhasil dipulihkan secara massal! Poin pengguna telah diperbarui.";
+            }
+            else
+            {
+                TempData["Info"] = "Tidak ada badge yang dipulihkan (mungkin tidak ada badge yang memenuhi kriteria pilihan).";
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl)) return Redirect(returnUrl);
+            return RedirectToAction(nameof(BadgeRecovery));
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
+        public async Task<IActionResult> DismissSnapshotBadge(int snapshotId, string? returnUrl)
+        {
+            var success = await _gamificationService.DismissSnapshotBadgeAsync(snapshotId);
+            if (success)
+            {
+                TempData["Success"] = "Catatan snapshot badge telah dihapus/diabaikan.";
+            }
+            else
+            {
+                TempData["Error"] = "Catatan snapshot tidak ditemukan.";
+            }
+
+            if (!string.IsNullOrEmpty(returnUrl)) return Redirect(returnUrl);
+            return RedirectToAction(nameof(BadgeRecovery));
         }
 
         // ── EXPORT DATABASE FILE (.DB) ──────────────────────────

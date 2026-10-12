@@ -422,4 +422,70 @@ namespace TrackerKerja.ViewModels
         public string? DueDate { get; set; }
         public string? Description { get; set; }
     }
+
+    public class GamificationResetResultDto
+    {
+        public bool Success { get; set; }
+        public string BatchId { get; set; } = string.Empty;
+        public int BadgesBackedUpCount { get; set; }
+        public int CheckInsClearedCount { get; set; }
+        public int ClaimsClearedCount { get; set; }
+        public string Message { get; set; } = string.Empty;
+    }
+
+    public class BadgeSnapshotRecoveryDto
+    {
+        public int SnapshotId { get; set; }
+        public string BatchId { get; set; } = string.Empty;
+        public DateTime SnapshotDate { get; set; }
+        public string ResetMode { get; set; } = "transactional";
+
+        public string UserId { get; set; } = string.Empty;
+        public string UserName { get; set; } = string.Empty;
+        public string UserEmail { get; set; } = string.Empty;
+        public string? UserAvatar { get; set; }
+        public string UserAvatarColor { get; set; } = "#6366F1";
+        public string UserInitial { get; set; } = "?";
+        public string UserJobTitle { get; set; } = string.Empty;
+
+        public int BadgeId { get; set; }
+        public string BadgeCode { get; set; } = string.Empty;
+        public string BadgeName { get; set; } = string.Empty;
+        public string BadgeDescription { get; set; } = string.Empty;
+        public string BadgeCategory { get; set; } = "Tasks";
+        public string BadgeIcon { get; set; } = "fa-solid fa-award";
+        public string BadgeColor { get; set; } = "#F59E0B";
+        public int BadgePoints { get; set; } = 100;
+        public BadgeRarity BadgeRarity { get; set; } = BadgeRarity.Common;
+        public string RarityName => BadgeRarity.ToString();
+
+        public BadgeTriggerType TriggerType { get; set; }
+        public int TriggerThreshold { get; set; }
+        public double CurrentMetricValue { get; set; }
+        public bool IsConditionCurrentlyMet { get; set; }
+        public string ConditionSummary { get; set; } = string.Empty;
+
+        public DateTime OriginalUnlockedAt { get; set; }
+        public bool WasFeatured { get; set; }
+        public string? AwardedBy { get; set; }
+
+        public bool IsRestored { get; set; }
+        public DateTime? RestoredAt { get; set; }
+        public string? RestoredBy { get; set; }
+    }
+
+    public class BadgeRecoveryViewModel
+    {
+        public List<BadgeSnapshotRecoveryDto> Snapshots { get; set; } = new();
+        public List<AppUser> Users { get; set; } = new();
+        public List<string> BatchIds { get; set; } = new();
+        public string? SelectedUserId { get; set; }
+        public string? SelectedBatchId { get; set; }
+        public string? StatusFilter { get; set; } // "all", "eligible", "ineligible", "restored"
+        public int TotalPendingCount { get; set; }
+        public int EligiblePendingCount { get; set; }
+        public int IneligiblePendingCount { get; set; }
+        public int TotalRestoredCount { get; set; }
+        public int TotalPointsInPending { get; set; }
+    }
 }

@@ -118,16 +118,22 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<ProjectResponseDto>.Fail("Validasi gagal.", errors));
             }
 
+            if (dto.UseBudget && !dto.Deadline.HasValue)
+            {
+                return BadRequest(ApiResponse<ProjectResponseDto>.Fail("Validasi gagal.", new List<string> { "Masa tenggat waktu (Deadline) wajib diisi jika proyek menggunakan anggaran." }));
+            }
+
             var project = new Project
             {
                 Name = dto.Name.Trim(),
                 Description = dto.Description?.Trim(),
                 Color = string.IsNullOrWhiteSpace(dto.Color) ? "#6366F1" : dto.Color.Trim(),
+                UseBudget = dto.UseBudget,
                 Deadline = dto.Deadline,
                 Status = dto.Status,
                 ClientName = dto.ClientName?.Trim(),
-                Budget = dto.Budget,
-                ActualCost = dto.ActualCost,
+                Budget = dto.UseBudget ? dto.Budget : null,
+                ActualCost = dto.UseBudget ? dto.ActualCost : null,
                 ProjectManagerId = string.IsNullOrWhiteSpace(dto.ProjectManagerId) ? null : dto.ProjectManagerId.Trim(),
                 Tags = dto.Tags?.Trim(),
                 CompanyId = userCompanyId,
@@ -161,6 +167,11 @@ namespace TrackerKerja.Controllers.Api
                 return BadRequest(ApiResponse<ProjectResponseDto>.Fail("Validasi gagal.", errors));
             }
 
+            if (dto.UseBudget && !dto.Deadline.HasValue)
+            {
+                return BadRequest(ApiResponse<ProjectResponseDto>.Fail("Validasi gagal.", new List<string> { "Masa tenggat waktu (Deadline) wajib diisi jika proyek menggunakan anggaran." }));
+            }
+
             var project = await _db.Projects.FirstOrDefaultAsync(p => p.Id == id);
             if (project == null)
             {
@@ -175,11 +186,12 @@ namespace TrackerKerja.Controllers.Api
             project.Name = dto.Name.Trim();
             project.Description = dto.Description?.Trim();
             project.Color = string.IsNullOrWhiteSpace(dto.Color) ? "#6366F1" : dto.Color.Trim();
+            project.UseBudget = dto.UseBudget;
             project.Deadline = dto.Deadline;
             project.Status = dto.Status;
             project.ClientName = dto.ClientName?.Trim();
-            project.Budget = dto.Budget;
-            project.ActualCost = dto.ActualCost;
+            project.Budget = dto.UseBudget ? dto.Budget : null;
+            project.ActualCost = dto.UseBudget ? dto.ActualCost : null;
             project.ProjectManagerId = string.IsNullOrWhiteSpace(dto.ProjectManagerId) ? null : dto.ProjectManagerId.Trim();
             project.Tags = dto.Tags?.Trim();
 
@@ -366,6 +378,7 @@ namespace TrackerKerja.Controllers.Api
                 Color = p.Color,
                 Deadline = p.Deadline,
                 Status = p.Status.ToString(),
+                UseBudget = p.UseBudget,
                 ClientName = p.ClientName,
                 Budget = p.Budget,
                 ActualCost = p.ActualCost,

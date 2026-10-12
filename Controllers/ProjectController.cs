@@ -70,8 +70,8 @@ namespace TrackerKerja.Controllers
             ViewBag.TotalProjects = projects.Count;
             ViewBag.ActiveProjects = projects.Count(p => p.Status == ProjectStatus.Active);
             ViewBag.CompletedProjects = projects.Count(p => p.Status == ProjectStatus.Completed);
-            ViewBag.TotalBudget = projects.Sum(p => p.Budget ?? 0);
-            ViewBag.TotalActualCost = projects.Sum(p => p.ActualCost ?? 0);
+            ViewBag.TotalBudget = projects.Where(p => p.UseBudget).Sum(p => p.Budget ?? 0);
+            ViewBag.TotalActualCost = projects.Where(p => p.UseBudget).Sum(p => p.ActualCost ?? 0);
             ViewBag.TotalRemainingBudget = ViewBag.TotalBudget - ViewBag.TotalActualCost;
             ViewBag.AverageProgress = projects.Any() ? (int)Math.Round(projects.Average(p => p.ProgressPercent)) : 0;
 
@@ -148,6 +148,11 @@ namespace TrackerKerja.Controllers
             ModelState.Remove("ProjectManager");
             ModelState.Remove("Tasks");
 
+            if (model.UseBudget && !model.Deadline.HasValue)
+            {
+                ModelState.AddModelError("Deadline", "Masa tenggat waktu (Deadline) wajib diisi jika proyek menggunakan anggaran.");
+            }
+
             if (!ModelState.IsValid)
             {
                 var managersQuery = _db.Users.AsQueryable();
@@ -181,6 +186,12 @@ namespace TrackerKerja.Controllers
                 model.Tags = model.Tags?.Trim();
                 model.ProjectManagerId = string.IsNullOrWhiteSpace(model.ProjectManagerId) ? null : model.ProjectManagerId.Trim();
                 model.CreatedAt = DateTime.Now;
+
+                if (!model.UseBudget)
+                {
+                    model.Budget = null;
+                    model.ActualCost = null;
+                }
 
                 _db.Projects.Add(model);
                 await _db.SaveChangesAsync();
@@ -265,6 +276,11 @@ namespace TrackerKerja.Controllers
             ModelState.Remove("ProjectManager");
             ModelState.Remove("Tasks");
 
+            if (model.UseBudget && !model.Deadline.HasValue)
+            {
+                ModelState.AddModelError("Deadline", "Masa tenggat waktu (Deadline) wajib diisi jika proyek menggunakan anggaran.");
+            }
+
             if (!ModelState.IsValid)
             {
                 var companyId = existing.CompanyId ?? currentUser?.CompanyId ?? 1;
@@ -291,11 +307,12 @@ namespace TrackerKerja.Controllers
                 existing.Name = model.Name.Trim();
                 existing.Description = model.Description?.Trim();
                 existing.Color = string.IsNullOrWhiteSpace(model.Color) ? "#6366F1" : model.Color.Trim();
+                existing.UseBudget = model.UseBudget;
                 existing.Deadline = model.Deadline;
                 existing.Status = model.Status;
                 existing.ClientName = model.ClientName?.Trim();
-                existing.Budget = model.Budget;
-                existing.ActualCost = model.ActualCost;
+                existing.Budget = model.UseBudget ? model.Budget : null;
+                existing.ActualCost = model.UseBudget ? model.ActualCost : null;
                 existing.ProjectManagerId = string.IsNullOrWhiteSpace(model.ProjectManagerId) ? null : model.ProjectManagerId.Trim();
                 existing.Tags = model.Tags?.Trim();
                 if (isAdmin && model.CompanyId.HasValue)

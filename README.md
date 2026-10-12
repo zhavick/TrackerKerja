@@ -202,18 +202,6 @@ Untuk mengunggah kode terbaru ke GitHub menggunakan Personal Access Token (PAT):
 
 ---
 
-## 🔑 Akun Default Administrator & Login Sistem
-
-| Keterangan | Nilai Kredensial |
-| :--- | :--- |
-| **Email / Username** | `admin@trackerkerja.com` |
-| **Kata Sandi Default** | `Password123!` |
-| **Peran (Role)** | `Admin` (Hak Akses Penuh / Superuser) |
-| **URL Login** | [http://localhost:5000/Account/Login](http://localhost:5000/Account/Login) |
-| **URL Reset Password** | [http://localhost:5000/Account/ForgotPassword](http://localhost:5000/Account/ForgotPassword) |
-
----
-
 ## 📚 Referensi Dokumentasi Lengkap
 
 ### Format Markdown (.md)

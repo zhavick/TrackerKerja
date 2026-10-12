@@ -358,6 +358,8 @@ using (var scope = app.Services.CreateScope())
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN ActualCost REAL NULL;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN ProjectManagerId TEXT NULL;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN Tags TEXT NULL;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("ALTER TABLE Projects ADD COLUMN UseBudget INTEGER NOT NULL DEFAULT 0;"); } catch { }
+    try { db.Database.ExecuteSqlRaw("UPDATE Projects SET UseBudget = 1 WHERE Budget IS NOT NULL AND Budget > 0;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Tasks ADD COLUMN CompanyId INTEGER;"); } catch { }
     try { db.Database.ExecuteSqlRaw("ALTER TABLE Notes ADD COLUMN CompanyId INTEGER;"); } catch { }
 
@@ -1438,6 +1440,12 @@ if (args.Contains("--run-sync-tests"))
 if (args.Contains("--run-restore-tests"))
 {
     var exitCode = await TrackerKerja.Tests.RestoreTestRunner.RunAllTestsAsync();
+    Environment.Exit(exitCode);
+}
+
+if (args.Contains("--run-budget-tests"))
+{
+    var exitCode = await TrackerKerja.Tests.ProjectBudgetTestRunner.RunAllTestsAsync();
     Environment.Exit(exitCode);
 }
 

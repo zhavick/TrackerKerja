@@ -14,11 +14,12 @@ namespace TrackerKerja.ViewModels
         public string Color { get; set; } = "#6366F1";
         public DateTime? Deadline { get; set; }
         public string Status { get; set; } = "Active";
+        public bool UseBudget { get; set; } = false;
         public string? ClientName { get; set; }
         public decimal? Budget { get; set; }
         public decimal? ActualCost { get; set; }
         public decimal RemainingBudget => (Budget ?? 0) - (ActualCost ?? 0);
-        public int BudgetBurnPercent => Budget.HasValue && Budget.Value > 0 ? (int)Math.Min(100, Math.Round(((ActualCost ?? 0) / Budget.Value) * 100)) : 0;
+        public int BudgetBurnPercent => UseBudget && Budget.HasValue && Budget.Value > 0 ? (int)Math.Min(100, Math.Round(((ActualCost ?? 0) / Budget.Value) * 100)) : 0;
         public string? ProjectManagerId { get; set; }
         public string? ProjectManagerName { get; set; }
         public string? Tags { get; set; }
@@ -42,6 +43,7 @@ namespace TrackerKerja.ViewModels
         [MaxLength(7)]
         public string Color { get; set; } = "#6366F1";
 
+        public bool UseBudget { get; set; } = false;
         public DateTime? Deadline { get; set; }
         public ProjectStatus Status { get; set; } = ProjectStatus.Active;
 
@@ -65,6 +67,7 @@ namespace TrackerKerja.ViewModels
         [MaxLength(7)]
         public string Color { get; set; } = "#6366F1";
 
+        public bool UseBudget { get; set; } = false;
         public DateTime? Deadline { get; set; }
         public ProjectStatus Status { get; set; } = ProjectStatus.Active;
 

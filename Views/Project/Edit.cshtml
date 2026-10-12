@@ -138,29 +138,52 @@
                                        class="w-full px-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-800 text-sm transition-all shadow-2xs">
                             </div>
 
-                            <!-- Budget -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                                    <i class="fas fa-coins text-emerald-500 mr-1.5"></i>Anggaran / Budget (Rp)
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">Rp</span>
-                                    <input type="number" name="Budget" value="@(Model.Budget.HasValue ? Model.Budget.Value.ToString("0") : "")" step="100000" min="0"
-                                           placeholder="Contoh: 50000000"
-                                           class="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-sm transition-all font-mono shadow-2xs">
+                            <!-- Use Budget Toggle / Checklist -->
+                            <div class="sm:col-span-2 bg-gradient-to-r from-slate-50 to-amber-50/60 p-4 rounded-2xl border border-slate-200/90 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
+                                <div class="flex items-center gap-3">
+                                    <div class="w-10 h-10 rounded-xl bg-amber-100 text-amber-600 flex items-center justify-center text-lg shrink-0">
+                                        <i class="fas fa-hand-holding-usd"></i>
+                                    </div>
+                                    <div>
+                                        <label for="toggleUseBudgetEdit" class="text-xs font-bold text-slate-800 uppercase tracking-wider cursor-pointer flex items-center gap-2">
+                                            Gunakan Anggaran / Budget Proyek
+                                        </label>
+                                        <p class="text-xs text-slate-500">Jika aktif, informasi keuangan dicatat dan target deadline wajib ditentukan.</p>
+                                    </div>
                                 </div>
+                                <label class="relative inline-flex items-center cursor-pointer shrink-0">
+                                    <input type="checkbox" id="toggleUseBudgetEdit" name="UseBudget" value="true" class="sr-only peer" @(Model.UseBudget ? "checked" : "") onchange="handleUseBudgetToggleEdit()">
+                                    <input type="hidden" name="UseBudget" value="false" />
+                                    <div class="w-13 h-7 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[3px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-amber-600 shadow-inner"></div>
+                                </label>
                             </div>
 
-                            <!-- Actual Cost -->
-                            <div>
-                                <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                                    <i class="fas fa-receipt text-rose-500 mr-1.5"></i>Realisasi Biaya Aktual (Rp)
-                                </label>
-                                <div class="relative">
-                                    <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">Rp</span>
-                                    <input type="number" name="ActualCost" value="@(Model.ActualCost.HasValue ? Model.ActualCost.Value.ToString("0") : "0")" step="100000" min="0"
-                                           placeholder="Contoh: 15000000"
-                                           class="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-800 text-sm transition-all font-mono shadow-2xs">
+                            <!-- Financial Section (Budget & Actual Cost) -->
+                            <div id="financialSectionEdit" class="sm:col-span-2 grid grid-cols-1 sm:grid-cols-2 gap-5 transition-all duration-300 @(Model.UseBudget ? "" : "hidden")">
+                                <!-- Budget -->
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                        <i class="fas fa-coins text-emerald-500 mr-1.5"></i>Anggaran / Budget (Rp)
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">Rp</span>
+                                        <input type="number" name="Budget" value="@(Model.Budget.HasValue ? Model.Budget.Value.ToString("0") : "")" step="100000" min="0"
+                                               placeholder="Contoh: 50000000"
+                                               class="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-emerald-500 text-slate-800 text-sm transition-all font-mono shadow-2xs">
+                                    </div>
+                                </div>
+
+                                <!-- Actual Cost -->
+                                <div>
+                                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                                        <i class="fas fa-receipt text-rose-500 mr-1.5"></i>Realisasi Biaya Aktual (Rp)
+                                    </label>
+                                    <div class="relative">
+                                        <span class="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 font-semibold text-sm">Rp</span>
+                                        <input type="number" name="ActualCost" value="@(Model.ActualCost.HasValue ? Model.ActualCost.Value.ToString("0") : "0")" step="100000" min="0"
+                                               placeholder="Contoh: 15000000"
+                                               class="w-full pl-12 pr-4 py-3 rounded-2xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-rose-500 text-slate-800 text-sm transition-all font-mono shadow-2xs">
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -232,10 +255,14 @@
                         <!-- Deadline -->
                         <div>
                             <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
-                                <i class="fas fa-calendar-alt text-amber-500 mr-1.5"></i>Target Deadline
+                                <i class="fas fa-calendar-alt text-amber-500 mr-1.5"></i>Target Deadline <span id="deadlineRequiredMarkEdit" class="text-red-500 @(Model.UseBudget ? "" : "hidden")">*</span>
                             </label>
-                            <input type="date" name="Deadline" value="@(Model.Deadline?.ToString("yyyy-MM-dd"))"
+                            <input type="date" id="projectDeadlineEdit" name="Deadline" value="@(Model.Deadline?.ToString("yyyy-MM-dd"))"
+                                   @(Model.UseBudget ? "required" : "")
                                    class="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-amber-500 text-slate-700 text-sm shadow-2xs">
+                            <p id="deadlineNoteEdit" class="text-[11px] text-amber-600 mt-1.5 @(Model.UseBudget ? "" : "hidden")">
+                                <i class="fas fa-exclamation-circle mr-1"></i>Wajib diisi jika proyek menggunakan anggaran.
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -308,10 +335,33 @@
 
 @section Scripts {
 <script>
+    function handleUseBudgetToggleEdit() {
+        const toggle = document.getElementById('toggleUseBudgetEdit');
+        const financialSection = document.getElementById('financialSectionEdit');
+        const deadlineInput = document.getElementById('projectDeadlineEdit');
+        const deadlineMark = document.getElementById('deadlineRequiredMarkEdit');
+        const deadlineNote = document.getElementById('deadlineNoteEdit');
+
+        if (!toggle || !financialSection || !deadlineInput) return;
+
+        if (toggle.checked) {
+            financialSection.classList.remove('hidden');
+            deadlineInput.setAttribute('required', 'required');
+            if (deadlineMark) deadlineMark.classList.remove('hidden');
+            if (deadlineNote) deadlineNote.classList.remove('hidden');
+        } else {
+            financialSection.classList.add('hidden');
+            deadlineInput.removeAttribute('required');
+            if (deadlineMark) deadlineMark.classList.add('hidden');
+            if (deadlineNote) deadlineNote.classList.add('hidden');
+        }
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         if (typeof window.initAppSelect2 === 'function') {
             window.initAppSelect2();
         }
+        handleUseBudgetToggleEdit();
     });
 </script>
 }

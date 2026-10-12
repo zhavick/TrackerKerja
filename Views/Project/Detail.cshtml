@@ -100,6 +100,19 @@
                                 <i class="fas fa-user-tie text-indigo-600"></i> PM: @(Model.ProjectManager?.FullName ?? "Belum Ditentukan")
                             </span>
 
+                            @if (Model.UseBudget)
+                            {
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-semibold">
+                                    <i class="fas fa-coins text-emerald-600"></i> Proyek Beranggaran
+                                </span>
+                            }
+                            else
+                            {
+                                <span class="inline-flex items-center gap-1.5 px-3 py-1 bg-slate-100 text-slate-600 border border-slate-200 rounded-xl text-xs font-semibold">
+                                    <i class="fas fa-tag text-slate-400"></i> Tanpa Anggaran
+                                </span>
+                            }
+
                             @if (Model.Deadline.HasValue)
                             {
                                 var daysLeft = (int)Math.Ceiling((Model.Deadline.Value.Date - DateTime.Now.Date).TotalDays);
@@ -143,102 +156,165 @@
     </div>
 
     <!-- Executive Financial & Health KPI Cards -->
-    <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
-        <!-- Anggaran Total -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Anggaran Total</span>
-                <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
-                    <i class="fas fa-coins"></i>
+    @if (Model.UseBudget)
+    {
+        <div class="grid grid-cols-2 lg:grid-cols-6 gap-4">
+            <!-- Anggaran Total -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Anggaran Total</span>
+                    <div class="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs">
+                        <i class="fas fa-coins"></i>
+                    </div>
                 </div>
+                <p class="text-xl font-black text-slate-800 truncate">
+                    @(Model.Budget.HasValue ? $"Rp {Model.Budget.Value:N0}" : "-")
+                </p>
+                <p class="text-xs text-slate-400 mt-1">Estimasi Alokasi Dana</p>
             </div>
-            <p class="text-xl font-black text-slate-800 truncate">
-                @(Model.Budget.HasValue ? $"Rp {Model.Budget.Value:N0}" : "-")
-            </p>
-            <p class="text-xs text-slate-400 mt-1">Estimasi Alokasi Dana</p>
-        </div>
 
-        <!-- Biaya Aktual -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Biaya Aktual</span>
-                <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
-                    <i class="fas fa-receipt"></i>
+            <!-- Biaya Aktual -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Biaya Aktual</span>
+                    <div class="w-8 h-8 rounded-lg bg-rose-50 text-rose-600 flex items-center justify-center text-xs">
+                        <i class="fas fa-receipt"></i>
+                    </div>
                 </div>
+                <p class="text-xl font-black text-rose-600 truncate">
+                    @(Model.ActualCost.HasValue ? $"Rp {Model.ActualCost.Value:N0}" : "Rp 0")
+                </p>
+                <p class="text-xs text-slate-400 mt-1">Realisasi Pengeluaran</p>
             </div>
-            <p class="text-xl font-black text-rose-600 truncate">
-                @(Model.ActualCost.HasValue ? $"Rp {Model.ActualCost.Value:N0}" : "Rp 0")
-            </p>
-            <p class="text-xs text-slate-400 mt-1">Realisasi Pengeluaran</p>
-        </div>
 
-        <!-- Sisa Anggaran -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sisa Anggaran</span>
-                <div class="w-8 h-8 rounded-lg @(Model.IsOverBudget ? "bg-rose-50 text-rose-600" : "bg-indigo-50 text-indigo-600") flex items-center justify-center text-xs">
-                    <i class="fas @(Model.IsOverBudget ? "fa-exclamation-triangle" : "fa-wallet")"></i>
+            <!-- Sisa Anggaran -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Sisa Anggaran</span>
+                    <div class="w-8 h-8 rounded-lg @(Model.IsOverBudget ? "bg-rose-50 text-rose-600" : "bg-indigo-50 text-indigo-600") flex items-center justify-center text-xs">
+                        <i class="fas @(Model.IsOverBudget ? "fa-exclamation-triangle" : "fa-wallet")"></i>
+                    </div>
+                </div>
+                <p class="text-xl font-black @(Model.IsOverBudget ? "text-rose-600" : "text-emerald-600") truncate">
+                    @if (Model.Budget.HasValue)
+                    {
+                        @($"Rp {Model.RemainingBudget:N0}")
+                    }
+                    else
+                    {
+                        <span>-</span>
+                    }
+                </p>
+                <div class="flex items-center gap-1.5 mt-1">
+                    <span class="text-[11px] font-bold @(Model.IsOverBudget ? "text-rose-500" : "text-slate-400")">
+                        @(Model.IsOverBudget ? "Overbudget!" : $"Burn {Model.BudgetBurnPercent}%")
+                    </span>
                 </div>
             </div>
-            <p class="text-xl font-black @(Model.IsOverBudget ? "text-rose-600" : "text-emerald-600") truncate">
-                @if (Model.Budget.HasValue)
-                {
-                    @($"Rp {Model.RemainingBudget:N0}")
-                }
-                else
-                {
-                    <span>-</span>
-                }
-            </p>
-            <div class="flex items-center gap-1.5 mt-1">
-                <span class="text-[11px] font-bold @(Model.IsOverBudget ? "text-rose-500" : "text-slate-400")">
-                    @(Model.IsOverBudget ? "Overbudget!" : $"Burn {Model.BudgetBurnPercent}%")
-                </span>
-            </div>
-        </div>
 
-        <!-- Total Jam Kerja -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Jam Kerja</span>
-                <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
-                    <i class="fas fa-stopwatch"></i>
+            <!-- Total Jam Kerja -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Jam Kerja</span>
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                        <i class="fas fa-stopwatch"></i>
+                    </div>
                 </div>
+                <p class="text-xl font-black text-slate-800">
+                    @Model.TotalWorkHours.ToString("F1") <span class="text-xs text-slate-400 font-normal">jam</span>
+                </p>
+                <p class="text-xs text-slate-400 mt-1">Total Waktu Tercatat</p>
             </div>
-            <p class="text-xl font-black text-slate-800">
-                @Model.TotalWorkHours.ToString("F1") <span class="text-xs text-slate-400 font-normal">jam</span>
-            </p>
-            <p class="text-xs text-slate-400 mt-1">Total Waktu Tercatat</p>
-        </div>
 
-        <!-- Tugas Aktif -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Dalam Proses</span>
-                <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
-                    <i class="fas fa-spinner"></i>
+            <!-- Tugas Aktif -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Dalam Proses</span>
+                    <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                        <i class="fas fa-spinner"></i>
+                    </div>
                 </div>
+                <p class="text-xl font-black text-amber-600">
+                    @Model.InProgressTasks <span class="text-xs text-slate-400 font-normal">/ @(Model.TodoTasks + Model.InProgressTasks) aktif</span>
+                </p>
+                <p class="text-xs text-slate-400 mt-1">@Model.TodoTasks Menunggu Antrean</p>
             </div>
-            <p class="text-xl font-black text-amber-600">
-                @Model.InProgressTasks <span class="text-xs text-slate-400 font-normal">/ @(Model.TodoTasks + Model.InProgressTasks) aktif</span>
-            </p>
-            <p class="text-xs text-slate-400 mt-1">@Model.TodoTasks Menunggu Antrean</p>
-        </div>
 
-        <!-- Tugas Terlambat -->
-        <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
-            <div class="flex items-center justify-between mb-2">
-                <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Overdue</span>
-                <div class="w-8 h-8 rounded-lg @(Model.OverdueTasks > 0 ? "bg-rose-50 text-rose-600" : "bg-slate-50 text-slate-400") flex items-center justify-center text-xs">
-                    <i class="fas fa-clock"></i>
+            <!-- Tugas Terlambat -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Overdue</span>
+                    <div class="w-8 h-8 rounded-lg @(Model.OverdueTasks > 0 ? "bg-rose-50 text-rose-600" : "bg-slate-50 text-slate-400") flex items-center justify-center text-xs">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+                <p class="text-xl font-black @(Model.OverdueTasks > 0 ? "text-rose-600" : "text-slate-800")">
+                    @Model.OverdueTasks <span class="text-xs text-slate-400 font-normal">tugas</span>
+                </p>
+                <p class="text-xs text-slate-400 mt-1">Melebihi Tenggat Waktu</p>
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <!-- Info Anggaran -->
+            <div class="bg-gradient-to-br from-slate-50 to-slate-100/60 p-5 rounded-2xl border border-slate-200/80 shadow-2xs flex flex-col justify-between">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Tipe Proyek</span>
+                    <div class="w-8 h-8 rounded-lg bg-slate-200/60 text-slate-500 flex items-center justify-center text-xs">
+                        <i class="fas fa-tags"></i>
+                    </div>
+                </div>
+                <div>
+                    <p class="text-base font-extrabold text-slate-700">Tanpa Anggaran</p>
+                    <p class="text-xs text-slate-400 mt-0.5">Fokus pada durasi kerja & tugas tim</p>
                 </div>
             </div>
-            <p class="text-xl font-black @(Model.OverdueTasks > 0 ? "text-rose-600" : "text-slate-800")">
-                @Model.OverdueTasks <span class="text-xs text-slate-400 font-normal">tugas</span>
-            </p>
-            <p class="text-xs text-slate-400 mt-1">Melebihi Tenggat Waktu</p>
+
+            <!-- Total Jam Kerja -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Jam Kerja</span>
+                    <div class="w-8 h-8 rounded-lg bg-blue-50 text-blue-600 flex items-center justify-center text-xs">
+                        <i class="fas fa-stopwatch"></i>
+                    </div>
+                </div>
+                <p class="text-xl font-black text-slate-800">
+                    @Model.TotalWorkHours.ToString("F1") <span class="text-xs text-slate-400 font-normal">jam</span>
+                </p>
+                <p class="text-xs text-slate-400 mt-1">Total Waktu Tercatat</p>
+            </div>
+
+            <!-- Tugas Aktif -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Dalam Proses</span>
+                    <div class="w-8 h-8 rounded-lg bg-amber-50 text-amber-600 flex items-center justify-center text-xs">
+                        <i class="fas fa-spinner"></i>
+                    </div>
+                </div>
+                <p class="text-xl font-black text-amber-600">
+                    @Model.InProgressTasks <span class="text-xs text-slate-400 font-normal">/ @(Model.TodoTasks + Model.InProgressTasks) aktif</span>
+                </p>
+                <p class="text-xs text-slate-400 mt-1">@Model.TodoTasks Menunggu Antrean</p>
+            </div>
+
+            <!-- Tugas Terlambat -->
+            <div class="bg-white p-5 rounded-2xl border border-slate-100 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                    <span class="text-xs font-bold text-slate-400 uppercase tracking-wider">Overdue</span>
+                    <div class="w-8 h-8 rounded-lg @(Model.OverdueTasks > 0 ? "bg-rose-50 text-rose-600" : "bg-slate-50 text-slate-400") flex items-center justify-center text-xs">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                </div>
+                <p class="text-xl font-black @(Model.OverdueTasks > 0 ? "text-rose-600" : "text-slate-800")">
+                    @Model.OverdueTasks <span class="text-xs text-slate-400 font-normal">tugas</span>
+                </p>
+                <p class="text-xs text-slate-400 mt-1">Melebihi Tenggat Waktu</p>
+            </div>
         </div>
-    </div>
+    }
 
     <!-- 2 Column Section: Milestones Pipeline & Team Workload -->
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">

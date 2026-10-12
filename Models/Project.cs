@@ -34,6 +34,8 @@ namespace TrackerKerja.Models
         public virtual Company? Company { get; set; }
 
         // Financial & Client Tracking
+        public bool UseBudget { get; set; } = false;
+
         [MaxLength(150)]
         public string? ClientName { get; set; }
 
@@ -64,11 +66,11 @@ namespace TrackerKerja.Models
 
         public double TotalWorkHours => Tasks.SelectMany(t => t.Sessions).Sum(s => (long?)s.Duration ?? 0) / 3600.0;
 
-        public int BudgetBurnPercent => Budget.HasValue && Budget.Value > 0
+        public int BudgetBurnPercent => UseBudget && Budget.HasValue && Budget.Value > 0
             ? (int)Math.Min(100, Math.Round(((ActualCost ?? 0) / Budget.Value) * 100))
             : 0;
 
         public decimal RemainingBudget => (Budget ?? 0) - (ActualCost ?? 0);
-        public bool IsOverBudget => Budget.HasValue && (ActualCost ?? 0) > Budget.Value;
+        public bool IsOverBudget => UseBudget && Budget.HasValue && (ActualCost ?? 0) > Budget.Value;
     }
 }

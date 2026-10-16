@@ -33,15 +33,29 @@ namespace TrackerKerja.Services
 
         public string GetDefaultLocalSyncPath()
         {
+            try
+            {
+                var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
+                var downloadsDir = Path.Combine(userProfile, "Downloads");
+
+                if (Directory.Exists(downloadsDir))
+                {
+                    var trackerFiles = Directory.GetFiles(downloadsDir, "*Task Tracker*.xlsx")
+                        .OrderByDescending(f => File.GetLastWriteTime(f))
+                        .ToList();
+
+                    if (trackerFiles.Any())
+                    {
+                        return trackerFiles.First();
+                    }
+                }
+            }
+            catch { }
+
             if (File.Exists(DefaultLocalPath))
             {
                 return DefaultLocalPath;
             }
-
-            // Check alternative locations in user profile or current directory
-            var userProfile = Environment.GetFolderPath(Environment.SpecialFolder.UserProfile);
-            var altPath = Path.Combine(userProfile, "Downloads", "Task Tracker - Update (1).xlsx");
-            if (File.Exists(altPath)) return altPath;
 
             return DefaultLocalPath;
         }
@@ -210,8 +224,8 @@ namespace TrackerKerja.Services
             {
                 result.ProcessedSheets.Add(ws.Name);
 
-                // Extract Sheet Person candidate from sheet name: e.g. "Integrasi TCES TICS (Syafix)" -> "Syafix", "Glenn" -> "Glenn"
-                string? sheetPersonCandidate = ExtractPersonFromSheetName(ws.Name);
+                // Extract Sheet Person candidate from sheet name: e.g. "Integrasi TCES TICS (Syafix)" -> "Syafix", "Glenn" -> "Glenn", "Syifa" -> "Syifa"
+                string? sheetPersonCandidate = ExtractPersonFromSheetName(ws.Name, allUsers);
 
                 var rowsUsed = ws.RowsUsed().ToList();
                 if (rowsUsed.Count < 2) continue; // Only header or empty
@@ -274,6 +288,20 @@ namespace TrackerKerja.Services
                             preview.Title = GetCellByColName(row, colMap, "Task Title", 4);
                         }
 
+                        // Fallback project name: check if sheet name is formatted as "Project Name (Person)"
+                        if (string.IsNullOrWhiteSpace(preview.Project))
+                        {
+                            var pMatch = Regex.Match(ws.Name, @"^(.*?)\s*\([^)]+\)");
+                            if (pMatch.Success && !string.IsNullOrWhiteSpace(pMatch.Groups[1].Value))
+                            {
+                                preview.Project = pMatch.Groups[1].Value.Trim();
+                            }
+                            else if (string.IsNullOrEmpty(sheetPersonCandidate))
+                            {
+                                preview.Project = ws.Name.Trim();
+                            }
+                        }
+
                         var rawStatus = GetCellByColName(row, colMap, "status", 4).ToUpper();
                         preview.Status = NormalizeStatusString(rawStatus);
 
@@ -303,7 +331,18 @@ namespace TrackerKerja.Services
                         preview.InfraEmails = GetCellByColName(row, colMap, "infra_emails", 15);
                         preview.MasterDataEmails = GetCellByColName(row, colMap, "master_data_emails", 16);
                         preview.TesterEmails = GetCellByColName(row, colMap, "tester_emails", 17);
-                        preview.TwEmails = GetCellByColName(row, colMap, "tw_emails", 18);
+                        preview.TwEmails = !string.IsNullOrEmpty(GetCellByColName(row, colMap, "tw_emails", 18))
+                            ? GetCellByColName(row, colMap, "tw_emails", 18)
+                            : GetCellByColName(row, colMap, "technical_writer_emails", 0);
+
+                        var qaEmails = !string.IsNullOrEmpty(GetCellByColName(row, colMap, "quality_assurance_emails", 0))
+                            ? GetCellByColName(row, colMap, "quality_assurance_emails", 0)
+                            : GetCellByColName(row, colMap, "qa_emails", 0);
+
+                        var saEmails = GetCellByColName(row, colMap, "system_analyst_emails", 0);
+
+                        preview.QualityAssuranceEmails = qaEmails;
+                        preview.SystemAnalystEmails = saEmails;
 
                         preview.Obstacle = GetCellByColName(row, colMap, "kendala", 19);
                         preview.Solution = GetCellByColName(row, colMap, "solusi", 20);
@@ -314,10 +353,20 @@ namespace TrackerKerja.Services
                         var rowFullName = GetCellByColName(row, colMap, "full_name", 0);
                         var explicitPic = GetCellByColName(row, colMap, "PIC", 22);
 
-                        rawPic = !string.IsNullOrEmpty(explicitPic) ? explicitPic :
-                                 !string.IsNullOrEmpty(rowUsername) ? rowUsername :
-                                 !string.IsNullOrEmpty(rowFullName) ? rowFullName :
-                                 preview.DeveloperEmails;
+                        // Determine raw PIC:
+                        // 1. Explicit cell PIC / full_name / username has highest priority
+                        if (!string.IsNullOrEmpty(explicitPic)) rawPic = explicitPic;
+                        else if (!string.IsNullOrEmpty(rowUsername)) rawPic = rowUsername;
+                        else if (!string.IsNullOrEmpty(rowFullName)) rawPic = rowFullName;
+                        // 2. In a member's individual sheet (e.g. Syifa, Syafix, Glenn, etc.), tasks belong to the sheet owner!
+                        else if (!string.IsNullOrEmpty(sheetPersonCandidate)) rawPic = sheetPersonCandidate;
+                        // 3. Fallback to role email assignments
+                        else if (!string.IsNullOrEmpty(preview.DeveloperEmails)) rawPic = preview.DeveloperEmails;
+                        else if (!string.IsNullOrEmpty(qaEmails)) rawPic = qaEmails;
+                        else if (!string.IsNullOrEmpty(preview.TesterEmails)) rawPic = preview.TesterEmails;
+                        else if (!string.IsNullOrEmpty(preview.BaEmails)) rawPic = preview.BaEmails;
+                        else if (!string.IsNullOrEmpty(saEmails)) rawPic = saEmails;
+                        else if (!string.IsNullOrEmpty(preview.TwEmails)) rawPic = preview.TwEmails;
                     }
                     else if (isArms21WithTaskCode)
                     {
@@ -421,25 +470,25 @@ namespace TrackerKerja.Services
                     // 3. Check Master_Data sheet lookup by (Project, Title) or (Title)
                     string? candidatePic = rawPic?.Trim();
 
-                    // If cell PIC is empty, try sheet person candidate
-                    if (string.IsNullOrEmpty(candidatePic) && !string.IsNullOrEmpty(sheetPersonCandidate))
+                    // If in a member's individual sheet (e.g. Syifa, Syafix, Glenn, etc.),
+                    // prioritize sheetPersonCandidate if candidatePic is empty or was defaulted to common template email
+                    if (!string.IsNullOrEmpty(sheetPersonCandidate))
                     {
-                        candidatePic = sheetPersonCandidate;
+                        if (string.IsNullOrEmpty(candidatePic) || candidatePic.Equals("haviz.indra@elistec.com", StringComparison.OrdinalIgnoreCase))
+                        {
+                            candidatePic = sheetPersonCandidate;
+                        }
                     }
 
-                    // If still empty or needs verification, fallback to Master_Data sheet lookup
-                    if (string.IsNullOrEmpty(candidatePic) || candidatePic.Equals("haviz.indra@elistec.com", StringComparison.OrdinalIgnoreCase))
+                    // Master_Data sheet lookup by (Project, Title) or (Title) as authoritative source if present
+                    var keyBoth = $"{preview.Project?.Trim().ToLower()}|{preview.Title.Trim().ToLower()}";
+                    if (masterDataByProjectTitle.TryGetValue(keyBoth, out var mdPerson))
                     {
-                        // In some files, developer_emails was filled with a default email while Master_Data has the true owner
-                        var keyBoth = $"{preview.Project?.Trim().ToLower()}|{preview.Title.Trim().ToLower()}";
-                        if (masterDataByProjectTitle.TryGetValue(keyBoth, out var mdPerson))
-                        {
-                            candidatePic = mdPerson;
-                        }
-                        else if (masterDataLookup.TryGetValue(preview.Title.Trim().ToLower(), out var mdTitlePerson))
-                        {
-                            candidatePic = mdTitlePerson;
-                        }
+                        candidatePic = mdPerson;
+                    }
+                    else if (masterDataLookup.TryGetValue(preview.Title.Trim().ToLower(), out var mdTitlePerson))
+                    {
+                        candidatePic = mdTitlePerson;
                     }
 
                     // Resolve candidate string to database AppUser
@@ -624,6 +673,7 @@ namespace TrackerKerja.Services
                                     Name = pName,
                                     Color = "#6366F1",
                                     Status = ProjectStatus.Active,
+                                    CompanyId = 1,
                                     CreatedAt = DateTime.Now
                                 };
                                 _db.Projects.Add(project);
@@ -700,6 +750,8 @@ namespace TrackerKerja.Services
                         if (!string.IsNullOrWhiteSpace(row.SheetName)) tagList.Add($"Sheet:{row.SheetName.Trim()}");
                         if (!string.IsNullOrWhiteSpace(row.BaEmails)) tagList.Add($"BA:{row.BaEmails.Trim()}");
                         if (!string.IsNullOrWhiteSpace(row.TesterEmails)) tagList.Add($"QA:{row.TesterEmails.Trim()}");
+                        if (!string.IsNullOrWhiteSpace(row.QualityAssuranceEmails)) tagList.Add($"QA:{row.QualityAssuranceEmails.Trim()}");
+                        if (!string.IsNullOrWhiteSpace(row.SystemAnalystEmails)) tagList.Add($"SA:{row.SystemAnalystEmails.Trim()}");
                         if (!string.IsNullOrWhiteSpace(row.InfraEmails)) tagList.Add($"Infra:{row.InfraEmails.Trim()}");
                         if (!string.IsNullOrWhiteSpace(row.MasterDataEmails)) tagList.Add($"MD:{row.MasterDataEmails.Trim()}");
 
@@ -829,6 +881,7 @@ namespace TrackerKerja.Services
                 Title = row.Title.Trim(),
                 Description = description,
                 ProjectId = projectId,
+                CompanyId = 1,
                 CategoryId = categoryId,
                 AssignedToUserId = assignedUserId,
                 Priority = priority,
@@ -845,7 +898,7 @@ namespace TrackerKerja.Services
             };
         }
 
-        public static string? ExtractPersonFromSheetName(string sheetName)
+        public static string? ExtractPersonFromSheetName(string sheetName, List<AppUser>? users = null)
         {
             if (string.IsNullOrWhiteSpace(sheetName)) return null;
 
@@ -856,8 +909,19 @@ namespace TrackerKerja.Services
                 return match.Groups[1].Value.Trim();
             }
 
-            // Pattern 2: Single person names e.g. "Glenn", "Danang", "Heni"
             var clean = sheetName.Trim();
+
+            // Pattern 2: Dynamic matching against registered database users
+            if (users != null && users.Any())
+            {
+                var matched = ResolveAppUser(clean, users);
+                if (matched != null)
+                {
+                    return matched.FullName;
+                }
+            }
+
+            // Pattern 3: Single person names / team aliases fallback
             if (clean.Equals("Glenn", StringComparison.OrdinalIgnoreCase) ||
                 clean.Equals("Syafix", StringComparison.OrdinalIgnoreCase) ||
                 clean.Equals("Danang", StringComparison.OrdinalIgnoreCase) ||
@@ -866,7 +930,8 @@ namespace TrackerKerja.Services
                 clean.Equals("Haviz", StringComparison.OrdinalIgnoreCase) ||
                 clean.Equals("Atha", StringComparison.OrdinalIgnoreCase) ||
                 clean.Equals("Athallah", StringComparison.OrdinalIgnoreCase) ||
-                clean.Equals("Nanda", StringComparison.OrdinalIgnoreCase))
+                clean.Equals("Nanda", StringComparison.OrdinalIgnoreCase) ||
+                clean.Equals("Syifa", StringComparison.OrdinalIgnoreCase))
             {
                 return clean;
             }
@@ -876,7 +941,7 @@ namespace TrackerKerja.Services
 
         public static AppUser? ResolveAppUser(string? rawPic, List<AppUser> users)
         {
-            if (string.IsNullOrWhiteSpace(rawPic)) return null;
+            if (string.IsNullOrWhiteSpace(rawPic) || users == null || !users.Any()) return null;
 
             // Strip role in parentheses if present e.g. "Syafix (Business Analyst)" -> "Syafix"
             var cleanPic = rawPic.Trim();
@@ -901,26 +966,47 @@ namespace TrackerKerja.Services
             matched = users.FirstOrDefault(u => !string.IsNullOrEmpty(u.FullName) && u.FullName.Equals(cleanPic, StringComparison.OrdinalIgnoreCase));
             if (matched != null) return matched;
 
-            // 4. Known Team Aliases / First Name matching
-            var aliasLower = cleanPic.ToLower();
-            if (aliasLower.Contains("syafix"))
+            // 4. Word/Name Token Match in FullName (e.g. "Syifa" in "Syifa Kurnia Wijaya", "Danang" in "Mohammad Danang")
+            var tokenLower = cleanPic.ToLower();
+            matched = users.FirstOrDefault(u =>
+            {
+                if (string.IsNullOrEmpty(u.FullName)) return false;
+                var tokens = u.FullName.ToLower().Split(new[] { ' ', '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+                return tokens.Any(t => t.Equals(tokenLower, StringComparison.OrdinalIgnoreCase) || tokenLower.Equals(t, StringComparison.OrdinalIgnoreCase));
+            });
+            if (matched != null) return matched;
+
+            // 5. Email Prefix Token Match (e.g. "syifa" in "syifa.kurnia@elistec.com", "athallah" in "athallah.bariq@elistec.com")
+            matched = users.FirstOrDefault(u =>
+            {
+                if (string.IsNullOrEmpty(u.Email)) return false;
+                var prefix = u.Email.Split('@')[0].ToLower();
+                var parts = prefix.Split(new[] { '.', '_', '-' }, StringSplitOptions.RemoveEmptyEntries);
+                return parts.Any(p => p.Equals(tokenLower, StringComparison.OrdinalIgnoreCase) || tokenLower.Equals(p, StringComparison.OrdinalIgnoreCase));
+            });
+            if (matched != null) return matched;
+
+            // 6. Known Team Aliases / Nicknames
+            if (tokenLower.Contains("syifa"))
+                return users.FirstOrDefault(u => u.Email?.Contains("syifa", StringComparison.OrdinalIgnoreCase) == true || u.FullName.Contains("Syifa", StringComparison.OrdinalIgnoreCase));
+            if (tokenLower.Contains("syafix"))
                 return users.FirstOrDefault(u => u.Email?.Contains("syafix", StringComparison.OrdinalIgnoreCase) == true || u.FullName.Contains("Syafix", StringComparison.OrdinalIgnoreCase));
-            if (aliasLower.Contains("glenn"))
+            if (tokenLower.Contains("glenn"))
                 return users.FirstOrDefault(u => u.Email?.Contains("glenn", StringComparison.OrdinalIgnoreCase) == true || u.FullName.Contains("Glenn", StringComparison.OrdinalIgnoreCase));
-            if (aliasLower.Contains("danang"))
+            if (tokenLower.Contains("danang"))
                 return users.FirstOrDefault(u => u.Email?.Contains("danang", StringComparison.OrdinalIgnoreCase) == true || u.FullName.Contains("Danang", StringComparison.OrdinalIgnoreCase));
-            if (aliasLower.Contains("heni"))
+            if (tokenLower.Contains("heni"))
                 return users.FirstOrDefault(u => u.Email?.Contains("heni", StringComparison.OrdinalIgnoreCase) == true || u.FullName.Contains("Heni", StringComparison.OrdinalIgnoreCase));
-            if (aliasLower.Contains("iqbal"))
+            if (tokenLower.Contains("iqbal"))
                 return users.FirstOrDefault(u => u.Email?.Contains("iqbal", StringComparison.OrdinalIgnoreCase) == true || u.FullName.Contains("Iqbal", StringComparison.OrdinalIgnoreCase));
-            if (aliasLower.Contains("haviz"))
+            if (tokenLower.Contains("haviz"))
                 return users.FirstOrDefault(u => u.Email?.Contains("haviz", StringComparison.OrdinalIgnoreCase) == true || u.FullName.Contains("Haviz", StringComparison.OrdinalIgnoreCase));
-            if (aliasLower.Contains("atha"))
+            if (tokenLower.Contains("atha"))
                 return users.FirstOrDefault(u => u.Email?.Contains("athallah", StringComparison.OrdinalIgnoreCase) == true || u.FullName.Contains("Athallah", StringComparison.OrdinalIgnoreCase));
-            if (aliasLower.Contains("nanda"))
+            if (tokenLower.Contains("nanda"))
                 return users.FirstOrDefault(u => u.Email?.Contains("nanda", StringComparison.OrdinalIgnoreCase) == true || u.FullName.Contains("Nanda", StringComparison.OrdinalIgnoreCase));
 
-            // 5. Partial Substring Match
+            // 7. Partial Substring Match
             matched = users.FirstOrDefault(u =>
                 (!string.IsNullOrEmpty(u.FullName) && (u.FullName.Contains(cleanPic, StringComparison.OrdinalIgnoreCase) || cleanPic.Contains(u.FullName, StringComparison.OrdinalIgnoreCase))) ||
                 (!string.IsNullOrEmpty(u.Email) && (u.Email.StartsWith(cleanPic, StringComparison.OrdinalIgnoreCase) || cleanPic.Contains(u.Email, StringComparison.OrdinalIgnoreCase))));

@@ -1226,7 +1226,8 @@ using (var scope = app.Services.CreateScope())
         ("mohammad.danang@elistec.com", "Mohammad Danang", "DevOps Engineer", "#F59E0B"),
         ("syafix.said@elistec.com", "Syafix Said", "System Analyst", "#8B5CF6"),
         ("nanda.putri@elistec.com", "Nanda Putri", "Technical Writer", "#0EA5E9"),
-        ("athallah.bariq@elistec.com", "Athallah Bariq", "Fullstack Developer", "#3B82F6")
+        ("athallah.bariq@elistec.com", "Athallah Bariq", "Fullstack Developer", "#3B82F6"),
+        ("syifa.kurnia@elistec.com", "Syifa Kurnia Wijaya", "Quality Assurance", "#14B8A6")
     };
 
     foreach (var (email, name, job, color) in teamUsers)
@@ -1446,6 +1447,12 @@ if (args.Contains("--run-restore-tests"))
 if (args.Contains("--run-budget-tests"))
 {
     var exitCode = await TrackerKerja.Tests.ProjectBudgetTestRunner.RunAllTestsAsync();
+    Environment.Exit(exitCode);
+}
+
+if (args.Contains("--run-syifa-tests"))
+{
+    var exitCode = await TrackerKerja.Tests.SyifaImportTestRunner.RunAllTestsAsync();
     Environment.Exit(exitCode);
 }
 

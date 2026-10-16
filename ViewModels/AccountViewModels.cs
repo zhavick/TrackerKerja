@@ -173,6 +173,8 @@ namespace TrackerKerja.ViewModels
         public string? MasterDataEmails { get; set; }
         public string? TesterEmails { get; set; }
         public string? TwEmails { get; set; }
+        public string? QualityAssuranceEmails { get; set; }
+        public string? SystemAnalystEmails { get; set; }
         public string? NotesTracker { get; set; }
         public string? Pic { get; set; }
         public bool IsValid { get; set; } = true;

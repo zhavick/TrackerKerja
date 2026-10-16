@@ -319,7 +319,7 @@ namespace TrackerKerja.Controllers
             foreach (var u in users)
             {
                 var uTasks = tasks.Where(t => t.AssignedToUserId == u.Id).ToList();
-                if (uTasks.Any() || !projectId.HasValue)
+                if (uTasks.Any() || !projectId.HasValue || projectId.Value == 0)
                 {
                     var secs = uTasks.SelectMany(t => t.Sessions).Sum(s => s.DurationSeconds);
                     result.Add(new
